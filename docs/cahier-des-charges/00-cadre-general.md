@@ -227,7 +227,11 @@ La plateforme traite des données personnelles de jeunes, parfois mineurs, ainsi
 
 - **RGPD-01** : l'organisation cliente est responsable de traitement ; nous sommes sous-traitant. Un accord de traitement des données (DPA) est signé avec chaque client SaaS.
 - **RGPD-02** : registre des traitements et analyse d'impact (AIPD) fournis aux clients. L'AIPD est probablement requise, car il s'agit de jeunes et d'un suivi d'assiduité.
-- **RGPD-03** : minimisation. Aucun motif médical n'est saisi : un justificatif médical reste un document joint. La géolocalisation à l'émargement est facultative, désactivée par défaut, et seul le résultat (sur place ou non) est conservé, jamais la position.
+- **RGPD-03** : minimisation. Aucun motif médical n'est saisi : un justificatif médical reste un document joint. Le contrôle de localisation à l'émargement est activé par défaut (décision du 01/10/2026), désactivable par l'école. Il suit quatre règles :
+  - l'apprenant est informé et donne son autorisation sur son téléphone ;
+  - la position est comparée au périmètre du campus sur l'appareil ou à la réception, puis jetée : seul le résultat (sur place, hors site, inconnu) est conservé ;
+  - un refus ou un GPS indisponible ne bloque jamais le scan : Scolaly contrôle alors le réseau Wi-Fi ou l'adresse IP du campus, et à défaut marque le scan « à vérifier » pour l'intervenant ;
+  - ce traitement est décrit dans l'AIPD fournie aux écoles.
 - **RGPD-04** : durées de conservation paramétrables par type de donnée, avec des valeurs par défaut conformes aux usages : par exemple 5 ans après la sortie pour le dossier pédagogique, et une conservation plus longue pour les résultats et diplômes. Une purge ou une anonymisation automatique s'applique à l'échéance.
 - **RGPD-05** : droits des personnes. L'apprenant exporte ses données depuis son espace ; les demandes d'effacement et de rectification sont traitées par l'administrateur avec un outil dédié.
 - **RGPD-06** : en SaaS, hébergement en France chez un hébergeur européen. Les sous-traitants ultérieurs (emails, SMS) sont listés et situés dans l'UE.
@@ -258,6 +262,10 @@ Décisions prises le 1er octobre 2026 :
 | Groupes d'écoles | Dès le MVP, avec un tableau de bord commun (RG-00-23 à RG-00-28) |
 | Scan par l'intervenant | Non : un étudiant sans téléphone est pointé à la main par l'intervenant |
 | Disponibilité SaaS | 99,5 % par mois, 99,9 % en formule Entreprise (EXP-01) |
+| Anti-fraude à l'émargement | Par défaut : QR rotatif, contrôle de localisation et validation de la liste par l'intervenant ; appareil lié désactivé (module 06) |
+| SMS | Pas dans le MVP (email + push) ; option payante en V2 |
+| Signature de l'appel | Validation horodatée par l'intervenant, signature électronique simple tracée (module 06) |
+| Validation des bulletins | Circuit paramétrable ; par défaut, le responsable pédagogique vérifie, la direction valide et signe, puis publication (module 07) |
 
 Question encore ouverte :
 

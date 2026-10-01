@@ -9,13 +9,13 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | --- | --- | --- | --- |
 | 00 | [Cadre général](00-cadre-general.md) | Transverse | Validé (01/10/2026) |
 | 01 | [Socle](01-socle.md) | MVP | Validé (01/10/2026) |
-| 02 | Référentiel pédagogique | MVP | En rédaction |
-| 03 | Alternance (base) | MVP | En rédaction |
-| 04 | Calendrier et emplois du temps | MVP | En rédaction |
-| 05 | Cahier de texte | MVP | À rédiger |
-| 06 | Émargement QR et assiduité | MVP | À rédiger |
-| 07 | Évaluations, notes, relevés et bulletins | MVP | À rédiger |
-| 08 | Portails, notifications et messagerie | MVP (messagerie en V2) | À rédiger |
+| 02 | [Référentiel pédagogique](02-referentiel.md) | MVP | Validé (01/10/2026) |
+| 03 | [Alternance et stages (base)](03-alternance.md) | MVP | Validé (01/10/2026) |
+| 04 | [Calendrier et emplois du temps](04-emplois-du-temps.md) | MVP | Validé (01/10/2026) |
+| 05 | Cahier de texte | MVP | En rédaction |
+| 06 | Émargement QR et assiduité | MVP | En rédaction |
+| 07 | Évaluations, notes, relevés et bulletins | MVP | En rédaction |
+| 08 | Portails, notifications et messagerie | MVP (messagerie en V2) | En rédaction |
 | 09 | CRM, candidatures et inscriptions | V2 | À rédiger |
 | 10 | Contrats CERFA, OPCO et NPEC | V2 | À rédiger |
 | 11 | Facturation | V2 | À rédiger |
