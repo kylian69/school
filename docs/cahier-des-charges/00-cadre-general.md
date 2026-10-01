@@ -142,6 +142,9 @@ Les droits combinent un rôle (ce qu'on peut faire) et un périmètre (sur quoi)
 | Comptable / financier | Organisation | Facturation, encaissements, exports comptables | V2 |
 | Référent handicap | Apprenants signalés | Aménagements, suivi confidentiel | V3 |
 | Auditeur (lecture seule) | Périmètre défini, durée limitée | Consultation des preuves Qualiopi lors d'un audit | V2 |
+| Support Scolaly (interne) | Aucun par défaut ; une école sur autorisation datée | Assistance aux écoles, espaces de démonstration, annonces de maintenance (RG-19-09) | MVP |
+| Candidat (externe) | Lui-même | Candidature, réservation de créneaux, offres d'alternance, pré-inscription ; devient apprenant une fois inscrit (module 09) | V2 |
+| Recruteur d'entreprise (externe) | Son entreprise | Dépôt d'offres d'alternance, consultation des profils proposés (module 09) | V2 |
 
 - **RG-00-10** : les rôles se cumulent. Un intervenant peut aussi être responsable pédagogique, ou une personne peut être à la fois étudiante et tutrice.
 - **RG-00-11** : par défaut, un utilisateur n'a accès à rien. Chaque droit est accordé explicitement, avec un périmètre (organisation, établissement, formation, promotion, ou soi-même).
