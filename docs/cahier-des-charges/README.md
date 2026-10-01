@@ -12,11 +12,11 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 02 | [Référentiel pédagogique](02-referentiel.md) | MVP | Validé (01/10/2026) |
 | 03 | [Alternance et stages (base)](03-alternance.md) | MVP | Validé (01/10/2026) |
 | 04 | [Calendrier et emplois du temps](04-emplois-du-temps.md) | MVP | Validé (01/10/2026) |
-| 05 | Cahier de texte | MVP | En rédaction |
-| 06 | Émargement QR et assiduité | MVP | En rédaction |
-| 07 | Évaluations, notes, relevés et bulletins | MVP | En rédaction |
-| 08 | Portails, notifications et messagerie | MVP (messagerie en V2) | En rédaction |
-| 09 | CRM, candidatures et inscriptions | V2 | À rédiger |
+| 05 | [Cahier de texte](05-cahier-de-texte.md) | MVP | Validé (01/10/2026) |
+| 06 | [Émargement QR et assiduité](06-emargement.md) | MVP | Validé (01/10/2026) |
+| 07 | [Évaluations, notes, relevés et bulletins](07-notes-bulletins.md) | MVP | Validé (01/10/2026) |
+| 08 | [Portails et notifications](08-portails-notifications.md) | MVP (messagerie en V2) | Validé (01/10/2026) |
+| 09 | CRM, candidatures et inscriptions | V2 | En rédaction |
 | 10 | Contrats CERFA, OPCO et NPEC | V2 | À rédiger |
 | 11 | Facturation | V2 | À rédiger |
 | 12 | Qualité : Qualiopi, BPF, enquêtes | V2 | À rédiger |
@@ -26,4 +26,4 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 16 | Tableaux de bord et exports réglementaires | V2 / V3 | À rédiger |
 | 17 | Formation continue, aides aux apprentis, référent handicap | V3 | À rédiger |
 | 18 | API, connecteurs, SSO | V2 / V3 | À rédiger |
-| 19 | Administration de la plateforme | MVP (base) | À rédiger |
+| 19 | Administration de la plateforme | MVP (base) | En rédaction |
