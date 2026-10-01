@@ -17,8 +17,8 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 07 | [Évaluations, notes, relevés et bulletins](07-notes-bulletins.md) | MVP | Validé (01/10/2026) |
 | 08 | [Portails et notifications](08-portails-notifications.md) | MVP (messagerie en V2) | Validé (01/10/2026) |
 | 09 | [CRM, candidatures et inscriptions](09-crm-candidatures.md) | V2 | Validé (01/10/2026) |
-| 10 | Contrats CERFA, OPCO et NPEC | V2 | En rédaction |
-| 11 | Facturation | V2 | À rédiger |
+| 10 | [Contrats CERFA, OPCO et NPEC](10-contrats-opco.md) | V2 | Validé (01/10/2026) |
+| 11 | Facturation | V2 | En rédaction |
 | 12 | Qualité : Qualiopi, BPF, enquêtes | V2 | À rédiger |
 | 13 | Livret d'apprentissage, visites, signature électronique | V2 | À rédiger |
 | 14 | Jurys, PV et diplomation | V2 | À rédiger |
