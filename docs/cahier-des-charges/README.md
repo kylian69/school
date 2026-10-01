@@ -16,8 +16,8 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 06 | [Émargement QR et assiduité](06-emargement.md) | MVP | Validé (01/10/2026) |
 | 07 | [Évaluations, notes, relevés et bulletins](07-notes-bulletins.md) | MVP | Validé (01/10/2026) |
 | 08 | [Portails et notifications](08-portails-notifications.md) | MVP (messagerie en V2) | Validé (01/10/2026) |
-| 09 | CRM, candidatures et inscriptions | V2 | En rédaction |
-| 10 | Contrats CERFA, OPCO et NPEC | V2 | À rédiger |
+| 09 | [CRM, candidatures et inscriptions](09-crm-candidatures.md) | V2 | Validé (01/10/2026) |
+| 10 | Contrats CERFA, OPCO et NPEC | V2 | En rédaction |
 | 11 | Facturation | V2 | À rédiger |
 | 12 | Qualité : Qualiopi, BPF, enquêtes | V2 | À rédiger |
 | 13 | Livret d'apprentissage, visites, signature électronique | V2 | À rédiger |
@@ -26,4 +26,4 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 16 | Tableaux de bord et exports réglementaires | V2 / V3 | À rédiger |
 | 17 | Formation continue, aides aux apprentis, référent handicap | V3 | À rédiger |
 | 18 | API, connecteurs, SSO | V2 / V3 | À rédiger |
-| 19 | Administration de la plateforme | MVP (base) | En rédaction |
+| 19 | [Administration de la plateforme](19-administration-plateforme.md) | MVP (base) | Validé (01/10/2026) |
