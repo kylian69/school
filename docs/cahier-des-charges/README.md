@@ -20,8 +20,8 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 10 | [Contrats CERFA, OPCO et NPEC](10-contrats-opco.md) | V2 | Validé (01/10/2026) |
 | 11 | [Facturation](11-facturation.md) | V2 | Validé (01/10/2026) |
 | 12 | [Qualité : Qualiopi, BPF, enquêtes](12-qualite.md) | V2 | Validé (01/10/2026) |
-| 13 | Livret d'apprentissage, visites, signature électronique | V2 | En rédaction |
-| 14 | Jurys, PV et diplomation | V2 | À rédiger |
+| 13 | [Livret d'apprentissage, visites, signature électronique](13-livret-visites.md) | V2 | Validé (01/10/2026) |
+| 14 | Jurys, PV et diplomation | V2 | En rédaction |
 | 15 | Devoirs en ligne et examens | V2 / V3 | À rédiger |
 | 16 | Tableaux de bord et exports réglementaires | V2 / V3 | À rédiger |
 | 17 | Formation continue, aides aux apprentis, référent handicap | V3 | À rédiger |
