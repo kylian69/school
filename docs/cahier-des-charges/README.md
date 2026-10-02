@@ -22,8 +22,8 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 12 | [Qualité : Qualiopi, BPF, enquêtes](12-qualite.md) | V2 | Validé (01/10/2026) |
 | 13 | [Livret d'apprentissage, visites, signature électronique](13-livret-visites.md) | V2 | Validé (01/10/2026) |
 | 14 | [Jurys, PV et diplomation](14-jurys-diplomes.md) | V2 | Validé (02/10/2026) |
-| 15 | Devoirs en ligne et examens | V2 / V3 | En rédaction |
-| 16 | Tableaux de bord et exports réglementaires | V2 / V3 | À rédiger |
+| 15 | [Devoirs en ligne et examens](15-devoirs-examens.md) | V2 | Validé (02/10/2026) |
+| 16 | Tableaux de bord et exports réglementaires | V2 / V3 | En rédaction |
 | 17 | Formation continue, aides aux apprentis, référent handicap | V3 | À rédiger |
 | 18 | API, connecteurs, SSO | V2 / V3 | À rédiger |
 | 19 | [Administration de la plateforme](19-administration-plateforme.md) | MVP (base) | Validé (01/10/2026) |
