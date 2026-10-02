@@ -24,6 +24,6 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 14 | [Jurys, PV et diplomation](14-jurys-diplomes.md) | V2 | Validé (02/10/2026) |
 | 15 | [Devoirs en ligne et examens](15-devoirs-examens.md) | V2 | Validé (02/10/2026) |
 | 16 | [Tableaux de bord et exports réglementaires](16-pilotage-exports.md) | V2 | Validé (02/10/2026) |
-| 17 | Référent handicap (formation continue et gestion financière des aides reportées, décision du 02/10/2026) | V3 | En rédaction |
-| 18 | API, connecteurs, SSO | V2 / V3 | À rédiger |
+| 17 | [Référent handicap](17-referent-handicap.md) (formation continue et gestion financière des aides reportées) | V3 | Validé (02/10/2026) |
+| 18 | API, connecteurs, SSO | V2 / V3 | En rédaction |
 | 19 | [Administration de la plateforme](19-administration-plateforme.md) | MVP (base) | Validé (01/10/2026) |
