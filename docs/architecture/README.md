@@ -10,7 +10,10 @@ Le document est rédigé par lots, validé, puis versionné dans [architecture-t
 | 1 | Vue d'ensemble | Validé (02/10/2026) |
 | 2 | Organisation du code | Validé (02/10/2026) |
 | 3 | Données | Validé (02/10/2026) |
-| 4 | Sécurité et identité | En rédaction |
-| 5 | Émargement QR à fort pic | En rédaction |
-| 6 | Traitements asynchrones et intégrations | En rédaction |
-| 7 | Exploitation et hébergement | En rédaction |
+| 4 | Sécurité et identité | Validé (02/10/2026) |
+| 5 | Émargement QR à fort pic | Validé (02/10/2026) |
+| 6 | Traitements asynchrones et intégrations | Validé (02/10/2026) |
+| 7 | Exploitation et hébergement | Validé (02/10/2026) |
+| 8 | Décisions | Validé (02/10/2026) |
+
+Architecture technique complète validée le 02/10/2026.
