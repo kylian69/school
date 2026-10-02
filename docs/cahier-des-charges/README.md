@@ -5,6 +5,8 @@ https://claude.ai/code/artifact/ef8b794a-f4ea-40cd-9d4e-ced869cfd12b
 
 Chaque module est rédigé dans le document de travail, validé, puis versionné ici.
 
+**Cahier des charges complet au 02/10/2026 : les 20 modules sont validés.**
+
 | N° | Module | Phase | Statut |
 | --- | --- | --- | --- |
 | 00 | [Cadre général](00-cadre-general.md) | Transverse | Validé (01/10/2026) |
@@ -25,5 +27,5 @@ Chaque module est rédigé dans le document de travail, validé, puis versionné
 | 15 | [Devoirs en ligne et examens](15-devoirs-examens.md) | V2 | Validé (02/10/2026) |
 | 16 | [Tableaux de bord et exports réglementaires](16-pilotage-exports.md) | V2 | Validé (02/10/2026) |
 | 17 | [Référent handicap](17-referent-handicap.md) (formation continue et gestion financière des aides reportées) | V3 | Validé (02/10/2026) |
-| 18 | API, connecteurs, SSO | V2 / V3 | En rédaction |
+| 18 | [API, connecteurs et connexion unique](18-api-connecteurs.md) | V2 (Moodle en V3) | Validé (02/10/2026) |
 | 19 | [Administration de la plateforme](19-administration-plateforme.md) | MVP (base) | Validé (01/10/2026) |
