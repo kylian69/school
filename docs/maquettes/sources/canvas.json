@@ -1,0 +1,518 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AccueilApprenant.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Accueil apprenant (mobile)",
+      "w": 390,
+      "x": 1990,
+      "y": 0
+    },
+    "Contrats.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Contrats d'alternance — tableau",
+      "w": 1440,
+      "x": 1520,
+      "y": 2840
+    },
+    "Dashboard.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "title": "Tableau de bord scolarité",
+      "w": 1440,
+      "x": 0,
+      "y": 1340
+    },
+    "DossierContrat.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "title": "Dossier contractuel & dépôt OPCO",
+      "w": 1440,
+      "x": 3040,
+      "y": 2840
+    },
+    "Edt.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Emploi du temps — semaine",
+      "w": 1440,
+      "x": 1520,
+      "y": 1340
+    },
+    "EmargementMobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Émargement — apprenant (mobile)",
+      "w": 390,
+      "x": 1520,
+      "y": 0
+    },
+    "EspacePayeur.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Espace payeur (mobile)",
+      "w": 390,
+      "x": 3040,
+      "y": 4440
+    },
+    "Factures.dc.html": {
+      "expand": "fill",
+      "h": 960,
+      "is_interactive": true,
+      "title": "Factures & impayés",
+      "w": 1440,
+      "x": 1520,
+      "y": 4440
+    },
+    "FicheApprenant.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "Fiche apprenant",
+      "w": 1440,
+      "x": 0,
+      "y": 2840
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Émargement — écran intervenant (projection)",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Notes.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Saisie des notes",
+      "w": 1440,
+      "x": 3040,
+      "y": 1340
+    },
+    "PartieEmployeur.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Partie employeur (lien sécurisé, mobile)",
+      "w": 390,
+      "x": 4560,
+      "y": 2840
+    },
+    "PlanFinancement.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Plan de financement",
+      "w": 1440,
+      "x": 0,
+      "y": 4440
+    },
+    "Candidatures.dc.html": {
+      "x": 0,
+      "y": 5800,
+      "w": 1440,
+      "h": 900,
+      "title": "Candidatures — colonnes et tableau",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "DossierCandidat.dc.html": {
+      "x": 1520,
+      "y": 5800,
+      "w": 1440,
+      "h": 1000,
+      "title": "Dossier candidat & décision",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "GrilleEvaluation.dc.html": {
+      "x": 3040,
+      "y": 5800,
+      "w": 390,
+      "h": 844,
+      "title": "Grille d'entretien (mobile)",
+      "is_interactive": true
+    },
+    "Entonnoir.dc.html": {
+      "x": 3510,
+      "y": 5800,
+      "w": 1440,
+      "h": 1000,
+      "title": "Entonnoir de recrutement",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "SuiviAlternants.dc.html": {
+      "x": 0,
+      "y": 7200,
+      "w": 1440,
+      "h": 900,
+      "title": "Suivi des alternants",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "LivretPeriode.dc.html": {
+      "x": 1520,
+      "y": 7200,
+      "w": 390,
+      "h": 844,
+      "title": "Livret — période (tutrice, mobile)",
+      "is_interactive": true
+    },
+    "GrilleDeliberation.dc.html": {
+      "x": 1990,
+      "y": 7200,
+      "w": 1440,
+      "h": 1000,
+      "title": "Grille de délibération du jury",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "AccueilIntervenant.dc.html": {
+      "x": 3510,
+      "y": 7200,
+      "w": 390,
+      "h": 844,
+      "title": "Accueil intervenant (mobile)",
+      "is_interactive": true
+    },
+    "EspaceEntreprise.dc.html": {
+      "x": 0,
+      "y": 8600,
+      "w": 1440,
+      "h": 900,
+      "title": "Espace entreprise",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "EspaceTuteur.dc.html": {
+      "x": 1520,
+      "y": 8600,
+      "w": 390,
+      "h": 844,
+      "title": "Espace tuteur (mobile)",
+      "is_interactive": true
+    },
+    "Notifications.dc.html": {
+      "x": 1990,
+      "y": 8600,
+      "w": 390,
+      "h": 844,
+      "title": "Notifications & préférences (mobile)",
+      "is_interactive": true
+    },
+    "Annonce.dc.html": {
+      "x": 2460,
+      "y": 8600,
+      "w": 1440,
+      "h": 900,
+      "title": "Rédiger une annonce",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Demarrage.dc.html": {
+      "x": 0,
+      "y": 9900,
+      "w": 1440,
+      "h": 900,
+      "title": "Démarrage & apparence",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "RolesPermissions.dc.html": {
+      "x": 1520,
+      "y": 9900,
+      "w": 1440,
+      "h": 900,
+      "title": "Rôles & permissions",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Abonnement.dc.html": {
+      "x": 3040,
+      "y": 9900,
+      "w": 1440,
+      "h": 900,
+      "title": "Mon abonnement",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ClientsPlateforme.dc.html": {
+      "x": 4560,
+      "y": 9900,
+      "w": 1440,
+      "h": 900,
+      "title": "Console plateforme — clients",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "SaisieSeance.dc.html": {
+      "x": 0,
+      "y": 11200,
+      "w": 390,
+      "h": 844,
+      "title": "Cahier de texte — saisie de séance (mobile)",
+      "is_interactive": true
+    },
+    "MesDevoirs.dc.html": {
+      "x": 470,
+      "y": 11200,
+      "w": 390,
+      "h": 844,
+      "title": "Mes devoirs (apprenant, mobile)",
+      "is_interactive": true
+    },
+    "Correction.dc.html": {
+      "x": 940,
+      "y": 11200,
+      "w": 1440,
+      "h": 900,
+      "title": "Correction des copies",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "PilotageEpreuve.dc.html": {
+      "x": 2460,
+      "y": 11200,
+      "w": 1440,
+      "h": 900,
+      "title": "Épreuve en ligne — pilotage en séance",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "TableauQualite.dc.html": {
+      "x": 0,
+      "y": 12500,
+      "w": 1440,
+      "h": 900,
+      "title": "Qualité — couverture et preuves",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "EnqueteMobile.dc.html": {
+      "x": 1520,
+      "y": 12500,
+      "w": 390,
+      "h": 844,
+      "title": "Répondre à une enquête (mobile)",
+      "is_interactive": true
+    },
+    "PlanAmenagements.dc.html": {
+      "x": 1990,
+      "y": 12500,
+      "w": 1440,
+      "h": 900,
+      "title": "Référent handicap — plan d'aménagements",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ExportLibre.dc.html": {
+      "x": 3510,
+      "y": 12500,
+      "w": 1440,
+      "h": 900,
+      "title": "Exports libres",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ClesApi.dc.html": {
+      "x": 0,
+      "y": 13800,
+      "w": 1440,
+      "h": 900,
+      "title": "Clés d'API & consommation",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Webhooks.dc.html": {
+      "x": 1520,
+      "y": 13800,
+      "w": 1440,
+      "h": 900,
+      "title": "Webhooks",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Connecteurs.dc.html": {
+      "x": 3040,
+      "y": 13800,
+      "w": 1440,
+      "h": 900,
+      "title": "Connecteurs (assistant Moodle)",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Sso.dc.html": {
+      "x": 4560,
+      "y": 13800,
+      "w": 1440,
+      "h": 900,
+      "title": "Connexion unique (SSO)",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "CorrespondanceMoodle.dc.html": {
+      "x": 6080,
+      "y": 13800,
+      "w": 1440,
+      "h": 900,
+      "title": "Correspondance Moodle (intervenant)",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "MesConnexions.dc.html": {
+      "x": 7600,
+      "y": 13800,
+      "w": 390,
+      "h": 844,
+      "title": "Mes connexions (mobile)",
+      "is_interactive": true
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-02T10:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "rowA": {
+      "kind": "title1",
+      "maxW": 2380,
+      "text": "Émargement & espace apprenant",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "rowB": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Back-office scolarité",
+      "w": 240,
+      "x": 0,
+      "y": 1040
+    },
+    "rowC": {
+      "kind": "title1",
+      "maxW": 4950,
+      "text": "Apprenant & alternance",
+      "w": 240,
+      "x": 0,
+      "y": 2540
+    },
+    "rowD": {
+      "kind": "title1",
+      "maxW": 3430,
+      "text": "Facturation",
+      "w": 240,
+      "x": 0,
+      "y": 4140
+    },
+    "rowE": {
+      "kind": "title1",
+      "maxW": 4950,
+      "text": "Recrutement",
+      "x": 0,
+      "y": 5500
+    },
+    "rowF": {
+      "kind": "title1",
+      "maxW": 3900,
+      "text": "Suivi en entreprise, jurys & intervenant",
+      "x": 0,
+      "y": 6900
+    },
+    "rowG": {
+      "kind": "title1",
+      "maxW": 3900,
+      "text": "Portails externes & communication",
+      "x": 0,
+      "y": 8300
+    },
+    "rowH": {
+      "kind": "title1",
+      "maxW": 6000,
+      "text": "Administration & plateforme",
+      "x": 0,
+      "y": 9600
+    },
+    "rowI": {
+      "kind": "title1",
+      "maxW": 3900,
+      "text": "Pédagogie : cahier de texte, devoirs & examens",
+      "x": 0,
+      "y": 10900
+    },
+    "rowJ": {
+      "kind": "title1",
+      "maxW": 4950,
+      "text": "Qualité, handicap & pilotage",
+      "x": 0,
+      "y": 12200
+    },
+    "rowK": {
+      "kind": "title1",
+      "maxW": 7990,
+      "text": "API & connecteurs",
+      "x": 0,
+      "y": 13500
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "EmargementMobile.dc.html",
+    "AccueilApprenant.dc.html",
+    "Dashboard.dc.html",
+    "Edt.dc.html",
+    "Notes.dc.html",
+    "FicheApprenant.dc.html",
+    "Contrats.dc.html",
+    "DossierContrat.dc.html",
+    "PartieEmployeur.dc.html",
+    "PlanFinancement.dc.html",
+    "Factures.dc.html",
+    "EspacePayeur.dc.html",
+    "Candidatures.dc.html",
+    "DossierCandidat.dc.html",
+    "GrilleEvaluation.dc.html",
+    "Entonnoir.dc.html",
+    "SuiviAlternants.dc.html",
+    "LivretPeriode.dc.html",
+    "GrilleDeliberation.dc.html",
+    "AccueilIntervenant.dc.html",
+    "EspaceEntreprise.dc.html",
+    "EspaceTuteur.dc.html",
+    "Notifications.dc.html",
+    "Annonce.dc.html",
+    "Demarrage.dc.html",
+    "RolesPermissions.dc.html",
+    "Abonnement.dc.html",
+    "ClientsPlateforme.dc.html",
+    "SaisieSeance.dc.html",
+    "MesDevoirs.dc.html",
+    "Correction.dc.html",
+    "PilotageEpreuve.dc.html",
+    "TableauQualite.dc.html",
+    "EnqueteMobile.dc.html",
+    "PlanAmenagements.dc.html",
+    "ExportLibre.dc.html",
+    "ClesApi.dc.html",
+    "Webhooks.dc.html",
+    "Connecteurs.dc.html",
+    "Sso.dc.html",
+    "CorrespondanceMoodle.dc.html",
+    "MesConnexions.dc.html"
+  ],
+  "pages": [],
+  "title": "Maquettes Scolaly — MVP"
+}

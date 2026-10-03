@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Saisie des notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.cell{outline:none}
+.cell:hover{background-color:var(--surface2)}
+.cell:focus{box-shadow:inset 0 0 0 2px var(--accent);background-color:var(--accent-soft)}
+.grow:hover{background:var(--bg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">BTS MCO 2 · Marketing opérationnel · Semestre 1</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Contrôle continu n° 2</h1>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ok)">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+Enregistré automatiquement
+</div>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Coller depuis Excel</button>
+<button class="btn" type="button" onClick="{{togglePublish}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; font-size: 14px; font-weight: 600; {{publishStyle}}">{{publishLabel}}</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{stats}}" as="s" hint-placeholder-count="5">
+<div style="padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12.5px; color: var(--muted)">{{s.label}}</span>
+<span class="num" style="font-size: 28px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: {{s.color}}">{{s.value}}</span>
+</div>
+</sc-for>
+</div>
+
+<div class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<table style="width: 100%; min-width: 820px; border-collapse: collapse; font-size: 14px">
+<thead>
+<tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Apprenant</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); width: 110px">Écrit <span class="num" style="color: var(--subtle)">· 50 %</span></th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); width: 110px">Oral <span class="num" style="color: var(--subtle)">· 20 %</span></th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); width: 110px">Projet <span class="num" style="color: var(--subtle)">· 30 %</span></th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); width: 100px">Moyenne</th>
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Appréciation</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+<tr class="grow">
+<td style="padding: 6px 16px; border-bottom: 1px solid var(--line)">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 28px; height: 28px; border-radius: 8px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600">{{r.initials}}</span>
+<span style="font-weight: 500">{{r.name}}</span>
+<sc-if value="{{r.alt}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: var(--surface2); color: var(--muted)">alternant</span></sc-if>
+</div>
+</td>
+<td style="padding: 4px 8px; border-bottom: 1px solid var(--line)"><input class="cell num mono" aria-label="{{r.e.aria}}" value="{{r.e.val}}" onChange="{{r.e.onChange}}" style="width: 88px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 0; font-size: 14px; color: {{r.e.fg}}; background: {{r.e.bg}}"></td>
+<td style="padding: 4px 8px; border-bottom: 1px solid var(--line)"><input class="cell num mono" aria-label="{{r.o.aria}}" value="{{r.o.val}}" onChange="{{r.o.onChange}}" style="width: 88px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 0; font-size: 14px; color: {{r.o.fg}}; background: {{r.o.bg}}"></td>
+<td style="padding: 4px 8px; border-bottom: 1px solid var(--line)"><input class="cell num mono" aria-label="{{r.p.aria}}" value="{{r.p.val}}" onChange="{{r.p.onChange}}" style="width: 88px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 0; font-size: 14px; color: {{r.p.fg}}; background: {{r.p.bg}}"></td>
+<td style="padding: 4px 8px; border-bottom: 1px solid var(--line)"><span class="num mono" style="display: inline-block; min-width: 56px; padding: 5px 8px; border-radius: 8px; font-weight: 600; text-align: center; background: {{r.avgBg}}; color: {{r.avgFg}}">{{r.avg}}</span></td>
+<td style="padding: 4px 16px 4px 8px; border-bottom: 1px solid var(--line)"><input class="cell" aria-label="{{r.appAria}}" value="{{r.app}}" onChange="{{r.onApp}}" placeholder="Ajouter une appréciation…" style="width: 100%; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 0; font-size: 13.5px; color: var(--fg); background: transparent"></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+
+<div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted)">
+<span><span class="mono" style="padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface)">↵</span> ligne suivante</span>
+<span><span class="mono" style="padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface)">Tab</span> colonne suivante</span>
+<span><span class="mono" style="padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface)">ABS</span> absent, compte 0</span>
+<span><span class="mono" style="padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface)">DISP</span> dispensé, neutralisé</span>
+<span style="color: var(--bad)">Une note hors barème (0 à 20) s'affiche en rouge et n'est pas enregistrée.</span>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const src = [
+      ['Inès Benali', '15,5', '16', '14', 'Très bon travail, analyse précise.', true],
+      ['Lucas Martin', '11', '12,5', '13', '', true],
+      ['Chloé Nguyen', '17', '15', '16,5', 'Excellent, continuez ainsi.', false],
+      ['Yanis Haddad', '8,5', '10', '12', 'Des bases à consolider.', true],
+      ['Emma Rousseau', '13', '14', '', '', true],
+      ['Noah Petit', 'ABS', '', '', '', true],
+      ['Léa Fontaine', '14,5', '13,5', '15', '', false],
+      ['Adam Diallo', '12', 'DISP', '11,5', '', true],
+      ['Manon Girard', '16', '17,5', '15', 'Oral remarquable.', true],
+      ['Hugo Lefèvre', '9', '11', '10,5', '', true],
+      ['Sarah Cohen', '22', '14', '13', '', false],
+      ['Enzo Moreau', '', '', '', '', true]
+    ];
+    this.state = { publish: false, rows: src.map((x) => ({ name: x[0], e: x[1], o: x[2], p: x[3], app: x[4], alt: x[5] })) };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  parse(v) {
+    const t = String(v).trim().toUpperCase();
+    if (t === '') return { kind: 'empty' };
+    if (t === 'ABS') return { kind: 'num', n: 0, code: true };
+    if (t === 'DISP') return { kind: 'disp' };
+    const n = Number(t.replace(',', '.'));
+    if (isNaN(n) || n < 0 || n > 20) return { kind: 'bad' };
+    return { kind: 'num', n };
+  }
+  fr(n) {
+    return n.toFixed(1).replace('.', ',').replace(',0', '');
+  }
+  set(i, key, value) {
+    const rows = this.state.rows.map((r, j) => j === i ? { ...r, [key]: value } : r);
+    this.setState({ rows });
+  }
+  renderVals() {
+    const w = { e: 0.5, o: 0.2, p: 0.3 };
+    const labels = { e: 'Écrit', o: 'Oral', p: 'Projet' };
+    const avgs = [];
+    let filled = 0, errors = 0;
+    const rows = this.state.rows.map((r, i) => {
+      const cell = (k) => {
+        const p = this.parse(r[k]);
+        if (p.kind === 'bad') errors++;
+        return {
+          val: r[k],
+          aria: labels[k] + ' — ' + r.name,
+          fg: p.kind === 'bad' ? 'var(--bad)' : (p.code || p.kind === 'disp') ? 'var(--muted)' : 'var(--fg)',
+          bg: p.kind === 'bad' ? 'var(--bad-soft)' : 'transparent',
+          onChange: (ev) => this.set(i, k, ev.target.value)
+        };
+      };
+      let sum = 0, ws = 0, missing = false;
+      ['e', 'o', 'p'].forEach((k) => {
+        const p = this.parse(r[k]);
+        if (p.kind === 'num') { sum += p.n * w[k]; ws += w[k]; }
+        else if (p.kind !== 'disp') missing = true;
+      });
+      let avg = '—', avgBg = 'transparent', avgFg = 'var(--subtle)';
+      if (!missing && ws > 0) {
+        const a = sum / ws;
+        avgs.push(a);
+        filled++;
+        avg = this.fr(a);
+        avgBg = a < 10 ? 'var(--bad-soft)' : a >= 14 ? 'var(--ok-soft)' : 'var(--surface2)';
+        avgFg = a < 10 ? 'var(--bad)' : a >= 14 ? 'var(--ok)' : 'var(--fg)';
+      }
+      return {
+        name: r.name, alt: r.alt,
+        initials: r.name.split(' ').map((x) => x[0]).join(''),
+        e: cell('e'), o: cell('o'), p: cell('p'),
+        avg, avgBg, avgFg,
+        app: r.app, appAria: 'Appréciation — ' + r.name,
+        onApp: (ev) => this.set(i, 'app', ev.target.value)
+      };
+    });
+    const mean = avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : 0;
+    const stats = [
+      { label: 'Moyenne de classe', value: avgs.length ? this.fr(mean) : '—', color: 'var(--fg)' },
+      { label: 'Note la plus haute', value: avgs.length ? this.fr(Math.max.apply(null, avgs)) : '—', color: 'var(--ok)' },
+      { label: 'Note la plus basse', value: avgs.length ? this.fr(Math.min.apply(null, avgs)) : '—', color: 'var(--bad)' },
+      { label: 'Moyennes complètes', value: filled + ' / ' + rows.length, color: 'var(--fg)' },
+      { label: 'Erreurs de saisie', value: String(errors), color: errors ? 'var(--bad)' : 'var(--ok)' }
+    ];
+    const pub = this.state.publish;
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Notes & évaluations'),
+      rows, stats,
+      publishLabel: pub ? 'Publiées aux apprenants' : 'Publier aux apprenants',
+      publishStyle: pub ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      togglePublish: () => this.setState({ publish: !this.state.publish })
+    };
+  }
+}
+</script>
+</body>
+</html>

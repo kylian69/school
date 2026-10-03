@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Répondre à une enquête</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.sc button,.sc textarea{font-family:inherit}
+.sc button{cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+.pop{animation:pop .45s ease-out both}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; padding: 22px 20px 26px; display: flex; flex-direction: column; gap: 18px">
+<sc-if value="{{asking}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted)"><span>Satisfaction · Droit des affaires</span><span class="num">{{progress}}</span></div>
+<div style="display: flex; gap: 4px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="4"><div style="flex-grow: 1; height: 4px; border-radius: 999px; background: {{b.bg}}"></div></sc-for>
+</div>
+<span style="align-self: flex-start; display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 500">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+Anonyme : votre nom n'est jamais transmis
+</span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+<span style="font-size: 24px; font-weight: 650; letter-spacing: -0.03em; line-height: 1.2">{{q.text}}</span>
+<sc-if value="{{q.isScale}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{q.opts}}" as="o" hint-placeholder-count="5">
+<button type="button" onClick="{{o.pick}}" style="height: 54px; border-radius: 14px; padding: 0 16px; display: flex; align-items: center; gap: 12px; text-align: left; font-size: 15px; font-weight: 500; {{o.style}}">
+<span class="num" style="width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; {{o.badge}}">{{o.n}}</span>{{o.label}}
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{q.isNps}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{q.opts}}" as="o" hint-placeholder-count="11">
+<button type="button" onClick="{{o.pick}}" class="num" style="height: 48px; border-radius: 12px; font-size: 15px; font-weight: 600; {{o.style}}">{{o.n}}</button>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>0 · pas du tout</span><span>10 · tout à fait</span></div>
+</div>
+</sc-if>
+<sc-if value="{{q.isText}}" hint-placeholder-val="{{ false }}">
+<textarea value="{{comment}}" onChange="{{setComment}}" rows="6" aria-label="Votre commentaire" placeholder="Facultatif · ce qui vous a aidé, ce qui pourrait être amélioré" style="padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 15px; line-height: 1.5; resize: none"></textarea>
+</sc-if>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px">
+<button type="button" onClick="{{prev}}" style="height: 52px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 15px">Retour</button>
+<button class="btn" type="button" onClick="{{next}}" style="height: 52px; border-radius: 14px; border: 0; font-size: 15px; font-weight: 600; {{nextStyle}}">{{nextLabel}}</button>
+</div>
+<span style="text-align: center; font-size: 12px; color: var(--muted)">Vous pouvez quitter et reprendre plus tard.</span>
+</sc-if>
+
+<sc-if value="{{finished}}" hint-placeholder-val="{{ false }}">
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center">
+<div class="pop" style="width: 100px; height: 100px; border-radius: 30px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center">
+<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</div>
+<span style="font-size: 24px; font-weight: 650; letter-spacing: -0.03em">Merci pour votre avis</span>
+<span style="font-size: 14.5px; line-height: 1.5; color: var(--muted)">Les résultats sont partagés avec l'équipe pédagogique dès 5 réponses, sans jamais afficher qui a répondu quoi.</span>
+<button type="button" onClick="{{restart}}" style="margin-top: 20px; height: 48px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Rejouer la démo</button>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { i: 0, ans: {}, comment: '' };
+  }
+  renderVals() {
+    const st = this.state;
+    const Q = [
+      { kind: 'scale', text: 'Les objectifs du module étaient-ils clairs ?' },
+      { kind: 'scale', text: 'Les cas pratiques vous ont-ils aidé à comprendre ?' },
+      { kind: 'nps', text: 'Recommanderiez-vous ce module à un autre apprenant ?' },
+      { kind: 'text', text: 'Un commentaire pour l’intervenante ?' }
+    ];
+    const done = st.i >= Q.length;
+    const cur = Q[Math.min(st.i, Q.length - 1)];
+    const lab = ['Pas du tout', 'Plutôt non', 'Moyennement', 'Plutôt oui', 'Tout à fait'];
+    const a = st.ans[st.i];
+    let opts = [];
+    if (cur.kind === 'scale') opts = lab.map((l, j) => ({
+      n: String(j + 1), label: l,
+      style: a === j ? 'border: 2px solid var(--accent); background: var(--accent-soft); color: var(--fg)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      badge: a === j ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--muted)',
+      pick: () => this.setState({ ans: { ...this.state.ans, [this.state.i]: j } })
+    }));
+    if (cur.kind === 'nps') opts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((j) => ({
+      n: String(j),
+      style: a === j ? 'border: 0; background: var(--accent); color: var(--accent-fg)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      pick: () => this.setState({ ans: { ...this.state.ans, [this.state.i]: j } })
+    }));
+    const ready = cur.kind === 'text' || a !== undefined;
+    return {
+      theme: this.props.theme ?? 'light',
+      asking: !done, finished: done,
+      progress: Math.min(st.i + 1, Q.length) + ' / ' + Q.length,
+      bars: Q.map((q, j) => ({ bg: j <= st.i ? 'var(--accent)' : 'var(--line)' })),
+      q: { text: cur.text, isScale: cur.kind === 'scale', isNps: cur.kind === 'nps', isText: cur.kind === 'text', opts },
+      comment: st.comment, setComment: (e) => this.setState({ comment: e.target.value }),
+      nextLabel: st.i === Q.length - 1 ? 'Envoyer' : 'Suivant',
+      nextStyle: ready ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--subtle); cursor: not-allowed',
+      next: () => { if (ready) this.setState({ i: this.state.i + 1 }); },
+      prev: () => this.setState({ i: Math.max(0, this.state.i - 1) }),
+      restart: () => this.setState({ i: 0, ans: {}, comment: '' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Correspondance Moodle</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.trow:hover{background:var(--bg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="12">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">KB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">Karim Benoît</span>
+<span style="font-size: 12px; color: var(--muted)">Intervenant</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Marketing opérationnel · BTS MCO 2 · relié au cours Moodle « MCO2-MKOP »</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Correspondance Moodle</h1>
+</div>
+<span style="font-size: 12.5px; color: var(--ok)">Dernière synchronisation il y a 6 min</span>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 12px; align-items: start">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0 0 4px; font-size: 16px; font-weight: 600">Éléments notés Moodle → évaluations Scolaly</h2>
+<sc-for list="{{maps}}" as="m" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: {{m.bg}}">
+<span style="font-size: 13px; font-weight: 500">{{m.moodle}}</span>
+<span style="color: var(--muted); text-align: center">→</span>
+<span style="font-size: 13px; color: {{m.fg}}">{{m.scolaly}}</span>
+</div>
+</sc-for>
+<span style="font-size: 12px; color: var(--muted)">Les éléments non reliés restent dans Moodle et ne comptent pas dans la moyenne.</span>
+</section>
+
+<section class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Notes remontées · Quiz chapitre 3</span><span style="font-size: 12.5px; color: var(--muted)">→ évaluation Scolaly « CC2 · Projet » · à valider avant report</span></div>
+<button class="btn" type="button" onClick="{{report}}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 0; font-size: 13.5px; font-weight: 600; {{reportStyle}}">{{reportLabel}}</button>
+</div>
+<table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13.5px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 10px 16px; font-weight: 500; border-bottom: 1px solid var(--line); width: 30px"><input type="checkbox" aria-label="Tout sélectionner" checked="{{all}}" onChange="{{toggleAll}}" style="width: 16px; height: 16px; accent-color: var(--accent)"></th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Apprenant</th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">Moodle</th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">Scolaly actuelle</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Remarque</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<tr class="trow">
+<td style="padding: 9px 16px; border-bottom: 1px solid var(--line)"><input type="checkbox" aria-label="{{r.aria}}" checked="{{r.on}}" onChange="{{r.toggle}}" style="width: 16px; height: 16px; accent-color: var(--accent)"></td>
+<td style="padding: 9px 8px; border-bottom: 1px solid var(--line); font-weight: 500">{{r.name}}</td>
+<td class="num mono" style="padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: right; font-weight: 600">{{r.moodle}}</td>
+<td class="num mono" style="padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: right; color: var(--muted)">{{r.cur}}</td>
+<td style="padding: 9px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: {{r.noteFg}}">{{r.note}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: { 0: 1, 1: 1, 2: 1, 3: 1, 5: 1, 6: 1 }, done: false };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const maps = [
+      ['Quiz chapitre 1', 'CC1 · Écrit'], ['Quiz chapitre 3', 'CC2 · Projet'], ['Devoir « Plan de merchandising »', 'CC2 · Écrit'], ['Forum · participation', null]
+    ].map((m) => ({ moodle: m[0], scolaly: m[1] || 'non relié', bg: m[1] ? 'var(--surface2)' : 'transparent', fg: m[1] ? 'var(--fg)' : 'var(--subtle)' }));
+    const R = [
+      ['Inès Benali', '14,5', '—', ''], ['Lucas Martin', '12', '—', ''], ['Chloé Nguyen', '16,5', '—', ''], ['Yanis Haddad', '11', '—', ''],
+      ['Emma Rousseau', '15', '13', 'Diffère de la note déjà saisie : à vérifier'], ['Noah Petit', '—', 'ABS', 'Absent au quiz : rien à reporter'], ['Léa Fontaine', '13,5', '—', ''], ['Adam Diallo', '9,5', '—', '']
+    ];
+    const rows = R.map((r, i) => ({
+      name: r[0], moodle: r[1], cur: st.done && st.sel[i] ? r[1] : r[2], note: st.done && st.sel[i] ? 'Reporté ✓' : r[3],
+      noteFg: st.done && st.sel[i] ? 'var(--ok)' : r[3] ? 'var(--warn)' : 'var(--muted)',
+      on: !!st.sel[i], aria: 'Reporter la note de ' + r[0],
+      toggle: () => this.setState({ sel: { ...this.state.sel, [i]: this.state.sel[i] ? 0 : 1 } })
+    }));
+    const n = Object.keys(st.sel).filter((k) => st.sel[k]).length;
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Notes & évaluations'),
+      maps, rows,
+      all: n === R.length,
+      toggleAll: () => { const s = {}; if (n !== R.length) R.forEach((r, i) => { s[i] = 1; }); this.setState({ sel: s }); },
+      reportLabel: st.done ? n + ' notes reportées ✓' : 'Reporter ' + n + ' notes dans Scolaly',
+      reportStyle: st.done ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      report: () => this.setState({ done: !this.state.done })
+    };
+  }
+}
+</script>
+</body>
+</html>

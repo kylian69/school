@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mes connexions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc a{text-decoration:none}
+.sc button{font-family:inherit;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; padding: 22px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="AccueilIntervenant.dc.html" aria-label="Retour" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--fg)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+</a>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 22px; font-weight: 650; letter-spacing: -0.03em">Mes connexions</span>
+<span style="font-size: 12.5px; color: var(--muted)">Sophie Arnaud · intervenante</span>
+</div>
+</div>
+
+<div style="padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 40px; height: 40px; border-radius: 12px; background: #1F4E8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700">M</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14.5px; font-weight: 600">Compte Microsoft</span><span class="mono" style="font-size: 12px; color: var(--muted)">s.arnaud@isca-lyon.example</span></div>
+<span style="font-size: 12px; font-weight: 600; color: var(--ok)">Relié</span>
+</div>
+<span style="font-size: 12.5px; color: var(--muted)">Utilisé pour la connexion unique et l'agenda.</span>
+</div>
+
+<div style="padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<span style="font-size: 15px; font-weight: 600">Agenda</span>
+<sc-for list="{{toggles}}" as="t" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500">{{t.label}}</span><span style="font-size: 12px; color: var(--muted)">{{t.sub}}</span></div>
+<button type="button" role="switch" aria-label="{{t.label}}" onClick="{{t.toggle}}" style="width: 40px; height: 24px; border-radius: 999px; border: 0; padding: 2px; display: flex; flex-shrink: 0; {{t.track}}"><span style="width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF"></span></button>
+</div>
+</sc-for>
+</div>
+
+<div style="padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 15px; font-weight: 600">Applications autorisées</span>
+<sc-for list="{{apps}}" as="a" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 12px; padding-top: 6px">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500; {{a.fade}}">{{a.name}}</span><span style="font-size: 12px; color: var(--muted)">{{a.sub}}</span></div>
+<button type="button" onClick="{{a.revoke}}" style="height: 34px; padding: 0 12px; border-radius: 10px; font-size: 12.5px; font-weight: 600; {{a.style}}">{{a.label}}</button>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 12px; line-height: 1.5; color: var(--muted)">Scolaly ne lit jamais le contenu de vos rendez-vous : seulement les plages occupées, pour éviter les conflits d'emploi du temps.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { edt: true, busy: true, revoked: {} };
+  }
+  renderVals() {
+    const st = this.state;
+    const sw = (on) => on ? 'background: var(--accent); justify-content: flex-end' : 'background: var(--line); justify-content: flex-start';
+    const toggles = [
+      { k: 'edt', label: 'Mes cours dans Outlook', sub: 'mis à jour en continu · annulations comprises' },
+      { k: 'busy', label: 'Partager mes disponibilités', sub: 'la scolarité voit les plages occupées, pas leur contenu' }
+    ].map((t) => ({ ...t, track: sw(st[t.k]), toggle: () => this.setState({ [t.k]: !this.state[t.k] }) }));
+    const apps = [
+      { id: 1, name: 'Moodle ISCA', sub: 'lecture de mes cours · autorisée le 01/09' },
+      { id: 2, name: 'Application de prise de notes', sub: 'lecture de mon EDT · autorisée le 14/09' }
+    ].map((a) => {
+      const r = !!st.revoked[a.id];
+      return {
+        ...a, fade: r ? 'text-decoration: line-through; color: var(--muted)' : '',
+        label: r ? 'Révoquée' : 'Révoquer',
+        style: r ? 'border: 0; background: transparent; color: var(--muted)' : 'border: 0; background: var(--bad-soft); color: var(--bad)',
+        revoke: () => this.setState({ revoked: { ...this.state.revoked, [a.id]: true } })
+      };
+    });
+    return { theme: this.props.theme ?? 'light', toggles, apps };
+  }
+}
+</script>
+</body>
+</html>

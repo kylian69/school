@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Cahier de texte — saisie de séance</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.sc a{text-decoration:none}
+.sc button,.sc textarea,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column">
+<header style="padding: 18px 20px 14px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px">
+<a href="AccueilIntervenant.dc.html" aria-label="Retour" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--fg)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+</a>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 650">Cahier de texte</span>
+<span class="num" style="font-size: 12.5px; color: var(--muted)">Droit des affaires · BTS MCO 2 · ven. 2/10 · 09:00–12:00</span>
+</div>
+</header>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 12px; color: var(--muted)">Séquence prévue · 5 / 14</span><span style="font-size: 12px; color: var(--accent); font-weight: 500">Progression du module</span></div>
+<span style="font-size: 15px; font-weight: 600">Le contrat de vente : formation et validité</span>
+<span style="font-size: 13px; line-height: 1.45; color: var(--muted)">Conditions de validité, vices du consentement, cas pratique « Décathlon ».</span>
+<button type="button" onClick="{{asPlanned}}" style="height: 44px; border-radius: 12px; border: 0; font-size: 14px; font-weight: 600; {{planStyle}}">{{planLabel}}</button>
+</div>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Contenu réalisé
+<textarea value="{{content}}" onChange="{{setContent}}" rows="4" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; line-height: 1.45; resize: none"></textarea>
+</label>
+
+<div style="display: flex; gap: 8px">
+<button type="button" style="flex-grow: 1; height: 44px; border-radius: 12px; border: 1px dashed var(--line); background: transparent; color: var(--fg); font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"></path></svg>
+Photo du tableau
+</button>
+<button type="button" style="flex-grow: 1; height: 44px; border-radius: 12px; border: 1px dashed var(--line); background: transparent; color: var(--fg); font-size: 13.5px">Ajouter un fichier</button>
+</div>
+
+<div style="padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; font-weight: 600">Travail à faire</span>
+<button type="button" onClick="{{toggleHw}}" role="switch" aria-label="Ajouter un travail à faire" style="width: 40px; height: 24px; border-radius: 999px; border: 0; padding: 2px; display: flex; {{hwTrack}}"><span style="width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF"></span></button>
+</div>
+<sc-if value="{{hw}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13.5px">Cas pratique n° 3 : rédiger l'analyse en 1 page</span>
+<div style="display: flex; gap: 6px; font-size: 12.5px">
+<span class="num" style="padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600">Pour le lun. 5/10</span>
+<span style="padding: 4px 10px; border-radius: 999px; background: var(--surface2); color: var(--muted)">Rendu en ligne</span>
+<span style="padding: 4px 10px; border-radius: 999px; background: var(--surface2); color: var(--muted)">~45 min</span>
+</div>
+<span style="font-size: 12px; color: var(--warn)">Charge du groupe lundi : déjà 2 h de travail prévues</span>
+</div>
+</sc-if>
+</div>
+</div>
+
+<footer style="padding: 12px 20px 22px; background: var(--surface); border-top: 1px solid var(--line)">
+<button class="btn" type="button" onClick="{{save}}" style="width: 100%; height: 52px; border-radius: 14px; border: 0; font-size: 15px; font-weight: 600; {{saveStyle}}">{{saveLabel}}</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { planned: false, content: '', hw: true, saved: false };
+  }
+  renderVals() {
+    const st = this.state;
+    const sw = (on) => on ? 'background: var(--accent); justify-content: flex-end' : 'background: var(--line); justify-content: flex-start';
+    return {
+      theme: this.props.theme ?? 'light',
+      planLabel: st.planned ? 'Fait comme prévu ✓' : 'Fait comme prévu',
+      planStyle: st.planned ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent-soft); color: var(--accent)',
+      asPlanned: () => this.setState({ planned: true, content: 'Conditions de validité du contrat, vices du consentement (erreur, dol, violence). Cas pratique « Décathlon » traité en groupes de 4.' }),
+      content: st.content, setContent: (e) => this.setState({ content: e.target.value }),
+      hw: st.hw, hwTrack: sw(st.hw), toggleHw: () => this.setState({ hw: !this.state.hw }),
+      saveLabel: st.saved ? 'Séance enregistrée · visible par le groupe' : 'Enregistrer la séance',
+      saveStyle: st.saved ? 'background: var(--ok-soft); color: var(--ok)' : st.content ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--subtle); cursor: not-allowed',
+      save: () => { if (st.content) this.setState({ saved: !this.state.saved }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

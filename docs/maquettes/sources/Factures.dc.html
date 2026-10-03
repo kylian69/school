@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Factures et impayés</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.trow:hover{background:var(--bg)}
+.lnk{color:var(--accent);text-decoration:none;font-weight:500}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Entité facturante : ISCA Business School SAS · exercice 2026–2027</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Factures</h1>
+</div>
+<a class="ghost" href="PlanFinancement.dc.html" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; display: flex; align-items: center; text-decoration: none">Plans de financement</a>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Export comptable</button>
+</div>
+
+<div class="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Facturé en septembre</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">412 380 €</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Encaissé</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">356 910 €</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between"><span style="font-size: 12.5px; color: var(--muted)">Impayés</span><span class="num" style="font-size: 12.5px; font-weight: 600; color: var(--bad)">48 270 €</span></div>
+<div style="display: flex; height: 10px; gap: 2px; border-radius: 999px; overflow: hidden">
+<div title="0–30 j : 29 400 €" style="width: 61%; background: var(--warn)"></div>
+<div title="31–60 j : 11 200 €" style="width: 23%; background: #D9822B"></div>
+<div title="61–90 j : 4 920 €" style="width: 10%; background: var(--bad)"></div>
+<div title="+90 j : 2 750 €" style="width: 6%; background: #7A1324"></div>
+</div>
+<div class="num" style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted)"><span>0–30 j</span><span>31–60</span><span>61–90</span><span>+90</span></div>
+</div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--accent)">Factur-X à déposer sur la plateforme</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--accent)">18</span></div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px dashed var(--accent); flex-wrap: wrap">
+<div style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"></path></svg>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 600">{{batch.title}}</span>
+<span style="font-size: 12.5px; color: var(--muted)">{{batch.sub}}</span>
+</div>
+<button class="ghost" type="button" onClick="{{togglePreview}}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 13.5px">{{previewLabel}}</button>
+<button class="btn" type="button" onClick="{{emit}}" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 0; font-size: 13.5px; font-weight: 600; {{emitStyle}}">{{emitLabel}}</button>
+</div>
+
+<sc-if value="{{showPreview}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{preview}}" as="p" hint-placeholder-count="3">
+<div style="padding: 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<div style="display: flex; justify-content: space-between"><span class="mono" style="color: var(--muted)">{{p.num}}</span><span class="num" style="font-weight: 600">{{p.amount}}</span></div>
+<span style="font-weight: 600">{{p.payer}}</span>
+<span style="color: var(--muted)">{{p.line}}</span>
+<span style="font-size: 12px; color: var(--muted)">{{p.mention}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line)">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<button type="button" onClick="{{t.pick}}" style="height: 40px; padding: 0 12px; border: 0; background: transparent; font-size: 13.5px; font-weight: 500; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; {{t.style}}">{{t.label}}<span class="num" style="font-size: 11.5px; padding: 1px 6px; border-radius: 999px; background: var(--surface2); color: var(--muted)">{{t.count}}</span></button>
+</sc-for>
+</div>
+
+<div class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13.5px">
+<thead>
+<tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Numéro</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Payeur</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Objet</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Échéance</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">Montant</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Statut</th>
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Plateforme</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<tr class="trow">
+<td class="mono num" style="padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px">{{r.num}}</td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line); font-weight: 500">{{r.payer}}</td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{r.obj}}</td>
+<td class="num" style="padding: 12px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{r.due}}</td>
+<td class="num" style="padding: 12px 8px; border-bottom: 1px solid var(--line); text-align: right; font-weight: 600">{{r.amount}}</td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line)"><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{r.bg}}; color: {{r.fg}}">{{r.status}}</span></td>
+<td style="padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: {{r.platFg}}">{{r.plat}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'Toutes', preview: false, emitted: false };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const S = {
+      paid: { status: 'Payée', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
+      sent: { status: 'Émise', bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+      late: { status: 'En retard', bg: 'var(--bad-soft)', fg: 'var(--bad)' },
+      credit: { status: 'Avoir', bg: 'var(--surface2)', fg: 'var(--muted)' }
+    };
+    const P = {
+      done: { plat: 'Déposée', platFg: 'var(--ok)' },
+      todo: { plat: 'À déposer', platFg: 'var(--accent)' },
+      na: { plat: 'Particulier · e-reporting', platFg: 'var(--muted)' }
+    };
+    const all = [
+      { num: '2026-F-000431', payer: 'OPCO Commerce', obj: 'Inès Benali · prise en charge échéance 3', due: '15/10/2026', amount: '3 415,00 €', k: 'sent', p: 'todo' },
+      { num: '2026-F-000430', payer: 'Famille Faure', obj: 'Clara Faure · échéance 2 / 3', due: '05/10/2026', amount: '822,22 €', k: 'sent', p: 'na' },
+      { num: '2026-F-000418', payer: 'Atlas', obj: 'Louise Bertrand · contrat pro échéance 1', due: '15/10/2026', amount: '2 700,00 €', k: 'paid', p: 'done' },
+      { num: '2026-F-000402', payer: 'Crédit Agricole Centre-Est', obj: 'Louise Bertrand · reste à charge', due: '01/10/2026', amount: '900,00 €', k: 'paid', p: 'done' },
+      { num: '2026-F-000377', payer: 'Famille Mansouri', obj: 'Rayan Mansouri · échéance 1 / 3', due: '05/09/2026', amount: '1 266,67 €', k: 'late', p: 'na' },
+      { num: '2026-F-000351', payer: 'Région Auvergne-Rhône-Alpes', obj: 'Bourses · lot de septembre', due: '31/08/2026', amount: '18 000,00 €', k: 'late', p: 'done' },
+      { num: '2026-A-000012', payer: 'Famille Robin', obj: 'Avoir sur 2026-F-000298 · abandon', due: '—', amount: '−1 150,00 €', k: 'credit', p: 'na' },
+      { num: '2026-F-000298', payer: 'Famille Robin', obj: 'Anaïs Robin · frais d’inscription', due: '05/09/2026', amount: '1 150,00 €', k: 'paid', p: 'na' }
+    ];
+    const map = { 'Toutes': null, 'Émises': 'sent', 'En retard': 'late', 'Payées': 'paid', 'Avoirs': 'credit' };
+    const tabs = Object.keys(map).map((n) => ({
+      label: n,
+      count: map[n] ? all.filter((r) => r.k === map[n]).length : all.length,
+      style: n === this.state.tab ? 'color: var(--fg); border-bottom: 2px solid var(--accent)' : 'color: var(--muted); border-bottom: 2px solid transparent',
+      pick: () => this.setState({ tab: n })
+    }));
+    const f = map[this.state.tab];
+    const rows = all.filter((r) => !f || r.k === f).map((r) => ({ ...r, ...S[r.k], ...P[r.p] }));
+    const preview = [
+      { num: '2026-F-000432', amount: '3 415,00 €', payer: 'OPCO Commerce', line: 'Tom Laurent · prise en charge échéance 3', mention: 'Exonération de TVA · formation professionnelle' },
+      { num: '2026-F-000433', amount: '822,22 €', payer: 'Famille Henry', line: 'Maxime Henry · échéance 2 / 3', mention: 'Prélèvement SEPA le 05/11 · RUM ISCA-2026-00911' },
+      { num: '2026-F-000434', amount: '2 700,00 €', payer: 'Atlas', line: 'Lucas Martin · contrat pro échéance 1', mention: 'Pièces jointes : certificat de réalisation' }
+    ];
+    const em = this.state.emitted;
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Facturation'),
+      tabs, rows, preview,
+      batch: em
+        ? { title: '24 factures émises · numéros 2026-F-000432 à 000455', sub: 'Factur-X prêts à déposer sur votre plateforme agréée · emails envoyés aux payeurs' }
+        : { title: '24 factures d’échéance prêtes pour octobre', sub: '9 OPCO · 6 entreprises · 9 familles · total 41 860 €' },
+      showPreview: this.state.preview && !em,
+      previewLabel: this.state.preview ? 'Masquer l’aperçu' : 'Aperçu',
+      togglePreview: () => this.setState({ preview: !this.state.preview }),
+      emitLabel: em ? 'Télécharger les Factur-X' : 'Émettre les 24 factures',
+      emitStyle: em ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      emit: () => this.setState({ emitted: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

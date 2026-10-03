@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Grille d'entretien</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.sc button,.sc textarea{font-family:inherit}
+.sc button{cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+.pop{animation:pop .45s ease-out both}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column">
+<sc-if value="{{editing}}" hint-placeholder-val="{{ true }}">
+<header style="padding: 18px 20px 14px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600">YA</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 650">Yasmine Amrani</span>
+<span style="font-size: 12.5px; color: var(--muted)">Entretien BTS MCO · mar. 29/09 · 10:00</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end">
+<span class="num" style="font-size: 24px; font-weight: 650; letter-spacing: -0.04em">{{avg}}</span>
+<span style="font-size: 11px; color: var(--muted)">moyenne / 5</span>
+</div>
+</header>
+<div style="flex-grow: 1; overflow: hidden; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{crit}}" as="c" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 550">{{c.label}}</span><span style="color: var(--muted); font-size: 12.5px">{{c.hint}}</span></div>
+<div role="radiogroup" aria-label="{{c.label}}" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{c.opts}}" as="o" hint-placeholder-count="5">
+<button type="button" role="radio" onClick="{{o.pick}}" aria-label="{{o.aria}}" class="num" style="height: 44px; border-radius: 12px; font-size: 15px; font-weight: 600; {{o.style}}">{{o.n}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{avis}}" as="a" hint-placeholder-count="3">
+<button type="button" onClick="{{a.pick}}" style="height: 40px; border-radius: 12px; font-size: 13px; font-weight: 600; {{a.style}}">{{a.label}}</button>
+</sc-for>
+</div>
+<textarea value="{{comment}}" onChange="{{setComment}}" rows="3" aria-label="Commentaire" placeholder="Commentaire libre (visible par le jury d'admission)" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; resize: none"></textarea>
+</div>
+<footer style="padding: 12px 20px 22px; background: var(--surface); border-top: 1px solid var(--line)">
+<button class="btn" type="button" onClick="{{send}}" style="width: 100%; height: 52px; border-radius: 14px; border: 0; font-size: 15px; font-weight: 600; {{sendStyle}}">{{sendLabel}}</button>
+</footer>
+</sc-if>
+<sc-if value="{{sent}}" hint-placeholder-val="{{ false }}">
+<div style="height: 844px; box-sizing: border-box; padding: 24px 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center">
+<div style="flex-grow: 1"></div>
+<div class="pop" style="width: 100px; height: 100px; border-radius: 30px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center">
+<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</div>
+<span style="font-size: 24px; font-weight: 650; letter-spacing: -0.03em">Évaluation envoyée</span>
+<span style="font-size: 14.5px; line-height: 1.5; color: var(--muted)">Moyenne {{avg}} / 5. Prochain entretien : Omar Benhaddou, mar. 6/10 à 14:30.</span>
+<div style="flex-grow: 1"></div>
+<button type="button" onClick="{{again}}" style="width: 100%; height: 52px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 15px">Rejouer la démo</button>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { notes: { 0: 5, 1: 4, 2: 4 }, avis: 'Favorable', comment: '', sent: false };
+  }
+  renderVals() {
+    const st = this.state;
+    const defs = [['Motivation', 'coef. 2'], ['Projet professionnel', 'coef. 2'], ['Communication orale', 'coef. 1'], ['Connaissance du métier', 'coef. 1'], ['Disponibilité pour l’alternance', 'coef. 1']];
+    const coef = [2, 2, 1, 1, 1];
+    let sum = 0, w = 0;
+    const crit = defs.map((d, i) => {
+      const v = st.notes[i];
+      if (v) { sum += v * coef[i]; w += coef[i]; }
+      return {
+        label: d[0], hint: d[1],
+        opts: [1, 2, 3, 4, 5].map((n) => ({
+          n: String(n), aria: d[0] + ' : ' + n + ' sur 5',
+          style: v === n ? 'border: 0; background: var(--accent); color: var(--accent-fg)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+          pick: () => this.setState({ notes: { ...this.state.notes, [i]: n } })
+        }))
+      };
+    });
+    const complete = Object.keys(st.notes).length === defs.length;
+    const tones = { Favorable: ['var(--ok-soft)', 'var(--ok)'], 'Réservé': ['var(--warn-soft)', 'var(--warn)'], 'Défavorable': ['var(--bad-soft)', 'var(--bad)'] };
+    const avis = Object.keys(tones).map((k) => ({
+      label: k,
+      style: k === st.avis ? 'border: 0; background: ' + tones[k][0] + '; color: ' + tones[k][1] : 'border: 1px solid var(--line); background: var(--surface); color: var(--muted)',
+      pick: () => this.setState({ avis: k })
+    }));
+    return {
+      theme: this.props.theme ?? 'light',
+      crit, avis,
+      avg: w ? (sum / w).toFixed(1).replace('.', ',') : '—',
+      comment: st.comment,
+      setComment: (e) => this.setState({ comment: e.target.value }),
+      editing: !st.sent, sent: st.sent,
+      sendLabel: complete ? 'Envoyer l’évaluation' : 'Noter les ' + (defs.length - Object.keys(st.notes).length) + ' critères restants',
+      sendStyle: complete ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--subtle); cursor: not-allowed',
+      send: () => { if (complete) this.setState({ sent: true }); },
+      again: () => this.setState({ notes: { 0: 5, 1: 4, 2: 4 }, sent: false, comment: '' })
+    };
+  }
+}
+</script>
+</body>
+</html>

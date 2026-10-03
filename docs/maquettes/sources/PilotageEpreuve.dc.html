@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Épreuve en ligne — pilotage en séance</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc qgrid {{theme}}" style="min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column">
+<header style="display: flex; align-items: center; gap: 18px; padding: 16px 28px; border-bottom: 1px solid var(--line); background: var(--surface); flex-wrap: wrap">
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<div style="width: 1px; height: 28px; background: var(--line)"></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 600">QCM · Gestion commerciale · chapitres 1 à 4</span>
+<span style="font-size: 13px; color: var(--muted)">BTS MCO 2 · Lab info 3 · 20 questions tirées dans une banque de 64 · ordre aléatoire</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end">
+<span class="num mono" style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; color: {{clockFg}}">{{clock}}</span>
+<span style="font-size: 12px; color: var(--muted)">{{clockSub}}</span>
+</div>
+<button class="ghost" type="button" onClick="{{extend}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 14px">+ 5 min pour tous</button>
+<button class="btn" type="button" onClick="{{close}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; font-size: 14px; font-weight: 600; {{closeStyle}}">{{closeLabel}}</button>
+</header>
+
+<main class="split" style="flex-grow: 1; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; padding: 24px 28px; max-width: 1600px; width: 100%; box-sizing: border-box; margin: 0 auto">
+<section style="padding: 22px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 14px">
+<span style="font-size: 15px; font-weight: 600">Rejoindre l'épreuve</span>
+<div style="padding: 16px; border-radius: 18px; background: #FFFFFF; border: 1px solid var(--line); display: flex; flex-direction: column">
+<sc-for list="{{qr}}" as="row" hint-placeholder-count="21"><div style="display: flex"><sc-for list="{{row.cells}}" as="c" hint-placeholder-count="21"><div style="width: 9px; height: 9px; background: {{c}}"></div></sc-for></div></sc-for>
+</div>
+<span style="font-size: 13px; color: var(--muted); text-align: center">Les présents scannent le code et démarrent ensemble. Un apprenant absent à l'émargement ne peut pas composer.</span>
+<div style="width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center">
+<div style="padding: 10px; border-radius: 12px; background: var(--surface2); display: flex; flex-direction: column; gap: 2px"><span class="num" style="font-size: 22px; font-weight: 650">{{nIn}}</span><span style="font-size: 11.5px; color: var(--muted)">composent</span></div>
+<div style="padding: 10px; border-radius: 12px; background: var(--ok-soft); display: flex; flex-direction: column; gap: 2px"><span class="num" style="font-size: 22px; font-weight: 650; color: var(--ok)">{{nDone}}</span><span style="font-size: 11.5px; color: var(--ok)">ont remis</span></div>
+<div style="padding: 10px; border-radius: 12px; background: var(--warn-soft); display: flex; flex-direction: column; gap: 2px"><span class="num" style="font-size: 22px; font-weight: 650; color: var(--warn)">{{nOff}}</span><span style="font-size: 11.5px; color: var(--warn)">hors ligne</span></div>
+</div>
+</section>
+
+<section style="padding: 22px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Avancement en direct</h2>
+<span style="font-size: 12.5px; color: var(--muted)">Les réponses sont enregistrées à chaque clic, même si le réseau coupe.</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px">
+<sc-for list="{{students}}" as="s" hint-placeholder-count="20">
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 70px; align-items: center; gap: 10px; font-size: 13px">
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500">{{s.name}}</span>
+<div style="height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden"><div style="height: 8px; border-radius: 999px; background: {{s.color}}; {{s.w}}; transition: width .6s ease"></div></div>
+<span class="num" style="text-align: right; font-size: 12px; color: {{s.fg}}">{{s.label}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const names = ['Inès Benali', 'Lucas Martin', 'Chloé Nguyen', 'Yanis Haddad', 'Emma Rousseau', 'Noah Petit', 'Léa Fontaine', 'Adam Diallo', 'Manon Girard', 'Hugo Lefèvre', 'Sarah Cohen', 'Enzo Moreau', 'Camille Durand', 'Jade Lambert', 'Théo Garnier', 'Louise Bertrand', 'Lina Chevalier', 'Mathis Blanc', 'Zoé Mercier', 'Tom Laurent'];
+    this.state = { left: 18 * 60 + 40, extra: 0, closed: false, p: names.map((n, i) => ({ name: n, q: 6 + ((i * 7) % 9), off: i === 11, tt: i === 4 })) };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => this.tick(), 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+  tick() {
+    if (this.state.closed) return;
+    const p = this.state.p.map((x, i) => ((i + this.state.left) % 4 === 0 && x.q < 20 && !x.off) ? { ...x, q: x.q + 1 } : x);
+    this.setState({ left: Math.max(0, this.state.left - 1), p });
+  }
+  renderVals() {
+    const st = this.state;
+    let v = 7;
+    const qr = [];
+    for (let y = 0; y < 21; y++) { qr.push({ cells: [] }); for (let x = 0; x < 21; x++) {
+      v = (v * 9301 + 49297) % 233280;
+      const inF = (fx, fy) => x >= fx && x < fx + 7 && y >= fy && y < fy + 7;
+      let on = v / 233280 > 0.5;
+      for (const f of [[0, 0], [14, 0], [0, 14]]) if (inF(f[0], f[1])) { const dx = x - f[0], dy = y - f[1]; on = dx === 0 || dy === 0 || dx === 6 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4); }
+      qr[y].cells.push(on ? '#0B0C10' : 'transparent');
+    } }
+    const students = st.p.map((s) => {
+      const done = s.q >= 20 || st.closed;
+      return {
+        name: s.name + (s.tt ? ' · ⅓ temps' : ''),
+        w: 'width: ' + (s.q / 20 * 100) + '%',
+        color: s.off ? 'var(--warn)' : done ? 'var(--ok)' : 'var(--accent)',
+        label: s.off ? 'hors ligne' : done ? 'remis' : s.q + ' / 20',
+        fg: s.off ? 'var(--warn)' : done ? 'var(--ok)' : 'var(--muted)'
+      };
+    });
+    const m = Math.floor(st.left / 60), sec = st.left % 60;
+    return {
+      theme: this.props.theme ?? 'light',
+      qr, students,
+      nIn: String(st.p.filter((s) => s.q < 20 && !s.off).length),
+      nDone: String(st.closed ? st.p.length : st.p.filter((s) => s.q >= 20).length),
+      nOff: String(st.p.filter((s) => s.off).length),
+      clock: st.closed ? 'Terminé' : String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0'),
+      clockFg: st.left < 300 ? 'var(--warn)' : 'var(--fg)',
+      clockSub: st.extra ? 'dont +' + st.extra + ' min accordées' : 'temps restant · 1 tiers-temps',
+      extend: () => this.setState({ left: this.state.left + 300, extra: this.state.extra + 5 }),
+      closeLabel: st.closed ? 'Copies verrouillées' : 'Clore l’épreuve',
+      closeStyle: st.closed ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      close: () => this.setState({ closed: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Notifications</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.sc button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column">
+<header style="padding: 20px 20px 12px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 24px; font-weight: 650; letter-spacing: -0.035em">Notifications</span>
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{readAll}}" style="border: 0; background: transparent; color: var(--accent); font-size: 13px; font-weight: 500; height: 44px">Tout marquer comme lu</button></sc-if>
+</div>
+<div role="tablist" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; border-radius: 11px; background: var(--surface2)">
+<button type="button" role="tab" onClick="{{showList}}" style="height: 34px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{listBtn}}">Reçues · {{unread}} non lues</button>
+<button type="button" role="tab" onClick="{{showPrefs}}" style="height: 34px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{prefBtn}}">Préférences</button>
+</div>
+</header>
+
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+<div style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column">
+<div style="display: flex; gap: 6px; padding: 12px 20px; overflow-x: auto">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+<button type="button" onClick="{{f.pick}}" style="flex-shrink: 0; height: 32px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 500; {{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+<sc-for list="{{items}}" as="n" hint-placeholder-count="6">
+<button type="button" onClick="{{n.read}}" style="display: flex; gap: 12px; padding: 14px 20px; border: 0; border-bottom: 1px solid var(--line); background: {{n.bg}}; color: var(--fg); text-align: left">
+<span style="width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{n.iconBg}}; color: {{n.iconFg}}">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: {{n.weight}}">{{n.title}}</span>
+<span style="font-size: 12.5px; color: var(--muted); line-height: 1.4">{{n.body}}</span>
+<span style="font-size: 11.5px; color: var(--subtle)">{{n.when}}</span>
+</span>
+<sc-if value="{{n.unread}}" hint-placeholder-val="{{ false }}"><span style="width: 8px; height: 8px; margin-top: 6px; border-radius: 999px; background: var(--accent); flex-shrink: 0"></span></sc-if>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isPrefs}}" hint-placeholder-val="{{ false }}">
+<div style="flex-grow: 1; overflow: hidden; padding: 14px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 52px 52px 52px; gap: 6px; font-size: 11.5px; color: var(--muted); text-align: center">
+<span style="text-align: left">Type</span><span>Push</span><span>Email</span><span>SMS</span>
+</div>
+<sc-for list="{{prefs}}" as="p" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 52px 52px 52px; gap: 6px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line)">
+<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13.5px; font-weight: 500">{{p.label}}</span><sc-if value="{{p.locked}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; color: var(--subtle)">obligatoire</span></sc-if></span>
+<sc-for list="{{p.cells}}" as="c" hint-placeholder-count="3">
+<button type="button" role="switch" aria-label="{{c.aria}}" onClick="{{c.toggle}}" style="justify-self: center; width: 40px; height: 24px; border-radius: 999px; border: 0; padding: 2px; display: flex; {{c.track}}"><span style="width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF; {{c.knob}}"></span></button>
+</sc-for>
+</div>
+</sc-for>
+<div style="margin-top: 6px; padding: 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; gap: 12px">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Plage de silence</span><span class="num" style="font-size: 12.5px; color: var(--muted)">21:00 → 07:30 · sauf annulations de cours</span></div>
+<button type="button" role="switch" aria-label="Plage de silence" onClick="{{toggleQuiet}}" style="width: 40px; height: 24px; border-radius: 999px; border: 0; padding: 2px; display: flex; {{quietTrack}}"><span style="width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF; {{quietKnob}}"></span></button>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'list', f: 'Tout', read: {}, quiet: true, prefs: { 0: [1, 1, 0], 1: [1, 1, 0], 2: [1, 0, 0], 3: [1, 1, 1], 4: [0, 1, 0], 5: [1, 0, 0] } };
+  }
+  sw(on) {
+    return { track: on ? 'background: var(--accent); justify-content: flex-end' : 'background: var(--line); justify-content: flex-start', knob: '' };
+  }
+  renderVals() {
+    const st = this.state;
+    const T = {
+      Cours: { d: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', bg: 'var(--bad-soft)', fg: 'var(--bad)' },
+      Notes: { d: 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3', bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+      Absences: { d: 'M12 8v5M12 16h0M10.3 3.9L2.5 17.5A2 2 0 0 0 4.2 20.5h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', bg: 'var(--warn-soft)', fg: 'var(--warn)' },
+      Annonces: { d: 'M4 10v4h3l6 4V6L7 10zM17 9a4 4 0 0 1 0 6', bg: 'var(--ok-soft)', fg: 'var(--ok)' }
+    };
+    const src = [
+      { id: 1, t: 'Cours', title: 'Cours annulé cet après-midi', body: 'Marketing opérationnel (13:30–15:30) est annulé. Rattrapage proposé le 9/10.', when: 'il y a 12 min' },
+      { id: 2, t: 'Notes', title: 'Nouvelle note publiée', body: 'Marketing opérationnel · CC2 : 15,5 / 20', when: 'il y a 1 h' },
+      { id: 3, t: 'Absences', title: 'Absence à justifier', body: 'Anglais professionnel du 29/09 · déposez un justificatif', when: 'hier' },
+      { id: 4, t: 'Annonces', title: 'Forum des entreprises le 15 octobre', body: '40 entreprises présentes · inscription conseillée', when: 'hier' },
+      { id: 5, t: 'Cours', title: 'Changement de salle', body: 'Gestion commerciale de mardi : B204 → A14', when: 'lun. 28/09' },
+      { id: 6, t: 'Notes', title: 'Relevé de notes disponible', body: 'Semestre 2 · 2025–2026', when: '04/07' }
+    ];
+    const list = src.filter((n) => st.f === 'Tout' || n.t === st.f);
+    const items = list.map((n) => {
+      const unread = n.id <= 3 && !st.read[n.id];
+      return {
+        ...n, unread, d: T[n.t].d, iconBg: T[n.t].bg, iconFg: T[n.t].fg,
+        bg: unread ? 'var(--surface)' : 'transparent', weight: unread ? '600' : '500',
+        read: () => this.setState({ read: { ...this.state.read, [n.id]: true } })
+      };
+    });
+    const unread = src.filter((n) => n.id <= 3 && !st.read[n.id]).length;
+    const filters = ['Tout', 'Cours', 'Notes', 'Absences', 'Annonces'].map((f) => ({
+      label: f,
+      style: f === st.f ? 'border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      pick: () => this.setState({ f })
+    }));
+    const pt = [['Cours annulé ou déplacé', true], ['Nouvelle note', false], ['Rappel de cours', false], ['Absence à justifier', true], ['Annonces de l’école', false], ['Messages', false]];
+    const ch = ['Push', 'Email', 'SMS'];
+    const prefs = pt.map((p, i) => ({
+      label: p[0], locked: p[1],
+      cells: ch.map((c, j) => {
+        const on = !!st.prefs[i][j];
+        const s = this.sw(on);
+        return {
+          aria: p[0] + ' par ' + c, track: s.track + (p[1] && j === 0 ? '; opacity: 0.5; cursor: not-allowed' : ''), knob: s.knob,
+          toggle: () => {
+            if (p[1] && j === 0) return;
+            const all = { ...this.state.prefs }; const row = all[i].slice(); row[j] = row[j] ? 0 : 1; all[i] = row;
+            this.setState({ prefs: all });
+          }
+        };
+      })
+    }));
+    const q = this.sw(st.quiet);
+    const seg = 'background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(14,16,34,.08)';
+    const off = 'background: transparent; color: var(--muted)';
+    return {
+      theme: this.props.theme ?? 'light',
+      isList: st.tab === 'list', isPrefs: st.tab === 'prefs',
+      listBtn: st.tab === 'list' ? seg : off, prefBtn: st.tab === 'prefs' ? seg : off,
+      showList: () => this.setState({ tab: 'list' }), showPrefs: () => this.setState({ tab: 'prefs' }),
+      readAll: () => this.setState({ read: { 1: true, 2: true, 3: true } }),
+      unread: String(unread), filters, items, prefs,
+      quietTrack: q.track, quietKnob: q.knob,
+      toggleQuiet: () => this.setState({ quiet: !this.state.quiet })
+    };
+  }
+}
+</script>
+</body>
+</html>

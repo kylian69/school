@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Contrats d'alternance</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.card{text-decoration:none;color:var(--fg);transition:transform .15s ease,box-shadow .15s ease}
+.card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(14,16,34,.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.board{overflow-x:auto}.kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 28px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Rentrée 2026 · 214 alternants</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Contrats d'alternance</h1>
+</div>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Connexions OPCO</button>
+<button class="btn" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Nouveau contrat</button>
+</div>
+
+<div class="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Pris en charge</span><span class="num" style="font-size: 28px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">186</span></div>
+<div style="padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">En cours de traitement</span><span class="num" style="font-size: 28px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">26</span></div>
+<div style="padding: 14px 16px; border-radius: 16px; background: var(--warn-soft); border: 1px solid transparent; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--warn)">Dépôts à faire sous 5 jours ouvrés</span><span class="num" style="font-size: 28px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--warn)">3</span></div>
+<div style="padding: 14px 16px; border-radius: 16px; background: var(--bad-soft); border: 1px solid transparent; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--bad)">Refusés par l'OPCO</span><span class="num" style="font-size: 28px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--bad)">1</span></div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+<span style="font-size: 13px; color: var(--muted); margin-right: 4px">OPCO</span>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+<button type="button" onClick="{{f.pick}}" style="height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; {{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+
+<div class="board" style="display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 12px; align-items: start">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<section style="display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 18px; background: var(--surface2)">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 6px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 3px; background: {{c.dot}}"></span>{{c.label}}</span>
+<span class="num" style="font-size: 12.5px; color: var(--muted)">{{c.count}}</span>
+</div>
+<sc-for list="{{c.cards}}" as="k" hint-placeholder-count="3">
+<a class="card" href="DossierContrat.dc.html" style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid {{k.border}}">
+<sc-if value="{{k.banner}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 11.5px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{k.bannerBg}}; color: {{k.bannerFg}}">{{k.bannerText}}</span>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 600">{{k.name}}</span>
+<span style="font-size: 12.5px; color: var(--muted)">{{k.company}}</span>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 11.5px">
+<span style="padding: 2px 7px; border-radius: 999px; background: var(--surface2); color: var(--muted)">{{k.formation}}</span>
+<span style="padding: 2px 7px; border-radius: 999px; background: var(--surface2); color: var(--muted)">{{k.opco}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 5px">
+<div style="display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted)"><span>{{k.progressLabel}}</span><span class="num">{{k.progressText}}</span></div>
+<div style="height: 4px; border-radius: 999px; background: var(--surface2); overflow: hidden"><div style="height: 4px; border-radius: 999px; background: {{k.progressColor}}; {{k.progressW}}"></div></div>
+</div>
+</a>
+</sc-for>
+</section>
+</sc-for>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { opco: 'Tous' };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const opcos = ['Tous', 'OPCO Commerce', 'Atlas', 'Akto', 'OPCO EP'];
+    const filters = opcos.map((o) => ({
+      label: o,
+      style: o === this.state.opco ? 'border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      pick: () => this.setState({ opco: o })
+    }));
+    const all = [
+      { st: 0, name: 'Mathis Blanc', company: 'Leroy Merlin Bron', formation: 'BTS MCO 1', opco: 'OPCO Commerce', p: 60, pl: 'Partie employeur', pt: '3 / 5 parties', banner: 'Refusé : NAF incohérent avec l’IDCC', tone: 'bad' },
+      { st: 0, name: 'Zoé Mercier', company: 'Cabinet Fidal Lyon', formation: 'BTS CG 1', opco: 'Atlas', p: 80, pl: 'Partie employeur', pt: '4 / 5 parties' },
+      { st: 0, name: 'Ilyes Boukhari', company: 'Hôtel Mercure Saxe', formation: 'Bachelor RH 3', opco: 'Akto', p: 20, pl: 'Partie employeur', pt: 'relance J+5 envoyée', banner: '2 anomalies bloquantes', tone: 'warn' },
+      { st: 1, name: 'Clara Faure', company: 'Sephora Confluence', formation: 'BTS NDRC 1', opco: 'OPCO Commerce', p: 67, pl: 'Signatures', pt: '2 / 3' },
+      { st: 1, name: 'Sami Ouali', company: 'Orange Lyon Part-Dieu', formation: 'Mastère Marketing 1', opco: 'Atlas', p: 33, pl: 'Signatures', pt: '1 / 3 · relance 48 h' },
+      { st: 2, name: 'Lina Chevalier', company: 'Boulanger Vénissieux', formation: 'BTS MCO 1', opco: 'OPCO Commerce', p: 60, pl: 'Délai de dépôt', pt: 'J+3 · reste 2 jours', banner: 'Dépôt avant le mar. 6 oct.', tone: 'warn' },
+      { st: 2, name: 'Nathan Roux', company: 'Garage Renault Vaise', formation: 'BTS NDRC 1', opco: 'OPCO EP', p: 20, pl: 'Délai de dépôt', pt: 'J+1 · reste 4 jours' },
+      { st: 2, name: 'Julie Perrin', company: 'Pharmacie des Brotteaux', formation: 'BTS MCO 1', opco: 'OPCO EP', p: 40, pl: 'Délai de dépôt', pt: 'J+2 · reste 3 jours' },
+      { st: 3, name: 'Maxime Henry', company: 'Fnac Bellecour', formation: 'BTS MCO 1', opco: 'OPCO Commerce', p: 75, pl: 'API · accusé de réception', pt: 'n° 069-2026-104513' },
+      { st: 3, name: 'Louise Bertrand', company: 'Crédit Agricole Centre-Est', formation: 'Bachelor RH 3', opco: 'Atlas', p: 50, pl: 'Mode guidé · déposé', pt: 'n° 2026-AT-88214' },
+      { st: 4, name: 'Inès Benali', company: 'Décathlon Lyon Part-Dieu', formation: 'BTS MCO 2', opco: 'OPCO Commerce', p: 100, pl: 'Prise en charge', pt: 'montant notifié = calculé' },
+      { st: 4, name: 'Tom Laurent', company: 'Intersport Écully', formation: 'BTS MCO 2', opco: 'OPCO Commerce', p: 100, pl: 'Prise en charge', pt: 'écart de 214 € signalé', banner: 'Écart montant notifié', tone: 'warn' }
+    ];
+    const list = all.filter((c) => this.state.opco === 'Tous' || c.opco === this.state.opco);
+    const meta = [
+      { label: 'Préparation', dot: 'var(--subtle)', total: 9 },
+      { label: 'En signature', dot: 'var(--accent)', total: 6 },
+      { label: 'À déposer', dot: 'var(--warn)', total: 3 },
+      { label: 'Déposé', dot: 'var(--teal)', total: 8 },
+      { label: 'Pris en charge', dot: 'var(--ok)', total: 186 }
+    ];
+    const tone = {
+      bad: { bannerBg: 'var(--bad-soft)', bannerFg: 'var(--bad)', border: 'var(--bad)' },
+      warn: { bannerBg: 'var(--warn-soft)', bannerFg: 'var(--warn)', border: 'var(--line)' }
+    };
+    const cols = meta.map((m, i) => {
+      const cards = list.filter((c) => c.st === i).map((c) => ({
+        ...c,
+        banner: !!c.banner, bannerText: c.banner || '',
+        bannerBg: c.tone ? tone[c.tone].bannerBg : '', bannerFg: c.tone ? tone[c.tone].bannerFg : '',
+        border: c.tone === 'bad' ? 'var(--bad)' : 'var(--line)',
+        progressLabel: c.pl, progressText: c.pt,
+        progressColor: i === 2 && c.p >= 60 ? 'var(--warn)' : m.dot,
+        progressW: 'width: ' + c.p + '%'
+      }));
+      return { label: m.label, dot: m.dot, count: this.state.opco === 'Tous' ? m.total : cards.length, cards };
+    });
+    return { theme: this.props.theme ?? 'light', nav: this.nav('Alternance'), filters, cols };
+  }
+}
+</script>
+</body>
+</html>

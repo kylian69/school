@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Emploi du temps — semaine</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.ev{transition:transform .15s ease,box-shadow .15s ease}
+.ev:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(14,16,34,.10)}
+.hatch{background-image:repeating-linear-gradient(135deg,var(--surface2) 0 8px,transparent 8px 16px)}
+.hours{background-image:linear-gradient(var(--line) 1px,transparent 1px);background-size:100% 56px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.weekwrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main style="min-width: 0; padding: 24px 28px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em; margin-right: 8px">Emploi du temps</h1>
+<button class="ghost" type="button" style="height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px">
+<span style="width: 8px; height: 8px; border-radius: 3px; background: var(--accent)"></span>BTS MCO 2 · Alternance
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<div style="display: flex; align-items: center; gap: 4px">
+<button class="ghost" type="button" aria-label="Semaine précédente" style="width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg)">‹</button>
+<span class="num" style="font-size: 14px; font-weight: 500; padding: 0 8px">Sem. 40 · 28 sept. – 2 oct.</span>
+<button class="ghost" type="button" aria-label="Semaine suivante" style="width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg)">›</button>
+</div>
+<div style="flex-grow: 1"></div>
+<div role="group" aria-label="Affichage" style="display: flex; padding: 3px; border-radius: 11px; background: var(--surface2)">
+<sc-for list="{{views}}" as="v" hint-placeholder-count="3">
+<button type="button" onClick="{{v.pick}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{v.style}}">{{v.label}}</button>
+</sc-for>
+</div>
+<button class="btn" type="button" style="height: 38px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Nouveau cours</button>
+</div>
+
+<div style="display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: var(--accent)"></span>Cours</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: var(--teal)"></span>TD</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: var(--warn)"></span>Examen</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: var(--subtle)"></span>Tutorat</span>
+<span style="display: flex; align-items: center; gap: 6px"><span class="hatch" style="width: 10px; height: 10px; border-radius: 3px; border: 1px solid var(--line)"></span>En entreprise</span>
+<span style="display: flex; align-items: center; gap: 6px; color: var(--bad); font-weight: 500"><span style="width: 10px; height: 10px; border-radius: 3px; border: 2px solid var(--bad); box-sizing: border-box"></span>1 conflit à résoudre</span>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start">
+<div class="weekwrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<div style="min-width: 760px">
+<div style="display: grid; grid-template-columns: 56px repeat(5, minmax(0, 1fr)); border-bottom: 1px solid var(--line)">
+<div></div>
+<sc-for list="{{days}}" as="d" hint-placeholder-count="5">
+<div style="padding: 12px 12px 10px; display: flex; align-items: baseline; gap: 6px; border-left: 1px solid var(--line)">
+<span style="font-size: 13px; color: var(--muted)">{{d.name}}</span>
+<span class="num" style="font-size: 18px; font-weight: 650; letter-spacing: -0.02em; {{d.numStyle}}">{{d.num}}</span>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: 56px repeat(5, minmax(0, 1fr))">
+<div style="position: relative; height: 616px">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="11">
+<span class="mono num" style="position: absolute; right: 8px; font-size: 11px; color: var(--subtle); {{h.top}}">{{h.label}}</span>
+</sc-for>
+</div>
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<div class="hours" style="position: relative; height: 616px; border-left: 1px solid var(--line); {{c.bg}}">
+<sc-if value="{{c.company}}" hint-placeholder-val="{{ false }}">
+<div class="hatch" style="position: absolute; inset: 6px; border-radius: 12px; border: 1px dashed var(--line); display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; box-sizing: border-box">
+<div style="padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 13px; font-weight: 600">En entreprise</span>
+<span style="font-size: 12px; color: var(--muted)">24 alternants · 17 entreprises</span>
+</div>
+</div>
+</sc-if>
+<sc-for list="{{c.events}}" as="e" hint-placeholder-count="3">
+<button class="ev" type="button" onClick="{{e.pick}}" style="position: absolute; left: 5px; right: 5px; box-sizing: border-box; padding: 8px 10px; border-radius: 11px; text-align: left; display: flex; flex-direction: column; gap: 2px; overflow: hidden; background: {{e.bg}}; color: {{e.fg}}; border: 1.5px solid {{e.border}}; {{e.pos}}">
+<span class="num mono" style="font-size: 11px; opacity: 0.85">{{e.time}}</span>
+<span style="font-size: 13px; font-weight: 600; line-height: 1.25; color: var(--fg)">{{e.title}}</span>
+<span style="font-size: 11.5px; color: var(--muted)">{{e.room}}</span>
+<sc-if value="{{e.conflict}}" hint-placeholder-val="{{ false }}">
+<span style="margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--bad)">Conflit de salle</span>
+</sc-if>
+</button>
+</sc-for>
+<sc-if value="{{c.today}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 0; right: 0; top: 130px; height: 2px; background: var(--bad)"><div style="position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 999px; background: var(--bad)"></div></div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<aside style="padding: 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{sel.bg}}; color: {{sel.fg}}">{{sel.typeLabel}}</span>
+<span class="num" style="font-size: 12.5px; color: var(--muted)">{{sel.dayLabel}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.025em">{{sel.title}}</h2>
+<span class="num mono" style="font-size: 13px; color: var(--muted)">{{sel.time}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px">
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: var(--muted)">Salle</span><span style="font-weight: 500">{{sel.roomName}}</span></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: var(--muted)">Intervenant</span><span style="font-weight: 500">{{sel.teacher}}</span></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: var(--muted)">Groupe</span><span style="font-weight: 500">BTS MCO 2 · 28 apprenants</span></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: var(--muted)">Émargement</span><span style="font-weight: 500">QR · ouvert 10 min avant</span></div>
+<div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: var(--muted)">Heures réalisées</span><span class="num" style="font-weight: 500">{{sel.hours}}</span></div>
+</div>
+<sc-if value="{{sel.conflict}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 12px; border-radius: 12px; background: var(--bad-soft); display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 600; color: var(--bad)">B204 déjà réservée</span>
+<span style="font-size: 12.5px; line-height: 1.45; color: var(--fg)">BTS CG 1 · Comptabilité de 13:30 à 15:00. La salle A14 (30 places, vidéoprojecteur) est libre sur ce créneau.</span>
+<button class="btn" type="button" style="height: 36px; border-radius: 9px; border: 0; background: var(--bad); color: var(--surface); font-size: 13px; font-weight: 600">Basculer en A14</button>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button class="ghost" type="button" style="height: 38px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 13.5px">Modifier</button>
+<button class="ghost" type="button" style="height: 38px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 13.5px">Dupliquer</button>
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted)">Astuce : glissez un cours pour le déplacer, Scolaly vérifie salle, intervenant et rythme d'alternance avant de valider.</p>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'e7', view: 'Semaine' };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  fmt(h) {
+    const m = Math.round((h % 1) * 60);
+    return String(Math.floor(h)).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+  renderVals() {
+    const types = {
+      cours: { label: 'Cours', bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+      td: { label: 'TD', bg: 'var(--teal-soft)', fg: 'var(--teal)' },
+      exam: { label: 'Examen', bg: 'var(--warn-soft)', fg: 'var(--warn)' },
+      tut: { label: 'Tutorat', bg: 'var(--surface2)', fg: 'var(--muted)' }
+    };
+    const evs = [
+      { id: 'e1', d: 0, s: 9, e: 12, t: 'Droit des affaires', k: 'cours', room: 'B204', teacher: 'Sophie Arnaud', hours: '18 h / 40 h' },
+      { id: 'e2', d: 0, s: 13.5, e: 15.5, t: 'Marketing opérationnel', k: 'td', room: 'A12', teacher: 'Karim Benoît', hours: '12 h / 30 h' },
+      { id: 'e3', d: 0, s: 15.75, e: 17.75, t: 'Anglais professionnel', k: 'cours', room: 'Labo langues 2', teacher: 'Julien Moreau', hours: '10 h / 36 h' },
+      { id: 'e4', d: 1, s: 9, e: 11, t: 'Gestion commerciale', k: 'cours', room: 'B204', teacher: 'Paul Dumas', hours: '14 h / 45 h' },
+      { id: 'e5', d: 1, s: 11.25, e: 12.75, t: 'Culture générale', k: 'cours', room: 'A08', teacher: 'Marie Vidal', hours: '9 h / 30 h' },
+      { id: 'e6', d: 1, s: 14, e: 17, t: 'Évaluation · Management', k: 'exam', room: 'Amphi 1', teacher: 'Surveillance : Nadia Faure', hours: 'Épreuve CCF' },
+      { id: 'e8', d: 2, s: 9, e: 12, t: 'Relation client digitale', k: 'td', room: 'Lab info 3', teacher: 'Léa Caron', hours: '15 h / 40 h' },
+      { id: 'e7', d: 2, s: 13.5, e: 15.5, t: 'Atelier projet commercial', k: 'td', room: 'B204', teacher: 'Karim Benoît', hours: '6 h / 24 h', conflict: true },
+      { id: 'e9', d: 2, s: 15.75, e: 17.25, t: 'Suivi alternance', k: 'tut', room: 'A03', teacher: 'Nadia Faure', hours: '3 h / 12 h' }
+    ];
+    const dayNames = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.'];
+    const dayNums = ['28', '29', '30', '1', '2'];
+    const days = dayNames.map((n, i) => ({ name: n, num: dayNums[i], numStyle: i === 4 ? 'color: var(--accent)' : '' }));
+    const hours = [];
+    for (let h = 8; h < 19; h++) hours.push({ label: String(h).padStart(2, '0') + ':00', top: 'top: ' + ((h - 8) * 56 - 6 + (h === 8 ? 8 : 0)) + 'px' });
+    const selId = this.state.sel;
+    const cols = [0, 1, 2, 3, 4].map((d) => ({
+      company: d >= 3,
+      today: d === 4,
+      bg: d === 4 ? 'background-color: var(--grid)' : '',
+      events: evs.filter((e) => e.d === d).map((e) => {
+        const ty = types[e.k];
+        return {
+          title: e.t,
+          time: this.fmt(e.s) + ' – ' + this.fmt(e.e),
+          room: e.room + ' · ' + e.teacher.replace('Surveillance : ', ''),
+          bg: ty.bg, fg: ty.fg,
+          conflict: !!e.conflict,
+          border: e.id === selId ? 'var(--fg)' : e.conflict ? 'var(--bad)' : 'transparent',
+          pos: 'top: ' + ((e.s - 8) * 56 + 3) + 'px; height: ' + ((e.e - e.s) * 56 - 6) + 'px',
+          pick: () => this.setState({ sel: e.id })
+        };
+      })
+    }));
+    const se = evs.find((e) => e.id === selId) || evs[0];
+    const ty = types[se.k];
+    const sel = {
+      title: se.t, typeLabel: ty.label, bg: ty.bg, fg: ty.fg,
+      dayLabel: ['Lundi 28 sept.', 'Mardi 29 sept.', 'Mercredi 30 sept.', 'Jeudi 1 oct.', 'Vendredi 2 oct.'][se.d],
+      time: this.fmt(se.s) + ' – ' + this.fmt(se.e) + ' · ' + String(se.e - se.s).replace('.', ',') + ' h',
+      roomName: se.room, teacher: se.teacher, hours: se.hours, conflict: !!se.conflict
+    };
+    const views = ['Jour', 'Semaine', 'Mois'].map((v) => ({
+      label: v,
+      style: v === this.state.view ? 'background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(14,16,34,.08)' : 'background: transparent; color: var(--muted)',
+      pick: () => this.setState({ view: v })
+    }));
+    return { theme: this.props.theme ?? 'light', nav: this.nav('Emploi du temps'), days, hours, cols, sel, views };
+  }
+}
+</script>
+</body>
+</html>

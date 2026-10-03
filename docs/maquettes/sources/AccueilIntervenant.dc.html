@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil intervenant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc a{text-decoration:none}
+.sc button{font-family:inherit;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.task:hover{border-color:var(--accent) !important}
+.tab:hover{color:var(--fg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column">
+<div style="flex-grow: 1; overflow: hidden; padding: 22px 20px 0; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; color: var(--muted)">Vendredi 2 octobre</span>
+<span style="font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Bonjour Sophie</span>
+</div>
+<div style="width: 44px; height: 44px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px">SA</div>
+</div>
+
+<div style="padding: 18px; border-radius: 22px; background: var(--fg); color: var(--bg); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 12.5px; opacity: 0.8"><span>En cours · B204</span><span class="num">09:00 – 12:00</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 21px; font-weight: 650; letter-spacing: -0.03em">Droit des affaires</span>
+<span style="font-size: 13.5px; opacity: 0.8">BTS MCO 2ᵉ année · 28 apprenants</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<span class="num" style="font-size: 30px; font-weight: 650; letter-spacing: -0.04em">26 / 28</span>
+<span style="font-size: 12.5px; opacity: 0.8">présents · 1 absence justifiée</span>
+</div>
+<a class="btn" href="Main.dc.html" style="height: 46px; border-radius: 14px; background: var(--accent); color: var(--accent-fg); font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center">Afficher le QR et l'appel</a>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600">À faire</span><span class="num" style="font-size: 13px; color: var(--muted)">{{left}} restantes</span></div>
+<sc-for list="{{tasks}}" as="t" hint-placeholder-count="3">
+<a class="task" href="{{t.href}}" style="padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); color: var(--fg); display: flex; align-items: center; gap: 12px">
+<span style="width: 36px; height: 36px; border-radius: 11px; background: {{t.bg}}; color: {{t.fg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"></path></svg>
+</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 550">{{t.title}}</span><span style="font-size: 12.5px; color: var(--muted)">{{t.sub}}</span></span>
+</a>
+</sc-for>
+
+<div style="padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 14px; font-weight: 600">Mes heures de septembre</span><span style="font-size: 12px; color: var(--muted)">vacataire</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Cours et TD réalisés</span><span class="num" style="font-weight: 600">39 h</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Surveillance d'examen</span><span class="num" style="font-weight: 600">3 h</span></div>
+<button class="btn" type="button" onClick="{{validate}}" style="height: 44px; border-radius: 12px; border: 0; font-size: 14px; font-weight: 600; {{valStyle}}">{{valLabel}}</button>
+</div>
+</div>
+
+<nav aria-label="Navigation principale" style="flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 8px 8px 18px; border-top: 1px solid var(--line); background: var(--surface)">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<a class="tab" href="{{t.href}}" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: {{t.color}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"></path></svg>
+{{t.label}}
+</a>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { validated: false };
+  }
+  renderVals() {
+    const v = this.state.validated;
+    const tasks = [
+      { title: 'Compléter le cahier de texte', sub: 'Séance de ce matin · contenu et travail à faire', href: 'SaisieSeance.dc.html', d: 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3', bg: 'var(--accent-soft)', fg: 'var(--accent)' },
+      { title: 'Saisir les notes du CC2', sub: 'Marketing opérationnel · avant le 09/10', href: 'Notes.dc.html', d: 'M4 20h4L19 9l-4-4L4 16zM13 7l4 4', bg: 'var(--warn-soft)', fg: 'var(--warn)' },
+      { title: 'Lundi : 2 séances', sub: 'BTS MCO 2 · 09:00 B204 · 13:30 A12', href: '#', d: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', bg: 'var(--surface2)', fg: 'var(--muted)' }
+    ];
+    const tabs = [
+      { label: 'Accueil', d: 'M4 11l8-7 8 7v9h-5v-6H9v6H4z', href: '#', on: true },
+      { label: 'Planning', d: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', href: '#' },
+      { label: 'Appel', d: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2', href: 'Main.dc.html' },
+      { label: 'Profil', d: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21a8 8 0 0 1 16 0', href: '#' }
+    ].map((t) => ({ ...t, color: t.on ? 'var(--accent)' : 'var(--subtle)' }));
+    return {
+      theme: this.props.theme ?? 'light',
+      tasks, tabs,
+      left: String(v ? 2 : 3),
+      valLabel: v ? '42 h validées · transmises à la direction' : 'Valider mes 42 h',
+      valStyle: v ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      validate: () => this.setState({ validated: !this.state.validated })
+    };
+  }
+}
+</script>
+</body>
+</html>

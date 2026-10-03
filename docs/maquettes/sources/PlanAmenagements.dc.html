@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Référent handicap — plan d'aménagements</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.sc button{font-family:inherit;cursor:pointer}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.opt:hover{border-color:var(--accent) !important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 232px minmax(0, 1fr)">
+<aside style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<div style="padding: 12px; border-radius: 14px; background: var(--teal-soft); color: var(--teal); display: flex; flex-direction: column; gap: 4px; font-size: 12.5px">
+<span style="font-weight: 650; font-size: 13.5px">Espace référent handicap</span>
+<span style="line-height: 1.4">Espace cloisonné : la scolarité et la direction n'y ont pas accès.</span>
+</div>
+<nav aria-label="Espace référent" style="display: flex; flex-direction: column; gap: 2px; font-size: 14px; font-weight: 500">
+<span style="height: 38px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; color: var(--muted)">Tableau du référent</span>
+<span style="height: 38px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; background: var(--accent-soft); color: var(--accent)">Dossiers suivis · 14</span>
+<span style="height: 38px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; color: var(--muted)">Indicateurs</span>
+<span style="height: 38px; padding: 0 10px; border-radius: 10px; display: flex; align-items: center; color: var(--muted)">Paramètres</span>
+</nav>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Dossier confidentiel · suivi par Élodie Marchetti, référente handicap</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Plan d'aménagements · Emma Rousseau</h1>
+</div>
+<span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: {{stateBg}}; color: {{stateFg}}">{{stateLabel}}</span>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Aménagements</h2><span class="num" style="font-size: 12.5px; color: var(--muted)">valables du 01/10/2026 au 30/06/2027</span></div>
+<sc-for list="{{families}}" as="f" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12.5px; color: var(--muted); font-weight: 500">{{f.label}}</span>
+<sc-for list="{{f.items}}" as="i" hint-placeholder-count="2">
+<button class="opt" type="button" role="checkbox" onClick="{{i.toggle}}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: var(--surface); color: var(--fg); text-align: left; {{i.style}}">
+<span style="flex-shrink: 0; width: 22px; height: 22px; border-radius: 7px; display: flex; align-items: center; justify-content: center; {{i.box}}">
+<sc-if value="{{i.on}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 500">{{i.label}}</span><span style="font-size: 12px; color: var(--muted)">{{i.to}}</span></span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Ce que verront les destinataires</h2>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted)">Seules les consignes sont transmises. Le motif et les pièces médicales restent dans ce dossier.</p>
+<div style="padding: 14px; border-radius: 14px; background: var(--surface2); display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; color: var(--muted)">Aperçu · vue d'un intervenant</span>
+<span style="font-size: 14px; font-weight: 600">Emma Rousseau · BTS MCO 2</span>
+<sc-for list="{{consignes}}" as="c" hint-placeholder-count="3"><span style="font-size: 13px">• {{c}}</span></sc-for>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{recipients}}" as="r" hint-placeholder-count="4"><span style="font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent)">{{r}}</span></sc-for>
+</div>
+</section>
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Accord d'Emma</h2>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted)">Rien n'est partagé sans son accord. Elle peut le retirer à tout moment depuis « Mes partages ».</p>
+<button class="btn" type="button" onClick="{{send}}" style="height: 44px; border-radius: 12px; border: 0; font-size: 14px; font-weight: 600; {{sendStyle}}">{{sendLabel}}</button>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { on: { a1: true, a2: true, b1: true, c1: true }, step: 0 };
+  }
+  renderVals() {
+    const st = this.state;
+    const F = [
+      { label: 'Examens et évaluations', items: [['a1', 'Tiers-temps aux épreuves écrites', 'Intervenants, responsable pédagogique', 'Tiers-temps aux épreuves écrites'], ['a2', 'Salle à faible effectif', 'Scolarité (planification)', 'Composition en salle à faible effectif'], ['a3', 'Ordinateur pour composer', 'Intervenants', 'Ordinateur autorisé en épreuve']] },
+      { label: 'Cours', items: [['b1', 'Supports transmis avant la séance', 'Intervenants', 'Supports envoyés la veille'], ['b2', 'Place à l’avant de la salle', 'Intervenants', 'Place réservée à l’avant']] },
+      { label: 'Entreprise', items: [['c1', 'Pauses courtes autorisées', 'Tutrice (avec accord)', 'Pauses courtes possibles en entreprise']] }
+    ];
+    const consignes = [];
+    const rec = {};
+    const families = F.map((f) => ({
+      label: f.label,
+      items: f.items.map((i) => {
+        const on = !!st.on[i[0]];
+        if (on) { consignes.push(i[3]); i[2].split(', ').forEach((r) => { rec[r] = 1; }); }
+        return {
+          label: i[1], to: 'Destinataires : ' + i[2], on,
+          style: on ? 'border: 1.5px solid var(--accent)' : 'border: 1px solid var(--line)',
+          box: on ? 'background: var(--accent); color: var(--accent-fg)' : 'border: 1.5px solid var(--line)',
+          toggle: () => { if (!this.state.step) this.setState({ on: { ...this.state.on, [i[0]]: !this.state.on[i[0]] } }); }
+        };
+      })
+    }));
+    const S = [
+      ['Brouillon', 'var(--surface2)', 'var(--muted)', 'Envoyer à Emma pour accord'],
+      ['En attente de l’accord d’Emma', 'var(--warn-soft)', 'var(--warn)', 'Simuler l’accord d’Emma'],
+      ['Actif · consignes transmises', 'var(--ok-soft)', 'var(--ok)', 'Accord reçu le 02/10 · consignes diffusées']
+    ][st.step];
+    return {
+      theme: this.props.theme ?? 'light',
+      families, consignes, recipients: Object.keys(rec),
+      stateLabel: S[0], stateBg: S[1], stateFg: S[2], sendLabel: S[3],
+      sendStyle: st.step === 2 ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      send: () => this.setState({ step: Math.min(2, this.state.step + 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

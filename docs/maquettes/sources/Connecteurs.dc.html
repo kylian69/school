@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Connecteurs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.card:hover{border-color:var(--accent) !important}
+.tabs a{text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.cat{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="12">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: var(--muted)"><a href="Demarrage.dc.html" style="color: var(--accent); text-decoration: none; font-weight: 500">Paramètres</a> / Intégrations</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Intégrations</h1>
+</div>
+<nav class="tabs" aria-label="Intégrations" style="display: flex; gap: 4px; border-bottom: 1px solid var(--line)">
+<a href="ClesApi.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted)">Clés d'API</a>
+<a href="Webhooks.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted)">Webhooks</a>
+<a href="Connecteurs.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--fg); border-bottom: 2px solid var(--accent); margin-bottom: -1px">Connecteurs</a>
+<a href="Sso.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted)">Connexion unique</a>
+</nav>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 12px; align-items: start">
+<section class="cat" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="5">
+<button class="card" type="button" onClick="{{c.pick}}" style="padding: 16px; border-radius: 16px; background: var(--surface); text-align: left; color: var(--fg); display: flex; flex-direction: column; gap: 10px; {{c.border}}">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="width: 38px; height: 38px; border-radius: 11px; background: {{c.tile}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700">{{c.letter}}</span>
+<span style="font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{c.stBg}}; color: {{c.stFg}}">{{c.state}}</span>
+</div>
+<span style="font-size: 15px; font-weight: 600">{{c.name}}</span>
+<span style="font-size: 12.5px; line-height: 1.4; color: var(--muted)">{{c.desc}}</span>
+</button>
+</sc-for>
+</section>
+
+<section style="padding: 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 style="margin: 0; font-size: 17px; font-weight: 650">Connecter Moodle</h2>
+<span class="num" style="font-size: 12.5px; color: var(--muted)">Étape {{stepNum}} / 3</span>
+</div>
+<div style="display: flex; gap: 4px"><sc-for list="{{bars}}" as="b" hint-placeholder-count="3"><div style="flex-grow: 1; height: 4px; border-radius: 999px; background: {{b}}"></div></sc-for></div>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Adresse de votre Moodle
+<input class="mono" value="https://moodle.isca-lyon.example" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 13px">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Jeton du service web
+<input class="mono" value="••••••••••••••••••••••••" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 13px">
+</label>
+<span style="font-size: 12px; color: var(--muted)">Le jeton est chiffré et ne sera plus affiché. Guide pas à pas pour le créer dans Moodle.</span>
+</div>
+</sc-if>
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{checks}}" as="k" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13.5px"><span style="width: 20px; height: 20px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700">✓</span>{{k}}</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px">
+<span style="color: var(--muted); font-size: 12.5px">Correspondance proposée automatiquement (même code de module)</span>
+<div style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--surface2)"><span>MCO2-DROIT · Droit des affaires</span><span style="color: var(--ok)">↔ relié</span></div>
+<div style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--surface2)"><span>MCO2-MKOP · Marketing opérationnel</span><span style="color: var(--ok)">↔ relié</span></div>
+<div style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft)"><span>MCO2-ANG · Anglais pro</span><span style="color: var(--warn)">à choisir</span></div>
+<span style="font-size: 12px; color: var(--muted)">Les intervenants affinent ensuite leurs éléments notés dans l'écran de correspondance Moodle.</span>
+</div>
+</sc-if>
+<sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: var(--ok-soft); color: var(--ok)">
+<span style="font-size: 15px; font-weight: 650">Moodle est connecté</span>
+<span style="font-size: 13px; color: var(--fg)">Synchronisation toutes les 15 minutes · 42 cours reliés · état de santé visible ici.</span>
+<a href="CorrespondanceMoodle.dc.html" style="font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none">Voir la correspondance côté intervenant</a>
+</div>
+</sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 8px">
+<button class="ghost" type="button" onClick="{{prev}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 14px">Retour</button>
+<button class="btn" type="button" onClick="{{next}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">{{nextLabel}}</button>
+</div>
+<div style="border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12.5px; color: var(--muted)">Journal · Google Agenda</span>
+<span class="mono" style="font-size: 12px">10:15 · 812 agendas synchronisés · 0 erreur</span>
+<span class="mono" style="font-size: 12px">09:15 · 812 agendas synchronisés · 2 jetons expirés (utilisateurs prévenus)</span>
+</div>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 4, step: 1 };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const ST = { ok: ['Connecté', 'var(--ok-soft)', 'var(--ok)'], warn: ['2 alertes', 'var(--warn-soft)', 'var(--warn)'], off: ['Non connecté', 'var(--surface2)', 'var(--muted)'] };
+    const C = [
+      ['Google Agenda', 'G', '#2F6B4F', 'Export de l’EDT dans l’agenda de chacun, mis à jour en continu.', 'warn'],
+      ['Outlook · Microsoft 365', 'O', '#1F4E8C', 'Même export pour les comptes Microsoft, et lecture des disponibilités des intervenants.', 'ok'],
+      ['Microsoft Teams', 'T', '#4B3F9E', 'Lien de réunion créé automatiquement pour les cours à distance.', 'ok'],
+      ['Google Meet', 'M', '#2B6A63', 'Même principe pour les écoles sous Google Workspace.', 'off'],
+      ['Moodle', 'Mo', '#A1470E', 'Cours reliés, notes remontées vers Scolaly après validation.', st.step === 4 ? 'ok' : 'off']
+    ];
+    const cards = C.map((c, i) => ({
+      name: c[0], letter: c[1], tile: c[2], desc: c[3],
+      state: ST[c[4]][0], stBg: ST[c[4]][1], stFg: ST[c[4]][2],
+      border: i === st.sel ? 'border: 2px solid var(--accent)' : 'border: 1px solid var(--line)',
+      pick: () => this.setState({ sel: i })
+    }));
+    const s = st.step;
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Paramètres'),
+      cards,
+      stepNum: String(Math.min(s, 3)),
+      bars: [1, 2, 3].map((i) => i <= s ? 'var(--accent)' : 'var(--line)'),
+      s1: s === 1, s2: s === 2, s3: s === 3, s4: s === 4,
+      checks: ['Moodle joignable (version 4.3)', 'Jeton valide · droits suffisants', '42 cours trouvés', '118 éléments notés trouvés'],
+      nextLabel: s === 1 ? 'Tester la connexion' : s === 2 ? 'Continuer' : s === 3 ? 'Activer' : 'Recommencer la démo',
+      next: () => this.setState({ step: s >= 4 ? 1 : s + 1 }),
+      prev: () => this.setState({ step: Math.max(1, s - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

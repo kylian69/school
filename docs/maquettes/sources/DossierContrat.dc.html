@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dossier contractuel et dépôt OPCO</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.row:hover{background:var(--surface2)}
+.lnk{color:var(--accent);text-decoration:none;font-weight:500}
+.lnk:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.steps{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 28px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: var(--muted)"><a class="lnk" href="Contrats.dc.html">Contrats</a> / Lina Chevalier</div>
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 6px; flex-grow: 1">
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Contrat d'apprentissage · Lina Chevalier</h1>
+<span class="num" style="font-size: 13.5px; color: var(--muted)">Boulanger Vénissieux · BTS MCO · 29/09/2026 → 30/06/2028 · OPCO Commerce · version 2</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Aperçu du CERFA</button>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Avenant ou rupture</button>
+</div>
+
+<nav class="steps" aria-label="Étapes du contrat" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<button type="button" onClick="{{s.pick}}" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; text-align: left; {{s.style}}">
+<span class="num" style="width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; flex-shrink: 0; {{s.badge}}">{{s.mark}}</span>
+<span style="display: flex; flex-direction: column; gap: 1px">
+<span style="font-size: 13.5px; font-weight: 600; color: var(--fg)">{{s.label}}</span>
+<span style="font-size: 12px; color: var(--muted)">{{s.sub}}</span>
+</span>
+</button>
+</sc-for>
+</nav>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--ok-soft); color: var(--ok); font-size: 13.5px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+<span style="flex-grow: 1"><strong>Aucune anomalie bloquante.</strong> 2 avertissements acceptés par Karim Benoît le 24/09.</span>
+<button type="button" onClick="{{showPrep}}" style="border: 0; background: transparent; color: var(--ok); font-size: 13px; font-weight: 600; text-decoration: underline">Voir</button>
+</div>
+
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 600">Les 5 parties du CERFA</h2>
+<sc-for list="{{parts}}" as="p" hint-placeholder-count="5">
+<div class="row" style="display: grid; grid-template-columns: 28px minmax(0, 1fr) 150px 60px; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px; font-size: 13.5px">
+<span style="width: 22px; height: 22px; border-radius: 7px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 1px"><span style="font-weight: 500">{{p.label}}</span><span style="font-size: 12.5px; color: var(--muted)">{{p.sub}}</span></div>
+<span style="font-size: 12.5px; color: var(--muted)">{{p.by}}</span>
+<span class="lnk" style="font-size: 13px; text-align: right">Voir</span>
+</div>
+</sc-for>
+</section>
+
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Rémunération minimale calculée</h2>
+<span style="font-size: 12.5px; color: var(--muted)">Table datée Scolaly en vigueur au 29/09/2026</span>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13.5px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12.5px"><th scope="col" style="padding: 8px 0; font-weight: 500">Période</th><th scope="col" style="padding: 8px 0; font-weight: 500">Âge</th><th scope="col" style="padding: 8px 0; font-weight: 500; text-align: right">Minimum</th><th scope="col" style="padding: 8px 0; font-weight: 500; text-align: right">Proposé</th><th scope="col" style="padding: 8px 0; font-weight: 500; text-align: right">Contrôle</th></tr></thead>
+<tbody>
+<sc-for list="{{pay}}" as="r" hint-placeholder-count="3">
+<tr style="border-top: 1px solid var(--line)">
+<td class="num" style="padding: 10px 0">{{r.period}}</td>
+<td style="padding: 10px 0">{{r.age}}</td>
+<td class="num" style="padding: 10px 0; text-align: right">{{r.min}}</td>
+<td class="num" style="padding: 10px 0; text-align: right; font-weight: 600">{{r.prop}}</td>
+<td style="padding: 10px 0; text-align: right"><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok)">Conforme</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<p style="margin: 0; font-size: 12.5px; color: var(--muted)">Changement de tranche d'âge le 14/03/2027 (21 ans) pris en compte automatiquement. Pourcentages du SMIC, ou du minimum conventionnel s'il est plus favorable.</p>
+</section>
+</div>
+
+<aside style="display: flex; flex-direction: column; gap: 12px">
+<sc-if value="{{is.prep}}" hint-placeholder-val="{{ false }}">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Contrôles de cohérence</h2>
+<div style="display: flex; gap: 10px; padding: 12px; border-radius: 12px; background: var(--warn-soft); font-size: 13px"><span style="width: 8px; height: 8px; margin-top: 5px; border-radius: 999px; background: var(--warn); flex-shrink: 0"></span><div style="display: flex; flex-direction: column; gap: 2px"><strong>Maître d'apprentissage</strong><span style="color: var(--muted)">Expérience déclarée : 2 ans. Vérifier le diplôme requis.</span></div></div>
+<div style="display: flex; gap: 10px; padding: 12px; border-radius: 12px; background: var(--warn-soft); font-size: 13px"><span style="width: 8px; height: 8px; margin-top: 5px; border-radius: 999px; background: var(--warn); flex-shrink: 0"></span><div style="display: flex; flex-direction: column; gap: 2px"><strong>SIRET d'exécution</strong><span style="color: var(--muted)">Établissement secondaire : adresse différente du siège.</span></div></div>
+<div style="font-size: 12.5px; color: var(--muted)">3 anomalies bloquantes corrigées entre le 18 et le 23/09.</div>
+</section>
+</sc-if>
+
+<sc-if value="{{is.sign}}" hint-placeholder-val="{{ false }}">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0 0 6px; font-size: 16px; font-weight: 600">Signatures électroniques</h2>
+<sc-for list="{{signers}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13.5px">
+<span class="num" style="width: 26px; height: 26px; border-radius: 8px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">{{g.n}}</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-weight: 500">{{g.who}}</span><span style="font-size: 12.5px; color: var(--muted)">{{g.role}}</span></div>
+<span class="num mono" style="font-size: 12px; color: var(--muted)">{{g.when}}</span>
+</div>
+</sc-for>
+<span style="font-size: 12.5px; color: var(--muted)">PDF signé et dossier de preuve archivés.</span>
+</section>
+</sc-if>
+
+<sc-if value="{{is.depot}}" hint-placeholder-val="{{ true }}">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Dépôt à l'OPCO</h2>
+<span style="font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn)">J+3</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 10px">
+<span class="num" style="font-size: 52px; line-height: 0.9; font-weight: 650; letter-spacing: -0.05em; color: var(--warn)">2</span>
+<span style="font-size: 14px; color: var(--muted)">jours ouvrables restants · avant le mardi 6 octobre</span>
+</div>
+<div role="group" aria-label="Mode de dépôt" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; border-radius: 11px; background: var(--surface2)">
+<button type="button" onClick="{{modeApi}}" style="height: 34px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{apiStyle}}">API OPCO</button>
+<button type="button" onClick="{{modeGuide}}" style="height: 34px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{guideStyle}}">Mode guidé</button>
+</div>
+
+<sc-if value="{{isApi}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted)">Scolaly est habilité auprès d'OPCO Commerce. Le CERFA signé, la convention de formation et le calendrier sont transmis en un clic.</p>
+<div style="display: flex; flex-direction: column; gap: 0">
+<sc-for list="{{track}}" as="t" hint-placeholder-count="4">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; align-items: center">
+<span style="width: 14px; height: 14px; border-radius: 999px; box-sizing: border-box; {{t.dot}}"></span>
+<span style="width: 2px; height: 22px; {{t.line}}"></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 1px; margin-top: -2px">
+<span style="font-size: 13.5px; font-weight: 500; color: {{t.fg}}">{{t.label}}</span>
+<span class="num mono" style="font-size: 11.5px; color: var(--muted)">{{t.when}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+<button class="btn" type="button" onClick="{{deposit}}" style="height: 44px; border-radius: 12px; border: 0; font-size: 14px; font-weight: 600; {{depositStyle}}">{{depositLabel}}</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isGuide}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{checklist}}" as="c" hint-placeholder-count="4">
+<label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer">
+<input type="checkbox" checked="{{c.done}}" onChange="{{c.toggle}}" style="width: 18px; height: 18px; accent-color: var(--accent)">
+<span style="{{c.style}}">{{c.label}}</span>
+</label>
+</sc-for>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Numéro de dépôt OPCO
+<input class="mono" value="{{depotNum}}" onChange="{{setDepotNum}}" placeholder="ex. 069-2026-104600" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 14px">
+</label>
+<button class="btn" type="button" style="height: 44px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Marquer comme déposé</button>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{is.pec}}" hint-placeholder-val="{{ false }}">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Prise en charge prévisionnelle</h2>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">NPEC (BTS MCO × IDCC 1517)</span><span class="num" style="font-weight: 600">[NPEC] €/an</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Durée du contrat</span><span class="num" style="font-weight: 600">21 mois</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Montant notifié</span><span style="font-weight: 600; color: var(--subtle)">en attente de l'OPCO</span></div>
+<p style="margin: 0; font-size: 12.5px; color: var(--muted)">L'échéancier de facturation sera créé à la prise en charge et transmis à la facturation.</p>
+<a class="lnk" href="PlanFinancement.dc.html" style="font-size: 13.5px">Voir le plan de financement</a>
+</section>
+</sc-if>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 2, mode: 'api', phase: 0, checks: { 0: true, 1: true }, depotNum: '' };
+  }
+  componentWillUnmount() {
+    clearTimeout(this.t);
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const defs = [
+      { label: 'Préparation', sub: 'Dossier complet' },
+      { label: 'Signature', sub: '3 / 3 signé le 28/09' },
+      { label: 'Dépôt OPCO', sub: st.phase >= 2 ? 'Accusé de réception' : 'À faire · J+3' },
+      { label: 'Prise en charge', sub: 'En attente' }
+    ];
+    const steps = defs.map((d, i) => {
+      const done = i < 2 || (i === 2 && st.phase >= 2);
+      const cur = i === st.step;
+      return {
+        ...d,
+        mark: done ? '✓' : String(i + 1),
+        badge: done ? 'background: var(--ok-soft); color: var(--ok)' : i === 2 ? 'background: var(--warn-soft); color: var(--warn)' : 'background: var(--surface2); color: var(--muted)',
+        style: cur ? 'border: 1.5px solid var(--accent); background: var(--surface)' : 'border: 1px solid var(--line); background: var(--surface)',
+        pick: () => this.setState({ step: i })
+      };
+    });
+    const parts = [
+      { label: 'Employeur', sub: 'Boulanger SA · SIRET [SIRET] · IDCC 1517', by: 'Employeur · 22/09' },
+      { label: 'Maître d’apprentissage', sub: 'Romain Diaz · responsable de rayon', by: 'Employeur · 22/09' },
+      { label: 'Apprentie', sub: 'Lina Chevalier · née le 14/03/2006', by: 'Apprentie · 20/09' },
+      { label: 'Contrat', sub: '29/09/2026 → 30/06/2028 · 35 h / semaine', by: 'Scolarité · 23/09' },
+      { label: 'Formation et organisme', sub: 'BTS MCO · RNCP [code] · 1 350 h · UAI [UAI]', by: 'Pré-rempli par Scolaly' }
+    ];
+    const pay = [
+      { period: '29/09/2026 → 13/03/2027', age: '20 ans · 1ʳᵉ année', min: '43 % SMIC', prop: '55 %' },
+      { period: '14/03/2027 → 28/09/2027', age: '21 ans · 1ʳᵉ année', min: '53 % SMIC', prop: '55 %' },
+      { period: '29/09/2027 → 30/06/2028', age: '21 ans · 2ᵉ année', min: '61 % SMIC', prop: '65 %' }
+    ];
+    const signers = [
+      { n: '1', who: 'Boulanger SA · Marc Aubert', role: 'Employeur', when: '25/09 · 10:42' },
+      { n: '2', who: 'Lina Chevalier', role: 'Apprentie', when: '25/09 · 18:07' },
+      { n: '3', who: 'ISCA Business School', role: 'Visa de l’organisme de formation', when: '28/09 · 09:15' }
+    ];
+    const tl = ['À déposer', 'Déposé', 'Accusé de réception', 'Pris en charge'];
+    const when = ['depuis le 29/09', st.phase >= 1 ? 'aujourd’hui · 10:24' : '', st.phase >= 2 ? 'aujourd’hui · 10:24 · n° 069-2026-104600' : '', 'notification de l’OPCO'];
+    const track = tl.map((l, i) => {
+      const done = i <= st.phase;
+      return {
+        label: l, when: when[i],
+        dot: done ? 'background: var(--ok)' : 'border: 2px solid var(--line); background: var(--surface)',
+        line: i === tl.length - 1 ? 'background: transparent' : done && i < st.phase ? 'background: var(--ok)' : 'background: var(--line)',
+        fg: done ? 'var(--fg)' : 'var(--muted)'
+      };
+    });
+    const items = ['Télécharger le dossier (CERFA signé + pièces)', 'Ouvrir le portail OPCO Commerce', 'Déposer le dossier sur le portail', 'Reporter le numéro de dépôt ci-dessous'];
+    const checklist = items.map((l, i) => ({
+      label: l, done: !!st.checks[i],
+      style: st.checks[i] ? 'color: var(--muted); text-decoration: line-through' : '',
+      toggle: () => this.setState({ checks: { ...this.state.checks, [i]: !this.state.checks[i] } })
+    }));
+    const seg = 'background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(14,16,34,.08)';
+    const off = 'background: transparent; color: var(--muted)';
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Alternance'),
+      steps, parts, pay, signers, track, checklist,
+      is: { prep: st.step === 0, sign: st.step === 1, depot: st.step === 2, pec: st.step === 3 },
+      showPrep: () => this.setState({ step: 0 }),
+      isApi: st.mode === 'api', isGuide: st.mode === 'guide',
+      apiStyle: st.mode === 'api' ? seg : off,
+      guideStyle: st.mode === 'guide' ? seg : off,
+      modeApi: () => this.setState({ mode: 'api' }),
+      modeGuide: () => this.setState({ mode: 'guide' }),
+      depositLabel: st.phase === 0 ? 'Déposer via l’API' : st.phase === 1 ? 'Transmission…' : 'Déposé · suivi automatique',
+      depositStyle: st.phase >= 2 ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      deposit: () => {
+        if (this.state.phase > 0) { clearTimeout(this.t); this.setState({ phase: 0 }); return; }
+        this.setState({ phase: 1 });
+        this.t = setTimeout(() => this.setState({ phase: 2 }), 1400);
+      },
+      depotNum: st.depotNum,
+      setDepotNum: (e) => this.setState({ depotNum: e.target.value })
+    };
+  }
+}
+</script>
+</body>
+</html>
