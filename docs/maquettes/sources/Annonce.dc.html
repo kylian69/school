@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rédiger une annonce</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input,.sc textarea{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.fld:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="12">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Annonces · brouillon enregistré</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Nouvelle annonce</h1>
+</div>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Enregistrer le brouillon</button>
+<button class="btn" type="button" onClick="{{publish}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; font-size: 14px; font-weight: 600; {{pubStyle}}">{{pubLabel}}</button>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<section style="padding: 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Titre
+<input class="fld" value="{{title}}" onChange="{{setTitle}}" style="height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 17px; font-weight: 600">
+</label>
+<div style="display: flex; gap: 4px; padding: 6px; border-radius: 10px; background: var(--surface2)">
+<button type="button" aria-label="Gras" style="width: 34px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--fg); font-weight: 700">B</button>
+<button type="button" aria-label="Italique" style="width: 34px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--fg); font-style: italic">I</button>
+<button type="button" aria-label="Liste" style="width: 34px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--fg)">•</button>
+<button type="button" aria-label="Lien" style="height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--fg); font-size: 13px">Lien</button>
+<button type="button" aria-label="Pièce jointe" style="height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--fg); font-size: 13px">Pièce jointe</button>
+</div>
+<textarea class="fld" value="{{body}}" onChange="{{setBody}}" rows="9" aria-label="Contenu de l'annonce" style="padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 14.5px; line-height: 1.55; resize: vertical"></textarea>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+<button type="button" role="switch" onClick="{{o.toggle}}" style="display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); text-align: left">
+<span style="width: 36px; height: 22px; border-radius: 999px; padding: 2px; box-sizing: border-box; display: flex; {{o.track}}"><span style="width: 18px; height: 18px; border-radius: 999px; background: #FFFFFF"></span></span>
+<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13.5px; font-weight: 500">{{o.label}}</span><span style="font-size: 12px; color: var(--muted)">{{o.sub}}</span></span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Destinataires</h2>
+<span class="num" style="font-size: 22px; font-weight: 650; letter-spacing: -0.03em; color: var(--accent)">{{count}}</span>
+</div>
+<span style="font-size: 12.5px; color: var(--muted)">Publics</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{roles}}" as="r" hint-placeholder-count="4">
+<button type="button" onClick="{{r.toggle}}" style="height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; {{r.style}}">{{r.label}}</button>
+</sc-for>
+</div>
+<span style="font-size: 12.5px; color: var(--muted)">Formations</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{forms}}" as="r" hint-placeholder-count="5">
+<button type="button" onClick="{{r.toggle}}" style="height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; {{r.style}}">{{r.label}}</button>
+</sc-for>
+</div>
+</section>
+
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 12.5px; color: var(--muted)">Aperçu sur téléphone</span>
+<div style="align-self: center; width: 280px; padding: 14px; border-radius: 22px; background: var(--bg); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<sc-if value="{{pinned}}" hint-placeholder-val="{{ true }}"><span style="align-self: flex-start; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent)">Épinglée</span></sc-if>
+<span style="font-size: 15px; font-weight: 650; letter-spacing: -0.01em">{{title}}</span>
+<span style="font-size: 12.5px; line-height: 1.5; color: var(--muted); white-space: pre-line">{{bodyShort}}</span>
+<sc-if value="{{ack}}" hint-placeholder-val="{{ true }}"><span style="height: 36px; border-radius: 10px; background: var(--accent); color: var(--accent-fg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">J'ai lu</span></sc-if>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      title: 'Forum des entreprises le 15 octobre',
+      body: 'Le forum de l’alternance se tient le jeudi 15 octobre de 9 h à 17 h dans l’amphi 1 et le hall.\n\n40 entreprises seront présentes. Les cours de l’après-midi sont maintenus pour les 2ᵉ années.\n\nPensez à apporter plusieurs CV imprimés.',
+      roles: { 'Apprenants': true }, forms: { 'BTS MCO': true, 'BTS NDRC': true },
+      pin: true, ack: false, sched: false, published: false
+    };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  chips(names, sel, key) {
+    return names.map((n) => ({
+      label: n,
+      style: sel[n] ? 'border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      toggle: () => this.setState({ [key]: { ...this.state[key], [n]: !this.state[key][n] } })
+    }));
+  }
+  renderVals() {
+    const st = this.state;
+    const sizes = { 'BTS MCO': 156, 'BTS NDRC': 118, 'BTS CG': 84, 'Bachelor RH': 162, 'Mastère Marketing': 96 };
+    const per = { 'Apprenants': 1, 'Intervenants': 0.12, 'Tuteurs': 0.6, 'Familles': 0.5 };
+    const fsel = Object.keys(sizes).filter((f) => st.forms[f]);
+    const base = fsel.reduce((a, f) => a + sizes[f], 0);
+    const count = Object.keys(per).filter((r) => st.roles[r]).reduce((a, r) => a + Math.round(base * per[r]), 0);
+    const sw = (on) => on ? 'background: var(--accent); justify-content: flex-end' : 'background: var(--line); justify-content: flex-start';
+    const options = [
+      { k: 'pin', label: 'Épingler en haut', sub: 'jusqu’au 15/10' },
+      { k: 'ack', label: 'Accusé de lecture', sub: 'bouton « J’ai lu » et suivi' },
+      { k: 'sched', label: 'Programmer', sub: st.sched ? 'lun. 5/10 à 08:00' : 'publier tout de suite' }
+    ].map((o) => ({ ...o, track: sw(st[o.k]), toggle: () => this.setState({ [o.k]: !this.state[o.k] }) }));
+    const pubLabel = st.published ? (st.sched ? 'Programmée ✓' : 'Publiée ✓') : st.sched ? 'Programmer l’envoi' : 'Publier maintenant';
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Tableau de bord'),
+      title: st.title, setTitle: (e) => this.setState({ title: e.target.value }),
+      body: st.body, setBody: (e) => this.setState({ body: e.target.value }),
+      bodyShort: st.body.length > 180 ? st.body.slice(0, 180) + '…' : st.body,
+      roles: this.chips(Object.keys(per), st.roles, 'roles'),
+      forms: this.chips(Object.keys(sizes), st.forms, 'forms'),
+      count: count + ' personnes',
+      options, pinned: st.pin, ack: st.ack,
+      pubLabel,
+      pubStyle: st.published ? 'background: var(--ok-soft); color: var(--ok)' : count ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--subtle); cursor: not-allowed',
+      publish: () => { if (count) this.setState({ published: !this.state.published }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

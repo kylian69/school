@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Partie employeur</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input,.sc select{font-family:inherit}
+.sc button{cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.fld{height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:15px;box-sizing:border-box;width:100%}
+.fld:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="sc qgrid {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden">
+<header style="padding: 18px 20px 14px; display: flex; flex-direction: column; gap: 12px; background: var(--surface); border-bottom: 1px solid var(--line)">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="width: 22px; height: 22px; border-radius: 7px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 5px; top: 5px; width: 7px; height: 7px; border-radius: 2px; background: var(--surface)"></div>
+<div style="position: absolute; right: 5px; bottom: 5px; width: 4px; height: 4px; border-radius: 1px; background: var(--surface)"></div>
+</div>
+<span style="font-size: 13px; color: var(--muted)">pour ISCA Business School</span>
+</div>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ok)"><span style="width: 6px; height: 6px; border-radius: 999px; background: var(--ok)"></span>{{saveLabel}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 18px; font-weight: 650; letter-spacing: -0.02em">Contrat de Lina Chevalier</span>
+<span style="font-size: 13px; color: var(--muted)">Boulanger Vénissieux · apprentissage · BTS MCO</span>
+</div>
+<sc-if value="{{showProgress}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 4px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="3">
+<div style="flex-grow: 1; height: 4px; border-radius: 999px; background: {{b.bg}}"></div>
+</sc-for>
+</div>
+</sc-if>
+</header>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<sc-if value="{{is.code}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px; padding-top: 30px">
+<div style="font-size: 24px; font-weight: 650; letter-spacing: -0.03em">Vérifions que c'est bien vous</div>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted)">Nous avons envoyé un code à 6 chiffres à m.aubert@•••••.fr. Ce lien reste valable jusqu'au 6 octobre.</p>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{digits}}" as="d" hint-placeholder-count="6">
+<div class="mono" style="height: 56px; border-radius: 12px; border: 1px solid {{d.border}}; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600">{{d.v}}</div>
+</sc-for>
+</div>
+<button class="btn" type="button" onClick="{{next}}" style="height: 52px; border-radius: 14px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 16px; font-weight: 600">Accéder au dossier</button>
+<button type="button" style="height: 44px; border: 0; background: transparent; color: var(--accent); font-size: 14px; font-weight: 500">Renvoyer le code</button>
+</div>
+</sc-if>
+
+<sc-if value="{{is.ent}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 12.5px; color: var(--muted)">Étape 1 sur 3</span>
+<div style="font-size: 22px; font-weight: 650; letter-spacing: -0.03em">Votre entreprise</div>
+<div style="padding: 14px; border-radius: 14px; background: var(--surface2); display: flex; flex-direction: column; gap: 10px; font-size: 14px">
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3"></path></svg>Déjà connu de l'école</div>
+<div style="display: flex; justify-content: space-between"><span style="color: var(--muted)">Raison sociale</span><span style="font-weight: 500">Boulanger SA</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: var(--muted)">SIRET</span><span class="mono" style="font-weight: 500">[SIRET]</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: var(--muted)">OPCO</span><span style="font-weight: 500">OPCO Commerce</span></div>
+<button type="button" style="align-self: flex-start; border: 0; background: transparent; padding: 0; color: var(--accent); font-size: 13px; font-weight: 500">Signaler une erreur</button>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Convention collective
+<input class="fld" value="Commerces de détail non alimentaires (IDCC 1517)">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Effectif de l'établissement
+<input class="fld num" value="86">
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Caisse de retraite complémentaire
+<input class="fld" placeholder="ex. Malakoff Humanis">
+</label>
+</div>
+</sc-if>
+
+<sc-if value="{{is.pay}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 12.5px; color: var(--muted)">Étape 2 sur 3</span>
+<div style="font-size: 22px; font-weight: 650; letter-spacing: -0.03em">Rémunération</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted)">Le minimum légal est calculé pour vous selon l'âge de Lina et l'année du contrat. Vous pouvez proposer plus.</p>
+<sc-for list="{{payRows}}" as="r" hint-placeholder-count="3">
+<div style="padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; gap: 12px">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500">{{r.label}}</span><span class="num" style="font-size: 12.5px; color: var(--muted)">minimum {{r.min}}</span></div>
+<input class="fld num" aria-label="{{r.aria}}" value="{{r.val}}" onChange="{{r.onChange}}" style="width: 84px; text-align: right; border-color: {{r.border}}">
+<span style="font-size: 13px; color: var(--muted)">%</span>
+</div>
+</sc-for>
+<sc-if value="{{payError}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 12px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: 13px; font-weight: 500">Un pourcentage est sous le minimum légal : il faut le relever pour continuer.</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{is.ma}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 12.5px; color: var(--muted)">Étape 3 sur 3</span>
+<div style="font-size: 22px; font-weight: 650; letter-spacing: -0.03em">Maître d'apprentissage</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Prénom<input class="fld" value="Romain"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Nom<input class="fld" value="Diaz"></label>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Fonction<input class="fld" value="Responsable de rayon"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Diplôme le plus élevé<input class="fld" value="BTS NDRC (niveau 5)"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Années d'expérience dans le métier<input class="fld num" value="2"></label>
+<div style="padding: 12px; border-radius: 12px; background: var(--accent-soft); font-size: 13px; line-height: 1.45">Romain encadre déjà 1 apprenti : il peut en accompagner un second.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.sent}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 70px; text-align: center">
+<div style="width: 96px; height: 96px; border-radius: 30px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center">
+<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</div>
+<div style="font-size: 24px; font-weight: 650; letter-spacing: -0.03em">Merci, c'est envoyé</div>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted)">L'école vérifie le dossier. Vous recevrez ensuite le contrat à signer électroniquement, par email.</p>
+<button type="button" onClick="{{restart}}" style="height: 44px; border: 0; background: transparent; color: var(--muted); font-size: 13px">Rejouer la démo</button>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{showNav}}" hint-placeholder-val="{{ true }}">
+<footer style="padding: 12px 20px 22px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; background: var(--surface); border-top: 1px solid var(--line)">
+<button type="button" onClick="{{prev}}" style="height: 52px; border-radius: 14px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 15px">Retour</button>
+<button class="btn" type="button" onClick="{{next}}" style="height: 52px; border-radius: 14px; border: 0; font-size: 15px; font-weight: 600; {{nextStyle}}">{{nextLabel}}</button>
+</footer>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 0, pay: ['55', '55', '65'] };
+  }
+  renderVals() {
+    const st = this.state;
+    const mins = [43, 53, 61];
+    const labels = ['Jusqu’au 13/03/2027 (20 ans)', 'Du 14/03 au 28/09/2027 (21 ans)', '2ᵉ année (21 ans)'];
+    let payError = false;
+    const payRows = labels.map((l, i) => {
+      const n = Number(String(st.pay[i]).replace(',', '.'));
+      const bad = isNaN(n) || n < mins[i];
+      if (bad) payError = true;
+      return {
+        label: l, min: mins[i] + ' % du SMIC', val: st.pay[i], aria: 'Pourcentage proposé — ' + l,
+        border: bad ? 'var(--warn)' : 'var(--line)',
+        onChange: (e) => { const p = this.state.pay.slice(); p[i] = e.target.value; this.setState({ pay: p }); }
+      };
+    });
+    const blocked = st.step === 2 && payError;
+    const bars = [1, 2, 3].map((i) => ({ bg: i <= st.step ? 'var(--accent)' : 'var(--line)' }));
+    const digits = ['4', '8', '1', '2', '7', '6'].map((v) => ({ v, border: 'var(--accent)' }));
+    return {
+      theme: this.props.theme ?? 'light',
+      is: { code: st.step === 0, ent: st.step === 1, pay: st.step === 2, ma: st.step === 3, sent: st.step === 4 },
+      showProgress: st.step >= 1 && st.step <= 3,
+      showNav: st.step >= 1 && st.step <= 3,
+      saveLabel: st.step === 0 ? 'Lien sécurisé' : 'Enregistré',
+      bars, digits, payRows, payError,
+      nextLabel: st.step === 3 ? 'Envoyer à l’école' : 'Continuer',
+      nextStyle: blocked ? 'background: var(--surface2); color: var(--subtle); cursor: not-allowed' : 'background: var(--accent); color: var(--accent-fg)',
+      next: () => { if (!blocked) this.setState({ step: Math.min(4, this.state.step + 1) }); },
+      prev: () => this.setState({ step: Math.max(0, this.state.step - 1) }),
+      restart: () => this.setState({ step: 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Grille de délibération</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.fld:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; {{cols}}">
+<sc-if value="{{showSide}}" hint-placeholder-val="{{ true }}">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="11">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+</sc-if>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; {{mainSize}}">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Ven. 02/10/2026 · 14:00 · salle du conseil · président : Marc Delorme · quorum atteint (5 / 5)</span>
+<h1 style="margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -0.035em">Jury de diplôme · Bachelor Responsable RH</h1>
+</div>
+<button class="ghost" type="button" onClick="{{toggleProj}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">{{projLabel}}</button>
+<button class="btn" type="button" onClick="{{close}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; font-size: 14px; font-weight: 600; {{closeStyle}}">{{closeLabel}}</button>
+</div>
+
+<sc-if value="{{closed}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--ok-soft); color: var(--ok); font-size: 14px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+<span style="flex-grow: 1"><strong>Délibération close.</strong> Procès-verbal généré, envoyé en signature au président. Les résultats seront publiés le 05/10 à 10:00.</span>
+</div>
+</sc-if>
+
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+<div style="display: flex; gap: 8px; font-size: 13.5px">
+<span class="num" style="padding: 6px 12px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600">{{nAdm}} admis</span>
+<span class="num" style="padding: 6px 12px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600">{{nRat}} rattrapage</span>
+<span class="num" style="padding: 6px 12px; border-radius: 999px; background: var(--bad-soft); color: var(--bad); font-weight: 600">{{nAj}} ajourné(s)</span>
+<span class="num" style="padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600">{{nOpen}} à discuter</span>
+</div>
+<div style="flex-grow: 1"></div>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer">
+<input type="checkbox" checked="{{onlyOpen}}" onChange="{{toggleOpen}}" style="width: 18px; height: 18px; accent-color: var(--accent)">
+Afficher seulement les cas à discuter
+</label>
+</div>
+
+<div class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<table style="width: 100%; min-width: 1020px; border-collapse: collapse; font-size: 14px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Apprenant</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">Moyenne</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">ECTS</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Proposition</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Décision du jury</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Points</th>
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Motif</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+<tr style="background: {{r.rowBg}}">
+<td style="padding: 10px 16px; border-bottom: 1px solid var(--line); font-weight: 600">{{r.name}}</td>
+<td class="num mono" style="padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: right; font-weight: 600; color: {{r.avgFg}}">{{r.avgTxt}}</td>
+<td class="num" style="padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: right; color: {{r.ectsFg}}">{{r.ects}}</td>
+<td style="padding: 10px 8px; border-bottom: 1px solid var(--line)"><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{r.propBg}}; color: {{r.propFg}}">{{r.prop}}</span></td>
+<td style="padding: 8px 8px; border-bottom: 1px solid var(--line)">
+<div role="radiogroup" aria-label="{{r.decAria}}" style="display: flex; gap: 4px">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3">
+<button type="button" role="radio" onClick="{{o.pick}}" style="height: 32px; padding: 0 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; {{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</td>
+<td style="padding: 8px 8px; border-bottom: 1px solid var(--line)"><input class="fld num mono" aria-label="{{r.ptsAria}}" value="{{r.pts}}" onChange="{{r.setPts}}" placeholder="0" style="width: 64px; height: 32px; box-sizing: border-box; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 13px; text-align: right"></td>
+<td style="padding: 8px 16px; border-bottom: 1px solid var(--line)"><input class="fld" aria-label="{{r.motifAria}}" value="{{r.motif}}" onChange="{{r.setMotif}}" placeholder="{{r.motifPh}}" style="width: 100%; height: 32px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 1px solid {{r.motifBorder}}; background: var(--bg); color: var(--fg); font-size: 13px"></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<p style="margin: 0; font-size: 12.5px; color: var(--muted)">Règles de la certification : moyenne générale ≥ 10 et 60 ECTS. Des points de jury ou une décision différente de la proposition exigent un motif, qui figurera au procès-verbal.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { proj: false, onlyOpen: false, closed: false, dec: {}, pts: {}, motif: {} };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const data = [
+      ['Louise Bertrand', 14.6, 60, 'Admis'], ['Ilyes Boukhari', 9.7, 54, 'À discuter'], ['Amandine Roy', 12.1, 60, 'Admis'],
+      ['Bastien Colin', 10.4, 60, 'Admis'], ['Fatou Diop', 15.8, 60, 'Admis'], ['Grégoire Lemaire', 8.2, 42, 'Ajourné'],
+      ['Salomé Vidal', 11.3, 57, 'À discuter'], ['Yanis Ferhat', 13.0, 60, 'Admis'], ['Mélanie Brun', 9.9, 60, 'À discuter'], ['Antoine Masson', 12.7, 60, 'Admis']
+    ];
+    const P = {
+      'Admis': ['var(--ok-soft)', 'var(--ok)'], 'Ajourné': ['var(--bad-soft)', 'var(--bad)'], 'Rattrapage': ['var(--warn-soft)', 'var(--warn)'], 'À discuter': ['var(--accent-soft)', 'var(--accent)']
+    };
+    let nAdm = 0, nAj = 0, nRat = 0, nOpen = 0, missingMotif = false;
+    const all = data.map((d, i) => {
+      const prop = d[3];
+      const dec = st.dec[i] || (prop === 'À discuter' ? null : prop);
+      const pts = st.pts[i] || '';
+      const motif = st.motif[i] || '';
+      const p = Number(String(pts).replace(',', '.')) || 0;
+      const needMotif = (dec && prop !== 'À discuter' && dec !== prop) || p > 0 || (prop === 'À discuter' && dec);
+      if (needMotif && !motif.trim()) missingMotif = true;
+      if (!dec) nOpen++; else if (dec === 'Admis') nAdm++; else if (dec === 'Ajourné') nAj++; else nRat++;
+      const avg = d[1] + p;
+      return {
+        name: d[0], prop, open: prop === 'À discuter',
+        avgTxt: avg.toFixed(2).replace('.', ',') + (p > 0 ? ' *' : ''),
+        avgFg: avg >= 10 ? 'var(--fg)' : 'var(--bad)',
+        ects: d[2] + ' / 60', ectsFg: d[2] < 60 ? 'var(--warn)' : 'var(--muted)',
+        propBg: P[prop][0], propFg: P[prop][1],
+        rowBg: !dec ? 'var(--accent-soft)' : 'transparent',
+        decAria: 'Décision pour ' + d[0], ptsAria: 'Points de jury pour ' + d[0], motifAria: 'Motif pour ' + d[0],
+        opts: ['Admis', 'Rattrapage', 'Ajourné'].map((o) => ({
+          label: o,
+          style: dec === o ? 'border: 0; background: ' + P[o][1] + '; color: var(--surface)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--muted)',
+          pick: () => { if (!this.state.closed) this.setState({ dec: { ...this.state.dec, [i]: o } }); }
+        })),
+        pts, setPts: (e) => this.setState({ pts: { ...this.state.pts, [i]: e.target.value } }),
+        motif, setMotif: (e) => this.setState({ motif: { ...this.state.motif, [i]: e.target.value } }),
+        motifPh: needMotif ? 'Motif obligatoire' : '',
+        motifBorder: needMotif && !motif.trim() ? 'var(--warn)' : 'var(--line)'
+      };
+    });
+    const rows = st.onlyOpen ? all.filter((r) => r.open) : all;
+    const canClose = nOpen === 0 && !missingMotif && !st.closed;
+    return {
+      theme: st.proj ? 'dark' : (this.props.theme ?? 'light'),
+      nav: this.nav('Jurys'),
+      showSide: !st.proj,
+      cols: st.proj ? 'grid-template-columns: minmax(0, 1fr)' : 'grid-template-columns: 248px minmax(0, 1fr)',
+      mainSize: st.proj ? 'font-size: 110%; max-width: 1500px; width: 100%; margin: 0 auto' : '',
+      projLabel: st.proj ? 'Quitter la projection' : 'Mode projection',
+      toggleProj: () => this.setState({ proj: !this.state.proj }),
+      onlyOpen: st.onlyOpen, toggleOpen: () => this.setState({ onlyOpen: !this.state.onlyOpen }),
+      rows, nAdm, nAj, nRat, nOpen,
+      closed: st.closed,
+      closeLabel: st.closed ? 'PV à signer' : nOpen ? 'Clore (' + nOpen + ' cas restants)' : missingMotif ? 'Clore (motifs manquants)' : 'Clore et générer le PV',
+      closeStyle: canClose ? 'background: var(--accent); color: var(--accent-fg)' : st.closed ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--surface2); color: var(--subtle); cursor: not-allowed',
+      close: () => { if (canClose) this.setState({ closed: true }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

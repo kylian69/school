@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Émargement — apprenant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@keyframes scan{0%{top:8%}50%{top:88%}100%{top:8%}}
+.scanline{animation:scan 1.8s ease-in-out infinite}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+.pop{animation:pop .45s ease-out both}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden">
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+<div class="qgrid" style="height: 844px; box-sizing: border-box; padding: 24px 20px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<a href="AccueilApprenant.dc.html" aria-label="Retour à l'accueil" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--fg)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+</a>
+<span style="font-size: 15px; font-weight: 600">Émarger</span>
+<div style="width: 44px; height: 44px"></div>
+</div>
+<div style="flex-grow: 1"></div>
+<div style="padding: 20px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ok); font-weight: 500"><span style="width: 7px; height: 7px; border-radius: 999px; background: var(--ok)"></span>Appel ouvert · jusqu'à 09:30</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 24px; font-weight: 650; letter-spacing: -0.03em">Droit des affaires</div>
+<div class="num" style="font-size: 14px; color: var(--muted)">09:00 – 12:00 · Salle B204 · Sophie Arnaud</div>
+</div>
+</div>
+<button class="btn" type="button" onClick="{{startScan}}" style="height: 64px; border-radius: 18px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"></path></svg>
+Scanner le QR code
+</button>
+<p style="margin: 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted)">Pas de réseau dans la salle ? L'émargement fonctionne quand même : il sera envoyé dès le retour de la connexion.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{isScan}}" hint-placeholder-val="{{ false }}">
+<div style="height: 844px; background: #050608; color: #F2F3F8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; position: relative">
+<div style="position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #1A1C26 0%, #050608 70%)"></div>
+<div style="position: relative; width: 260px; height: 260px">
+<div style="position: absolute; left: 0; top: 0; width: 44px; height: 44px; border-left: 3px solid #8E8CFF; border-top: 3px solid #8E8CFF; border-top-left-radius: 18px"></div>
+<div style="position: absolute; right: 0; top: 0; width: 44px; height: 44px; border-right: 3px solid #8E8CFF; border-top: 3px solid #8E8CFF; border-top-right-radius: 18px"></div>
+<div style="position: absolute; left: 0; bottom: 0; width: 44px; height: 44px; border-left: 3px solid #8E8CFF; border-bottom: 3px solid #8E8CFF; border-bottom-left-radius: 18px"></div>
+<div style="position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; border-right: 3px solid #8E8CFF; border-bottom: 3px solid #8E8CFF; border-bottom-right-radius: 18px"></div>
+<div class="scanline" style="position: absolute; left: 14px; right: 14px; height: 2px; border-radius: 2px; background: #8E8CFF; box-shadow: 0 0 18px 2px rgba(142,140,255,.7)"></div>
+</div>
+<div style="position: relative; text-align: center; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 17px; font-weight: 600">Visez le QR code projeté</div>
+<div style="font-size: 13.5px; color: #A6AABF">La lecture est automatique</div>
+</div>
+<button type="button" onClick="{{goHome}}" style="position: relative; height: 48px; padding: 0 22px; border-radius: 999px; border: 1px solid #2E3240; background: rgba(255,255,255,.06); color: #F2F3F8; font-size: 15px">Annuler</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<div class="qgrid" style="height: 844px; box-sizing: border-box; padding: 24px 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 20px">
+<div style="flex-grow: 1"></div>
+<div class="pop" style="width: 112px; height: 112px; border-radius: 34px; display: flex; align-items: center; justify-content: center; background: {{badgeBg}}; color: {{badgeFg}}">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</div>
+<div style="text-align: center; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 28px; font-weight: 650; letter-spacing: -0.03em">Présence enregistrée</div>
+<div class="mono num" style="font-size: 15px; color: var(--muted)">{{stamp}}</div>
+</div>
+<div style="width: 100%; box-sizing: border-box; padding: 16px 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; font-size: 14px">
+<div style="display: flex; justify-content: space-between"><span style="color: var(--muted)">Cours</span><span style="font-weight: 500">Droit des affaires</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: var(--muted)">Salle</span><span style="font-weight: 500">B204</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: var(--muted)">Intervenante</span><span style="font-weight: 500">Sophie Arnaud</span></div>
+<div style="height: 1px; background: var(--line)"></div>
+<div style="display: flex; align-items: center; gap: 8px; color: {{syncFg}}; font-weight: 500">
+<span style="width: 8px; height: 8px; border-radius: 999px; background: {{syncFg}}"></span>{{syncLabel}}
+</div>
+</div>
+<div style="flex-grow: 1"></div>
+<a href="AccueilApprenant.dc.html" style="width: 100%; height: 56px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 16px; font-weight: 500; display: flex; align-items: center; justify-content: center; text-decoration: none">Retour à l'accueil</a>
+<button type="button" onClick="{{goHome}}" style="border: 0; background: transparent; color: var(--muted); font-size: 13px; height: 44px">Rejouer la démo</button>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"offline":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { screen: 'home', stamp: '' };
+  }
+  componentWillUnmount() {
+    clearTimeout(this.t);
+  }
+  renderVals() {
+    const offline = this.props.offline ?? false;
+    const s = this.state.screen;
+    return {
+      theme: this.props.theme ?? 'light',
+      isHome: s === 'home',
+      isScan: s === 'scan',
+      isDone: s === 'done',
+      stamp: this.state.stamp,
+      badgeBg: offline ? 'var(--warn-soft)' : 'var(--ok-soft)',
+      badgeFg: offline ? 'var(--warn)' : 'var(--ok)',
+      syncFg: offline ? 'var(--warn)' : 'var(--ok)',
+      syncLabel: offline ? 'Hors ligne · envoi automatique au retour du réseau' : 'Synchronisé · horodatage serveur',
+      startScan: () => {
+        this.setState({ screen: 'scan' });
+        clearTimeout(this.t);
+        this.t = setTimeout(() => {
+          const d = new Date();
+          const p = (n) => String(n).padStart(2, '0');
+          this.setState({ screen: 'done', stamp: 'Ven. 2 oct. · 09:' + p(3 + (d.getSeconds() % 7)) + ':' + p(d.getSeconds()) });
+        }, 1800);
+      },
+      goHome: () => { clearTimeout(this.t); this.setState({ screen: 'home' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

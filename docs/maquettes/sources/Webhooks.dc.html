@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Webhooks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.trow:hover{background:var(--bg)}
+.tabs a{text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="12">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)"><a href="Demarrage.dc.html" style="color: var(--accent); text-decoration: none; font-weight: 500">Paramètres</a> / Intégrations</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Intégrations</h1>
+</div>
+<button class="btn" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Nouvel abonnement</button>
+</div>
+<nav class="tabs" aria-label="Intégrations" style="display: flex; gap: 4px; border-bottom: 1px solid var(--line)">
+<a href="ClesApi.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted)">Clés d'API</a>
+<a href="Webhooks.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--fg); border-bottom: 2px solid var(--accent); margin-bottom: -1px">Webhooks</a>
+<a href="Connecteurs.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted)">Connecteurs</a>
+<a href="Sso.dc.html" style="height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted)">Connexion unique</a>
+</nav>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 12px; align-items: start">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12.5px; color: var(--muted)">Abonnement</span>
+<span style="font-size: 16px; font-weight: 600">Intranet du groupe</span>
+<span class="mono" style="font-size: 12.5px; color: var(--muted)">https://intranet.groupe-isca.example/hooks/scolaly</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12.5px; color: var(--muted)">Secret de signature</span>
+<div style="display: flex; gap: 8px; align-items: center">
+<span class="mono" style="flex-grow: 1; padding: 9px 12px; border-radius: 10px; background: var(--surface2); font-size: 13px">{{secret}}</span>
+<button class="ghost" type="button" onClick="{{toggleSecret}}" style="height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 13px">{{secretLabel}}</button>
+</div>
+<span style="font-size: 12px; color: var(--muted)">Chaque envoi est signé (en-tête Scolaly-Signature) pour que le destinataire vérifie qu'il vient bien de Scolaly.</span>
+</div>
+<span style="font-size: 12.5px; color: var(--muted)">Événements suivis</span>
+<sc-for list="{{events}}" as="e" hint-placeholder-count="6">
+<label style="display: flex; align-items: center; gap: 10px; cursor: pointer">
+<input type="checkbox" checked="{{e.on}}" onChange="{{e.toggle}}" style="width: 17px; height: 17px; accent-color: var(--accent)">
+<span class="mono" style="font-size: 12.5px">{{e.id}}</span>
+</label>
+</sc-for>
+</section>
+
+<section class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line)">
+<span style="font-size: 15px; font-weight: 600">Journal des envois</span>
+<span style="font-size: 12.5px; color: var(--muted)">Nouvelle tentative automatique : 1 min, 5 min, 30 min, 2 h, 12 h</span>
+</div>
+<table style="width: 100%; min-width: 620px; border-collapse: collapse; font-size: 13px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12px">
+<th scope="col" style="padding: 10px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Heure</th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Événement</th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Réponse</th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Durée</th>
+<th scope="col" style="padding: 10px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Essais</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right"></th>
+</tr></thead>
+<tbody>
+<sc-for list="{{log}}" as="l" hint-placeholder-count="7">
+<tr class="trow">
+<td class="mono num" style="padding: 10px 16px; border-bottom: 1px solid var(--line); color: var(--muted)">{{l.at}}</td>
+<td class="mono" style="padding: 10px 8px; border-bottom: 1px solid var(--line)">{{l.ev}}</td>
+<td style="padding: 10px 8px; border-bottom: 1px solid var(--line)"><span class="mono" style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {{l.bg}}; color: {{l.fg}}">{{l.code}}</span></td>
+<td class="num" style="padding: 10px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{l.ms}}</td>
+<td class="num" style="padding: 10px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{l.tries}}</td>
+<td style="padding: 10px 16px; border-bottom: 1px solid var(--line); text-align: right">
+<sc-if value="{{l.failed}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{l.retry}}" style="height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 12px">Renvoyer</button></sc-if>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { show: false, ev: { 0: 1, 1: 1, 3: 1 }, ok: {} };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const E = ['apprenant.cree', 'absence.enregistree', 'note.publiee', 'contrat.signe', 'facture.emise', 'seance.annulee'];
+    const events = E.map((id, i) => ({ id, on: !!st.ev[i], toggle: () => this.setState({ ev: { ...this.state.ev, [i]: this.state.ev[i] ? 0 : 1 } }) }));
+    const L = [
+      ['10:24:07', 'absence.enregistree', 200, '96 ms', '1'], ['10:21:44', 'absence.enregistree', 200, '88 ms', '1'],
+      ['10:02:13', 'contrat.signe', 503, '—', '3 / 5'], ['09:58:31', 'apprenant.cree', 200, '121 ms', '1'],
+      ['09:41:02', 'absence.enregistree', 200, '92 ms', '1'], ['09:12:55', 'apprenant.cree', 410, '64 ms', '5 / 5'], ['08:59:10', 'absence.enregistree', 200, '101 ms', '1']
+    ];
+    const log = L.map((l, i) => {
+      const fixed = !!st.ok[i];
+      const code = fixed ? 200 : l[2];
+      const bad = code >= 400;
+      return {
+        at: l[0], ev: l[1], code: String(code) + (fixed ? ' · renvoyé' : ''), ms: fixed ? '104 ms' : l[3], tries: fixed ? 'manuel' : l[4],
+        bg: bad ? 'var(--bad-soft)' : 'var(--ok-soft)', fg: bad ? 'var(--bad)' : 'var(--ok)',
+        failed: bad, retry: () => this.setState({ ok: { ...this.state.ok, [i]: true } })
+      };
+    });
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Paramètres'),
+      events, log,
+      secret: st.show ? 'whsec_3fK9•••••••••••••Qa' : '••••••••••••••••••••••••',
+      secretLabel: st.show ? 'Masquer' : 'Afficher',
+      toggleSecret: () => this.setState({ show: !this.state.show })
+    };
+  }
+}
+</script>
+</body>
+</html>

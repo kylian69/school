@@ -7,3 +7,5 @@ pédagogique, emplois du temps, cahier de texte, émargement QR, notes et bullet
 ## Documentation
 - [`docs/business/`](docs/business/) — étude business (marché, tarifs, business plan, faisabilité)
 - [`docs/cahier-des-charges/`](docs/cahier-des-charges/) — cahier des charges détaillé, module par module
+- [`docs/architecture/`](docs/architecture/) — architecture technique (stack, données, émargement, hébergement)
+- [`docs/maquettes/`](docs/maquettes/) — maquettes du MVP (43 écrans) et identité visuelle

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Émargement — écran intervenant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.ghost:hover{background:var(--surface2)}
+.tile{transition:background-color .5s ease,border-color .5s ease}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,149,.55)}100%{box-shadow:0 0 0 10px rgba(74,222,149,0)}}
+.live{animation:pulse 1.6s ease-out infinite}
+</style>
+</helmet>
+<div class="sc qgrid {{theme}}" style="min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column">
+<header style="display: flex; align-items: center; gap: 20px; padding: 18px 32px; border-bottom: 1px solid var(--line); background: var(--surface)">
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<div style="width: 1px; height: 28px; background: var(--line)"></div>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+<div style="font-weight: 600; font-size: 16px; letter-spacing: -0.01em">Droit des affaires</div>
+<div style="font-size: 13px; color: var(--muted)">BTS MCO 2ᵉ année · Alternance · Salle B204 · 09:00 – 12:00 · Sophie Arnaud</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-size: 13px; font-weight: 500">
+<span class="live" style="width: 8px; height: 8px; border-radius: 999px; background: var(--ok)"></span>
+Appel en cours
+</div>
+<button class="ghost" type="button" onClick="{{replay}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 14px">Rejouer la démo</button>
+<button class="btn" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Clore l'appel</button>
+</header>
+
+<main style="flex-grow: 1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; padding: 28px 32px; max-width: 1600px; width: 100%; box-sizing: border-box; margin: 0 auto">
+<section style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 32px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface)">
+<div style="text-align: center; display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 34px; font-weight: 650; letter-spacing: -0.03em">Scannez pour émarger</h1>
+<p style="margin: 0; font-size: 15px; color: var(--muted)">Ouvrez Scolaly sur votre téléphone, puis touchez « Émarger ».</p>
+</div>
+<div style="padding: 22px; border-radius: 22px; background: #FFFFFF; border: 1px solid var(--line)">
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{qr}}" as="row" hint-placeholder-count="25">
+<div style="display: flex">
+<sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="25">
+<div style="width: 13px; height: 13px; background: {{cell.bg}}"></div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="width: 100%; max-width: 369px; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 6px; border-radius: 999px; background: var(--surface2); overflow: hidden">
+<div style="height: 6px; border-radius: 999px; background: var(--accent); {{barStyle}}; transition: width 1s linear"></div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--muted)">
+<span class="num">Nouveau code dans {{left}} s</span>
+<span>Code de secours <span class="mono" style="color: var(--fg); font-weight: 600; letter-spacing: 0.08em">{{code}}</span></span>
+</div>
+</div>
+<p style="margin: 0; max-width: 360px; text-align: center; font-size: 12.5px; line-height: 1.5; color: var(--subtle)">Le code change toutes les 15 secondes : une photo partagée hors de la salle ne permet pas d'émarger.</p>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 18px; padding: 28px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface)">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div style="display: flex; align-items: baseline; gap: 10px">
+<span class="num" style="font-size: 72px; line-height: 0.9; font-weight: 650; letter-spacing: -0.05em">{{present}}</span>
+<span class="num" style="font-size: 22px; color: var(--muted); font-weight: 500">/ {{total}} présents</span>
+</div>
+<div style="display: flex; gap: 8px; font-size: 13px">
+<span style="display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--ok-soft); color: var(--ok)"><span style="width: 7px; height: 7px; border-radius: 2px; background: var(--ok)"></span><span class="num">{{nOk}}</span> à l'heure</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--warn-soft); color: var(--warn)"><span style="width: 7px; height: 7px; border-radius: 2px; background: var(--warn)"></span><span class="num">{{nLate}}</span> en retard</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--surface2); color: var(--muted)"><span style="width: 7px; height: 7px; border-radius: 2px; background: var(--subtle)"></span><span class="num">{{nWait}}</span> en attente</span>
+</div>
+</div>
+<div style="height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden; display: flex">
+<div style="height: 8px; background: var(--ok); {{okBar}}; transition: width .5s ease"></div>
+<div style="height: 8px; background: var(--warn); {{lateBar}}; transition: width .5s ease"></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{students}}" as="s" hint-placeholder-count="28">
+<div class="tile" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; border: 1px solid {{s.border}}; background: {{s.bg}}">
+<div style="flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: {{s.avBg}}; color: {{s.avFg}}">{{s.initials}}</div>
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 1px">
+<span style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.name}}</span>
+<span class="num" style="font-size: 11.5px; color: {{s.fg}}">{{s.label}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
+<span>Présences écrites en direct · dernière il y a 1 s</span>
+<button class="ghost" type="button" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 13px">Marquer présent manuellement</button>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = this.fresh();
+  }
+  fresh() {
+    const names = ["Inès Benali","Lucas Martin","Chloé Nguyen","Yanis Haddad","Emma Rousseau","Noah Petit","Léa Fontaine","Adam Diallo","Manon Girard","Hugo Lefèvre","Sarah Cohen","Enzo Moreau","Camille Durand","Rayan Mansouri","Jade Lambert","Théo Garnier","Louise Bertrand","Nathan Roux","Lina Chevalier","Mathis Blanc","Zoé Mercier","Ilyes Boukhari","Clara Faure","Tom Laurent","Anaïs Robin","Sami Ouali","Julie Perrin","Maxime Henry"];
+    const pre = [0,3,5,8,11,14,17,20,24];
+    const students = names.map((n, i) => {
+      const k = pre.indexOf(i);
+      if (i === 13) return { name: n, st: 'excused', time: '' };
+      if (k >= 0) return { name: n, st: 'ok', time: '08:5' + (2 + k) };
+      return { name: n, st: 'wait', time: '' };
+    });
+    return { left: 15, seed: 7, clock: 0, students };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => this.tick(), 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+  tick() {
+    const s = this.state;
+    let left = s.left - 1, seed = s.seed;
+    if (left <= 0) { left = 15; seed = seed + 1; }
+    const clock = s.clock + 1;
+    let students = s.students;
+    if (clock % 2 === 0) {
+      const order = [2,7,1,10,4,19,6,15,22,9,12,26,16,25,18,21,27,23];
+      const next = order.find((i) => students[i].st === 'wait');
+      if (next !== undefined) {
+        const late = clock > 26;
+        const sec = 3 + Math.floor(clock / 6);
+        const t = late ? '09:1' + (clock % 6) : '09:0' + Math.min(sec, 9);
+        students = students.map((x, i) => i === next ? { ...x, st: late ? 'late' : 'ok', time: t } : x);
+      }
+    }
+    this.setState({ left, seed, clock, students });
+  }
+  finder(x, y, n) {
+    const zones = [[0, 0], [n - 7, 0], [0, n - 7]];
+    for (const z of zones) {
+      const dx = x - z[0], dy = y - z[1];
+      if (dx >= -1 && dx <= 7 && dy >= -1 && dy <= 7) {
+        if (dx < 0 || dy < 0 || dx > 6 || dy > 6) return false;
+        const edge = dx === 0 || dy === 0 || dx === 6 || dy === 6;
+        const core = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
+        return edge || core;
+      }
+    }
+    return null;
+  }
+  qr(seed) {
+    let v = seed * 7919 + 17;
+    const rnd = () => { v = (v * 9301 + 49297) % 233280; return v / 233280; };
+    const n = 25, rows = [];
+    for (let y = 0; y < n; y++) {
+      const cells = [];
+      for (let x = 0; x < n; x++) {
+        let on = rnd() > 0.5;
+        const f = this.finder(x, y, n);
+        if (f !== null) on = f;
+        if (x === 6 && y > 7 && y < n - 8) on = y % 2 === 0;
+        if (y === 6 && x > 7 && x < n - 8) on = x % 2 === 0;
+        cells.push({ bg: on ? '#0B0C10' : 'transparent' });
+      }
+      rows.push({ cells });
+    }
+    return rows;
+  }
+  renderVals() {
+    const s = this.state;
+    const total = s.students.length;
+    const nOk = s.students.filter((x) => x.st === 'ok').length;
+    const nLate = s.students.filter((x) => x.st === 'late').length;
+    const nWait = s.students.filter((x) => x.st === 'wait').length;
+    const look = {
+      ok: { bg: 'var(--ok-soft)', border: 'transparent', avBg: 'var(--ok)', avFg: 'var(--surface)', fg: 'var(--ok)' },
+      late: { bg: 'var(--warn-soft)', border: 'transparent', avBg: 'var(--warn)', avFg: 'var(--surface)', fg: 'var(--warn)' },
+      excused: { bg: 'transparent', border: 'var(--line)', avBg: 'var(--surface2)', avFg: 'var(--muted)', fg: 'var(--muted)' },
+      wait: { bg: 'transparent', border: 'var(--line)', avBg: 'var(--surface2)', avFg: 'var(--muted)', fg: 'var(--subtle)' }
+    };
+    const students = s.students.map((x) => {
+      const parts = x.name.split(' ');
+      const label = x.st === 'ok' ? 'Présent · ' + x.time : x.st === 'late' ? 'Retard · ' + x.time : x.st === 'excused' ? 'Absence justifiée' : 'En attente';
+      return { ...look[x.st], name: x.name, initials: parts[0][0] + parts[1][0], label };
+    });
+    const code = String((s.seed * 482711 + 90127) % 1000000).padStart(6, '0');
+    return {
+      theme: this.props.theme ?? 'dark',
+      qr: this.qr(s.seed),
+      left: s.left,
+      barStyle: 'width: ' + Math.round(s.left / 15 * 100) + '%',
+      code: code.slice(0, 3) + ' ' + code.slice(3),
+      present: nOk + nLate,
+      total, nOk, nLate, nWait,
+      okBar: 'width: ' + (nOk / total * 100) + '%',
+      lateBar: 'width: ' + (nLate / total * 100) + '%',
+      students,
+      replay: () => this.setState(this.fresh())
+    };
+  }
+}
+</script>
+</body>
+</html>

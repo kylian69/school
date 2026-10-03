@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Console plateforme — clients</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.cnav a{color:#A6AABF;text-decoration:none}
+.cnav a:hover{background:#1B1E28;color:#F2F3F8}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.trow{cursor:pointer}
+.trow:hover{background:var(--bg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 232px minmax(0, 1fr)">
+<aside class="cnav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; background: #0B0C10; color: #F2F3F8; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: #8E8CFF; position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: #0B0C10"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: #0B0C10"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+<span style="font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: #2E2312; color: #F5B454">CONSOLE</span>
+</div>
+<nav aria-label="Console plateforme" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid #272B38; font-size: 12.5px; color: #A6AABF; display: flex; flex-direction: column; gap: 4px">
+<span style="color: #F2F3F8; font-weight: 600">Super-administrateur</span>
+<span>Cluster prod · k3s · 3 nœuds sains</span>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 28px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">6 clients · 8 écoles · 4 193 apprenants actifs</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Clients</h1>
+</div>
+<button class="ghost" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Créer une démo</button>
+<button class="btn" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Nouveau client</button>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<section class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<table style="width: 100%; min-width: 680px; border-collapse: collapse; font-size: 13.5px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Client</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Formule</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">Apprenants</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">État</th>
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Échéance</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+<tr class="trow" onClick="{{r.pick}}" style="background: {{r.bg}}">
+<td style="padding: 12px 16px; border-bottom: 1px solid var(--line)"><button type="button" onClick="{{r.pick}}" style="border: 0; background: transparent; padding: 0; color: var(--fg); text-align: left; display: flex; flex-direction: column; gap: 1px"><span style="font-weight: 600">{{r.name}}</span><span style="font-size: 12px; color: var(--muted)">{{r.sub}}</span></button></td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{r.plan}}</td>
+<td class="num" style="padding: 12px 8px; border-bottom: 1px solid var(--line); text-align: right"><span style="font-weight: 600; color: {{r.usageFg}}">{{r.usage}}</span></td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line)"><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{r.stBg}}; color: {{r.stFg}}">{{r.state}}</span></td>
+<td class="num" style="padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--muted)">{{r.end}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 18px; font-weight: 650; letter-spacing: -0.02em">{{sel.name}}</span><span class="mono" style="font-size: 12px; color: var(--muted)">{{sel.domain}}</span></div>
+<span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{sel.stBg}}; color: {{sel.stFg}}">{{sel.state}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12.5px; color: var(--muted)">Écoles</span>
+<sc-for list="{{sel.schools}}" as="s" hint-placeholder-count="2"><span style="font-size: 13.5px; font-weight: 500">{{s}}</span></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted)"><span>Apprenants actifs · 6 derniers mois</span><span class="num">contrat : {{sel.max}}</span></div>
+<div style="display: flex; align-items: flex-end; gap: 8px; height: 90px; border-bottom: 1px solid var(--line)">
+<sc-for list="{{sel.bars}}" as="b" hint-placeholder-count="6">
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 90px">
+<div title="{{b.title}}" style="width: 100%; max-width: 30px; border-radius: 6px 6px 2px 2px; background: {{b.color}}; {{b.h}}"></div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{sel.bars}}" as="b" hint-placeholder-count="6"><span style="flex-grow: 1; text-align: center; font-size: 11px; color: var(--muted)">{{b.m}}</span></sc-for>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Accès support</span><span style="font-weight: 500; color: {{sel.supFg}}">{{sel.support}}</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Version</span><span class="mono" style="font-weight: 500">{{sel.version}}</span></div>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 0 };
+  }
+  renderVals() {
+    const items = [
+      ['Clients', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6'],
+      ['Facturation du mois', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Licences', 'M7 3h7l5 5v13H7zM14 3v5h5'],
+      ['Démonstrations', 'M5 4l14 8-14 8z'],
+      ['Maintenances', 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5z'],
+      ['Santé de la plateforme', 'M3 12h4l3-8 4 16 3-8h4']
+    ];
+    const nav = items.map((x, i) => ({ label: x[0], d: x[1], style: i === 0 ? 'background: #1F2052; color: #C9C8FF' : '' }));
+    const S = {
+      actif: ['Actif', 'var(--ok-soft)', 'var(--ok)'],
+      essai: ['Essai', 'var(--accent-soft)', 'var(--accent)'],
+      retard: ['Paiement en retard', 'var(--warn-soft)', 'var(--warn)'],
+      self: ['Auto-hébergé', 'var(--surface2)', 'var(--muted)']
+    };
+    const C = [
+      { name: 'ISCA Business School', sub: '1 école · 2 campus', plan: 'Établissement', v: 812, max: 900, st: 'actif', end: '31/08/2027', domain: 'isca.scolaly.fr', schools: ['ISCA Business School · Campus Lyon', 'ISCA Business School · Campus Villeurbanne'], hist: [640, 655, 690, 710, 790, 812], support: 'Aucun accès en cours', version: '2026.10.1' },
+      { name: 'Groupe Horizon Formation', sub: '3 écoles', plan: 'Groupe', v: 1984, max: 1800, st: 'actif', end: '31/07/2027', domain: 'horizon.scolaly.fr', schools: ['Horizon Business · Paris', 'Horizon Digital · Lille', 'Horizon Santé · Lille'], hist: [1620, 1650, 1700, 1760, 1910, 1984], support: 'Accès accordé jusqu’au 03/10 · ticket #482', version: '2026.10.1' },
+      { name: 'École Supérieure du Numérique', sub: '1 école · Rennes', plan: 'Établissement', v: 538, max: 600, st: 'retard', end: '31/08/2027', domain: 'esn.scolaly.fr', schools: ['ESN · Rennes'], hist: [480, 490, 495, 500, 530, 538], support: 'Aucun accès en cours', version: '2026.10.1' },
+      { name: 'CFA Métiers du Commerce Nord', sub: '2 sites', plan: 'Établissement', v: 621, max: 700, st: 'actif', end: '30/06/2027', domain: 'cfa-mcn.scolaly.fr', schools: ['CFA MCN · Roubaix', 'CFA MCN · Arras'], hist: [590, 600, 604, 610, 618, 621], support: 'Aucun accès en cours', version: '2026.10.1' },
+      { name: 'Institut Saint-Clair', sub: '1 école · serveurs propres', plan: 'Licence', v: 214, max: 300, st: 'self', end: '31/12/2026', domain: 'licence SC-2026-014', schools: ['Institut Saint-Clair · Nantes'], hist: [200, 205, 205, 210, 212, 214], support: 'Rapport d’usage reçu le 01/10', version: '2026.09.2' },
+      { name: 'Académie Delta Santé', sub: '1 école · essai 30 jours', plan: 'Essai', v: 24, max: 50, st: 'essai', end: 'fin d’essai 21/10/2026', domain: 'delta-demo.scolaly.fr', schools: ['Académie Delta Santé · Toulouse'], hist: [0, 0, 0, 0, 12, 24], support: 'Accompagnement d’installation en cours', version: '2026.10.1' }
+    ];
+    const rows = C.map((c, i) => {
+      const over = c.v > c.max;
+      return {
+        name: c.name, sub: c.sub, plan: c.plan, end: c.end,
+        usage: c.v.toLocaleString('fr-FR') + ' / ' + c.max.toLocaleString('fr-FR'),
+        usageFg: over ? 'var(--bad)' : 'var(--fg)',
+        state: S[c.st][0], stBg: S[c.st][1], stFg: S[c.st][2],
+        bg: i === this.state.sel ? 'var(--accent-soft)' : 'transparent',
+        pick: () => this.setState({ sel: i })
+      };
+    });
+    const c = C[this.state.sel];
+    const months = ['mai', 'juin', 'juil.', 'août', 'sept.', 'oct.'];
+    const top = Math.max(c.max, ...c.hist);
+    const sel = {
+      name: c.name, domain: c.domain, schools: c.schools, max: c.max.toLocaleString('fr-FR'),
+      state: S[c.st][0], stBg: S[c.st][1], stFg: S[c.st][2],
+      bars: c.hist.map((v, i) => ({ m: months[i], title: months[i] + ' : ' + v, h: 'height: ' + Math.max(2, Math.round(v / top * 84)) + 'px', color: v > c.max ? 'var(--bad)' : i === 5 ? 'var(--accent)' : 'var(--accent-soft)' })),
+      support: c.support, supFg: c.support.indexOf('accordé') >= 0 ? 'var(--warn)' : 'var(--fg)', version: c.version
+    };
+    return { theme: this.props.theme ?? 'light', nav, rows, sel };
+  }
+}
+</script>
+</body>
+</html>

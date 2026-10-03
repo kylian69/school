@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Correction des copies</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;family=Caveat:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.hand{font-family:'Caveat',cursive}
+.sc button,.sc textarea{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="12">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">SA</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">Sophie Arnaud</span>
+<span style="font-size: 12px; color: var(--muted)">Intervenante</span>
+</div>
+</div>
+</aside>
+
+<main style="min-width: 0; padding: 20px 28px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Cas pratique n° 3 · Droit des affaires · BTS MCO 2 · rendus le 5/10</span>
+<h1 style="margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.03em">Correction · {{student}}</h1>
+</div>
+<span class="num" style="font-size: 13px; color: var(--muted)">Copie {{pos}} · {{corrected}} corrigées</span>
+<button class="ghost" type="button" onClick="{{prevCopy}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">Précédente</button>
+<button class="btn" type="button" onClick="{{nextCopy}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Valider et copie suivante</button>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 14px; align-items: start">
+<section style="border-radius: 18px; background: var(--surface2); border: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 6px">
+<sc-for list="{{tools}}" as="t" hint-placeholder-count="4">
+<button type="button" onClick="{{t.pick}}" style="height: 34px; padding: 0 12px; border-radius: 9px; font-size: 13px; font-weight: 500; {{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+<div style="background: #FFFFFF; color: #1A1C2A; border-radius: 6px; box-shadow: 0 1px 3px rgba(14,16,34,.12); padding: 40px 48px; min-height: 560px; display: flex; flex-direction: column; gap: 16px; position: relative; font-size: 14px; line-height: 1.7">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #686C82"><span>{{student}} · BTS MCO 2</span><span>Rendu le 05/10 à 21:42 · PDF, 2 pages</span></div>
+<h2 style="margin: 0; font-size: 17px">Analyse du cas « Décathlon »</h2>
+<p style="margin: 0"><span style="background: rgba(79,70,229,.15); border-bottom: 2px solid #4F46E5">Le contrat de vente conclu entre la société et M. Durand est valable</span> car les trois conditions de l'article 1128 du Code civil sont réunies : consentement, capacité et contenu licite et certain.</p>
+<p style="margin: 0">Cependant, M. Durand invoque une <span style="background: rgba(191,35,56,.12); border-bottom: 2px solid #BF2338">erreur sur le prix</span>, ce qui ne constitue pas une cause de nullité.</p>
+<p style="margin: 0">On peut se demander si le vendeur a commis un dol en ne révélant pas que le modèle allait être remplacé…</p>
+<div class="hand" style="position: absolute; right: 18px; top: 128px; width: 150px; font-size: 20px; color: #4F46E5; transform: rotate(-3deg)">Bien posé !</div>
+<div class="hand" style="position: absolute; right: 18px; top: 200px; width: 160px; font-size: 20px; color: #BF2338; transform: rotate(-2deg)">Erreur sur la valeur, à nuancer</div>
+<sc-for list="{{marks}}" as="m" hint-placeholder-count="0">
+<div class="hand" style="font-size: 20px; color: #0B7A4B">{{m}}</div>
+</sc-for>
+</div>
+</section>
+
+<aside style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Grille</h2>
+<span class="num" style="font-size: 30px; font-weight: 650; letter-spacing: -0.04em">{{total}}<span style="font-size: 15px; color: var(--muted)"> / 20</span></span>
+</div>
+<sc-for list="{{crit}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="font-weight: 500">{{c.label}}</span><span class="num" style="color: var(--muted)">/ {{c.max}}</span></div>
+<div style="display: flex; gap: 4px">
+<sc-for list="{{c.opts}}" as="o" hint-placeholder-count="5">
+<button type="button" onClick="{{o.pick}}" class="num" style="flex-grow: 1; height: 34px; border-radius: 9px; font-size: 13px; font-weight: 600; {{o.style}}">{{o.n}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</section>
+<section style="padding: 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Appréciation</h2>
+<textarea value="{{comment}}" onChange="{{setComment}}" rows="3" aria-label="Appréciation" style="padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 13.5px; line-height: 1.45; resize: none"></textarea>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{snippets}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.add}}" style="height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 12px">+ {{s.label}}</button>
+</sc-for>
+</div>
+<span style="font-size: 12px; color: var(--muted)">La note est reportée dans « Notes et évaluations » à la publication.</span>
+</section>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { copy: 0, tool: 'Surligner', g: { 0: 4, 1: 3 }, comment: 'Analyse bien structurée. ', stamps: [], done: 11 };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const students = ['Inès Benali', 'Lucas Martin', 'Chloé Nguyen', 'Yanis Haddad'];
+    const C = [['Qualification juridique', 6], ['Application au cas', 6], ['Argumentation', 5], ['Expression écrite', 3]];
+    let total = 0;
+    const crit = C.map((c, i) => {
+      const v = st.g[i];
+      if (v !== undefined) total += v;
+      const steps = [];
+      for (let n = 0; n <= c[1]; n++) steps.push(n);
+      return {
+        label: c[0], max: String(c[1]),
+        opts: steps.map((n) => ({
+          n: String(n),
+          style: v === n ? 'border: 0; background: var(--accent); color: var(--accent-fg)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+          pick: () => this.setState({ g: { ...this.state.g, [i]: n } })
+        }))
+      };
+    });
+    const tools = ['Surligner', 'Commenter', 'Tampon « Très bien »', 'Gomme'].map((t) => ({
+      label: t,
+      style: t === st.tool ? 'border: 0; background: var(--accent); color: var(--accent-fg)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      pick: () => this.setState({ tool: t, stamps: t.indexOf('Tampon') === 0 ? this.state.stamps.concat(['Très bien ✓']) : this.state.stamps })
+    }));
+    const snippets = ['Bonne maîtrise des notions', 'Revoir le dol (art. 1137)', 'Soignez l’orthographe'].map((s) => ({ label: s, add: () => this.setState({ comment: (this.state.comment + ' ' + s + '.').trim() + ' ' }) }));
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Notes & évaluations'),
+      student: students[st.copy % students.length],
+      pos: (st.copy + 1) + ' / 28',
+      corrected: String(st.done),
+      tools, crit, snippets, marks: st.stamps,
+      total: String(total).replace('.', ','),
+      comment: st.comment, setComment: (e) => this.setState({ comment: e.target.value }),
+      nextCopy: () => this.setState({ copy: this.state.copy + 1, done: this.state.done + 1, g: {}, comment: '', stamps: [] }),
+      prevCopy: () => this.setState({ copy: Math.max(0, this.state.copy - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

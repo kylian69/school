@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Suivi des alternants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.trow:hover{background:var(--bg)}
+.name{color:var(--fg);text-decoration:none;font-weight:600}
+.name:hover{color:var(--accent);text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="11">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">214 alternants · 3 référents école</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Suivi des alternants</h1>
+</div>
+<button class="ghost" type="button" onClick="{{remindAll}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px">{{remindAllLabel}}</button>
+</div>
+
+<div class="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Livrets à jour</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">175</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--warn-soft); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--warn)">Livrets en retard</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--warn)">14</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--accent)">Visites dues en octobre</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--accent)">22</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--bad-soft); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--bad)">Risque de rupture élevé</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--bad)">3</span></div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+<span style="font-size: 13px; color: var(--muted); margin-right: 4px">Référent</span>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+<button type="button" onClick="{{f.pick}}" style="height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; {{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+
+<div class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<table style="width: 100%; min-width: 960px; border-collapse: collapse; font-size: 13.5px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">Alternant</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Entreprise · tuteur</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Livret · période en cours</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Prochain suivi</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Risque</th>
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line); text-align: right">Action</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<tr class="trow">
+<td style="padding: 12px 16px; border-bottom: 1px solid var(--line)">
+<div style="display: flex; flex-direction: column; gap: 1px"><a class="name" href="{{r.href}}">{{r.name}}</a><span style="font-size: 12px; color: var(--muted)">{{r.formation}} · réf. {{r.ref}}</span></div>
+</td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line)"><div style="display: flex; flex-direction: column; gap: 1px"><span>{{r.company}}</span><span style="font-size: 12px; color: var(--muted)">{{r.tutor}}</span></div></td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line)">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="display: flex; gap: 3px">
+<sc-for list="{{r.sigs}}" as="g" hint-placeholder-count="3"><span title="{{g.title}}" style="width: 18px; height: 18px; border-radius: 6px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; background: {{g.bg}}; color: {{g.fg}}">{{g.l}}</span></sc-for>
+</span>
+<span style="font-size: 12.5px; color: {{r.livFg}}">{{r.livret}}</span>
+</div>
+</td>
+<td class="num" style="padding: 12px 8px; border-bottom: 1px solid var(--line); font-size: 13px; color: {{r.visitFg}}">{{r.visit}}</td>
+<td style="padding: 12px 8px; border-bottom: 1px solid var(--line)"><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{r.riskBg}}; color: {{r.riskFg}}">{{r.risk}}</span></td>
+<td style="padding: 12px 16px; border-bottom: 1px solid var(--line); text-align: right">
+<button class="ghost" type="button" onClick="{{r.act}}" style="height: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line); background: transparent; font-size: 12.5px; {{r.actStyle}}">{{r.actLabel}}</button>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<p style="margin: 0; font-size: 12.5px; color: var(--muted)">Pastilles du livret : A = alternant, T = tuteur, R = référent école. En vert : signé.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ref: 'Tous', done: {} };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const refs = ['Tous', 'Nadia Faure', 'Karim Benoît', 'Léa Caron'];
+    const filters = refs.map((r) => ({
+      label: r,
+      style: r === st.ref ? 'border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      pick: () => this.setState({ ref: r })
+    }));
+    const R = {
+      high: { risk: 'Élevé', riskBg: 'var(--bad-soft)', riskFg: 'var(--bad)' },
+      mid: { risk: 'À surveiller', riskBg: 'var(--warn-soft)', riskFg: 'var(--warn)' },
+      low: { risk: 'Faible', riskBg: 'var(--ok-soft)', riskFg: 'var(--ok)' }
+    };
+    const all = [
+      { id: 1, name: 'Tom Laurent', formation: 'BTS MCO 2', ref: 'Nadia Faure', company: 'Intersport Écully', tutor: 'Julien Roche', s: [1, 0, 0], livret: 'Période 1 · tuteur en retard de 6 j', lf: 'var(--warn)', visit: 'Visite due avant le 09/10', vf: 'var(--bad)', r: 'high', act: 'Planifier la visite' },
+      { id: 2, name: 'Inès Benali', formation: 'BTS MCO 2', ref: 'Nadia Faure', company: 'Décathlon Lyon Part-Dieu', tutor: 'Claire Morel', s: [1, 0, 0], livret: 'Période 1 · à signer par la tutrice', lf: 'var(--muted)', visit: 'À planifier avant le 15/11', vf: 'var(--muted)', r: 'low', act: 'Relancer la tutrice', href: 'LivretPeriode.dc.html' },
+      { id: 3, name: 'Mathis Blanc', formation: 'BTS MCO 1', ref: 'Karim Benoît', company: 'Leroy Merlin Bron', tutor: 'Sandrine Petit', s: [0, 0, 0], livret: 'Période 1 · rien de saisi (J+2)', lf: 'var(--warn)', visit: 'Premier suivi sous 2 mois', vf: 'var(--muted)', r: 'mid', act: 'Relancer l’alternant' },
+      { id: 4, name: 'Rayan Mansouri', formation: 'BTS NDRC 1', ref: 'Léa Caron', company: 'SFR Business Lyon', tutor: 'Thomas Vial', s: [1, 1, 0], livret: 'Période 1 · signature référent', lf: 'var(--muted)', visit: 'Visite faite le 25/09 · risque signalé', vf: 'var(--bad)', r: 'high', act: 'Voir le compte rendu' },
+      { id: 5, name: 'Lina Chevalier', formation: 'BTS MCO 1', ref: 'Karim Benoît', company: 'Boulanger Vénissieux', tutor: 'Romain Diaz', s: [0, 0, 0], livret: 'Ouvre à la fin de la période 1', lf: 'var(--muted)', visit: 'Premier suivi sous 2 mois', vf: 'var(--muted)', r: 'low', act: 'Rien à faire' },
+      { id: 6, name: 'Louise Bertrand', formation: 'Bachelor RH 3', ref: 'Léa Caron', company: 'Crédit Agricole Centre-Est', tutor: 'Hélène Marchal', s: [1, 1, 1], livret: 'Période 1 · complet', lf: 'var(--ok)', visit: 'Prochain suivi en janvier', vf: 'var(--muted)', r: 'low', act: 'Rien à faire' },
+      { id: 7, name: 'Ilyes Boukhari', formation: 'Bachelor RH 3', ref: 'Léa Caron', company: 'Hôtel Mercure Saxe', tutor: 'Vincent Royer', s: [1, 0, 0], livret: 'Période 1 · tuteur en retard de 3 j', lf: 'var(--warn)', visit: 'Visite due avant le 20/10', vf: 'var(--warn)', r: 'mid', act: 'Relancer le tuteur' }
+    ];
+    const L = ['A', 'T', 'R'], LT = ['Alternant', 'Tuteur', 'Référent école'];
+    const rows = all.filter((x) => st.ref === 'Tous' || x.ref === st.ref).map((x) => {
+      const done = !!st.done[x.id];
+      const noop = x.act === 'Rien à faire';
+      return {
+        ...x, ...R[x.r],
+        href: x.href || '#',
+        livret: x.livret, livFg: x.lf, visitFg: x.vf,
+        sigs: x.s.map((v, i) => ({ l: L[i], title: LT[i] + (v ? ' : signé' : ' : en attente'), bg: v ? 'var(--ok-soft)' : 'var(--surface2)', fg: v ? 'var(--ok)' : 'var(--subtle)' })),
+        actLabel: done ? 'Fait ✓' : x.act,
+        actStyle: noop ? 'color: var(--subtle)' : done ? 'color: var(--ok); border-color: transparent' : 'color: var(--fg)',
+        act: () => { if (!noop) this.setState({ done: { ...this.state.done, [x.id]: true } }); }
+      };
+    });
+    const allDone = Object.keys(st.done).length >= 4;
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Suivi entreprise'),
+      filters, rows,
+      remindAllLabel: allDone ? '14 relances envoyées' : 'Relancer les 14 livrets en retard',
+      remindAll: () => this.setState({ done: { 1: true, 2: true, 3: true, 7: true } })
+    };
+  }
+}
+</script>
+</body>
+</html>

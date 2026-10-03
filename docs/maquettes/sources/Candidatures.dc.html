@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Candidatures</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.trow:hover{background:var(--bg)}
+.name{color:var(--fg);text-decoration:none;font-weight:600}
+.name:hover{color:var(--accent);text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.board,.tablewrap{overflow-x:auto}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="11">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 28px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Campagne Rentrée 2027 · ouverte depuis le 15/09 · 412 places</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Candidatures</h1>
+</div>
+<a class="ghost" href="Entonnoir.dc.html" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; display: flex; align-items: center; text-decoration: none">Entonnoir</a>
+<div role="group" aria-label="Affichage" style="display: flex; padding: 3px; border-radius: 11px; background: var(--surface2)">
+<button type="button" onClick="{{viewBoard}}" style="height: 34px; padding: 0 12px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{boardBtn}}">Colonnes</button>
+<button type="button" onClick="{{viewTable}}" style="height: 34px; padding: 0 12px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{tableBtn}}">Tableau</button>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="6">
+<button type="button" onClick="{{f.pick}}" style="height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; {{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--fg); color: var(--bg); flex-wrap: wrap">
+<span class="num" style="font-size: 14px; font-weight: 600; flex-grow: 1">{{selCount}} candidat(s) sélectionné(s)</span>
+<button type="button" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid rgba(127,127,127,.4); background: transparent; color: inherit; font-size: 13px">Proposer un créneau d'entretien</button>
+<button type="button" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid rgba(127,127,127,.4); background: transparent; color: inherit; font-size: 13px">Envoyer un message</button>
+<button type="button" onClick="{{clearSel}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: transparent; color: inherit; font-size: 13px; text-decoration: underline">Désélectionner</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isBoard}}" hint-placeholder-val="{{ true }}">
+<div class="board" style="display: grid; grid-template-columns: repeat(6, minmax(190px, 1fr)); gap: 10px; align-items: start">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="6">
+<section style="display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 18px; background: var(--surface2)">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 6px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 3px; background: {{c.dot}}"></span>{{c.label}}</span>
+<span class="num" style="font-size: 12.5px; color: var(--muted)">{{c.count}}</span>
+</div>
+<sc-for list="{{c.cards}}" as="k" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 9px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid {{k.border}}">
+<div style="display: flex; align-items: flex-start; gap: 8px">
+<input type="checkbox" aria-label="{{k.selAria}}" checked="{{k.sel}}" onChange="{{k.toggle}}" style="width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent)">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<a class="name" href="DossierCandidat.dc.html" style="font-size: 14px">{{k.name}}</a>
+<span style="font-size: 12px; color: var(--muted)">{{k.formation}}</span>
+</div>
+</div>
+<div style="display: flex; gap: 5px; flex-wrap: wrap; font-size: 11.5px">
+<span style="padding: 2px 7px; border-radius: 999px; background: var(--surface2); color: var(--muted)">{{k.source}}</span>
+<sc-if value="{{k.hasScore}}" hint-placeholder-val="{{ false }}"><span class="num" style="padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600">{{k.score}}</span></sc-if>
+</div>
+<sc-if value="{{k.hasNote}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11.5px; font-weight: 500; color: {{k.noteFg}}">{{k.note}}</span></sc-if>
+</div>
+</sc-for>
+</section>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isTable}}" hint-placeholder-val="{{ false }}">
+<div class="tablewrap" style="border-radius: 18px; background: var(--surface); border: 1px solid var(--line); overflow: hidden">
+<table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13.5px">
+<thead><tr style="text-align: left; color: var(--muted); font-size: 12.5px">
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line); width: 30px"><span style="position: absolute; left: -9999px">Sélection</span></th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Candidat</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Formation</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Étape</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Source</th>
+<th scope="col" style="padding: 12px 8px; font-weight: 500; border-bottom: 1px solid var(--line)">Score</th>
+<th scope="col" style="padding: 12px 16px; font-weight: 500; border-bottom: 1px solid var(--line)">À noter</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{flat}}" as="k" hint-placeholder-count="10">
+<tr class="trow">
+<td style="padding: 10px 16px; border-bottom: 1px solid var(--line)"><input type="checkbox" aria-label="{{k.selAria}}" checked="{{k.sel}}" onChange="{{k.toggle}}" style="width: 16px; height: 16px; accent-color: var(--accent)"></td>
+<td style="padding: 10px 8px; border-bottom: 1px solid var(--line)"><a class="name" href="DossierCandidat.dc.html">{{k.name}}</a></td>
+<td style="padding: 10px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{k.formation}}</td>
+<td style="padding: 10px 8px; border-bottom: 1px solid var(--line)"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 3px; background: {{k.dot}}"></span>{{k.stage}}</span></td>
+<td style="padding: 10px 8px; border-bottom: 1px solid var(--line); color: var(--muted)">{{k.source}}</td>
+<td class="num" style="padding: 10px 8px; border-bottom: 1px solid var(--line); font-weight: 600">{{k.scoreTxt}}</td>
+<td style="padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: {{k.noteFg}}">{{k.note}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'board', f: 'Toutes', sel: {} };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const stages = [
+      { label: 'Nouvelle', dot: 'var(--subtle)', total: 23 },
+      { label: 'Complète', dot: 'var(--accent)', total: 14 },
+      { label: 'Entretien planifié', dot: 'var(--teal)', total: 6 },
+      { label: 'Évaluée', dot: 'var(--warn)', total: 4 },
+      { label: 'Admis', dot: 'var(--ok)', total: 3 },
+      { label: 'Inscrit', dot: 'var(--ok)', total: 1 }
+    ];
+    const W = 'var(--warn)', M = 'var(--muted)', O = 'var(--ok)';
+    const all = [
+      { id: 'c1', s: 0, name: 'Hugo Marchand', f: 'BTS MCO', src: 'Site web', note: 'Bulletins de terminale manquants', nf: W },
+      { id: 'c2', s: 0, name: 'Amel Kaci', f: 'Bachelor RH', src: 'Salon Studyrama', note: 'Frais de dossier à régler', nf: W },
+      { id: 'c3', s: 0, name: 'Paul Girard', f: 'BTS NDRC', src: 'Journée portes ouvertes', note: '' },
+      { id: 'c4', s: 1, name: 'Yasmine Amrani', f: 'BTS MCO', src: 'Journée portes ouvertes', note: 'Cherche une entreprise', nf: M },
+      { id: 'c5', s: 1, name: 'Kevin Dupuis', f: 'Mastère Marketing', src: 'LinkedIn', note: 'Dossier complet depuis 2 j', nf: M },
+      { id: 'c6', s: 2, name: 'Léna Morel', f: 'BTS CG', src: 'Recommandation', note: 'Entretien lun. 5/10 · 10:00', nf: M },
+      { id: 'c7', s: 2, name: 'Omar Benhaddou', f: 'BTS MCO', src: 'Site web', note: 'Entretien mar. 6/10 · 14:30', nf: M },
+      { id: 'c8', s: 3, name: 'Eva Laurent', f: 'Bachelor RH', src: 'Site web', sc: '4,4 / 5', note: '2 évaluations sur 2' },
+      { id: 'c9', s: 3, name: 'Malik Traoré', f: 'BTS NDRC', src: 'Salon Studyrama', sc: '3,1 / 5', note: 'Avis réservé', nf: W },
+      { id: 'c10', s: 4, name: 'Chloé Fabre', f: 'BTS MCO', src: 'Journée portes ouvertes', sc: '4,6 / 5', note: 'Place confirmée · cherche une entreprise', nf: O },
+      { id: 'c11', s: 4, name: 'Nicolas Petit', f: 'Mastère Marketing', src: 'LinkedIn', sc: '4,1 / 5', note: 'Confirmation attendue avant le 16/10', nf: W },
+      { id: 'c12', s: 5, name: 'Sarah Benoit', f: 'Bachelor RH', src: 'Recommandation', sc: '4,8 / 5', note: 'Contrat signé · Groupe SEB', nf: O }
+    ];
+    const forms = ['Toutes', 'BTS MCO', 'BTS NDRC', 'BTS CG', 'Bachelor RH', 'Mastère Marketing'];
+    const filters = forms.map((x) => ({
+      label: x,
+      style: x === st.f ? 'border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--fg)',
+      pick: () => this.setState({ f: x })
+    }));
+    const list = all.filter((c) => st.f === 'Toutes' || c.f === st.f).map((c) => ({
+      ...c,
+      formation: c.f, source: c.src,
+      stage: stages[c.s].label, dot: stages[c.s].dot,
+      hasScore: !!c.sc, score: c.sc || '', scoreTxt: c.sc || '—',
+      hasNote: !!c.note, noteFg: c.nf || 'var(--muted)',
+      sel: !!st.sel[c.id], selAria: 'Sélectionner ' + c.name,
+      border: st.sel[c.id] ? 'var(--accent)' : 'var(--line)',
+      toggle: () => this.setState({ sel: { ...this.state.sel, [c.id]: !this.state.sel[c.id] } })
+    }));
+    const cols = stages.map((s, i) => {
+      const cards = list.filter((c) => c.s === i);
+      return { label: s.label, dot: s.dot, count: st.f === 'Toutes' ? s.total : cards.length, cards };
+    });
+    const selCount = Object.keys(st.sel).filter((k) => st.sel[k]).length;
+    const seg = 'background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(14,16,34,.08)';
+    const off = 'background: transparent; color: var(--muted)';
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Recrutement'),
+      filters, cols, flat: list,
+      isBoard: st.view === 'board', isTable: st.view === 'table',
+      boardBtn: st.view === 'board' ? seg : off, tableBtn: st.view === 'table' ? seg : off,
+      viewBoard: () => this.setState({ view: 'board' }), viewTable: () => this.setState({ view: 'table' }),
+      hasSel: selCount > 0, selCount,
+      clearSel: () => this.setState({ sel: {} })
+    };
+  }
+}
+</script>
+</body>
+</html>

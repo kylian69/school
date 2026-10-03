@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Démarrage et apparence</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.step:hover{background:var(--surface2)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="12">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+<div style="position: relative; width: 64px; height: 64px; border-radius: 999px; background: conic-gradient(var(--accent) {{pctDeg}}, var(--surface2) 0)">
+<div class="num" style="position: absolute; inset: 7px; border-radius: 999px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 650">{{pct}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">
+<span style="font-size: 13px; color: var(--muted)">Paramètres · mise en route</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Votre école est presque prête</h1>
+</div>
+<a class="ghost" href="RolesPermissions.dc.html" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; display: flex; align-items: center; text-decoration: none">Rôles et permissions</a>
+<a class="ghost" href="ClesApi.dc.html" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; display: flex; align-items: center; text-decoration: none">Intégrations</a>
+<a class="ghost" href="Abonnement.dc.html" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; display: flex; align-items: center; text-decoration: none">Mon abonnement</a>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 12px; align-items: start">
+<section style="padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="8">
+<button class="step" type="button" onClick="{{s.pick}}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 0; text-align: left; color: var(--fg); {{s.bg}}">
+<span style="width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; {{s.badge}}">{{s.mark}}</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 550">{{s.label}}</span><span style="font-size: 12.5px; color: var(--muted)">{{s.sub}}</span></span>
+</button>
+</sc-for>
+</section>
+
+<section style="padding: 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -0.02em">Apparence</h2>
+<span style="font-size: 13px; color: var(--muted)">Votre logo et votre couleur apparaissent dans l'application, les emails et les PDF.</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Nom affiché
+<input value="{{name}}" onChange="{{setName}}" style="height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 14px">
+</label>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Logo
+<button type="button" style="height: 42px; border-radius: 10px; border: 1px dashed var(--line); background: var(--bg); color: var(--muted); font-size: 13px">Déposer un fichier SVG ou PNG</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12.5px; color: var(--muted)">Couleur principale</span>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{swatches}}" as="w" hint-placeholder-count="5">
+<button type="button" onClick="{{w.pick}}" aria-label="{{w.label}}" style="width: 40px; height: 40px; border-radius: 12px; background: {{w.hex}}; {{w.ring}}"></button>
+</sc-for>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px">
+<div style="border-radius: 14px; border: 1px solid var(--line); overflow: hidden; background: var(--bg)">
+<div style="height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--line)">
+<span style="width: 20px; height: 20px; border-radius: 6px; background: {{color}}"></span>
+<span style="font-size: 13.5px; font-weight: 650">{{name}}</span>
+</div>
+<div style="padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 12px; color: var(--muted)">Aperçu de l'application</span>
+<div style="height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden"><div style="width: 64%; height: 8px; background: {{color}}"></div></div>
+<span style="align-self: flex-start; height: 34px; padding: 0 14px; border-radius: 10px; background: {{color}}; color: #FFFFFF; font-size: 13px; font-weight: 600; display: flex; align-items: center">Émarger</span>
+</div>
+</div>
+<div style="border-radius: 14px; border: 1px solid var(--line); overflow: hidden; background: #FFFFFF; color: #0E1022">
+<div style="height: 6px; background: {{color}}"></div>
+<div style="padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; color: #545870">Aperçu de l'email</span>
+<span style="font-size: 13.5px; font-weight: 650">{{name}}</span>
+<span style="font-size: 12.5px; color: #545870; line-height: 1.45">Votre certificat de scolarité est disponible.</span>
+<span style="font-size: 12.5px; font-weight: 600; color: {{color}}">Télécharger</span>
+</div>
+</div>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 8px">
+<button class="btn" type="button" onClick="{{saveStep}}" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600">Valider cette étape</button>
+</div>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { color: 0, name: 'ISCA Business School', done: { 0: 1, 1: 1, 2: 1 } };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const defs = [
+      ['Organisation et établissements', '1 organisation · 2 campus'],
+      ['Calendrier de l’année', 'périodes, fériés, fermetures'],
+      ['Formations et référentiel', '5 formations · 38 blocs'],
+      ['Apparence', 'logo, couleur, nom affiché'],
+      ['Import des personnes', '612 / 840 importées'],
+      ['Rôles et permissions', '7 rôles prêts à l’emploi'],
+      ['Facturation', 'entité facturante, TVA, numérotation'],
+      ['Connexion unique', 'Microsoft 365 ou Google (facultatif) · Paramètres › Intégrations']
+    ];
+    const active = 3;
+    const steps = defs.map((d, i) => {
+      const done = !!st.done[i];
+      return {
+        label: d[0], sub: d[1],
+        mark: done ? '✓' : String(i + 1),
+        badge: done ? 'background: var(--ok-soft); color: var(--ok)' : i === active ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--muted)',
+        bg: i === active ? 'background: var(--accent-soft)' : 'background: transparent',
+        pick: () => {}
+      };
+    });
+    const n = Object.keys(st.done).length;
+    const p = Math.round(n / defs.length * 100);
+    const sw = [['Indigo', '#4F46E5'], ['Sarcelle', '#0B6B66'], ['Bordeaux', '#8C1D40'], ['Orange brûlé', '#B4470E'], ['Ardoise', '#2B2F3A']];
+    const swatches = sw.map((s, i) => ({
+      label: s[0], hex: s[1],
+      ring: i === st.color ? 'border: 3px solid var(--surface); box-shadow: 0 0 0 2px ' + s[1] : 'border: 0',
+      pick: () => this.setState({ color: i })
+    }));
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Paramètres'),
+      steps, swatches,
+      pct: p + ' %', pctDeg: (p * 3.6) + 'deg',
+      color: sw[st.color][1],
+      name: st.name, setName: (e) => this.setState({ name: e.target.value }),
+      saveStep: () => this.setState({ done: { ...this.state.done, 3: 1 } })
+    };
+  }
+}
+</script>
+</body>
+</html>

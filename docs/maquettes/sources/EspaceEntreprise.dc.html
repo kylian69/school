@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Espace entreprise</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button{font-family:inherit;cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.row:hover{background:var(--surface2)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}.kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+<span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--teal-soft); color: var(--teal)">Entreprise</span>
+</div>
+<nav aria-label="Navigation de l'espace entreprise" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">SG</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">Sébastien Garnier</span>
+<span style="font-size: 12px; color: var(--muted)">RH · Décathlon Lyon Part-Dieu</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: var(--muted)">Partenaire d'ISCA Business School · OPCO Commerce</span>
+<h1 style="margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -0.035em">Bonjour Sébastien</h1>
+</div>
+
+<div class="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Alternants</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">3</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--accent)">Documents à signer</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; color: var(--accent)">{{toSign}}</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Reste à charge 2026–2027</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">0 €</span></div>
+<div style="padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Offres d'alternance actives</span><span class="num" style="font-size: 30px; line-height: 1; font-weight: 650; letter-spacing: -0.04em">1</span></div>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 600">Vos alternants</h2>
+<sc-for list="{{learners}}" as="l" hint-placeholder-count="3">
+<div class="row" style="display: grid; grid-template-columns: 40px minmax(0, 1fr) 120px 150px; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px; font-size: 13.5px">
+<span style="width: 36px; height: 36px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600">{{l.initials}}</span>
+<div style="display: flex; flex-direction: column; gap: 1px"><span style="font-weight: 600">{{l.name}}</span><span style="font-size: 12.5px; color: var(--muted)">{{l.sub}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span class="num" style="font-weight: 600; color: {{l.fg}}">{{l.rate}} présent</span><div style="height: 4px; border-radius: 999px; background: var(--surface2); overflow: hidden"><div style="height: 4px; background: {{l.fg}}; {{l.w}}"></div></div></div>
+<span style="font-size: 12.5px; color: var(--muted); text-align: right">{{l.next}}</span>
+</div>
+</sc-for>
+</section>
+
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Offre : Vendeur·se conseil sport (BTS MCO)</h2>
+<span style="font-size: 12.5px; color: var(--muted)">Rentrée 2027 · diffusée le 20/09</span>
+</div>
+<p style="margin: 0; font-size: 13px; color: var(--muted)">L'école vous propose 3 profils admis et à la recherche d'une entreprise.</p>
+<sc-for list="{{profiles}}" as="p" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--line)">
+<span style="width: 36px; height: 36px; border-radius: 11px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600">{{p.initials}}</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">{{p.name}}</span><span style="font-size: 12.5px; color: var(--muted)">{{p.sub}}</span></div>
+<button class="btn" type="button" onClick="{{p.toggle}}" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 0; font-size: 13px; font-weight: 600; {{p.style}}">{{p.label}}</button>
+</div>
+</sc-for>
+</section>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">À signer</h2>
+<sc-for list="{{docs}}" as="d" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: {{d.bg}}">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13.5px; font-weight: 600">{{d.title}}</span><span style="font-size: 12.5px; color: var(--muted)">{{d.sub}}</span></div>
+<button class="btn" type="button" onClick="{{d.sign}}" style="height: 34px; padding: 0 12px; border-radius: 10px; border: 0; font-size: 13px; font-weight: 600; {{d.style}}">{{d.label}}</button>
+</div>
+</sc-for>
+</section>
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Financement</h2>
+<p style="margin: 0; font-size: 13.5px; line-height: 1.5">Les 3 contrats d'apprentissage sont pris en charge par OPCO Commerce. Aucune facture ne vous est adressée cette année.</p>
+<div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--muted)"><span>Aide à l'embauche d'un apprenti</span><span>Démarche officielle · rappel envoyé le 12/09</span></div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { asked: {}, signed: {} };
+  }
+  renderVals() {
+    const st = this.state;
+    const items = [
+      ['Accueil', 'M4 11l8-7 8 7v9h-5v-6H9v6H4z'], ['Alternants', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6'],
+      ['Contrats et documents', 'M7 3h7l5 5v13H7zM14 3v5h5'], ['Factures', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Offres d’alternance', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'], ['Mon entreprise', 'M4 21V7l8-4 8 4v14M9 21v-6h6v6']
+    ];
+    const nav = items.map((x, i) => ({ label: x[0], d: x[1], style: i === 0 ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+    const learners = [
+      { name: 'Inès Benali', sub: 'BTS MCO 2 · tutrice Claire Morel', rate: '96 %', r: 96, next: 'À l’école lun.–mer.' },
+      { name: 'Enzo Moreau', sub: 'BTS MCO 2 · tuteur Paul Henry', rate: '91 %', r: 91, next: 'À l’école lun.–mer.' },
+      { name: 'Camille Durand', sub: 'BTS MCO 2 · tutrice Claire Morel', rate: '84 %', r: 84, next: '2 absences à justifier' }
+    ].map((l) => ({ ...l, initials: l.name.split(' ').map((p) => p[0]).join(''), fg: l.r >= 90 ? 'var(--ok)' : 'var(--warn)', w: 'width: ' + l.r + '%' }));
+    const profiles = [
+      { id: 1, name: 'Yasmine Amrani', sub: 'Admise · job d’été en grande distribution · métropole lyonnaise' },
+      { id: 2, name: 'Chloé Fabre', sub: 'Admise · pratique le trail en club · permis B' },
+      { id: 3, name: 'Omar Benhaddou', sub: 'Admis sous réserve · bac pro commerce' }
+    ].map((p) => ({
+      ...p, initials: p.name.split(' ').map((x) => x[0]).join(''),
+      label: st.asked[p.id] ? 'Entretien demandé ✓' : 'Demander un entretien',
+      style: st.asked[p.id] ? 'background: var(--ok-soft); color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      toggle: () => this.setState({ asked: { ...this.state.asked, [p.id]: !this.state.asked[p.id] } })
+    }));
+    const docs = [
+      { id: 1, title: 'Convention de formation 2026–2027', sub: '3 apprentis · envoyée par l’école le 30/09' },
+      { id: 2, title: 'Livret d’Inès · période 1', sub: 'Signature de Claire Morel attendue' }
+    ].map((d) => ({
+      ...d,
+      bg: st.signed[d.id] ? 'var(--ok-soft)' : 'var(--accent-soft)',
+      label: st.signed[d.id] ? 'Signé ✓' : d.id === 2 ? 'Rappeler' : 'Signer',
+      style: st.signed[d.id] ? 'background: transparent; color: var(--ok)' : 'background: var(--accent); color: var(--accent-fg)',
+      sign: () => this.setState({ signed: { ...this.state.signed, [d.id]: true } })
+    }));
+    const toSign = String(st.signed[1] ? 0 : 1);
+    return { theme: this.props.theme ?? 'light', nav, learners, profiles, docs, toSign };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dossier candidat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc textarea{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.lnk{color:var(--accent);text-decoration:none;font-weight:500}
+.lnk:hover{text-decoration:underline}
+.doc:hover{border-color:var(--accent) !important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="11">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 28px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: var(--muted)"><a class="lnk" href="Candidatures.dc.html">Candidatures</a> / Rentrée 2027 / Yasmine Amrani</div>
+<section style="padding: 20px 22px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+<div style="width: 64px; height: 64px; border-radius: 20px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 650">YA</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Yasmine Amrani</h1>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12.5px">
+<span style="padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600">BTS MCO · alternance</span>
+<span style="padding: 4px 10px; border-radius: 999px; background: var(--surface2); color: var(--muted)">17 ans</span>
+<span style="padding: 4px 10px; border-radius: 999px; background: var(--surface2); color: var(--muted)">Terminale STMG · lycée Jean-Moulin</span>
+<span style="padding: 4px 10px; border-radius: 999px; background: var(--surface2); color: var(--muted)">Source : journée portes ouvertes</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px">
+<span style="font-size: 12.5px; color: var(--muted)">Étape</span>
+<span style="font-size: 14px; font-weight: 600; color: {{stageFg}}">{{stageLabel}}</span>
+</div>
+</section>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Pièces du dossier</h2>
+<span class="num" style="font-size: 13px; color: var(--ok); font-weight: 500">5 / 5 reçues</span>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{docs}}" as="d" hint-placeholder-count="5">
+<button class="doc" type="button" onClick="{{d.pick}}" style="display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: var(--surface); text-align: left; color: var(--fg); {{d.style}}">
+<span style="width: 30px; height: 36px; border-radius: 6px; background: var(--surface2); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; box-sizing: border-box; font-size: 9px; font-weight: 700; color: var(--muted)">{{d.ext}}</span>
+<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13.5px; font-weight: 500">{{d.name}}</span><span style="font-size: 12px; color: var(--muted)">{{d.sub}}</span></span>
+</button>
+</sc-for>
+</div>
+<div style="border-radius: 14px; background: var(--surface2); padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 260px">
+<span style="font-size: 12px; color: var(--muted)">Aperçu · {{preview.name}}</span>
+<div style="flex-grow: 1; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 14px; font-weight: 600">{{preview.title}}</span>
+<sc-for list="{{preview.lines}}" as="l" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; font-size: 12.5px; gap: 10px"><span style="color: var(--muted)">{{l.k}}</span><span class="num" style="font-weight: 500">{{l.v}}</span></div>
+</sc-for>
+</div>
+</div>
+</div>
+</section>
+
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Évaluations</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 14px; border-radius: 14px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Entretien · Karim Benoît</span><span class="num" style="font-size: 26px; font-weight: 650; letter-spacing: -0.04em">4,2 / 5</span><span style="font-size: 12px; color: var(--ok); font-weight: 500">Avis favorable</span></div>
+<div style="padding: 14px; border-radius: 14px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Entretien · Nadia Faure</span><span class="num" style="font-size: 26px; font-weight: 650; letter-spacing: -0.04em">3,8 / 5</span><span style="font-size: 12px; color: var(--ok); font-weight: 500">Avis favorable</span></div>
+<div style="padding: 14px; border-radius: 14px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12.5px; color: var(--muted)">Test de positionnement</span><span class="num" style="font-size: 26px; font-weight: 650; letter-spacing: -0.04em">14 / 20</span><span style="font-size: 12px; color: var(--muted)">Moyenne de la campagne : 12,3</span></div>
+</div>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted)">« Très bonne présentation, expérience en job d'été chez Intermarché. Projet clair, mobilité limitée à la métropole lyonnaise. » — Karim Benoît</p>
+</section>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Décision</h2>
+<sc-if value="{{notDecided}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{choices}}" as="c" hint-placeholder-count="3">
+<button type="button" onClick="{{c.pick}}" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface); color: var(--fg); text-align: left; {{c.style}}">
+<span style="width: 18px; height: 18px; border-radius: 999px; box-sizing: border-box; {{c.radio}}"></span>
+<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">{{c.label}}</span><span style="font-size: 12px; color: var(--muted)">{{c.sub}}</span></span>
+</button>
+</sc-for>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted)">Motif (visible dans l'historique)
+<textarea value="{{motif}}" onChange="{{setMotif}}" rows="3" placeholder="Ex. : dossier solide, projet en adéquation avec la formation" style="padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-size: 13.5px; resize: vertical"></textarea>
+</label>
+<button class="btn" type="button" onClick="{{decide}}" style="height: 44px; border-radius: 12px; border: 0; font-size: 14px; font-weight: 600; {{decideStyle}}">Enregistrer la décision</button>
+</div>
+</sc-if>
+<sc-if value="{{decided}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; background: {{doneBg}}">
+<span style="font-size: 14px; font-weight: 600; color: {{doneFg}}">{{doneTitle}}</span>
+<span style="font-size: 13px; line-height: 1.5">{{doneText}}</span>
+<button type="button" onClick="{{undo}}" style="align-self: flex-start; border: 0; background: transparent; padding: 0; color: var(--accent); font-size: 13px; font-weight: 500">Modifier</button>
+</div>
+</sc-if>
+</section>
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 600">Échanges</h2>
+<sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px">
+<span class="num mono" style="color: var(--muted); font-size: 12px">{{h.date}}</span>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 500">{{h.title}}</span><span style="color: var(--muted); font-size: 12.5px">{{h.sub}}</span></div>
+</div>
+</sc-for>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { doc: 1, choice: 'admis', motif: '', done: false };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  renderVals() {
+    const st = this.state;
+    const docList = [
+      { name: 'CV', ext: 'PDF', sub: 'déposé le 21/09', title: 'Yasmine Amrani · CV', lines: [{ k: 'Expérience', v: 'Hôtesse de caisse · été 2026' }, { k: 'Langues', v: 'Anglais B1, arabe courant' }, { k: 'Permis', v: 'En cours' }] },
+      { name: 'Bulletins de première', ext: 'PDF', sub: '3 trimestres · lecture automatique', title: 'Bulletins · première STMG', lines: [{ k: 'Moyenne générale', v: '13,4' }, { k: 'Management', v: '15,1' }, { k: 'Économie-droit', v: '13,8' }, { k: 'Absences', v: '4 demi-journées' }] },
+      { name: 'Bulletin de terminale (T1)', ext: 'PDF', sub: 'déposé le 28/09 depuis un téléphone', title: 'Bulletin · terminale T1', lines: [{ k: 'Moyenne générale', v: '13,9' }, { k: 'Appréciation', v: 'Sérieuse et impliquée' }] },
+      { name: 'Lettre de motivation', ext: 'PDF', sub: '1 page', title: 'Lettre de motivation', lines: [{ k: 'Projet', v: 'Manager de rayon en grande distribution' }, { k: 'Alternance', v: 'Recherche active · 3 candidatures' }] },
+      { name: 'Pièce d’identité', ext: 'JPG', sub: 'vérifiée', title: 'Pièce d’identité', lines: [{ k: 'Statut', v: 'Vérifiée par la scolarité' }, { k: 'Conservation', v: 'Jusqu’à la fin de la campagne' }] }
+    ];
+    const docs = docList.map((d, i) => ({ ...d, style: i === st.doc ? 'border: 1.5px solid var(--accent)' : 'border: 1px solid var(--line)', pick: () => this.setState({ doc: i }) }));
+    const p = docList[st.doc];
+    const C = [
+      { k: 'admis', label: 'Admis', sub: '38 places restantes en BTS MCO', fg: 'var(--ok)' },
+      { k: 'attente', label: 'Liste d’attente', sub: 'Rang proposé : 4', fg: 'var(--warn)' },
+      { k: 'refus', label: 'Refusé', sub: 'Un motif est obligatoire', fg: 'var(--bad)' }
+    ];
+    const choices = C.map((c) => ({
+      ...c,
+      style: c.k === st.choice ? 'border: 2px solid ' + c.fg : 'border: 1px solid var(--line)',
+      radio: c.k === st.choice ? 'border: 5px solid ' + c.fg : 'border: 2px solid var(--line)',
+      pick: () => this.setState({ choice: c.k })
+    }));
+    const cur = C.find((c) => c.k === st.choice);
+    const blocked = st.choice === 'refus' && !st.motif.trim();
+    const texts = {
+      admis: 'Le mail de décision est prêt. Yasmine pourra confirmer sa place depuis son espace candidat et accéder aux offres d’alternance.',
+      attente: 'Yasmine est informée de son rang. Elle sera admise automatiquement si une place se libère.',
+      refus: 'Le mail de refus, avec le motif saisi, est prêt à être envoyé.'
+    };
+    const history = [
+      { date: '29/09', title: 'Entretien réalisé', sub: 'Avec Karim Benoît et Nadia Faure · 25 min' },
+      { date: '28/09', title: 'Pièce ajoutée depuis un téléphone', sub: 'Bulletin de terminale T1' },
+      { date: '22/09', title: 'Frais de dossier réglés', sub: '50 € par carte · reçu envoyé' },
+      { date: '21/09', title: 'Candidature déposée', sub: 'Formulaire en ligne · 3 sessions' }
+    ];
+    return {
+      theme: this.props.theme ?? 'light',
+      nav: this.nav('Recrutement'),
+      docs, preview: { name: p.name, title: p.title, lines: p.lines },
+      choices, history,
+      motif: st.motif,
+      setMotif: (e) => this.setState({ motif: e.target.value }),
+      notDecided: !st.done, decided: st.done,
+      decideStyle: blocked ? 'background: var(--surface2); color: var(--subtle); cursor: not-allowed' : 'background: var(--accent); color: var(--accent-fg)',
+      decide: () => { if (!blocked) this.setState({ done: true }); },
+      undo: () => this.setState({ done: false }),
+      stageLabel: st.done ? cur.label : 'Évaluée · décision à prendre',
+      stageFg: st.done ? cur.fg : 'var(--warn)',
+      doneTitle: 'Décision enregistrée : ' + cur.label.toLowerCase(),
+      doneText: texts[st.choice],
+      doneBg: st.choice === 'admis' ? 'var(--ok-soft)' : st.choice === 'attente' ? 'var(--warn-soft)' : 'var(--bad-soft)',
+      doneFg: cur.fg
+    };
+  }
+}
+</script>
+</body>
+</html>

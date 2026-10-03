@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Livret — période en entreprise</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc textarea{font-family:inherit}
+.sc button{cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="sc {{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column">
+<header style="padding: 18px 20px 14px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="width: 22px; height: 22px; border-radius: 7px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 5px; top: 5px; width: 7px; height: 7px; border-radius: 2px; background: var(--surface)"></div>
+<div style="position: absolute; right: 5px; bottom: 5px; width: 4px; height: 4px; border-radius: 1px; background: var(--surface)"></div>
+</div>
+<span style="font-size: 13px; color: var(--muted)">Espace tutrice · Claire Morel</span>
+</div>
+<span style="font-size: 12px; color: var(--ok)">Enregistré</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 18px; font-weight: 650; letter-spacing: -0.02em">Livret d'Inès Benali</span>
+<span class="num" style="font-size: 13px; color: var(--muted)">Période 1 · du 01/09 au 30/09/2026 · BTS MCO 2</span>
+</div>
+</header>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="padding: 12px 14px; border-radius: 14px; background: var(--surface2); display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; color: var(--muted)">Activités décrites par Inès</span>
+<span style="font-size: 13.5px; line-height: 1.45">Inventaire du rayon running, mise en place de l'opération rentrée, accueil client en caisse et SAV, préparation d'un plan d'implantation.</span>
+</div>
+
+<span style="font-size: 14px; font-weight: 600">Compétences observées</span>
+<sc-for list="{{skills}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13.5px; font-weight: 500">{{s.label}}</span>
+<div role="radiogroup" aria-label="{{s.label}}" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{s.levels}}" as="l" hint-placeholder-count="4">
+<button type="button" role="radio" onClick="{{l.pick}}" style="height: 36px; border-radius: 10px; font-size: 11.5px; font-weight: 600; {{l.style}}">{{l.label}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<textarea value="{{comment}}" onChange="{{setComment}}" rows="2" aria-label="Appréciation de la tutrice" placeholder="Votre appréciation sur la période" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; resize: none"></textarea>
+
+<div style="display: flex; gap: 6px">
+<sc-for list="{{sigs}}" as="g" hint-placeholder-count="3">
+<div style="flex-grow: 1; padding: 8px 10px; border-radius: 12px; background: {{g.bg}}; display: flex; flex-direction: column; gap: 1px">
+<span style="font-size: 12px; font-weight: 600; color: {{g.fg}}">{{g.who}}</span>
+<span style="font-size: 11px; color: var(--muted)">{{g.state}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<footer style="padding: 12px 20px 22px; background: var(--surface); border-top: 1px solid var(--line)">
+<button class="btn" type="button" onClick="{{sign}}" style="width: 100%; height: 52px; border-radius: 14px; border: 0; font-size: 15px; font-weight: 600; {{signStyle}}">{{signLabel}}</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { lv: { 0: 2, 1: 2, 2: 1 }, comment: 'Très bonne implication sur l’inventaire de septembre.', signed: false };
+  }
+  renderVals() {
+    const st = this.state;
+    const names = ['Accueillir et conseiller le client', 'Animer l’espace de vente', 'Gérer les stocks et l’approvisionnement', 'Travailler en équipe'];
+    const lvls = ['Non acquis', 'En cours', 'Acquis', 'Maîtrisé'];
+    const skills = names.map((n, i) => ({
+      label: n,
+      levels: lvls.map((l, j) => ({
+        label: l,
+        style: st.lv[i] === j ? 'border: 0; background: var(--accent); color: var(--accent-fg)' : 'border: 1px solid var(--line); background: var(--surface); color: var(--muted)',
+        pick: () => { if (!this.state.signed) this.setState({ lv: { ...this.state.lv, [i]: j } }); }
+      }))
+    }));
+    const complete = Object.keys(st.lv).length === names.length;
+    const sigs = [
+      { who: 'Inès', state: 'Signé le 30/09', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
+      { who: 'Vous', state: st.signed ? 'Signé à l’instant' : 'À signer', bg: st.signed ? 'var(--ok-soft)' : 'var(--accent-soft)', fg: st.signed ? 'var(--ok)' : 'var(--accent)' },
+      { who: 'Nadia Faure', state: st.signed ? 'Notifiée' : 'En attente', bg: 'var(--surface2)', fg: 'var(--muted)' }
+    ];
+    return {
+      theme: this.props.theme ?? 'light',
+      skills, sigs,
+      comment: st.comment,
+      setComment: (e) => this.setState({ comment: e.target.value }),
+      signLabel: st.signed ? 'Période signée · merci !' : complete ? 'Signer la période' : 'Évaluez la dernière compétence',
+      signStyle: st.signed ? 'background: var(--ok-soft); color: var(--ok)' : complete ? 'background: var(--accent); color: var(--accent-fg)' : 'background: var(--surface2); color: var(--subtle); cursor: not-allowed',
+      sign: () => { if (st.signed) this.setState({ signed: false }); else if (complete) this.setState({ signed: true }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

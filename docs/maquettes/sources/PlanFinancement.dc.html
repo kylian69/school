@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Plan de financement</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F1F5;--line:#E3E5EC;--fg:#0E1022;--muted:#545870;--subtle:#686C82;--accent:#4F46E5;--accent-soft:#ECEEFF;--accent-fg:#FFFFFF;--ok:#0B7A4B;--ok-soft:#E2F5EB;--warn:#9A5800;--warn-soft:#FFF1D9;--bad:#BF2338;--bad-soft:#FDE7EA;--teal:#0B6B66;--teal-soft:#DDF3F1;--grid:rgba(14,16,34,.045)}
+.dark{--bg:#0B0C10;--surface:#13151C;--surface2:#1B1E28;--line:#272B38;--fg:#F2F3F8;--muted:#A6AABF;--subtle:#8E93AA;--accent:#8E8CFF;--accent-soft:#1F2052;--accent-fg:#0B0C10;--ok:#4ADE95;--ok-soft:#0F2A1F;--warn:#F5B454;--warn-soft:#2E2312;--bad:#FF7D8C;--bad-soft:#331820;--teal:#5FD3C9;--teal-soft:#0F2928;--grid:rgba(255,255,255,.035)}
+.sc{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);-webkit-font-smoothing:antialiased}
+.qgrid{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.sc button,.sc input{font-family:inherit}
+.sc button{cursor:pointer}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{background:var(--surface2);color:var(--fg)}
+.ghost:hover{background:var(--surface2)}
+.btn:hover{filter:brightness(1.08)}
+.lnk{color:var(--accent);text-decoration:none;font-weight:500}
+.lnk:hover{text-decoration:underline}
+.amt:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width: 760px){.shell{grid-template-columns:1fr !important}.shell > aside{display:none !important}.split{grid-template-columns:1fr !important}}
+</style>
+</helmet>
+<div class="sc shell {{theme}}" style="min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+<aside class="nav" style="position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px">
+<div style="width: 26px; height: 26px; border-radius: 8px; background: var(--accent); position: relative">
+<div style="position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 2.5px; background: var(--surface)"></div>
+<div style="position: absolute; right: 6px; bottom: 6px; width: 5px; height: 5px; border-radius: 1.5px; background: var(--surface)"></div>
+</div>
+<span style="font-weight: 650; font-size: 19px; letter-spacing: -0.04em">scolaly</span>
+</div>
+<button class="ghost" type="button" style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 13.5px; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4"></path></svg>
+<span style="flex-grow: 1">Rechercher…</span>
+<span class="mono" style="font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line)">⌘K</span>
+</button>
+<nav aria-label="Navigation principale" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; {{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"></path></svg>
+{{n.label}}
+</a>
+</sc-for>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="padding: 12px; border-radius: 14px; border: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+<div style="width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">IB</div>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600">ISCA Business School</span>
+<span style="font-size: 12px; color: var(--muted)">Campus Lyon · 2026–2027</span>
+</div>
+</div>
+</aside>
+
+<main class="qgrid" style="min-width: 0; padding: 24px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: var(--muted)"><a class="lnk" href="Factures.dc.html">Facturation</a> / Plans de financement / Louise Bertrand</div>
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 6px; flex-grow: 1">
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.035em">Plan de financement · Louise Bertrand</h1>
+<span style="font-size: 13.5px; color: var(--muted)">Bachelor RH 3ᵉ année · 2026–2027 · grille tarifaire 2026 · version 3</span>
+</div>
+<div role="group" aria-label="Situation de l'apprenant" style="display: flex; padding: 3px; border-radius: 11px; background: var(--surface2)">
+<sc-for list="{{types}}" as="t" hint-placeholder-count="3">
+<button type="button" onClick="{{t.pick}}" style="height: 34px; padding: 0 12px; border-radius: 8px; border: 0; font-size: 13px; font-weight: 500; {{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div class="split" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; align-items: start">
+<section style="padding: 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Qui paie quoi</h2>
+<span class="num" style="font-size: 13.5px; color: var(--muted)">Coût total <strong style="color: var(--fg)">7 650 €</strong></span>
+</div>
+<div style="display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 3px; background: var(--surface2)">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<div title="{{r.label}}" style="height: 14px; background: {{r.color}}; {{r.w}}; transition: width .3s ease"></div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 14px minmax(0, 1fr) 70px 150px; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line)">
+<span style="width: 12px; height: 12px; border-radius: 4px; background: {{r.color}}"></span>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 550">{{r.label}}</span><span style="font-size: 12.5px; color: var(--muted)">{{r.sub}}</span></div>
+<span class="num" style="text-align: right; font-size: 13px; color: var(--muted)">{{r.pct}}</span>
+<div style="display: flex; align-items: center; gap: 6px">
+<input class="amt num mono" aria-label="{{r.aria}}" value="{{r.val}}" onChange="{{r.onChange}}" style="width: 120px; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid {{r.border}}; background: {{r.bg}}; color: var(--fg); font-size: 14px; text-align: right">
+<span style="font-size: 13px; color: var(--muted)">€</span>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: {{check.bg}}; color: {{check.fg}}">
+<span class="num" style="flex-grow: 1; font-size: 14px; font-weight: 600">{{check.text}}</span>
+<span class="num mono" style="font-size: 14px; font-weight: 600">{{check.sum}}</span>
+</div>
+<sc-if value="{{isApp}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); font-size: 13px; line-height: 1.5">La formation d'un apprenti est gratuite pour lui et sa famille : seule une part sur les frais annexes (ici le voyage d'études, 450 €) peut lui être demandée.</div>
+</sc-if>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 600">Échéanciers par payeur</h2>
+<sc-for list="{{schedules}}" as="s" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line)">
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="font-weight: 600">{{s.who}}</span><span style="color: var(--muted)">{{s.mode}}</span></div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{s.items}}" as="i" hint-placeholder-count="3">
+<span class="num" style="font-size: 12px; padding: 4px 8px; border-radius: 8px; background: {{i.bg}}; color: {{i.fg}}">{{i.label}}</span>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</section>
+<section style="padding: 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Mandat SEPA</h2>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Payeur</span><span style="font-weight: 500">Sophie Bertrand (mère)</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Référence unique</span><span class="mono" style="font-weight: 500">ISCA-2026-00873</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Signé en ligne</span><span class="num" style="font-weight: 500">12/07/2026</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13.5px"><span style="color: var(--muted)">Pré-notification</span><span style="font-weight: 500">7 jours avant chaque prélèvement</span></div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      type: 'pro',
+      amounts: {
+        pro: { opco: '5400', ent: '1800', fam: '450', aut: '0' },
+        init: { opco: '0', ent: '0', fam: '6150', aut: '1500' },
+        app: { opco: '6900', ent: '300', fam: '450', aut: '0' }
+      }
+    };
+  }
+  nav(active) {
+    const items = [
+      ['Tableau de bord', 'Dashboard.dc.html', 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z'],
+      ['Recrutement', 'Candidatures.dc.html', 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6'],
+      ['Apprenants', 'FicheApprenant.dc.html', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8'],
+      ['Emploi du temps', 'Edt.dc.html', 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+      ['Émargement', 'Main.dc.html', 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2'],
+      ['Notes & évaluations', 'Notes.dc.html', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3'],
+      ['Alternance', 'Contrats.dc.html', 'M4 8h16v11H4zM9 8V5h6v3M4 13h16'],
+      ['Suivi entreprise', 'SuiviAlternants.dc.html', 'M8 4h8v3H8zM6 6H5v15h14V6h-1M9 14l2 2 4-4'],
+      ['Jurys', 'GrilleDeliberation.dc.html', 'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12M8.5 13.5L7 21l5-3 5 3-1.5-7.5'],
+      ['Facturation', 'Factures.dc.html', 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6'],
+      ['Qualité', 'TableauQualite.dc.html', 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4'],
+      ['Paramètres', 'Demarrage.dc.html', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4']
+    ];
+    return items.map((x) => ({ label: x[0], href: x[1], d: x[2], style: x[0] === active ? 'background: var(--accent-soft); color: var(--accent)' : '' }));
+  }
+  eur(n) {
+    return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
+  }
+  renderVals() {
+    const total = 7650;
+    const t = this.state.type;
+    const a = this.state.amounts[t];
+    const subs = {
+      pro: { opco: 'OPCO Atlas · contrat de professionnalisation', ent: 'Crédit Agricole Centre-Est · reste à charge', fam: 'Voyage d’études (frais annexe)', aut: 'Aucun' },
+      init: { opco: 'Sans objet', ent: 'Sans objet', fam: 'Frais de scolarité + voyage d’études', aut: 'Région Auvergne-Rhône-Alpes · bourse' },
+      app: { opco: 'OPCO Atlas · NPEC', ent: 'Reste à charge accepté par l’employeur', fam: 'Voyage d’études uniquement', aut: 'Aucun' }
+    }[t];
+    const defs = [
+      { k: 'opco', label: 'OPCO', color: 'var(--accent)' },
+      { k: 'ent', label: 'Entreprise', color: 'var(--teal)' },
+      { k: 'fam', label: 'Apprenant ou famille', color: 'var(--warn)' },
+      { k: 'aut', label: 'Autre financeur', color: 'var(--subtle)' }
+    ];
+    const num = (v) => { const n = Number(String(v).replace(/\s/g, '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+    let sum = 0;
+    const famTooHigh = t === 'app' && num(a.fam) > 450;
+    const rows = defs.map((d) => {
+      const n = num(a[d.k]);
+      sum += n;
+      const bad = d.k === 'fam' && famTooHigh;
+      return {
+        label: d.label, sub: subs[d.k], color: d.color,
+        val: a[d.k], aria: 'Montant — ' + d.label,
+        pct: total ? Math.round(n / total * 100) + ' %' : '',
+        w: 'width: ' + Math.max(0, n / total * 100) + '%',
+        border: bad ? 'var(--bad)' : 'var(--line)',
+        bg: bad ? 'var(--bad-soft)' : 'var(--bg)',
+        onChange: (e) => {
+          const am = { ...this.state.amounts };
+          am[t] = { ...am[t], [d.k]: e.target.value };
+          this.setState({ amounts: am });
+        }
+      };
+    });
+    const gap = sum - total;
+    let check;
+    if (famTooHigh) check = { text: 'Bloquant : part apprenant sur des frais de formation (apprentissage)', bg: 'var(--bad-soft)', fg: 'var(--bad)', sum: this.eur(num(a.fam)) };
+    else if (gap === 0) check = { text: 'Le total des parts égale le coût de la formation', bg: 'var(--ok-soft)', fg: 'var(--ok)', sum: this.eur(sum) };
+    else check = { text: gap > 0 ? 'Bloquant : les parts dépassent le coût de ' + this.eur(gap) : 'Bloquant : il manque ' + this.eur(-gap) + ' à répartir', bg: 'var(--bad-soft)', fg: 'var(--bad)', sum: this.eur(sum) };
+    const P = { bg: 'var(--ok-soft)', fg: 'var(--ok)' };
+    const F = { bg: 'var(--surface2)', fg: 'var(--muted)' };
+    const sched = {
+      pro: [
+        { who: 'OPCO Atlas', mode: 'facturé à l’échéance de prise en charge', items: [{ label: '15/10 · 2 700 €', ...P }, { label: '15/04 · 2 700 €', ...F }] },
+        { who: 'Crédit Agricole Centre-Est', mode: 'virement · 30 jours', items: [{ label: '01/10 · 900 €', ...P }, { label: '01/03 · 900 €', ...F }] },
+        { who: 'Famille Bertrand', mode: 'prélèvement SEPA', items: [{ label: '05/11 · 225 €', ...F }, { label: '05/12 · 225 €', ...F }] }
+      ],
+      init: [
+        { who: 'Famille Bertrand', mode: 'prélèvement SEPA · 3 fois', items: [{ label: '05/10 · 2 050 €', ...P }, { label: '05/01 · 2 050 €', ...F }, { label: '05/04 · 2 050 €', ...F }] },
+        { who: 'Région Auvergne-Rhône-Alpes', mode: 'versement du financeur', items: [{ label: '30/11 · 1 500 €', ...F }] }
+      ],
+      app: [
+        { who: 'OPCO Atlas', mode: 'échéancier issu du contrat', items: [{ label: '15/10 · 3 450 €', ...P }, { label: '15/04 · 3 450 €', ...F }] },
+        { who: 'Crédit Agricole Centre-Est', mode: 'après accord écrit', items: [{ label: '01/12 · 300 €', ...F }] },
+        { who: 'Famille Bertrand', mode: 'carte ou SEPA', items: [{ label: '05/11 · 450 €', ...F }] }
+      ]
+    }[t];
+    const seg = 'background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(14,16,34,.08)';
+    const types = [['init', 'Formation initiale'], ['pro', 'Contrat pro'], ['app', 'Apprentissage']].map((x) => ({
+      label: x[1], style: x[0] === t ? seg : 'background: transparent; color: var(--muted)', pick: () => this.setState({ type: x[0] })
+    }));
+    return { theme: this.props.theme ?? 'light', nav: this.nav('Facturation'), types, rows, check, schedules: sched, isApp: t === 'app' };
+  }
+}
+</script>
+</body>
+</html>
