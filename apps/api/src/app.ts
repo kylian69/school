@@ -1,4 +1,5 @@
 import helmet from '@fastify/helmet';
+import type { Provider, Type } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createDatabase } from '@scolaly/db';
@@ -21,6 +22,10 @@ export const REDACTED_LOG_PATHS = [
 export interface CreateAppOptions {
   /** Flux de sortie des journaux (tests). Par défaut : sortie standard. */
   logStream?: NodeJS.WritableStream;
+  /** Résolution des droits (par défaut : aucun droit tant que les rôles n'existent pas, I1.2). */
+  accessResolver?: Provider;
+  /** Modules supplémentaires (tests). */
+  extraModules?: Type[];
 }
 
 export async function createApp(
@@ -40,7 +45,13 @@ export async function createApp(
     },
   });
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forRoot({ env, database, valkey, auth }),
+    AppModule.forRoot(
+      { env, database, valkey, auth },
+      {
+        ...(options.accessResolver ? { accessResolver: options.accessResolver } : {}),
+        ...(options.extraModules ? { extraModules: options.extraModules } : {}),
+      },
+    ),
     adapter,
     { logger: env.NODE_ENV === 'test' ? ['error'] : ['error', 'warn', 'log'] },
   );

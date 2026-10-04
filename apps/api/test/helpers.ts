@@ -29,3 +29,26 @@ export async function startApp(
   await app.getHttpAdapter().getInstance().ready();
   return app;
 }
+
+let ipCounter = 0;
+/** Adresse IP distincte par appel, pour ne pas partager les compteurs de limitation de débit. */
+export const freshIp = () => `198.18.${Math.floor(++ipCounter / 250)}.${ipCounter % 250}`;
+
+/** Ouvre une session et renvoie l'en-tête Cookie à rejouer. */
+export async function signInCookie(
+  app: NestFastifyApplication,
+  email: string,
+  password: string,
+): Promise<string> {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/auth/sign-in/email',
+    headers: { origin: WEB_ORIGIN, 'x-forwarded-for': freshIp() },
+    payload: { email, password },
+  });
+  if (response.statusCode !== 200) throw new Error(`Connexion impossible : ${response.body}`);
+  return [response.headers['set-cookie'] ?? []]
+    .flat()
+    .map((c) => c.split(';')[0])
+    .join('; ');
+}

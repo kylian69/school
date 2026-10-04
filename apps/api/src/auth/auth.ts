@@ -42,7 +42,13 @@ export function createAuth(env: Env, db: Database, valkey: Redis) {
       },
     }),
     user: { modelName: 'auth_user' },
-    session: { modelName: 'auth_session', storeSessionInDatabase: true },
+    session: {
+      modelName: 'auth_session',
+      storeSessionInDatabase: true,
+      additionalFields: {
+        activeOrganisationId: { type: 'string', required: false, input: false },
+      },
+    },
     account: { modelName: 'auth_account', encryptOAuthTokens: true },
     verification: { modelName: 'auth_verification' },
     secondaryStorage: valkeySecondaryStorage(valkey),
