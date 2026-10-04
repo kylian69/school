@@ -1,0 +1,706 @@
+{
+  "id": "f182e3b3-f359-47d7-ba45-ee142bf148e2",
+  "prevId": "7bdbffd5-db69-4cd9-84e8-31c52a87b888",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.groupe": {
+      "name": "groupe",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.organisation": {
+      "name": "organisation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "groupe_id": {
+          "name": "groupe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nom": {
+          "name": "nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom_affichage": {
+          "name": "nom_affichage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "siren": {
+          "name": "siren",
+          "type": "char(9)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "organisation_groupe_id_groupe_id_fk": {
+          "name": "organisation_groupe_id_groupe_id_fk",
+          "tableFrom": "organisation",
+          "columnsFrom": ["groupe_id"],
+          "tableTo": "groupe",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "organisation_isolation": {
+          "name": "organisation_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["scolaly_app"],
+          "using": "id = app_current_organisation_id()",
+          "withCheck": "id = app_current_organisation_id()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.personne": {
+      "name": "personne",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organisation_id": {
+          "name": "organisation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom_usage": {
+          "name": "nom_usage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prenom": {
+          "name": "prenom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "personne_organisation_id_email_key": {
+          "name": "personne_organisation_id_email_key",
+          "columns": [
+            {
+              "expression": "organisation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"email\")",
+              "isExpression": true,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "where": "\"personne\".\"deleted_at\" is null",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "personne_organisation_id_organisation_id_fk": {
+          "name": "personne_organisation_id_organisation_id_fk",
+          "tableFrom": "personne",
+          "columnsFrom": ["organisation_id"],
+          "tableTo": "organisation",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "personne_organisation_id_id_key": {
+          "name": "personne_organisation_id_id_key",
+          "columns": ["organisation_id", "id"],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "personne_isolation": {
+          "name": "personne_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["scolaly_app"],
+          "using": "organisation_id = app_current_organisation_id()",
+          "withCheck": "organisation_id = app_current_organisation_id()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.annee_scolaire": {
+      "name": "annee_scolaire",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organisation_id": {
+          "name": "organisation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "libelle": {
+          "name": "libelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_debut": {
+          "name": "date_debut",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_fin": {
+          "name": "date_fin",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "statut": {
+          "name": "statut",
+          "type": "annee_scolaire_statut",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'preparation'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "annee_scolaire_organisation_id_organisation_id_fk": {
+          "name": "annee_scolaire_organisation_id_organisation_id_fk",
+          "tableFrom": "annee_scolaire",
+          "columnsFrom": ["organisation_id"],
+          "tableTo": "organisation",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "annee_scolaire_organisation_id_id_key": {
+          "name": "annee_scolaire_organisation_id_id_key",
+          "columns": ["organisation_id", "id"],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "annee_scolaire_isolation": {
+          "name": "annee_scolaire_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["scolaly_app"],
+          "using": "organisation_id = app_current_organisation_id()",
+          "withCheck": "organisation_id = app_current_organisation_id()"
+        }
+      },
+      "checkConstraints": {
+        "annee_scolaire_dates_check": {
+          "name": "annee_scolaire_dates_check",
+          "value": "\"annee_scolaire\".\"date_fin\" > \"annee_scolaire\".\"date_debut\""
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.etablissement": {
+      "name": "etablissement",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organisation_id": {
+          "name": "organisation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "adresse_ligne1": {
+          "name": "adresse_ligne1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adresse_ligne2": {
+          "name": "adresse_ligne2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "code_postal": {
+          "name": "code_postal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ville": {
+          "name": "ville",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uai": {
+          "name": "uai",
+          "type": "char(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "siret": {
+          "name": "siret",
+          "type": "char(14)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nda": {
+          "name": "nda",
+          "type": "char(11)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fuseau_horaire": {
+          "name": "fuseau_horaire",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Europe/Paris'"
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "statut": {
+          "name": "statut",
+          "type": "etablissement_statut",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'actif'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "etablissement_organisation_id_organisation_id_fk": {
+          "name": "etablissement_organisation_id_organisation_id_fk",
+          "tableFrom": "etablissement",
+          "columnsFrom": ["organisation_id"],
+          "tableTo": "organisation",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "etablissement_organisation_id_id_key": {
+          "name": "etablissement_organisation_id_id_key",
+          "columns": ["organisation_id", "id"],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "etablissement_isolation": {
+          "name": "etablissement_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["scolaly_app"],
+          "using": "organisation_id = app_current_organisation_id()",
+          "withCheck": "organisation_id = app_current_organisation_id()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.periode": {
+      "name": "periode",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organisation_id": {
+          "name": "organisation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "annee_scolaire_id": {
+          "name": "annee_scolaire_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "libelle": {
+          "name": "libelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_debut": {
+          "name": "date_debut",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_fin": {
+          "name": "date_fin",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordre": {
+          "name": "ordre",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "periode_organisation_id_organisation_id_fk": {
+          "name": "periode_organisation_id_organisation_id_fk",
+          "tableFrom": "periode",
+          "columnsFrom": ["organisation_id"],
+          "tableTo": "organisation",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "periode_annee_scolaire_fk": {
+          "name": "periode_annee_scolaire_fk",
+          "tableFrom": "periode",
+          "columnsFrom": ["organisation_id", "annee_scolaire_id"],
+          "tableTo": "annee_scolaire",
+          "columnsTo": ["organisation_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "periode_organisation_id_id_key": {
+          "name": "periode_organisation_id_id_key",
+          "columns": ["organisation_id", "id"],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "periode_isolation": {
+          "name": "periode_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["scolaly_app"],
+          "using": "organisation_id = app_current_organisation_id()",
+          "withCheck": "organisation_id = app_current_organisation_id()"
+        }
+      },
+      "checkConstraints": {
+        "periode_dates_check": {
+          "name": "periode_dates_check",
+          "value": "\"periode\".\"date_fin\" >= \"periode\".\"date_debut\""
+        }
+      },
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {
+    "public.annee_scolaire_statut": {
+      "name": "annee_scolaire_statut",
+      "schema": "public",
+      "values": ["preparation", "en_cours", "cloturee"]
+    },
+    "public.etablissement_statut": {
+      "name": "etablissement_statut",
+      "schema": "public",
+      "values": ["actif", "archive"]
+    }
+  },
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
