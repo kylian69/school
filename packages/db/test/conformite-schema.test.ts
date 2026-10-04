@@ -71,12 +71,21 @@ describe('Conformité du schéma', async () => {
       join pg_class t on t.oid = x.indrelid
       join pg_namespace n on n.oid = t.relnamespace
       left join pg_attribute a on a.attrelid = t.oid and a.attnum = x.indkey[0]
-      where n.nspname = 'public' and not x.indisprimary`);
+      where n.nspname = 'public' and not x.indisprimary and not t.relispartition`);
     const scopedNames = new Set(scoped.map((t) => t.table_name));
     const offending = indexes.rows
       .filter((r) => scopedNames.has(r.table_name) && r.first !== 'organisation_id')
       .map((r) => `${r.table_name}.${r.index_name}`);
     expect(offending).toEqual([]);
+  });
+
+  it("le rôle applicatif n'a aucun droit direct sur les partitions (accès par la table parente)", async () => {
+    const grants = await owner.db.execute<{ partition: string }>(sql`
+      select c.relname as partition
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relispartition
+        and has_table_privilege(${APP_ROLE}, c.oid, 'SELECT, INSERT, UPDATE, DELETE')`);
+    expect(grants.rows).toEqual([]);
   });
 
   it("le rôle applicatif n'a aucun droit d'écriture sur les tables de plateforme", async () => {
