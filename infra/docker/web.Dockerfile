@@ -19,6 +19,11 @@ COPY --from=pruner /pruned/full/ .
 RUN pnpm turbo run build --filter=@scolaly/web
 
 FROM ${NODE_IMAGE} AS runtime
+# Correctifs de sécurité du système ; npm et corepack, inutiles à l'exécution, sont retirés.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 WORKDIR /app
 COPY --from=builder --chown=node:node /repo/apps/web/.next/standalone ./

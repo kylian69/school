@@ -27,6 +27,11 @@ RUN pnpm turbo run build --filter=@scolaly/${APP} \
 # 3. Image d'exécution : dépendances de production seulement, utilisateur non privilégié.
 FROM ${NODE_IMAGE} AS runtime
 ARG APP
+# Correctifs de sécurité du système ; npm et corepack, inutiles à l'exécution, sont retirés.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=builder --chown=node:node /out/package.json ./package.json
