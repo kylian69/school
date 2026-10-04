@@ -38,4 +38,5 @@ catalog:
 # Dépendances autorisées à exécuter un script d'installation (binaires natifs).
 allowBuilds:
   '@swc/core': true
+  esbuild: true
   unrs-resolver: true
