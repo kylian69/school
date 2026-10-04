@@ -1,7 +1,6 @@
+import { redirect } from 'next/navigation';
+
+// L'accueil par rôle arrive avec la coquille de l'application (incrément I0.4, PR suivante).
 export default function HomePage() {
-  return (
-    <main>
-      <h1>scolaly</h1>
-    </main>
-  );
+  redirect('/connexion');
 }

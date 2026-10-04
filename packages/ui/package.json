@@ -8,10 +8,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./theme.css": "./src/theme.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "src/theme.css"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -20,14 +22,23 @@
     "test": "vitest run --passWithNoTests"
   },
   "peerDependencies": {
-    "react": "catalog:"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@scolaly/config": "workspace:*",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "radix-ui": "catalog:",
+    "tailwind-merge": "catalog:"
   }
 }

@@ -95,6 +95,8 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: ['(^|/)(dist|\\.next|coverage)/', '\\.config\\.(ts|js|cjs|mjs)$'] },
     tsPreCompilationDeps: true,
+    // Alias « @/ » de l'interface (seul paquet qui en utilise).
+    tsConfig: { fileName: 'tsconfig.depcruise.json' },
     combinedDependencies: true,
     preserveSymlinks: false,
     enhancedResolveOptions: {
