@@ -6,3 +6,5 @@ export * from './components/input.js';
 export * from './components/label.js';
 export * from './components/logo.js';
 export * from './lib/cn.js';
+export * from './components/command.js';
+export * from './components/dialog.js';
