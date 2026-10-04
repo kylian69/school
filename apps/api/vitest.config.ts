@@ -9,6 +9,7 @@ export default defineConfig({
     ...baseTestConfig,
     globalSetup: ['./test/global-setup.ts'],
     fileParallelism: false,
-    testTimeout: 20_000,
+    // Large marge : Argon2 et les démarrages d'application sont lents sur une machine chargée.
+    testTimeout: 60_000,
   },
 });

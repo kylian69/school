@@ -65,14 +65,15 @@ export async function publierEvenements(
         organisation_id: string;
         type: string;
         charge: unknown;
-        survenu_le: Date;
+        survenu_le: string | Date;
       }>(sql`select * from outbox_evenement_reserver(${taille})`);
       reserves = result.rows.map((r) => ({
         id: r.id,
         organisationId: r.organisation_id,
         type: r.type,
         charge: r.charge,
-        survenuLe: r.survenu_le,
+        // Le pilote renvoie les horodatages des requêtes SQL brutes sous forme de texte.
+        survenuLe: new Date(r.survenu_le),
       }));
       if (reserves.length === 0) return 0;
       await publier(reserves);

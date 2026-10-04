@@ -16,7 +16,12 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "passThroughEnv": ["TEST_ADMIN_DATABASE_URL", "TEST_VALKEY_URL"]
+      "passThroughEnv": [
+        "TEST_ADMIN_DATABASE_URL",
+        "TEST_VALKEY_URL",
+        "TEST_SMTP_URL",
+        "TEST_MAILPIT_API"
+      ]
     },
     "dev": {
       "dependsOn": ["^build"],
