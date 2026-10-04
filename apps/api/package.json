@@ -18,6 +18,8 @@
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-fastify": "catalog:",
+    "@scolaly/domain": "workspace:*",
+    "@scolaly/referentials": "workspace:*",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:"
   },
