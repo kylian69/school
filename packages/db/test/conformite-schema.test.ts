@@ -1,7 +1,11 @@
 import { sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { APP_ROLE } from '../src/roles.js';
-import { PLATFORM_TABLES, SELF_SCOPED_TABLES } from '../src/schema/index.js';
+import {
+  PLATFORM_READONLY_TABLES,
+  PLATFORM_TABLES,
+  SELF_SCOPED_TABLES,
+} from '../src/schema/index.js';
 import { openOwner } from './fixtures.js';
 
 /**
@@ -88,12 +92,12 @@ describe('Conformité du schéma', async () => {
     expect(grants.rows).toEqual([]);
   });
 
-  it("le rôle applicatif n'a aucun droit d'écriture sur les tables de plateforme", async () => {
+  it("le rôle applicatif n'a aucun droit d'écriture sur les tables de plateforme en lecture seule", async () => {
     const grants = await owner.db.execute<{ table_name: string; privilege_type: string }>(sql`
       select table_name, privilege_type from information_schema.role_table_grants
       where grantee = ${APP_ROLE} and table_schema = 'public'
         and privilege_type in ('INSERT', 'UPDATE', 'DELETE')`);
-    const onPlatform = grants.rows.filter((g) => PLATFORM_TABLES.includes(g.table_name));
+    const onPlatform = grants.rows.filter((g) => PLATFORM_READONLY_TABLES.includes(g.table_name));
     expect(onPlatform).toEqual([]);
   });
 });

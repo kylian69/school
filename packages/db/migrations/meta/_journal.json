@@ -29,6 +29,13 @@
       "when": 1791144893558,
       "tag": "0003_journal_audit_et_boite_envoi",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791147270832,
+      "tag": "0004_tables_authentification",
+      "breakpoints": true
     }
   ]
 }

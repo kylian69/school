@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { createApp } from './app.js';
+import { loadEnv } from './config/env.js';
 
-const port = Number(process.env.PORT ?? 3001);
-const app = await createApp();
-app.enableShutdownHooks();
-await app.listen({ port, host: '0.0.0.0' });
+const env = loadEnv();
+const app = await createApp(env);
+await app.listen({ port: env.PORT, host: '0.0.0.0' });

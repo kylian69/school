@@ -15,13 +15,21 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fastify/helmet": "catalog:",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-fastify": "catalog:",
+    "@node-rs/argon2": "catalog:",
+    "@scolaly/db": "workspace:*",
     "@scolaly/domain": "workspace:*",
     "@scolaly/referentials": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
+    "fastify": "catalog:",
+    "ioredis": "catalog:",
     "reflect-metadata": "catalog:",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nestjs/testing": "catalog:",
