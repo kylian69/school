@@ -42,6 +42,8 @@ describe('Chiffrement par champ (ADR 0002)', () => {
     const altered = [version, iv, `${data?.slice(0, -2)}AA`, tag].join('.');
     expect(() => crypto.decrypt(altered, orgA, 'c')).toThrow(/altérée/);
     expect(() => crypto.decrypt('pas-chiffre', orgA, 'c')).toThrow(/mal formée/);
+    const tronquee = [version, iv, data, tag?.slice(0, 8)].join('.');
+    expect(() => crypto.decrypt(tronquee, orgA, 'c')).toThrow(/altérée/);
     expect(() => crypto.decrypt('v9.a.b.c', orgA, 'c')).toThrow(/v9 absente/);
   });
 
