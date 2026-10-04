@@ -1,0 +1,22 @@
+{
+  "name": "@scolaly/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/*.json": "./tsconfig/*.json",
+    "./eslint": "./eslint/index.js",
+    "./eslint/next": "./eslint/next.js",
+    "./vitest": "./vitest.js"
+  },
+  "dependencies": {
+    "@eslint/js": "catalog:",
+    "eslint-config-next": "catalog:",
+    "globals": "catalog:",
+    "typescript-eslint": "catalog:"
+  },
+  "peerDependencies": {
+    "eslint": "catalog:",
+    "vitest": "catalog:"
+  }
+}

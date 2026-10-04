@@ -48,6 +48,22 @@ Ne réécris jamais une décision validée. Si quelque chose semble à revoir, s
 
 Critères d'acceptation couverts par des tests numérotés ; RLS et test d'isolation pour toute nouvelle table ; permissions déclarées ; aucune valeur légale en dur ; test E2E du parcours principal (360 px pour les rôles mobiles) sans violation d'accessibilité ; migrations compatibles ; jeu de démonstration à jour ; OpenAPI régénérée ; registre RGPD (`docs/rgpd/registre.md`) et note de version à jour. Détail : plan de développement, section 3.
 
+## Commandes
+
+Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
+
+| Commande | Effet |
+| --- | --- |
+| `pnpm install` | Installe les dépendances du monorepo |
+| `pnpm build` | Construit tous les paquets et applications (Turborepo, avec cache) |
+| `pnpm dev` | Lance les applications en mode développement |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | Lint, typage strict, tests Vitest |
+| `pnpm format` / `pnpm format:check` | Formatage Prettier |
+| `pnpm check` | Tout ce que vérifie la CI avant une PR |
+| `pnpm --filter @scolaly/api test` | Tests d'un seul paquet |
+
+Les versions partagées sont figées dans le `catalog` de `pnpm-workspace.yaml`. Les configurations communes (TypeScript, ESLint, Vitest) sont dans `packages/config`.
+
 ## État du dépôt
 
-Au 03/10/2026, le dépôt ne contient que la documentation. Le code suivra l'organisation du monorepo décrite dans l'architecture (section 2) : `apps/web`, `apps/api`, `apps/worker`, `packages/{db,domain,contracts,ui,pdf,referentials,config}`, `infra/`. Les commandes de build et de test seront ajoutées ici lors de l'incrément I0.1.
+Monorepo en place depuis l'incrément I0.1 (organisation de l'architecture, section 2) : `apps/web`, `apps/api`, `apps/worker`, `packages/{db,domain,contracts,ui,pdf,referentials,config}`, `infra/`. Les paquets se remplissent au fil des incréments du plan de développement.

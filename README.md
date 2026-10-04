@@ -12,4 +12,13 @@ pédagogique, emplois du temps, cahier de texte, émargement QR, notes et bullet
 - [`docs/plan-developpement/`](docs/plan-developpement/) — plan de développement du MVP (phases, jalons, outillage, risques)
 - [`docs/adr/`](docs/adr/) — décisions d'architecture prises après la validation de l'architecture
 
+## Démarrer
+
+```bash
+corepack enable
+pnpm install
+pnpm check   # format, lint, typage, tests
+pnpm dev     # applications en mode développement
+```
+
 Les règles de travail des agents IA sont résumées dans [`CLAUDE.md`](CLAUDE.md).

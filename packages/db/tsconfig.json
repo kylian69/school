@@ -1,0 +1,5 @@
+{
+  "extends": "@scolaly/config/tsconfig/library.json",
+  "compilerOptions": { "rootDir": "." },
+  "include": ["src", "test"]
+}
