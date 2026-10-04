@@ -1,19 +1,39 @@
 import { z } from 'zod';
 
 /** Configuration de l'API, lue dans l'environnement et validée au démarrage. */
-const EnvSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3001),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  /** Connexion avec le rôle scolaly_app (via PgBouncer en production). */
-  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
-  VALKEY_URL: z.url({ protocol: /^(redis|rediss|valkey)$/ }),
-  /** Adresse publique de l'API, utilisée par Better Auth pour ses liens et ses contrôles d'origine. */
-  PUBLIC_URL: z.url(),
-  /** Origine de l'interface web, seule autorisée à appeler l'authentification. */
-  WEB_ORIGIN: z.url(),
-  BETTER_AUTH_SECRET: z.string().min(32, 'au moins 32 caractères'),
-});
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().positive().default(3001),
+    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+    /** Connexion avec le rôle scolaly_app (via PgBouncer en production). */
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    VALKEY_URL: z.url({ protocol: /^(redis|rediss|valkey)$/ }),
+    /** Adresse publique de l'API, utilisée par Better Auth pour ses liens et ses contrôles d'origine. */
+    PUBLIC_URL: z.url(),
+    /** Origine de l'interface web, seule autorisée à appeler l'authentification. */
+    WEB_ORIGIN: z.url(),
+    BETTER_AUTH_SECRET: z.string().min(32, 'au moins 32 caractères'),
+    /** Stockage compatible S3 (MinIO en auto-hébergement, passerelle S3 de Ceph en SaaS). */
+    S3_ENDPOINT: z.url().optional(),
+    S3_REGION: z.string().default('us-east-1'),
+    S3_BUCKET: z.string().min(3),
+    S3_ACCESS_KEY_ID: z.string().min(1),
+    S3_SECRET_ACCESS_KEY: z.string().min(1),
+    S3_FORCE_PATH_STYLE: z.stringbool().default(true),
+    /** Antivirus des fichiers déposés (clamd). */
+    CLAMAV_HOST: z.string().optional(),
+    CLAMAV_PORT: z.coerce.number().int().positive().default(3310),
+    /**
+     * Désactive l'analyse antivirus (petites installations, décision attendue à J2). À n'utiliser
+     * qu'en connaissance de cause : les fichiers déposés ne sont alors pas analysés.
+     */
+    ANTIVIRUS_DISABLED: z.stringbool().default(false),
+  })
+  .refine((env) => env.ANTIVIRUS_DISABLED || env.CLAMAV_HOST, {
+    path: ['CLAMAV_HOST'],
+    message: 'obligatoire, sauf si ANTIVIRUS_DISABLED=true',
+  });
 
 export type Env = z.infer<typeof EnvSchema>;
 
