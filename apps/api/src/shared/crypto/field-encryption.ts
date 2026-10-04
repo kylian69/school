@@ -10,6 +10,8 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:cr
  */
 const ALGORITHM = 'aes-256-gcm';
 const IV_BYTES = 12;
+/** Étiquette d'authentification complète (16 octets), imposée au déchiffrement : pas de troncature. */
+const AUTH_TAG_BYTES = 16;
 const KEY_BYTES = 32;
 const HKDF_SALT = Buffer.from('scolaly/field-encryption/v1');
 
@@ -43,7 +45,9 @@ export class FieldEncryption {
   encrypt(plaintext: string, organisationId: string, context: string): string {
     const version = this.keys.currentVersion;
     const iv = randomBytes(IV_BYTES);
-    const cipher = createCipheriv(ALGORITHM, this.key(version, organisationId), iv);
+    const cipher = createCipheriv(ALGORITHM, this.key(version, organisationId), iv, {
+      authTagLength: AUTH_TAG_BYTES,
+    });
     cipher.setAAD(aad(organisationId, context));
     const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
     return [`v${version}`, iv, ciphertext, cipher.getAuthTag()]
@@ -69,6 +73,7 @@ export class FieldEncryption {
         ALGORITHM,
         this.key(version, organisationId),
         Buffer.from(ivPart, 'base64url'),
+        { authTagLength: AUTH_TAG_BYTES },
       );
       decipher.setAAD(aad(organisationId, context));
       decipher.setAuthTag(Buffer.from(tagPart, 'base64url'));

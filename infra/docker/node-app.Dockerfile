@@ -22,7 +22,11 @@ COPY --from=pruner /pruned/json/ .
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
 COPY --from=pruner /pruned/full/ .
 RUN pnpm turbo run build --filter=@scolaly/${APP} \
- && pnpm --filter @scolaly/${APP} deploy --prod /out
+ && pnpm --filter @scolaly/${APP} deploy --prod /out \
+ # Outils de développement reliés par pnpm comme pairs optionnels (Better Auth → drizzle-kit
+ # → esbuild) : inutiles à l'exécution, retirés de l'image.
+ && rm -rf /out/node_modules/.pnpm/drizzle-kit@* /out/node_modules/.pnpm/esbuild@* \
+           /out/node_modules/.pnpm/@esbuild* /out/node_modules/.pnpm/@esbuild-kit*
 
 # 3. Image d'exécution : dépendances de production seulement, utilisateur non privilégié.
 FROM ${NODE_IMAGE} AS runtime
