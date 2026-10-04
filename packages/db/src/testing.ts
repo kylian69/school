@@ -26,6 +26,15 @@ const withDatabase = (url: string, database: string, user?: string, password?: s
   return parsed.toString();
 };
 
+/**
+ * Les rôles sont communs à tout le serveur PostgreSQL, alors que plusieurs suites de tests créent
+ * leur base en parallèle : mots de passe fixes (réservés aux tests) et amorçage sérialisé par un
+ * verrou consultatif pris sur la base d'administration.
+ */
+const TEST_MIGRATOR_PASSWORD = 'scolaly-test-migrator';
+const TEST_APP_PASSWORD = 'scolaly-test-app';
+const BOOTSTRAP_LOCK_KEY = 7_302_118_002;
+
 async function adminQuery(url: string, query: string): Promise<void> {
   const client = new pg.Client({ connectionString: url });
   await client.connect();
@@ -40,12 +49,20 @@ export async function createTestDatabase(
   serverUrl = process.env.TEST_ADMIN_DATABASE_URL ?? DEFAULT_ADMIN_URL,
 ): Promise<TestDatabase> {
   const database = `scolaly_test_${randomBytes(4).toString('hex')}`;
-  const migratorPassword = randomBytes(12).toString('hex');
-  const appPassword = randomBytes(12).toString('hex');
-
-  await adminQuery(serverUrl, `create database ${database}`);
+  const migratorPassword = TEST_MIGRATOR_PASSWORD;
+  const appPassword = TEST_APP_PASSWORD;
   const adminUrl = withDatabase(serverUrl, database);
-  await bootstrapRoles({ adminUrl, migratorPassword, appPassword });
+
+  const lock = new pg.Client({ connectionString: serverUrl });
+  await lock.connect();
+  try {
+    await lock.query('select pg_advisory_lock($1)', [BOOTSTRAP_LOCK_KEY]);
+    await lock.query(`create database ${database}`);
+    await bootstrapRoles({ adminUrl, migratorPassword, appPassword });
+  } finally {
+    await lock.query('select pg_advisory_unlock($1)', [BOOTSTRAP_LOCK_KEY]).catch(() => undefined);
+    await lock.end();
+  }
   const migratorUrl = withDatabase(serverUrl, database, MIGRATOR_ROLE, migratorPassword);
   await runMigrations(migratorUrl);
 
