@@ -5,6 +5,10 @@ export interface Access {
   userId: string;
   organisationId: string;
   permissions: ReadonlySet<Permission>;
+  /** Modules actifs de l'école (RG-19-04). */
+  modules: ReadonlySet<string>;
+  /** Accès de l'école selon l'état de son client (RG-19-02). */
+  acces: 'complet' | 'lecture_seule' | 'ferme';
 }
 
 /**

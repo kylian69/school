@@ -5,6 +5,7 @@ export {
   ajouterEvenement,
   creerPartitionsAudit,
   enregistrerAudit,
+  enregistrerAuditPlateforme,
   publierEvenements,
   type AuditEntry,
   type EvenementAPublier,

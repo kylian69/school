@@ -2,6 +2,10 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../client.js';
 import {
   anneeScolaire,
+  client,
+  clientEtatEvenement,
+  contrat,
+  organisationModule,
   etablissement,
   groupe,
   organisation,
@@ -29,6 +33,10 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
     await tx.insert(etablissement).values(dataset.etablissements);
     await tx.insert(anneeScolaire).values(dataset.annees);
     await tx.insert(periode).values(dataset.periodes);
+    await tx.insert(organisationModule).values(dataset.modules);
+    await tx.insert(client).values(dataset.client);
+    await tx.insert(contrat).values(dataset.contrat);
+    await tx.insert(clientEtatEvenement).values(dataset.etatsClient);
     for (let i = 0; i < dataset.personnes.length; i += 500) {
       await tx.insert(personne).values(dataset.personnes.slice(i, i + 500));
     }

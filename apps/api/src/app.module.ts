@@ -14,6 +14,7 @@ import type { Auth } from './auth/auth.js';
 import type { Env } from './config/env.js';
 import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
+import { PlateformeModule } from './modules/plateforme/index.js';
 import type { ObjectStorage } from './shared/storage/object-storage.js';
 import type { UploadService } from './shared/storage/uploads.js';
 import { AUTH, DATABASE, ENV, OBJECT_STORAGE, UPLOADS, VALKEY } from './shared/tokens.js';
@@ -25,6 +26,8 @@ export interface AppResources {
   auth: Auth;
   storage: ObjectStorage;
   uploads: UploadService;
+  /** Connexion du rôle plateforme (mode SaaS seulement, ADR 0004). */
+  platformDatabase?: DatabaseHandle;
 }
 
 const RESOURCES = Symbol('RESOURCES');
@@ -36,6 +39,7 @@ class ResourcesLifecycle implements OnApplicationShutdown {
     await this.resources.database.close();
     this.resources.valkey.disconnect();
     this.resources.storage.destroy();
+    await this.resources.platformDatabase?.close();
   }
 }
 
@@ -48,7 +52,13 @@ export class AppModule {
     return {
       module: AppModule,
       global: true,
-      imports: [AccessModule.forRoot(options.accessResolver), ...(options.extraModules ?? [])],
+      imports: [
+        AccessModule.forRoot(options.accessResolver),
+        ...(resources.platformDatabase
+          ? [PlateformeModule.forRoot(resources.platformDatabase.db)]
+          : []),
+        ...(options.extraModules ?? []),
+      ],
       controllers: [HealthController],
       providers: [
         { provide: RESOURCES, useValue: resources },

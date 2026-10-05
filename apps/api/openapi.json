@@ -5,6 +5,156 @@
     "version": "0.0.0"
   },
   "paths": {
+    "/api/plateforme/clients": {
+      "get": {
+        "operationId": "ClientsController.lister",
+        "summary": "Lister les clients",
+        "x-scolaly-access": {
+          "kind": "plateforme",
+          "roles": [
+            "super_administrateur",
+            "support"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeClients"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "ClientsController.creer",
+        "summary": "Créer un client (devis signé)",
+        "x-scolaly-access": {
+          "kind": "plateforme",
+          "roles": [
+            "super_administrateur"
+          ]
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouveauClient"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientFiche"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plateforme/clients/{id}": {
+      "get": {
+        "operationId": "ClientsController.fiche",
+        "summary": "Fiche d’un client",
+        "x-scolaly-access": {
+          "kind": "plateforme",
+          "roles": [
+            "super_administrateur",
+            "support"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientFiche"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plateforme/clients/{id}/etat": {
+      "post": {
+        "operationId": "ClientsController.changerEtat",
+        "summary": "Changer l’état d’un client",
+        "x-scolaly-access": {
+          "kind": "plateforme",
+          "roles": [
+            "super_administrateur"
+          ]
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangementEtatClient"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientFiche"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plateforme/clients/{id}/modules": {
+      "put": {
+        "operationId": "ClientsController.exceptionModule",
+        "summary": "Ouvrir ou fermer un module hors formule",
+        "x-scolaly-access": {
+          "kind": "plateforme",
+          "roles": [
+            "super_administrateur"
+          ]
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExceptionModule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientFiche"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController.check",
@@ -29,6 +179,383 @@
   },
   "components": {
     "schemas": {
+      "ChangementEtatClient": {
+        "type": "object",
+        "properties": {
+          "etat": {
+            "type": "string",
+            "enum": [
+              "actif",
+              "suspendu",
+              "resilie"
+            ]
+          },
+          "motif": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "etat",
+          "motif"
+        ],
+        "additionalProperties": false
+      },
+      "ClientFiche": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "raisonSociale": {
+            "type": "string"
+          },
+          "siren": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sousDomaine": {
+            "type": "string"
+          },
+          "etat": {
+            "type": "string",
+            "enum": [
+              "actif",
+              "suspendu",
+              "resilie",
+              "supprime"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "groupe"
+            ]
+          },
+          "administrateur": {
+            "type": "object",
+            "properties": {
+              "nom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "nom",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "contactFacturation": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "nom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "nom",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "contrat": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "formule": {
+                "type": "string",
+                "enum": [
+                  "essentiel",
+                  "pro",
+                  "entreprise"
+                ]
+              },
+              "volumeApprenants": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "dateDebut": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "dateFin": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "referenceDevis": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "formule",
+              "volumeApprenants",
+              "dateDebut",
+              "dateFin",
+              "referenceDevis"
+            ],
+            "additionalProperties": false
+          },
+          "ecoles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "nom": {
+                  "type": "string"
+                },
+                "nomAffichage": {
+                  "type": "string"
+                },
+                "acces": {
+                  "type": "string",
+                  "enum": [
+                    "complet",
+                    "lecture_seule",
+                    "ferme"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "nom",
+                "nomAffichage",
+                "acces"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "module": {
+                  "type": "string",
+                  "enum": [
+                    "socle",
+                    "referentiel",
+                    "alternance",
+                    "emplois-du-temps",
+                    "cahier-de-texte",
+                    "emargement",
+                    "notes",
+                    "portails",
+                    "crm",
+                    "contrats",
+                    "facturation",
+                    "qualite",
+                    "livret",
+                    "jurys",
+                    "devoirs",
+                    "pilotage",
+                    "handicap",
+                    "api-publique"
+                  ]
+                },
+                "actif": {
+                  "type": "boolean"
+                },
+                "origine": {
+                  "type": "string",
+                  "enum": [
+                    "formule",
+                    "exception"
+                  ]
+                }
+              },
+              "required": [
+                "module",
+                "actif",
+                "origine"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "historique": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "etatPrecedent": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "actif",
+                    "suspendu",
+                    "resilie",
+                    "supprime"
+                  ]
+                },
+                "etat": {
+                  "type": "string",
+                  "enum": [
+                    "actif",
+                    "suspendu",
+                    "resilie",
+                    "supprime"
+                  ]
+                },
+                "motif": {
+                  "type": "string"
+                },
+                "survenuLe": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "required": [
+                "etatPrecedent",
+                "etat",
+                "motif",
+                "survenuLe"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "raisonSociale",
+          "siren",
+          "sousDomaine",
+          "etat",
+          "type",
+          "administrateur",
+          "contactFacturation",
+          "contrat",
+          "ecoles",
+          "modules",
+          "historique"
+        ],
+        "additionalProperties": false
+      },
+      "ClientResume": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "raisonSociale": {
+            "type": "string"
+          },
+          "sousDomaine": {
+            "type": "string"
+          },
+          "etat": {
+            "type": "string",
+            "enum": [
+              "actif",
+              "suspendu",
+              "resilie",
+              "supprime"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "groupe"
+            ]
+          },
+          "formule": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "essentiel",
+              "pro",
+              "entreprise"
+            ]
+          },
+          "volumeApprenants": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "dateFin": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "ecoles": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "raisonSociale",
+          "sousDomaine",
+          "etat",
+          "type",
+          "formule",
+          "volumeApprenants",
+          "dateFin",
+          "ecoles"
+        ],
+        "additionalProperties": false
+      },
+      "ExceptionModule": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string",
+            "enum": [
+              "socle",
+              "referentiel",
+              "alternance",
+              "emplois-du-temps",
+              "cahier-de-texte",
+              "emargement",
+              "notes",
+              "portails",
+              "crm",
+              "contrats",
+              "facturation",
+              "qualite",
+              "livret",
+              "jurys",
+              "devoirs",
+              "pilotage",
+              "handicap",
+              "api-publique"
+            ]
+          },
+          "actif": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "module",
+          "actif"
+        ],
+        "additionalProperties": false
+      },
       "HealthResponse": {
         "type": "object",
         "properties": {
@@ -41,6 +568,151 @@
         },
         "required": [
           "status"
+        ],
+        "additionalProperties": false
+      },
+      "ListeClients": {
+        "type": "object",
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientResume"
+            }
+          }
+        },
+        "required": [
+          "clients"
+        ],
+        "additionalProperties": false
+      },
+      "NouveauClient": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "groupe"
+            ]
+          },
+          "raisonSociale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "siren": {
+            "type": "string",
+            "pattern": "^\\d{9}$"
+          },
+          "sousDomaine": {
+            "type": "string"
+          },
+          "formule": {
+            "type": "string",
+            "enum": [
+              "essentiel",
+              "pro",
+              "entreprise"
+            ]
+          },
+          "volumeApprenants": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "referenceDevis": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "contactFacturation": {
+            "type": "object",
+            "properties": {
+              "nom": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 200
+              },
+              "email": {
+                "type": "string",
+                "maxLength": 254,
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              }
+            },
+            "required": [
+              "nom",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "administrateur": {
+            "type": "object",
+            "properties": {
+              "nom": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 200
+              },
+              "email": {
+                "type": "string",
+                "maxLength": 254,
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              }
+            },
+            "required": [
+              "nom",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "ecoles": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nom": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 200
+                },
+                "nomAffichage": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                }
+              },
+              "required": [
+                "nom",
+                "nomAffichage"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "type",
+          "raisonSociale",
+          "sousDomaine",
+          "formule",
+          "volumeApprenants",
+          "dateDebut",
+          "dateFin",
+          "administrateur",
+          "ecoles"
         ],
         "additionalProperties": false
       }

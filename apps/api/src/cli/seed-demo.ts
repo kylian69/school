@@ -27,6 +27,9 @@ try {
     auth: createAuth(env, database.db, valkey),
     migratorUrl,
     password,
+    ...(env.SCOLALY_MODE === 'saas' && env.PLATFORM_DATABASE_URL
+      ? { platformUrl: env.PLATFORM_DATABASE_URL }
+      : {}),
   });
   console.warn(
     result.donneesEcrites ? 'Jeu de démonstration chargé.' : 'Jeu de démonstration déjà présent.',

@@ -44,6 +44,10 @@ export async function createApp(
       ? new DisabledScanner()
       : new ClamdScanner(env.CLAMAV_HOST, env.CLAMAV_PORT);
   const uploads = new UploadService(storage, scanner);
+  const platformDatabase =
+    env.SCOLALY_MODE === 'saas' && env.PLATFORM_DATABASE_URL
+      ? createDatabase(env.PLATFORM_DATABASE_URL, { max: 4 })
+      : undefined;
 
   const adapter = new FastifyAdapter({
     trustProxy: true,
@@ -55,7 +59,15 @@ export async function createApp(
   });
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forRoot(
-      { env, database, valkey, auth, storage, uploads },
+      {
+        env,
+        database,
+        valkey,
+        auth,
+        storage,
+        uploads,
+        ...(platformDatabase ? { platformDatabase } : {}),
+      },
       {
         ...(options.accessResolver ? { accessResolver: options.accessResolver } : {}),
         ...(options.extraModules ? { extraModules: options.extraModules } : {}),

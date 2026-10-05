@@ -11,7 +11,12 @@ import {
   type Access,
   type AccessResolver,
 } from '../src/access/access-resolver.js';
-import { Authenticated, Public, RequirePermission } from '../src/access/access.decorators.js';
+import {
+  Authenticated,
+  ModuleRequis,
+  Public,
+  RequirePermission,
+} from '../src/access/access.decorators.js';
 import { RequestContext } from '../src/access/request-context.js';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
 import { ApiContract } from '../src/contracts/api-contract.js';
@@ -53,17 +58,47 @@ class EssaiController {
   }
 }
 
-@Module({ controllers: [EssaiController] })
+@Controller('essai-jurys')
+@ModuleRequis('jurys')
+class EssaiJurysController {
+  @Get()
+  @RequirePermission('organisation:lire')
+  lire() {
+    return { ok: true };
+  }
+
+  @Post()
+  @RequirePermission('organisation:modifier')
+  ecrire() {
+    return { ok: true };
+  }
+}
+
+@Module({ controllers: [EssaiController, EssaiJurysController] })
 class EssaiModule {}
 
 /** Droits configurables par le test : compte → organisation et permissions. */
-const grants = new Map<string, { organisationId: string; permissions: Permission[] }>();
+const grants = new Map<
+  string,
+  {
+    organisationId: string;
+    permissions: Permission[];
+    modules?: string[];
+    acces?: Access['acces'];
+  }
+>();
 class TestAccessResolver implements AccessResolver {
   resolve(userId: string): Promise<Access | null> {
     const grant = grants.get(userId);
     return Promise.resolve(
       grant
-        ? { userId, organisationId: grant.organisationId, permissions: new Set(grant.permissions) }
+        ? {
+            userId,
+            organisationId: grant.organisationId,
+            permissions: new Set(grant.permissions),
+            modules: new Set(grant.modules ?? ['socle']),
+            acces: grant.acces ?? 'complet',
+          }
         : null,
     );
   }
@@ -156,6 +191,39 @@ describe('Deux barrières : permission déclarée et organisation de la session'
     });
     expect(valide.statusCode).toBe(201);
     expect(valide.json()).toEqual({ nom: 'Atelier' });
+  });
+});
+
+describe('RG-19-04 et RG-19-02 : modules actifs et accès de l’école', () => {
+  const avec = (modules: string[], acces: Access['acces']) => {
+    grants.set(userId, {
+      organisationId,
+      permissions: ['organisation:lire', 'organisation:modifier'],
+      modules,
+      acces,
+    });
+  };
+
+  it('un module inactif ne répond pas', async () => {
+    avec(['socle'], 'complet');
+    expect((await get('/essai-jurys')).statusCode).toBe(404);
+    avec(['socle', 'jurys'], 'complet');
+    expect((await get('/essai-jurys')).statusCode).toBe(200);
+  });
+
+  it('une école suspendue lit mais n’écrit plus, avec une explication', async () => {
+    avec(['socle', 'jurys'], 'lecture_seule');
+    expect((await get('/essai-jurys')).statusCode).toBe(200);
+    const ecriture = await app.inject({ method: 'POST', url: '/essai-jurys', headers: { cookie } });
+    expect(ecriture.statusCode).toBe(403);
+    expect(ecriture.json<{ message: string }>().message).toMatch(/lecture seule/);
+  });
+
+  it("une école dont l'accès est fermé ne lit plus rien", async () => {
+    avec(['socle', 'jurys'], 'ferme');
+    const lecture = await get('/essai-jurys');
+    expect(lecture.statusCode).toBe(403);
+    expect(lecture.json<{ message: string }>().message).toMatch(/fermé/);
   });
 });
 

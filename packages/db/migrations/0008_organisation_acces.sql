@@ -1,0 +1,2 @@
+CREATE TYPE "public"."organisation_acces" AS ENUM('complet', 'lecture_seule', 'ferme');--> statement-breakpoint
+ALTER TABLE "organisation" ADD COLUMN "acces" "organisation_acces" DEFAULT 'complet' NOT NULL;

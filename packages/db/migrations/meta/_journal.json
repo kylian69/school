@@ -57,6 +57,20 @@
       "when": 1791195474465,
       "tag": "0007_droits_plateforme",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791196315810,
+      "tag": "0008_organisation_acces",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791196328941,
+      "tag": "0009_organisation_colonnes_ecole",
+      "breakpoints": true
     }
   ]
 }

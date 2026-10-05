@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import type { Database } from './client.js';
 import type { Transaction } from './organisation-context.js';
+import { plateformeAudit } from './schema/plateforme.js';
 import { auditEvenement, outboxEvenement } from './schema/journal.js';
 
 export interface AuditEntry {
@@ -96,4 +97,20 @@ export async function publierEvenements(
 /** Crée les partitions mensuelles du journal d'audit à venir (tâche planifiée quotidienne). */
 export async function creerPartitionsAudit(db: Database, moisAVenir = 3): Promise<void> {
   await db.execute(sql`select audit_evenement_creer_partitions(${moisAVenir})`);
+}
+
+/** Inscrit une action de la console au journal d'audit de la plateforme (module 19). */
+export async function enregistrerAuditPlateforme(
+  db: Database | Transaction,
+  entry: AuditEntry,
+): Promise<void> {
+  await db.insert(plateformeAudit).values({
+    action: entry.action,
+    objetType: entry.objetType,
+    objetId: entry.objetId ?? null,
+    auteurId: entry.auteurId ?? null,
+    adresseIp: entry.adresseIp ?? null,
+    avant: entry.avant ?? null,
+    apres: entry.apres ?? null,
+  });
 }
