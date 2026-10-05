@@ -1,8 +1,10 @@
 import { sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
-import { APP_ROLE } from '../src/roles.js';
+import { APP_ROLE, PLATFORM_ROLE } from '../src/roles.js';
 import {
+  PLATFORM_PRIVATE_TABLES,
   PLATFORM_READONLY_TABLES,
+  PLATFORM_ROLE_SCHOOL_TABLES,
   PLATFORM_TABLES,
   SELF_SCOPED_TABLES,
 } from '../src/schema/index.js';
@@ -90,6 +92,29 @@ describe('Conformité du schéma', async () => {
       where n.nspname = 'public' and c.relispartition
         and has_table_privilege(${APP_ROLE}, c.oid, 'SELECT, INSERT, UPDATE, DELETE')`);
     expect(grants.rows).toEqual([]);
+  });
+
+  it("ADR 0004 : le rôle applicatif n'a aucun droit sur les tables privées de la plateforme", async () => {
+    const grants = await owner.db.execute<{ table_name: string }>(sql`
+      select c.relname as table_name from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind in ('r', 'p')
+        and has_table_privilege(${APP_ROLE}, c.oid, 'SELECT, INSERT, UPDATE, DELETE')`);
+    const exposees = grants.rows
+      .map((r) => r.table_name)
+      .filter((t) => PLATFORM_PRIVATE_TABLES.includes(t));
+    expect(exposees).toEqual([]);
+  });
+
+  it("ADR 0004 : le rôle plateforme n'accède à aucune donnée d'école, hors organisations et modules", async () => {
+    const grants = await owner.db.execute<{ table_name: string }>(sql`
+      select c.relname as table_name from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind in ('r', 'p')
+        and has_table_privilege(${PLATFORM_ROLE}, c.oid, 'SELECT, INSERT, UPDATE, DELETE')`);
+    const autorisees = new Set([...PLATFORM_TABLES, ...PLATFORM_ROLE_SCHOOL_TABLES]);
+    expect(grants.rows.map((r) => r.table_name).filter((t) => !autorisees.has(t))).toEqual([]);
+    expect(grants.rows.map((r) => r.table_name)).not.toEqual(
+      expect.arrayContaining(['auth_user', 'auth_session', 'auth_account']),
+    );
   });
 
   it("le rôle applicatif n'a aucun droit d'écriture sur les tables de plateforme en lecture seule", async () => {

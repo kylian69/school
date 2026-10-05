@@ -6,6 +6,7 @@ export default async function setup(project: TestProject) {
   project.provide('adminUrl', database.adminUrl);
   project.provide('migratorUrl', database.migratorUrl);
   project.provide('appUrl', database.appUrl);
+  project.provide('platformUrl', database.platformUrl);
   return database.drop;
 }
 
@@ -14,5 +15,6 @@ declare module 'vitest' {
     adminUrl: string;
     migratorUrl: string;
     appUrl: string;
+    platformUrl: string;
   }
 }

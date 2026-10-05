@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { bootstrapRoles } from './bootstrap.js';
 import { runMigrations } from './migrate.js';
-import { APP_ROLE, MIGRATOR_ROLE } from './roles.js';
+import { APP_ROLE, MIGRATOR_ROLE, PLATFORM_ROLE } from './roles.js';
 
 /**
  * Base PostgreSQL jetable pour les tests d'intégration : base dédiée, rôles et schéma complet.
@@ -13,6 +13,7 @@ export interface TestDatabase {
   adminUrl: string;
   migratorUrl: string;
   appUrl: string;
+  platformUrl: string;
   drop: () => Promise<void>;
 }
 
@@ -34,6 +35,7 @@ const withDatabase = (url: string, database: string, user?: string, password?: s
 // Mêmes valeurs que .env.example : développement et tests partagent le serveur PostgreSQL local.
 const TEST_MIGRATOR_PASSWORD = 'scolaly-dev-migrator';
 const TEST_APP_PASSWORD = 'scolaly-dev-app';
+const TEST_PLATFORM_PASSWORD = 'scolaly-dev-platform';
 const BOOTSTRAP_LOCK_KEY = 7_302_118_002;
 
 async function adminQuery(url: string, query: string): Promise<void> {
@@ -59,7 +61,12 @@ export async function createTestDatabase(
   try {
     await lock.query('select pg_advisory_lock($1)', [BOOTSTRAP_LOCK_KEY]);
     await lock.query(`create database ${database}`);
-    await bootstrapRoles({ adminUrl, migratorPassword, appPassword });
+    await bootstrapRoles({
+      adminUrl,
+      migratorPassword,
+      appPassword,
+      platformPassword: TEST_PLATFORM_PASSWORD,
+    });
   } finally {
     await lock.query('select pg_advisory_unlock($1)', [BOOTSTRAP_LOCK_KEY]).catch(() => undefined);
     await lock.end();
@@ -71,6 +78,7 @@ export async function createTestDatabase(
     adminUrl,
     migratorUrl,
     appUrl: withDatabase(serverUrl, database, APP_ROLE, appPassword),
+    platformUrl: withDatabase(serverUrl, database, PLATFORM_ROLE, TEST_PLATFORM_PASSWORD),
     drop: () => adminQuery(serverUrl, `drop database if exists ${database} with (force)`),
   };
 }
