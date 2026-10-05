@@ -7,6 +7,7 @@ import {
   contrat,
   organisationModule,
   etablissement,
+  fermeture,
   groupe,
   organisation,
   periode,
@@ -33,6 +34,7 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
     await tx.insert(etablissement).values(dataset.etablissements);
     await tx.insert(anneeScolaire).values(dataset.annees);
     await tx.insert(periode).values(dataset.periodes);
+    await tx.insert(fermeture).values(dataset.fermetures);
     await tx.insert(organisationModule).values(dataset.modules);
     await tx.insert(client).values(dataset.client);
     await tx.insert(contrat).values(dataset.contrat);

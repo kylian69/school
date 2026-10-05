@@ -7,6 +7,8 @@ import {
   role,
   rolePermission,
   etablissement,
+  fermeture,
+  fermetureEtablissement,
   organisationModule,
   periode,
   personne,
@@ -81,6 +83,38 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         dateFin: '2027-01-31',
         ordre: 1,
       });
+    },
+  },
+  fermeture: {
+    insert: async (db, organisationId) => {
+      const anneeScolaireId = await insertAnnee(db, organisationId);
+      await db.insert(fermeture).values({
+        organisationId,
+        anneeScolaireId,
+        libelle: 'Vacances de la Toussaint',
+        dateDebut: '2026-10-24',
+        dateFin: '2026-11-01',
+      });
+    },
+  },
+  fermeture_etablissement: {
+    insert: async (db, organisationId) => {
+      const anneeScolaireId = await insertAnnee(db, organisationId);
+      const fermetureId = newId();
+      await db.insert(fermeture).values({
+        id: fermetureId,
+        organisationId,
+        anneeScolaireId,
+        libelle: 'Pont de l’Ascension',
+        dateDebut: '2027-05-07',
+        dateFin: '2027-05-07',
+        type: 'autre',
+      });
+      const etablissementId = newId();
+      await db.insert(etablissement).values({ id: etablissementId, organisationId, nom: 'Campus' });
+      await db
+        .insert(fermetureEtablissement)
+        .values({ organisationId, fermetureId, etablissementId });
     },
   },
   personne: {

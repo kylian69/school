@@ -1,54 +1,19 @@
 'use client';
 
 import type { Etablissement, OrganisationDetail } from '@scolaly/contracts';
-import { Badge, Button, Card, Dialog, DialogContent, Input, Label } from '@scolaly/ui';
+import { Badge, Button, Card, Dialog, DialogContent, Label } from '@scolaly/ui';
 import { useRouter } from 'next/navigation';
-import { useId, useState, type ComponentProps, type SyntheticEvent } from 'react';
+import { useId, useState, type SyntheticEvent } from 'react';
+import {
+  Champ,
+  SANS_ERREUR,
+  valeursDuFormulaire as valeurs,
+  type Erreurs,
+} from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
-import { envoyer, erreurDuChamp } from '@/lib/requete';
+import { envoyer } from '@/lib/requete';
 
 const t = fr.organisation;
-
-interface Erreurs {
-  message: string | null;
-  details: readonly string[];
-}
-const SANS_ERREUR: Erreurs = { message: null, details: [] };
-
-/** Champ de formulaire : libellé, saisie et erreur renvoyée par l'API pour ce champ. */
-function Champ({
-  nom,
-  label,
-  erreurs,
-  aide,
-  ...props
-}: ComponentProps<'input'> & { nom: string; label: string; erreurs: Erreurs; aide?: string }) {
-  const id = useId();
-  const erreur = erreurDuChamp(erreurs.details, nom);
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        name={nom}
-        aria-invalid={erreur ? true : undefined}
-        aria-describedby={erreur || aide ? `${id}-aide` : undefined}
-        {...props}
-      />
-      {erreur || aide ? (
-        <p id={`${id}-aide`} className={erreur ? 'text-sm text-bad' : 'text-xs text-muted'}>
-          {erreur ?? aide}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/** Valeurs d'un formulaire, chaînes seulement. */
-const valeurs = (form: HTMLFormElement) =>
-  Object.fromEntries(
-    [...new FormData(form)].map(([cle, valeur]) => [cle, typeof valeur === 'string' ? valeur : '']),
-  );
 
 export function OrganisationEditeur({
   organisation,

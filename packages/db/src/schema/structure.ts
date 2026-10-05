@@ -4,10 +4,12 @@ import {
   check,
   date,
   foreignKey,
+  index,
   pgEnum,
   pgTable,
   smallint,
   text,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { trackingColumns } from './columns.js';
@@ -79,5 +81,66 @@ export const periode = pgTable(
       foreignColumns: [anneeScolaire.organisationId, anneeScolaire.id],
     }),
     check('periode_dates_check', sql`${t.dateFin} >= ${t.dateDebut}`),
+  ],
+).enableRLS();
+
+export const fermetureType = pgEnum('fermeture_type', ['ferie', 'vacances', 'autre']);
+
+/**
+ * Fermeture d'une année scolaire : vacances, pont, jour férié local (RG-01-04). Elle s'applique aux
+ * établissements listés dans fermeture_etablissement, ou à tous s'il n'y en a aucun.
+ */
+export const fermeture = pgTable(
+  'fermeture',
+  {
+    ...organisationScoped(),
+    anneeScolaireId: uuid().notNull(),
+    libelle: text().notNull(),
+    dateDebut: date().notNull(),
+    dateFin: date().notNull(),
+    type: fermetureType().notNull().default('vacances'),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('fermeture', t),
+    index('fermeture_organisation_id_annee_scolaire_id_idx').on(
+      t.organisationId,
+      t.anneeScolaireId,
+    ),
+    foreignKey({
+      name: 'fermeture_annee_scolaire_fk',
+      columns: [t.organisationId, t.anneeScolaireId],
+      foreignColumns: [anneeScolaire.organisationId, anneeScolaire.id],
+    }),
+    check('fermeture_dates_check', sql`${t.dateFin} >= ${t.dateDebut}`),
+  ],
+).enableRLS();
+
+/** Établissements concernés par une fermeture. */
+export const fermetureEtablissement = pgTable(
+  'fermeture_etablissement',
+  {
+    ...organisationScoped(),
+    fermetureId: uuid().notNull(),
+    etablissementId: uuid().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('fermeture_etablissement', t),
+    uniqueIndex('fermeture_etablissement_paire_key').on(
+      t.organisationId,
+      t.fermetureId,
+      t.etablissementId,
+    ),
+    foreignKey({
+      name: 'fermeture_etablissement_fermeture_fk',
+      columns: [t.organisationId, t.fermetureId],
+      foreignColumns: [fermeture.organisationId, fermeture.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'fermeture_etablissement_etablissement_fk',
+      columns: [t.organisationId, t.etablissementId],
+      foreignColumns: [etablissement.organisationId, etablissement.id],
+    }),
   ],
 ).enableRLS();
