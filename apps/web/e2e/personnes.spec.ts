@@ -54,4 +54,32 @@ test.describe('E-01-04 et E-01-05 Personnes', () => {
     await page.goto(`/personnes?q=${nom}`);
     await expect(page.getByText('2 personnes')).toBeVisible();
   });
+
+  test('US-01-09 attribue un rôle sur un établissement, le retire, puis invite la personne', async ({
+    page,
+  }) => {
+    const suffixe = Math.random().toString(36).slice(2, 7);
+    await page.goto('/personnes/nouvelle');
+    await page.getByLabel('Prénom').fill('Noa');
+    await page.getByLabel('Nom de naissance').fill(`Roux${suffixe}`);
+    await page.getByLabel('Email').fill(`noa.${suffixe}@exemple.test`);
+    await page.getByRole('button', { name: 'Créer la fiche' }).click();
+    await expect(page.getByText('Aucun rôle : cette personne ne voit aucune donnée')).toBeVisible();
+
+    await page.getByLabel('Rôle', { exact: true }).selectOption({ label: 'Scolarité' });
+    await page
+      .getByLabel('Périmètre')
+      .selectOption({ label: 'Établissement : Campus des Tilleuls' });
+    await page.getByRole('button', { name: 'Attribuer un rôle' }).click();
+    const role = page.getByRole('listitem').filter({ hasText: 'Scolarité' });
+    await expect(role.getByText(/Établissement : Campus des Tilleuls · depuis le/)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await page.getByRole('button', { name: 'Retirer le rôle « Scolarité »' }).click();
+    await expect(role.getByText('Terminé')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Envoyer l’invitation' }).click();
+    await expect(page.getByRole('status')).toHaveText('Invitation envoyée.');
+    await expect(page.getByRole('button', { name: 'Renvoyer l’invitation' })).toBeVisible();
+  });
 });

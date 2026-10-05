@@ -13,3 +13,4 @@ export * from './apparence/couleurs.js';
 export * from './apparence/logo.js';
 export * from './demarrage/etapes.js';
 export * from './personnes/doublons.js';
+export * from './droits/attributions.js';

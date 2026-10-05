@@ -316,6 +316,35 @@
         }
       }
     },
+    "/api/attributions/{id}/retrait": {
+      "post": {
+        "operationId": "AttributionsController.retirer",
+        "summary": "Retirer un rôle (jamais au dernier administrateur)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:attribuer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/comptes/{personneId}/desactivation": {
       "post": {
         "operationId": "ComptesController.desactiver",
@@ -920,6 +949,65 @@
         }
       }
     },
+    "/api/personnes/{id}/attributions": {
+      "get": {
+        "operationId": "AttributionsController.lister",
+        "summary": "Rôles d’une personne, avec périmètre et période",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:lire",
+            "roles:attribuer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeAttributions"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "AttributionsController.attribuer",
+        "summary": "Attribuer un rôle avec un périmètre (RG-01-12 pour l’administrateur)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:attribuer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelleAttribution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributionPersonne"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/plateforme/clients": {
       "get": {
         "operationId": "ClientsController.lister",
@@ -1388,6 +1476,75 @@
           "couleur",
           "palette",
           "logoUrl"
+        ],
+        "additionalProperties": false
+      },
+      "AttributionPersonne": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "roleLibelle": {
+            "type": "string"
+          },
+          "perimetreType": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "etablissement",
+              "formation",
+              "promotion",
+              "soi"
+            ]
+          },
+          "perimetreId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "perimetreLibelle": {
+            "nullable": true,
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "en-cours",
+              "a-venir",
+              "terminee"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "roleId",
+          "roleLibelle",
+          "perimetreType",
+          "perimetreId",
+          "perimetreLibelle",
+          "debut",
+          "fin",
+          "statut"
         ],
         "additionalProperties": false
       },
@@ -2329,6 +2486,21 @@
         ],
         "additionalProperties": false
       },
+      "ListeAttributions": {
+        "type": "object",
+        "properties": {
+          "attributions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributionPersonne"
+            }
+          }
+        },
+        "required": [
+          "attributions"
+        ],
+        "additionalProperties": false
+      },
       "ListeClients": {
         "type": "object",
         "properties": {
@@ -3019,6 +3191,48 @@
           "dateDebut",
           "dateFin",
           "periodes"
+        ],
+        "additionalProperties": false
+      },
+      "NouvelleAttribution": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "perimetreType": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "etablissement",
+              "formation",
+              "promotion",
+              "soi"
+            ]
+          },
+          "perimetreId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "roleId",
+          "perimetreType"
         ],
         "additionalProperties": false
       },
