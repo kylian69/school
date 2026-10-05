@@ -1,6 +1,12 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import type { ClientFiche, NouveauClient } from '@scolaly/contracts';
-import { createDatabase, plateformeAudit, plateformeMembre } from '@scolaly/db';
+import { ROLES_PAR_DEFAUT, type ClientFiche, type NouveauClient } from '@scolaly/contracts';
+import {
+  createDatabase,
+  plateformeAudit,
+  plateformeMembre,
+  role,
+  withOrganisation,
+} from '@scolaly/db';
 import { DEMO_MODULES_FORMULE } from '@scolaly/db/demo';
 import { modulesParFormule, valueAt } from '@scolaly/referentials';
 import { eq } from 'drizzle-orm';
@@ -141,6 +147,12 @@ describe('US-19-01 créer le client d’un devis signé en une opération', () =
     expect(fiche.modules.map((m) => m.module)).toEqual([...essentiel].sort());
     expect(fiche.modules.every((m) => m.actif && m.origine === 'formule')).toBe(true);
     expect(fiche.historique).toMatchObject([{ etatPrecedent: null, etat: 'actif' }]);
+    const roles = await withOrganisation(
+      app.get<Database>(DATABASE),
+      fiche.ecoles[0]?.id ?? '',
+      (tx) => tx.select({ code: role.code }).from(role),
+    );
+    expect(roles).toHaveLength(ROLES_PAR_DEFAUT.length);
     const traces = await owner.db
       .select()
       .from(plateformeAudit)

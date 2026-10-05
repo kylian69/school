@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { authUser } from './auth.js';
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 
@@ -15,6 +16,11 @@ export const personne = pgTable(
     nomUsage: text(),
     prenom: text().notNull(),
     email: text().notNull(),
+    /**
+     * Compte de connexion (RG-00-26 : un seul compte pour les fiches d'une même personne dans les
+     * écoles d'un groupe). Null tant que la personne n'a pas activé son compte.
+     */
+    userId: uuid().references(() => authUser.id),
     ...trackingColumns(),
   },
   (t) => [
@@ -23,5 +29,8 @@ export const personne = pgTable(
     uniqueIndex('personne_organisation_id_email_key')
       .on(t.organisationId, sql`lower(${t.email})`)
       .where(sql`${t.deletedAt} is null`),
+    uniqueIndex('personne_organisation_id_user_id_key')
+      .on(t.organisationId, t.userId)
+      .where(sql`${t.userId} is not null`),
   ],
 ).enableRLS();

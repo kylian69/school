@@ -2,6 +2,9 @@ import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
 import {
   anneeScolaire,
+  attribution,
+  role,
+  rolePermission,
   etablissement,
   organisationModule,
   periode,
@@ -23,6 +26,24 @@ export interface ScopedTableSample {
    * lecture seule (la table est gérée par la console de la plateforme, ADR 0004).
    */
   appAccess?: 'full' | 'append-only' | 'read-only';
+}
+
+async function insertPersonne(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(personne).values({
+    id,
+    organisationId,
+    nom: 'Fictif',
+    prenom: 'Camille',
+    email: `camille.${id}@exemple.test`,
+  });
+  return id;
+}
+
+async function insertRole(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(role).values({ id, organisationId, libelle: 'Rôle personnalisé' });
+  return id;
 }
 
 async function insertAnnee(db: Database, organisationId: string): Promise<string> {
@@ -68,6 +89,30 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         nom: 'Fictif',
         prenom: 'Camille',
         email: `camille.${newId()}@exemple.test`,
+      });
+    },
+  },
+  role: {
+    insert: async (db, organisationId) => {
+      await insertRole(db, organisationId);
+    },
+  },
+  role_permission: {
+    insert: async (db, organisationId) => {
+      const roleId = await insertRole(db, organisationId);
+      await db.insert(rolePermission).values({ organisationId, roleId, permission: 'audit:lire' });
+    },
+  },
+  attribution: {
+    insert: async (db, organisationId) => {
+      const personneId = await insertPersonne(db, organisationId);
+      const roleId = await insertRole(db, organisationId);
+      await db.insert(attribution).values({
+        organisationId,
+        personneId,
+        roleId,
+        perimetreType: 'organisation',
+        debut: '2026-09-01',
       });
     },
   },

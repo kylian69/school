@@ -1,4 +1,5 @@
 export * from './auth.js';
+export * from './droits.js';
 export * from './organisation.js';
 export * from './personne.js';
 export * from './plateforme.js';

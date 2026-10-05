@@ -23,6 +23,10 @@ La console de la plateforme (module 19) crée les écoles, leurs contrats et leu
 
 La proposition initiale évoquait des fonctions `SECURITY DEFINER` dédiées. Des droits accordés table par table donnent la même frontière, plus simple à relire et à tester ; les fonctions restent possibles pour une opération plus fine.
 
+## Complément (I1.2, 05/10/2026)
+
+À la création d'une école, la console doit lui donner ses 13 rôles par défaut (RG-01-15), qui sont des données de l'école. Plutôt que d'ouvrir les tables `role` et `role_permission` au rôle plateforme, la migration 0011 crée la fonction `organisation_initialiser_roles(organisation, roles)` (`SECURITY DEFINER`, `search_path` fixé). C'est la **seule** écriture de la console dans les données d'une école : elle crée les rôles manquants, ne modifie rien d'existant, et ne lit rien.
+
 ## Conséquences
 
 - Une erreur de code dans la console ne peut pas lire les données d'une école : la base le refuse.

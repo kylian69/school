@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ROLES_PAR_DEFAUT } from '@scolaly/contracts';
 import type {
   ChangementEtatClient,
   ClientFiche,
@@ -18,6 +19,7 @@ import {
   contrat,
   enregistrerAuditPlateforme,
   groupe,
+  initialiserRolesParDefaut,
   newId,
   organisation,
   organisationModule,
@@ -124,6 +126,10 @@ export class ClientsService {
         createdBy: auteur.userId,
       }));
       await tx.insert(organisation).values(organisations);
+      // RG-01-15 : chaque école reçoit les 13 rôles par défaut (fonction dédiée, ADR 0004).
+      for (const ecole of organisations) {
+        await initialiserRolesParDefaut(tx, ecole.id, ROLES_PAR_DEFAUT);
+      }
       const id = newId();
       await tx.insert(client).values({
         id,

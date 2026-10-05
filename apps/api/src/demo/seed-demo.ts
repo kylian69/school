@@ -1,5 +1,6 @@
 import { createDatabase } from '@scolaly/db';
-import { buildDemoDataset, seedDemoDataset } from '@scolaly/db/demo';
+import { ROLES_PAR_DEFAUT } from '@scolaly/contracts';
+import { buildDemoDataset, seedDemoDataset, seedDemoDroits } from '@scolaly/db/demo';
 import { createPasswordAccount, type Auth } from '../auth/auth.js';
 import { creerSuperAdministrateur } from '../modules/plateforme/index.js';
 
@@ -30,14 +31,27 @@ export async function seedDemo(options: {
 
   const context = await options.auth.$context;
   const comptesCrees: string[] = [];
+  const userIds = new Map<string, string>();
   for (const compte of dataset.comptes) {
-    if (await context.internalAdapter.findUserByEmail(compte.email)) continue;
-    await createPasswordAccount(options.auth, {
+    const existant = await context.internalAdapter.findUserByEmail(compte.email);
+    if (existant) {
+      userIds.set(compte.email, existant.user.id);
+      continue;
+    }
+    const { userId } = await createPasswordAccount(options.auth, {
       email: compte.email,
       name: compte.name,
       password: options.password,
     });
+    userIds.set(compte.email, userId);
     comptesCrees.push(compte.email);
+  }
+  // Rôles des écoles et rattachement de chaque compte à sa fiche et à son rôle (I1.2).
+  const proprietaire = createDatabase(options.migratorUrl, { max: 2 });
+  try {
+    await seedDemoDroits(proprietaire.db, dataset, ROLES_PAR_DEFAUT, userIds);
+  } finally {
+    await proprietaire.close();
   }
   if (options.platformUrl) {
     const { cree } = await creerSuperAdministrateur({
