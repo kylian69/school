@@ -14,8 +14,13 @@ export default async function setup(project: TestProject) {
   project.provide('migratorUrl', database.migratorUrl);
   project.provide('valkeyUrl', valkeyUrl);
   project.provide('s3Endpoint', process.env.TEST_S3_ENDPOINT ?? 'http://localhost:59000');
-  project.provide('s3AccessKey', process.env.TEST_S3_ACCESS_KEY ?? 'scolaly');
-  project.provide('s3SecretKey', process.env.TEST_S3_SECRET_KEY ?? 'scolaly-dev-minio');
+  project.provide('s3AccessKey', process.env.TEST_S3_ACCESS_KEY ?? 'GK0000000000000000000000d1');
+  project.provide('s3Region', process.env.TEST_S3_REGION ?? 'garage');
+  project.provide(
+    's3SecretKey',
+    process.env.TEST_S3_SECRET_KEY ??
+      '00000000000000000000000000000000000000000000000000000000000000d1',
+  );
   return database.drop;
 }
 
@@ -27,5 +32,6 @@ declare module 'vitest' {
     s3Endpoint: string;
     s3AccessKey: string;
     s3SecretKey: string;
+    s3Region: string;
   }
 }

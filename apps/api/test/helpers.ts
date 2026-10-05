@@ -17,7 +17,7 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
     WEB_ORIGIN,
     BETTER_AUTH_SECRET: 'secret-de-test-uniquement-pas-pour-la-production',
     S3_ENDPOINT: inject('s3Endpoint'),
-    S3_REGION: 'us-east-1',
+    S3_REGION: inject('s3Region'),
     S3_BUCKET: 'scolaly-test',
     S3_ACCESS_KEY_ID: inject('s3AccessKey'),
     S3_SECRET_ACCESS_KEY: inject('s3SecretKey'),

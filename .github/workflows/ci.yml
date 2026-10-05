@@ -46,9 +46,10 @@ jobs:
       TEST_VALKEY_URL: redis://localhost:6379/15
       TEST_SMTP_URL: smtp://localhost:1025
       TEST_MAILPIT_API: http://localhost:8025
-      TEST_S3_ENDPOINT: http://localhost:9000
-      TEST_S3_ACCESS_KEY: scolaly
-      TEST_S3_SECRET_KEY: scolaly-ci-minio
+      TEST_S3_ENDPOINT: http://localhost:3900
+      TEST_S3_REGION: garage
+      TEST_S3_ACCESS_KEY: GK0000000000000000000000c1
+      TEST_S3_SECRET_KEY: 00000000000000000000000000000000000000000000000000000000000000c1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -62,11 +63,18 @@ jobs:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-
-      - name: MinIO (stockage S3 de test)
+      - name: Garage (stockage S3 de test, ADR 0003)
         run: |
-          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=scolaly \
-            -e MINIO_ROOT_PASSWORD=scolaly-ci-minio cgr.dev/chainguard/minio:latest server /data
-          timeout 60 sh -c 'until curl -sf http://localhost:9000/minio/health/live; do sleep 1; done'
+          docker run -d --name garage -p 3900:3900 -p 3903:3903 \
+            -e GARAGE_RPC_SECRET=$(openssl rand -hex 32) -e GARAGE_ADMIN_TOKEN=garage-ci-admin \
+            -v "$PWD/infra/garage/garage.toml:/etc/garage.toml:ro" dxflrs/garage:v2.4.1
+          node infra/garage/init.mjs
+        env:
+          GARAGE_ADMIN_URL: http://localhost:3903
+          GARAGE_ADMIN_TOKEN: garage-ci-admin
+          S3_ACCESS_KEY_ID: GK0000000000000000000000c1
+          S3_SECRET_ACCESS_KEY: 00000000000000000000000000000000000000000000000000000000000000c1
+          S3_BUCKET: scolaly-test
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm turbo run build lint typecheck test
