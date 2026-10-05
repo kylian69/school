@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { Database } from './client.js';
 import type { Transaction } from './organisation-context.js';
 import { attribution, personne, role, rolePermission } from './schema/index.js';
@@ -48,7 +48,14 @@ export async function attributionsDuCompte(
   const [fiche] = await tx
     .select({ id: personne.id })
     .from(personne)
-    .where(and(eq(personne.userId, userId), isNull(personne.deletedAt)));
+    .where(
+      and(
+        eq(personne.userId, userId),
+        isNull(personne.deletedAt),
+        // RG-01-09 : une fiche désactivée n'ouvre plus l'école.
+        ne(personne.compteEtat, 'desactive'),
+      ),
+    );
   if (!fiche) return null;
   const lignes = await tx
     .select({
@@ -85,4 +92,28 @@ export async function attributionsDuCompte(
     });
   }
   return { personneId: fiche.id, attributions: [...parAttribution.values()] };
+}
+
+/** Fiches actives et désactivées d'un compte, toutes écoles confondues (RG-01-09). */
+export async function fichesDuCompte(
+  db: Database,
+  userId: string,
+): Promise<{ actives: number; desactivees: number }> {
+  const result = await db.execute<{ actives: number; desactivees: number }>(
+    sql`select * from compte_fiches(${userId}::uuid)`,
+  );
+  return result.rows[0] ?? { actives: 0, desactivees: 0 };
+}
+
+/** Invitations à examiner pour une relance, toutes écoles confondues (RG-01-08). */
+export async function invitationsARelancer(
+  db: Database,
+): Promise<{ organisationId: string; invitationId: string }[]> {
+  const result = await db.execute<{ organisation_id: string; invitation_id: string }>(
+    sql`select * from invitations_a_relancer()`,
+  );
+  return result.rows.map((r) => ({
+    organisationId: r.organisation_id,
+    invitationId: r.invitation_id,
+  }));
 }

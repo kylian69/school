@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { isUuid } from '@scolaly/db';
+import { isUuid } from './ids.js';
 
 /**
  * Jeton d'invitation : `<identifiant de l'école>.<secret>`. L'identifiant ouvre la transaction de

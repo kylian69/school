@@ -84,7 +84,14 @@ describe('Tâches planifiées et workers', () => {
   const maintenance = queue(QUEUES.maintenance);
   const emails = queue(QUEUES.emails);
   const mailer = createSmtpMailer(inject('smtpUrl'), 'Scolaly <ne-pas-repondre@exemple.test>');
-  const workers = startWorkers({ connection, db: app.db, mailer, logger, prefix });
+  const workers = startWorkers({
+    connection,
+    db: app.db,
+    mailer,
+    logger,
+    prefix,
+    publicUrl: 'http://localhost:3000',
+  });
 
   afterAll(async () => {
     await Promise.all(workers.map((w) => w.close()));
@@ -110,11 +117,10 @@ describe('Tâches planifiées et workers', () => {
     await registerSchedules(maintenance);
     await registerSchedules(maintenance);
     const schedulers = await maintenance.getJobSchedulers();
-    expect(schedulers).toHaveLength(1);
-    expect(schedulers[0]).toMatchObject({
-      key: MAINTENANCE_JOBS.partitionsAudit,
-      pattern: '15 2 * * *',
-    });
+    expect(schedulers.map((s) => [s.key, s.pattern]).sort()).toEqual([
+      [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],
+      [MAINTENANCE_JOBS.relancesInvitations, '0 9 * * *'],
+    ]);
   });
 
   it('la tâche de maintenance crée les partitions à venir', async () => {

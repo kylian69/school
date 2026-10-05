@@ -25,6 +25,7 @@
   "dependencies": {
     "@scolaly/contracts": "workspace:*",
     "@scolaly/db": "workspace:*",
+    "@scolaly/domain": "workspace:*",
     "bullmq": "catalog:",
     "ioredis": "catalog:",
     "nodemailer": "catalog:",

@@ -22,12 +22,49 @@ import { RequestContext } from '../../access/request-context.js';
 import { ApiContract } from '../../contracts/api-contract.js';
 import { limiterDebit } from '../../shared/limiteur.js';
 import { VALKEY } from '../../shared/tokens.js';
+import { z } from 'zod';
+import { ComptesService } from './comptes.service.js';
 import { InvitationsService } from './invitations.service.js';
 
-/** Invitations envoyées par l'école (US-01-06, RG-01-08). */
+/** Invitations, désactivation et réactivation des comptes (US-01-06, US-01-12 ; RG-01-08, RG-01-09). */
 @Controller('api/comptes')
 export class ComptesController {
-  constructor(private readonly invitations: InvitationsService) {}
+  constructor(
+    private readonly invitations: InvitationsService,
+    private readonly comptes: ComptesService,
+  ) {}
+
+  @Post(':personneId/desactivation')
+  @HttpCode(204)
+  @RequirePermission('comptes:desactiver')
+  @ApiContract({ summary: 'Désactiver un compte (historique conservé)', response: z.null() })
+  async desactiver(
+    @Param('personneId', ParseUUIDPipe) personneId: string,
+    @Req() request: ScolalyRequest,
+  ) {
+    await this.comptes.desactiver(
+      RequestContext.tx(),
+      RequestContext.access(),
+      personneId,
+      request.ip,
+    );
+  }
+
+  @Post(':personneId/reactivation')
+  @HttpCode(204)
+  @RequirePermission('comptes:desactiver')
+  @ApiContract({ summary: 'Réactiver un compte', response: z.null() })
+  async reactiver(
+    @Param('personneId', ParseUUIDPipe) personneId: string,
+    @Req() request: ScolalyRequest,
+  ) {
+    await this.comptes.reactiver(
+      RequestContext.tx(),
+      RequestContext.access(),
+      personneId,
+      request.ip,
+    );
+  }
 
   @Post(':personneId/invitation')
   @HttpCode(200)

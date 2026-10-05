@@ -16,7 +16,13 @@ const maintenance = new Queue(QUEUES.maintenance, { connection });
 const evenements = new Queue(QUEUES.evenements, { connection });
 
 await registerSchedules(maintenance);
-const workers = startWorkers({ connection, db: database.db, mailer, logger });
+const workers = startWorkers({
+  connection,
+  db: database.db,
+  mailer,
+  logger,
+  publicUrl: env.PUBLIC_URL,
+});
 const publisher = startOutboxPublisher({
   db: database.db,
   queue: evenements,

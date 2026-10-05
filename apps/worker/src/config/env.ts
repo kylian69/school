@@ -8,6 +8,8 @@ const EnvSchema = z.object({
   /** Serveur SMTP (Mailpit en local), par exemple smtp://utilisateur:motdepasse@hote:587. */
   SMTP_URL: z.url({ protocol: /^smtps?$/ }),
   MAIL_FROM: z.string().min(3),
+  /** Adresse publique de Scolaly, pour les liens envoyés par email (relances d'invitation). */
+  PUBLIC_URL: z.url(),
   /** Intervalle de lecture de la boîte d'envoi, en millisecondes. */
   OUTBOX_POLL_MS: z.coerce.number().int().min(100).default(1000),
 });

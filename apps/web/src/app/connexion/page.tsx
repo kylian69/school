@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Card, Logo } from '@scolaly/ui';
 import { fr } from '@/i18n/fr';
 import { getSession } from '@/lib/session';
-import { LoginForm } from './login-form';
+import { ConnexionChoix } from './connexion-choix';
 
 export const metadata: Metadata = { title: fr.connexion.titre };
 
@@ -17,7 +17,7 @@ export default async function ConnexionPage() {
           <h1 className="text-[26px] font-[650] tracking-[-0.035em]">{fr.connexion.titre}</h1>
           <p className="text-sm text-muted">{fr.connexion.sousTitre}</p>
         </div>
-        <LoginForm />
+        <ConnexionChoix />
       </Card>
     </main>
   );

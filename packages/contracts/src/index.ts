@@ -6,3 +6,4 @@ export * from './modules.js';
 export * from './plateforme.js';
 export * from './roles.js';
 export * from './session.js';
+export * from './emails.js';
