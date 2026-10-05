@@ -8,3 +8,4 @@ export * from './roles.js';
 export * from './session.js';
 export * from './emails.js';
 export * from './gestion-roles.js';
+export * from './structure.js';

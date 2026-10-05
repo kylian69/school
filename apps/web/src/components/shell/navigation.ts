@@ -1,4 +1,5 @@
 import type { Permission } from '@scolaly/contracts';
+import { PERMISSIONS_PARAMETRES } from '@/components/parametres/sections';
 import { fr } from '@/i18n/fr';
 
 /**
@@ -35,9 +36,9 @@ export const NAVIGATION: readonly NavigationEntry[] = [
   },
   {
     label: fr.coquille.entrees.parametres,
-    href: '/parametres/roles',
+    href: '/parametres',
     module: 'socle',
-    permissions: ['roles:gerer', 'roles:attribuer'],
+    permissions: PERMISSIONS_PARAMETRES,
     icon: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4',
   },
 ];

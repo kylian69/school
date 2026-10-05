@@ -16,6 +16,7 @@ import { ContractValidationInterceptor } from './contracts/contract-validation.i
 import { HealthController } from './health/health.controller.js';
 import { ComptesModule } from './modules/comptes/index.js';
 import { RolesModule } from './modules/roles/index.js';
+import { StructureModule } from './modules/structure/index.js';
 import { SessionController } from './modules/session/index.js';
 import { PlateformeModule } from './modules/plateforme/index.js';
 import type { ObjectStorage } from './shared/storage/object-storage.js';
@@ -62,6 +63,7 @@ export class AppModule {
         AccessModule.forRoot(options.accessResolver),
         ComptesModule,
         RolesModule,
+        StructureModule,
         ...(resources.platformDatabase
           ? [PlateformeModule.forRoot(resources.platformDatabase.db)]
           : []),
