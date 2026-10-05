@@ -23,7 +23,7 @@ const initials = (name: string) =>
     .toUpperCase();
 
 /** Carte de la personne connectée : thème de l'interface et déconnexion. */
-export function UserMenu({ user }: { user: SessionUser }) {
+export function UserMenu({ user, ecole }: { user: SessionUser; ecole?: string | undefined }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
@@ -48,6 +48,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-[13px] font-semibold">{user.name}</span>
           <span className="truncate text-xs text-muted">{user.email}</span>
+          {ecole ? <span className="truncate text-xs text-muted">{ecole}</span> : null}
         </span>
       </div>
       <div role="radiogroup" aria-label={t.theme.titre} className="grid grid-cols-3 gap-1">

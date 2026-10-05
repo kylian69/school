@@ -20,12 +20,17 @@ export const fr = {
     compte: 'Mon compte',
     theme: { titre: 'Thème', clair: 'Clair', sombre: 'Sombre', systeme: 'Système' },
     deconnexion: 'Se déconnecter',
+    ecole: 'École',
+    changerEcole: 'Changer d’école',
+    changementImpossible: 'Le changement d’école a échoué. Réessayez.',
     entrees: { tableauDeBord: 'Tableau de bord' },
   },
   accueil: {
     titre: 'Tableau de bord',
     bonjour: (prenom: string) => `Bonjour ${prenom}.`,
     pret: 'Votre espace Scolaly est prêt.',
+    sansEcole:
+      'Votre compte n’est rattaché à aucune école. Si vous attendez un accès, contactez l’administrateur de votre établissement.',
     suite:
       'Les modules de votre établissement apparaîtront ici au fur et à mesure de leur activation : structure de l’école, personnes, emplois du temps, émargement, notes.',
   },

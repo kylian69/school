@@ -10,42 +10,49 @@ import { NAVIGATION } from './navigation';
 export function NavLinks({
   onNavigate,
   consoleAccessible = false,
+  modules = [],
 }: {
   onNavigate?: () => void;
   consoleAccessible?: boolean;
+  /** Modules actifs de l'école (RG-19-04) : seules leurs entrées apparaissent. */
+  modules?: readonly string[];
 }) {
   const pathname = usePathname();
   return (
     <nav aria-label={fr.coquille.navigation} className="flex flex-col gap-0.5">
-      {NAVIGATION.map((entry) => {
-        const active = entry.href === '/' ? pathname === '/' : pathname.startsWith(entry.href);
-        return (
-          <Link
-            key={entry.href}
-            href={entry.href}
-            {...(onNavigate ? { onClick: onNavigate } : {})}
-            aria-current={active ? 'page' : undefined}
-            className={cn(
-              'flex h-11 items-center gap-2.5 rounded-control px-2.5 text-sm font-medium md:h-[38px]',
-              active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg',
-            )}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="size-[18px]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.7}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+      {NAVIGATION.filter((entry) => entry.module === null || modules.includes(entry.module)).map(
+        (entry) => {
+          const active = entry.href === '/' ? pathname === '/' : pathname.startsWith(entry.href);
+          return (
+            <Link
+              key={entry.href}
+              href={entry.href}
+              {...(onNavigate ? { onClick: onNavigate } : {})}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex h-11 items-center gap-2.5 rounded-control px-2.5 text-sm font-medium md:h-[38px]',
+                active
+                  ? 'bg-accent-soft text-accent'
+                  : 'text-muted hover:bg-surface-2 hover:text-fg',
+              )}
             >
-              <path d={entry.icon} />
-            </svg>
-            {entry.label}
-          </Link>
-        );
-      })}
+              <svg
+                viewBox="0 0 24 24"
+                className="size-[18px]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.7}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d={entry.icon} />
+              </svg>
+              {entry.label}
+            </Link>
+          );
+        },
+      )}
       {consoleAccessible ? (
         <Link
           href="/plateforme"

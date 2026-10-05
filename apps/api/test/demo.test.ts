@@ -1,7 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { attribution, createDatabase, personne, role } from '@scolaly/db';
 import { buildDemoDataset } from '@scolaly/db/demo';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import type { Auth } from '../src/auth/auth.js';
 import { seedDemo } from '../src/demo/seed-demo.js';
@@ -34,7 +34,13 @@ describe('Chargement du jeu de démonstration', () => {
         .select({ email: personne.email, userId: personne.userId, role: role.code })
         .from(attribution)
         .innerJoin(personne, eq(personne.id, attribution.personneId))
-        .innerJoin(role, eq(role.id, attribution.roleId));
+        .innerJoin(role, eq(role.id, attribution.roleId))
+        .where(
+          inArray(
+            attribution.organisationId,
+            buildDemoDataset().organisations.map((o) => o.id ?? ''),
+          ),
+        );
       expect(fiches).toHaveLength(8);
       expect(fiches.every((f) => f.userId !== null)).toBe(true);
       expect(fiches.find((f) => f.email.startsWith('administrateur@egl'))?.role).toBe(

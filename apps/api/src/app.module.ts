@@ -14,6 +14,7 @@ import type { Auth } from './auth/auth.js';
 import type { Env } from './config/env.js';
 import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
+import { SessionController } from './modules/session/index.js';
 import { PlateformeModule } from './modules/plateforme/index.js';
 import type { ObjectStorage } from './shared/storage/object-storage.js';
 import type { UploadService } from './shared/storage/uploads.js';
@@ -59,7 +60,7 @@ export class AppModule {
           : []),
         ...(options.extraModules ?? []),
       ],
-      controllers: [HealthController],
+      controllers: [HealthController, SessionController],
       providers: [
         { provide: RESOURCES, useValue: resources },
         { provide: ENV, useValue: resources.env },

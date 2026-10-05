@@ -85,6 +85,13 @@
       "when": 1791201339690,
       "tag": "0011_initialisation_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791201944721,
+      "tag": "0012_ecoles_du_compte",
+      "breakpoints": true
     }
   ]
 }
