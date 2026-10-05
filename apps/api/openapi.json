@@ -345,6 +345,127 @@
         }
       }
     },
+    "/api/roles": {
+      "get": {
+        "operationId": "RolesController.lister",
+        "summary": "Rôles de l’école, leurs permissions et leurs titulaires",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:gerer",
+            "roles:attribuer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeRoles"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "RolesController.creer",
+        "summary": "Créer un rôle personnalisé, vierge ou par duplication",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouveauRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/roles/{id}": {
+      "patch": {
+        "operationId": "RolesController.modifier",
+        "summary": "Modifier un rôle (nom, permissions, double authentification)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RolesController.supprimer",
+        "summary": "Supprimer un rôle personnalisé qui ne sert plus",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/session/contexte": {
       "get": {
         "operationId": "SessionController.contexte",
@@ -1036,6 +1157,21 @@
         ],
         "additionalProperties": false
       },
+      "ListeRoles": {
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleDetail"
+            }
+          }
+        },
+        "required": [
+          "roles"
+        ],
+        "additionalProperties": false
+      },
       "MembrePlateforme": {
         "type": "object",
         "properties": {
@@ -1050,6 +1186,50 @@
         "required": [
           "role"
         ],
+        "additionalProperties": false
+      },
+      "ModificationRole": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "permissions": {
+            "maxItems": 16,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "organisation:lire",
+                "organisation:modifier",
+                "calendrier:lire",
+                "calendrier:gerer",
+                "personnes:lire",
+                "apprenants:inviter",
+                "personnel:inviter",
+                "personnes:importer",
+                "personnes:exporter",
+                "personnes:voir-en-tant-que",
+                "comptes:desactiver",
+                "roles:attribuer",
+                "roles:gerer",
+                "audit:lire",
+                "apparence:gerer",
+                "corbeille:restaurer"
+              ]
+            }
+          },
+          "doubleAuthentificationRequise": {
+            "type": "boolean"
+          }
+        },
         "additionalProperties": false
       },
       "NouveauClient": {
@@ -1182,6 +1362,57 @@
         ],
         "additionalProperties": false
       },
+      "NouveauRole": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "permissions": {
+            "maxItems": 16,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "organisation:lire",
+                "organisation:modifier",
+                "calendrier:lire",
+                "calendrier:gerer",
+                "personnes:lire",
+                "apprenants:inviter",
+                "personnel:inviter",
+                "personnes:importer",
+                "personnes:exporter",
+                "personnes:voir-en-tant-que",
+                "comptes:desactiver",
+                "roles:attribuer",
+                "roles:gerer",
+                "audit:lire",
+                "apparence:gerer",
+                "corbeille:restaurer"
+              ]
+            }
+          },
+          "doubleAuthentificationRequise": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "libelle"
+        ],
+        "additionalProperties": false
+      },
       "ResultatActivation": {
         "type": "object",
         "properties": {
@@ -1195,6 +1426,88 @@
         "required": [
           "email",
           "compteExistant"
+        ],
+        "additionalProperties": false
+      },
+      "RoleDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "nullable": true,
+            "type": "string"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "perimetreParDefaut": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "etablissement",
+              "formation",
+              "promotion",
+              "soi"
+            ]
+          },
+          "doubleAuthentificationRequise": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "organisation:lire",
+                "organisation:modifier",
+                "calendrier:lire",
+                "calendrier:gerer",
+                "personnes:lire",
+                "apprenants:inviter",
+                "personnel:inviter",
+                "personnes:importer",
+                "personnes:exporter",
+                "personnes:voir-en-tant-que",
+                "comptes:desactiver",
+                "roles:attribuer",
+                "roles:gerer",
+                "audit:lire",
+                "apparence:gerer",
+                "corbeille:restaurer"
+              ]
+            }
+          },
+          "personnes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "parDefaut": {
+            "type": "boolean"
+          },
+          "verrouille": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "libelle",
+          "description",
+          "perimetreParDefaut",
+          "doubleAuthentificationRequise",
+          "permissions",
+          "personnes",
+          "parDefaut",
+          "verrouille"
         ],
         "additionalProperties": false
       }
