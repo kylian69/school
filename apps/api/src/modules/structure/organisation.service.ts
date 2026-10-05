@@ -18,12 +18,16 @@ import {
   controlerSiret,
   controlerUai,
   informationsManquantes,
+  analyserModeleMatricule,
+  genererMatricule,
+  MODELE_MATRICULE_PAR_DEFAUT,
   normaliserIdentifiant,
   verifierArchivageEtablissement,
   type ControleIdentifiant,
 } from '@scolaly/domain';
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
+import { anneeDeReference } from '../../shared/matricule.js';
 
 type LigneEtablissement = typeof etablissement.$inferSelect;
 
@@ -73,6 +77,14 @@ function identifiant(
   return valeur;
 }
 
+const MESSAGES_MODELE = {
+  'numero-absent': 'Le modèle doit contenir un numéro séquentiel, par exemple {NUM:5}.',
+  'numero-multiple': 'Le modèle ne doit contenir qu’un seul numéro {NUM:n}.',
+  'jeton-inconnu':
+    'Utilisez seulement {ANNEE}, {AA}, {NUM:n} (n de 1 à 10), des lettres, des chiffres et . _ / -.',
+  'trop-long': 'Le modèle compte 30 caractères au plus.',
+} as const;
+
 const vide = (v: string | null | undefined) => (v === undefined ? undefined : v || null);
 
 /** Organisation et établissements de l'école (E-01-02 ; US-01-02, RG-01-01, RG-01-02). */
@@ -95,6 +107,11 @@ export class OrganisationService {
       nom: ecole.nom,
       nomAffichage: ecole.nomAffichage,
       siren: ecole.siren,
+      modeleMatricule: ecole.modeleMatricule ?? MODELE_MATRICULE_PAR_DEFAUT,
+      exempleMatricule: genererMatricule(ecole.modeleMatricule ?? MODELE_MATRICULE_PAR_DEFAUT, {
+        annee: await anneeDeReference(tx),
+        numero: ecole.matriculeCompteur + 1,
+      }),
       etablissements: etablissements.map((e) => this.detail(e)),
     };
   }
@@ -107,12 +124,26 @@ export class OrganisationService {
   ): Promise<OrganisationDetail> {
     const avant = await this.lire(tx, access);
     const siren = identifiant('siren', changement.siren);
+    const modele =
+      changement.modeleMatricule === undefined
+        ? undefined
+        : changement.modeleMatricule?.toUpperCase() || null;
+    if (modele) {
+      const verdict = analyserModeleMatricule(modele);
+      if (!verdict.ok) {
+        throw new BadRequestException({
+          message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+          details: [`modeleMatricule : ${MESSAGES_MODELE[verdict.refus]}`],
+        });
+      }
+    }
     await tx
       .update(organisation)
       .set({
         ...(changement.nom !== undefined ? { nom: changement.nom } : {}),
         ...(changement.nomAffichage !== undefined ? { nomAffichage: changement.nomAffichage } : {}),
         ...(siren !== undefined ? { siren } : {}),
+        ...(modele !== undefined ? { modeleMatricule: modele } : {}),
         updatedBy: access.userId,
       })
       .where(eq(organisation.id, access.organisationId));
@@ -123,8 +154,18 @@ export class OrganisationService {
       objetId: access.organisationId,
       auteurId: access.userId,
       adresseIp,
-      avant: { nom: avant.nom, nomAffichage: avant.nomAffichage, siren: avant.siren },
-      apres: { nom: apres.nom, nomAffichage: apres.nomAffichage, siren: apres.siren },
+      avant: {
+        nom: avant.nom,
+        nomAffichage: avant.nomAffichage,
+        siren: avant.siren,
+        modeleMatricule: avant.modeleMatricule,
+      },
+      apres: {
+        nom: apres.nom,
+        nomAffichage: apres.nomAffichage,
+        siren: apres.siren,
+        modeleMatricule: apres.modeleMatricule,
+      },
     });
     return apres;
   }

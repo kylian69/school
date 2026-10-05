@@ -13,7 +13,12 @@ import type {
   RecherchePersonnes,
 } from '@scolaly/contracts';
 import { attribution, enregistrerAudit, personne, role, type Transaction } from '@scolaly/db';
-import { dateNaissancePlausible, motifsDoublon } from '@scolaly/domain';
+import {
+  controlerIne,
+  dateNaissancePlausible,
+  motifsDoublon,
+  normaliserIdentifiant,
+} from '@scolaly/domain';
 import {
   and,
   asc,
@@ -32,6 +37,7 @@ import {
 } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
+import { attribuerMatricule } from '../../shared/matricule.js';
 
 type LignePersonne = typeof personne.$inferSelect;
 
@@ -48,6 +54,7 @@ const CHAMPS = [
   'ville',
   'dateNaissance',
   'lieuNaissance',
+  'ine',
 ] as const;
 
 const invalide = (champ: string, message: string) =>
@@ -55,6 +62,19 @@ const invalide = (champ: string, message: string) =>
     message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
     details: [`${champ} : ${message}`],
   });
+
+/** INE normalisé et contrôlé (RG-01-06) ; undefined reste undefined (champ non modifié). */
+function ine(saisie: string | null | undefined): string | null | undefined {
+  if (saisie === undefined) return undefined;
+  const valeur = normaliserIdentifiant(saisie);
+  if (valeur !== null && controlerIne(valeur) !== 'valide') {
+    throw invalide(
+      'ine',
+      'L’INE compte 11 caractères, chiffres et lettres, terminés par une lettre.',
+    );
+  }
+  return valeur;
+}
 
 /** La date et le lieu de naissance ne sont montrés qu'à la scolarité et à l'administration. */
 const voitNaissance = (access: Access) =>
@@ -163,20 +183,22 @@ export class PersonnesService {
     adresseIp: string,
   ): Promise<PersonneDetail> {
     this.verifierNaissance(entree.dateNaissance);
+    const ineSaisi = ine(entree.ine) ?? null;
     const doublons = await this.doublons(tx, {
       nom: entree.nom,
       prenom: entree.prenom,
       email: entree.email,
       dateNaissance: entree.dateNaissance ?? null,
+      ine: ineSaisi,
     });
     // Un email identifie la personne (RG-01-06) : ce doublon-là ne peut pas être ignoré.
     if (
-      doublons.some((d) => d.motifs.includes('email')) ||
+      doublons.some((d) => d.motifs.includes('email') || d.motifs.includes('ine')) ||
       (doublons.length > 0 && !entree.ignorerDoublons)
     ) {
       throw new ConflictException({
-        message: doublons.some((d) => d.motifs.includes('email'))
-          ? 'Une fiche porte déjà cet email dans l’école. Ouvrez-la plutôt que d’en créer une seconde.'
+        message: doublons.some((d) => d.motifs.includes('email') || d.motifs.includes('ine'))
+          ? 'Une fiche porte déjà cet email ou cet INE dans l’école. Ouvrez-la plutôt que d’en créer une seconde.'
           : 'Une fiche de même nom, prénom et date de naissance existe déjà. Vérifiez qu’il ne s’agit pas de la même personne, puis confirmez la création si besoin.',
         doublons,
       });
@@ -184,10 +206,15 @@ export class PersonnesService {
     const valeurs = Object.fromEntries(
       CHAMPS.map((c) => [c, entree[c] === '' ? null : (entree[c] ?? null)]),
     ) as Pick<LignePersonne, (typeof CHAMPS)[number]>;
+    const matricule = entree.matricule
+      ? await this.matriculeLibre(tx, entree.matricule)
+      : await attribuerMatricule(tx, access.organisationId);
     const [creee] = await tx
       .insert(personne)
       .values({
         ...valeurs,
+        ine: ineSaisi,
+        matricule,
         email: entree.email.trim(),
         organisationId: access.organisationId,
         createdBy: access.userId,
@@ -222,6 +249,14 @@ export class PersonnesService {
       });
     }
     this.verifierNaissance(changement.dateNaissance);
+    const ineModifie = ine(changement.ine);
+    if (ineModifie && ineModifie !== avant.ine) {
+      const [autre] = await tx
+        .select({ id: personne.id })
+        .from(personne)
+        .where(and(eq(personne.ine, ineModifie), isNull(personne.deletedAt), ne(personne.id, id)));
+      if (autre) throw invalide('ine', 'Une autre fiche de l’école porte déjà cet INE.');
+    }
     if (changement.email && changement.email.toLowerCase() !== avant.email.toLowerCase()) {
       const [autre] = await tx
         .select({ id: personne.id })
@@ -243,7 +278,11 @@ export class PersonnesService {
     );
     const [apres] = await tx
       .update(personne)
-      .set({ ...valeurs, updatedBy: access.userId })
+      .set({
+        ...valeurs,
+        ...(ineModifie !== undefined ? { ine: ineModifie } : {}),
+        updatedBy: access.userId,
+      })
       .where(eq(personne.id, id))
       .returning();
     if (!apres) throw new NotFoundException('Personne introuvable dans cette école.');
@@ -262,7 +301,13 @@ export class PersonnesService {
   /** RG-01-07 : fiches de même email, ou de même nom, prénom et date de naissance. */
   private async doublons(
     tx: Transaction,
-    candidat: { nom: string; prenom: string; email: string; dateNaissance: string | null },
+    candidat: {
+      nom: string;
+      prenom: string;
+      email: string;
+      dateNaissance: string | null;
+      ine: string | null;
+    },
   ): Promise<DoublonPersonne[]> {
     const proches = await tx
       .select()
@@ -273,6 +318,7 @@ export class PersonnesService {
           or(
             sql`lower(${personne.email}) = lower(${candidat.email.trim()})`,
             candidat.dateNaissance ? eq(personne.dateNaissance, candidat.dateNaissance) : undefined,
+            candidat.ine ? eq(personne.ine, candidat.ine) : undefined,
           ),
         ),
       );
@@ -282,6 +328,16 @@ export class PersonnesService {
         ? [{ id: p.id, nom: p.nom, prenom: p.prenom, email: p.email, motifs }]
         : [];
     });
+  }
+
+  /** Matricule repris d'un autre logiciel : jamais celui d'une autre fiche, même supprimée. */
+  private async matriculeLibre(tx: Transaction, matricule: string): Promise<string> {
+    const [pris] = await tx
+      .select({ id: personne.id })
+      .from(personne)
+      .where(eq(personne.matricule, matricule));
+    if (pris) throw invalide('matricule', 'Ce matricule est déjà attribué dans l’école.');
+    return matricule;
   }
 
   private verifierNaissance(dateNaissance: string | null | undefined) {
@@ -335,6 +391,8 @@ export class PersonnesService {
       dateNaissance: naissanceVisible ? p.dateNaissance : null,
       lieuNaissance: naissanceVisible ? p.lieuNaissance : null,
       naissanceVisible,
+      matricule: p.matricule,
+      ine: p.ine,
       compteEtat: p.compteEtat,
       roles: (await this.rolesDe(tx, [p.id])).get(p.id) ?? [],
       version: p.updatedAt.toISOString(),

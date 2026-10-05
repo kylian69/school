@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   char,
   pgEnum,
+  integer,
   pgPolicy,
   pgTable,
   text,
@@ -48,6 +49,10 @@ export const organisation = pgTable(
     logoType: text(),
     /** Empreinte SHA-256 du logo : version de l'URL publique, pour les caches. */
     logoEmpreinte: char({ length: 64 }),
+    /** Modèle de matricule (RG-01-06) ; null : numéro séquentiel par défaut. */
+    modeleMatricule: text(),
+    /** Dernier numéro de matricule attribué : il ne recule jamais. */
+    matriculeCompteur: integer().notNull().default(0),
     ...trackingColumns(),
   },
   () => [

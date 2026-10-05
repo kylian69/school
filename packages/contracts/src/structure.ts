@@ -50,6 +50,9 @@ export const OrganisationDetail = z
     nom: z.string(),
     nomAffichage: z.string(),
     siren: z.string().nullable(),
+    /** Modèle de matricule (RG-01-06) et exemple du prochain matricule. */
+    modeleMatricule: z.string(),
+    exempleMatricule: z.string(),
     etablissements: z.array(Etablissement),
   })
   .meta({ id: 'OrganisationDetail' });
@@ -60,6 +63,8 @@ export const ModificationOrganisation = z
     nom: texte(120).optional(),
     nomAffichage: texte(40).optional(),
     siren: identifiant.optional(),
+    /** Jetons {ANNEE}, {AA} et {NUM:n} ; null : numéro séquentiel par défaut. */
+    modeleMatricule: z.string().trim().max(30).nullable().optional(),
   })
   .meta({ id: 'ModificationOrganisation' });
 export type ModificationOrganisation = z.infer<typeof ModificationOrganisation>;

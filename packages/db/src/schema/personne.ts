@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  char,
   date,
   index,
   pgEnum,
@@ -14,7 +15,7 @@ import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 
 /**
- * Personne (module 01, section 6). Le matricule, l'INE et la photo arrivent avec leurs stories
+ * Personne (module 01, section 6). La photo arrive avec sa story
  * (minimisation, RGPD). La date et le lieu de naissance ne sont montrés qu'à la scolarité et à
  * l'administration (module 01, section 9).
  */
@@ -34,6 +35,10 @@ export const personne = pgTable(
     civilite: civilite(),
     dateNaissance: date(),
     lieuNaissance: text(),
+    /** RG-01-06 : unique dans l'école et jamais réattribué, même après suppression. */
+    matricule: text(),
+    /** Identifiant national élève ou étudiant (11 caractères). */
+    ine: char({ length: 11 }),
     telephone: text(),
     adresseLigne1: text(),
     codePostal: text(),
@@ -61,6 +66,12 @@ export const personne = pgTable(
       sql`lower(${t.nom})`,
       sql`lower(${t.prenom})`,
     ),
+    uniqueIndex('personne_organisation_id_matricule_key')
+      .on(t.organisationId, t.matricule)
+      .where(sql`${t.matricule} is not null`),
+    uniqueIndex('personne_organisation_id_ine_key')
+      .on(t.organisationId, t.ine)
+      .where(sql`${t.ine} is not null and ${t.deletedAt} is null`),
     uniqueIndex('personne_organisation_id_user_id_key')
       .on(t.organisationId, t.userId)
       .where(sql`${t.userId} is not null`),

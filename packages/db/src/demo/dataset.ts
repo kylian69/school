@@ -242,6 +242,8 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       nom: ecole.nom,
       nomAffichage: ecole.nomAffichage,
       couleurPrincipale: 'couleur' in ecole ? ecole.couleur : null,
+      // Matricules 000001 à N attribués aux personnes de démonstration (RG-01-06).
+      matriculeCompteur: personnesParEcole,
       createdAt: CREATED_AT,
     });
     for (const module of DEMO_MODULES_FORMULE) {
@@ -327,6 +329,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
         nom,
         prenom,
         email,
+        matricule: String(n + 1).padStart(6, '0'),
         createdAt: CREATED_AT,
       });
     }

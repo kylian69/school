@@ -176,6 +176,22 @@ describe('E-01-02 organisation et établissements', () => {
     ).toBe(400);
   });
 
+  it('RG-01-06 paramètre le modèle de matricule, avec un exemple du prochain', async () => {
+    const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
+    expect(initial).toMatchObject({ modeleMatricule: '{NUM:6}', exempleMatricule: '000001' });
+    const modifie = await requete('PATCH', '/api/organisation', admin, {
+      modeleMatricule: '{annee}-{num:4}',
+    });
+    expect(modifie.statusCode).toBe(200);
+    expect(modifie.json<OrganisationDetail>()).toMatchObject({
+      modeleMatricule: '{ANNEE}-{NUM:4}',
+      exempleMatricule: `${new Date().getFullYear()}-0001`,
+    });
+    const refus = await requete('PATCH', '/api/organisation', admin, { modeleMatricule: '{ETAB}' });
+    expect(refus.statusCode).toBe(400);
+    expect(refus.json<{ details: string[] }>().details[0]).toMatch(/^modeleMatricule : /);
+  });
+
   it('RG-01-01 archive un établissement, jamais le dernier actif', async () => {
     const dernier = await requete('POST', `/api/etablissements/${campus.id}/archivage`, admin);
     expect(dernier.statusCode).toBe(409);

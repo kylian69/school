@@ -191,6 +191,8 @@ export const fr = {
         ville: 'Ville',
         dateNaissance: 'Date de naissance',
         lieuNaissance: 'Lieu de naissance',
+        matricule: 'Matricule',
+        ine: 'INE (facultatif)',
       },
       civilites: { '': 'Non précisée', madame: 'Madame', monsieur: 'Monsieur' } as Record<
         string,
@@ -414,6 +416,9 @@ export const fr = {
     nomAffichage: 'Nom court (sigle)',
     siren: 'SIREN',
     aideSiren: '9 chiffres, contrôlés à la saisie.',
+    modeleMatricule: 'Modèle de matricule',
+    aideMatricule: (exemple: string) =>
+      `Prochain matricule : ${exemple}. Jetons : {ANNEE}, {AA} (année scolaire), {NUM:n} (numéro sur n chiffres). Un matricule n’est jamais réattribué.`,
     enregistrer: 'Enregistrer',
     enregistrement: 'Enregistrement…',
     enregistre: 'Modifications enregistrées.',
