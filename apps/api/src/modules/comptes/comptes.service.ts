@@ -2,6 +2,8 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import { ROLE_ADMINISTRATEUR } from '@scolaly/contracts';
 import {
   attribution,
+  authTwoFactor,
+  authUser,
   enregistrerAudit,
   fichesDuCompte,
   personne,
@@ -98,6 +100,31 @@ export class ComptesService {
       adresseIp,
       avant: { compteEtat: 'desactive' },
       apres: { compteEtat: etat },
+    });
+  }
+
+  /** RG-01-11 : réinitialisation de la double authentification par un administrateur, tracée. */
+  async reinitialiserDoubleAuthentification(
+    tx: Transaction,
+    access: Access,
+    personneId: string,
+    adresseIp: string,
+  ): Promise<void> {
+    const fiche = await this.fiche(tx, personneId);
+    if (!fiche.userId) throw new ConflictException('Ce compte n’est pas encore activé.');
+    const userId = fiche.userId;
+    await tx.delete(authTwoFactor).where(eq(authTwoFactor.userId, userId));
+    await tx.update(authUser).set({ twoFactorEnabled: false }).where(eq(authUser.id, userId));
+    await enregistrerAudit(tx, {
+      action: 'compte.reinitialiser-double-authentification',
+      objetType: 'personne',
+      objetId: personneId,
+      auteurId: access.userId,
+      adresseIp,
+    });
+    RequestContext.apresValidation(async () => {
+      const context = await this.auth.$context;
+      await context.internalAdapter.deleteUserSessions(userId);
     });
   }
 

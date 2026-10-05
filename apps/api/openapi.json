@@ -869,6 +869,9 @@
           },
           "doubleAuthentificationExigee": {
             "type": "boolean"
+          },
+          "doubleAuthentificationActive": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -876,7 +879,8 @@
           "ecoles",
           "permissions",
           "modules",
-          "doubleAuthentificationExigee"
+          "doubleAuthentificationExigee",
+          "doubleAuthentificationActive"
         ],
         "additionalProperties": false
       },

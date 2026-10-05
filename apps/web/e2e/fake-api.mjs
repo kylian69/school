@@ -13,6 +13,20 @@ const USERS = {
     name: 'Camille Fictive',
     email: 'camille@exemple.test',
   },
+  // Rôle qui exige la double authentification, pas encore mise en place (RG-00-13).
+  sacha: {
+    id: '01a10000-0000-7000-8000-000000000003',
+    name: 'Sacha Fictif',
+    email: 'sacha@exemple.test',
+    doubleAuthentificationExigee: true,
+  },
+  // Double authentification active : un code est demandé à la connexion.
+  lina: {
+    id: '01a10000-0000-7000-8000-000000000004',
+    name: 'Lina Fictive',
+    email: 'lina@exemple.test',
+    twoFactorEnabled: true,
+  },
   equipe: {
     id: '01a10000-0000-7000-8000-000000000002',
     name: 'Équipe Scolaly',
@@ -20,6 +34,10 @@ const USERS = {
     role: 'super_administrateur',
   },
 };
+// Codes acceptés par la fausse API (le vrai calcul TOTP est couvert par les tests de l'API).
+const CODE_TOTP = '123456';
+const CODE_SECOURS = 'secours-0001';
+const ETAPE_2FA = 'scolaly.two_factor';
 // Écoles de chaque compte (RG-00-26) : Camille a une fiche dans les deux écoles du groupe.
 const ECOLES = {
   camille: [
@@ -120,8 +138,20 @@ createServer(async (request, response) => {
   if (path === '/api/auth/get-session') return json(200, user ? { user } : null);
   if (path === '/api/auth/sign-in/email' && request.method === 'POST') {
     const body = await readBody(request);
+    // « sacha-<suffixe> » : nouveau compte dont le rôle exige la double authentification.
+    const sacha = /^sacha-(\w+)@exemple\.test$/.exec(body.email ?? '');
+    if (sacha && !USERS[`sacha${sacha[1]}`]) {
+      USERS[`sacha${sacha[1]}`] = { ...USERS.sacha, id: randomUUID(), email: body.email };
+    }
     const [cle] = Object.entries(USERS).find(([, u]) => u.email === body.email) ?? [];
     if (cle && body.password === (USERS[cle].motDePasse ?? MOT_DE_PASSE)) {
+      if (USERS[cle].twoFactorEnabled) {
+        return json(
+          200,
+          { twoFactorRedirect: true, twoFactorMethods: ['totp'] },
+          { 'set-cookie': `${ETAPE_2FA}=${cle}; Path=/; HttpOnly; SameSite=Lax` },
+        );
+      }
       return json(
         200,
         { user: USERS[cle] },
@@ -129,6 +159,41 @@ createServer(async (request, response) => {
       );
     }
     return json(401, { code: 'INVALID_EMAIL_OR_PASSWORD' });
+  }
+  const verification = path.match(/^\/api\/auth\/two-factor\/verify-(totp|backup-code)$/);
+  if (verification && request.method === 'POST') {
+    const body = await readBody(request);
+    const attendu = verification[1] === 'totp' ? CODE_TOTP : CODE_SECOURS;
+    // Connexion en cours (cookie d'étape) ou mise en place depuis une session.
+    const cle =
+      (request.headers.cookie ?? '').match(new RegExp(`${ETAPE_2FA}=(\\w+)`))?.[1] ?? jeton;
+    if (!cle || !USERS[cle]) return json(401, { code: 'INVALID_TWO_FACTOR_COOKIE' });
+    if (body.code !== attendu) return json(401, { code: 'INVALID_CODE' });
+    USERS[cle].twoFactorEnabled = true;
+    return json(
+      200,
+      { token: 'e2e', user: USERS[cle] },
+      {
+        'set-cookie': [
+          `${COOKIE}=e2e-${cle}; Path=/; HttpOnly; SameSite=Lax`,
+          `${ETAPE_2FA}=; Path=/; Max-Age=0`,
+        ],
+      },
+    );
+  }
+  if (path === '/api/auth/two-factor/enable' && request.method === 'POST') {
+    if (!user) return json(401, { message: 'Session absente' });
+    const body = await readBody(request);
+    if (body.password !== (user.motDePasse ?? MOT_DE_PASSE))
+      return json(400, { code: 'INVALID_PASSWORD' });
+    return json(200, {
+      method: 'totp',
+      totpURI: `otpauth://totp/Scolaly:${user.email}?secret=JBSWY3DPEHPK3PXP&issuer=Scolaly`,
+      backupCodes: Array.from(
+        { length: 10 },
+        (_, i) => `secours-${String(i + 1).padStart(4, '0')}`,
+      ),
+    });
   }
   if (path === '/api/auth/sign-in/magic-link' && request.method === 'POST')
     return json(200, { status: true });
@@ -193,7 +258,8 @@ createServer(async (request, response) => {
       ecoles,
       permissions: active ? ['organisation:lire'] : [],
       modules: active ? ['socle'] : [],
-      doubleAuthentificationExigee: false,
+      doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
+      doubleAuthentificationActive: user.twoFactorEnabled === true,
     });
   }
 

@@ -11,10 +11,12 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { RolePlateforme } from '@scolaly/contracts';
+import { authUser, type Database } from '@scolaly/db';
+import { eq } from 'drizzle-orm';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyRequest } from 'fastify';
 import type { Auth } from '../auth/auth.js';
-import { AUTH } from '../shared/tokens.js';
+import { AUTH, DATABASE } from '../shared/tokens.js';
 import { ACCESS_RESOLVER, type Access, type AccessResolver } from './access-resolver.js';
 import { ACCESS_RULE, MODULE_REQUIS, type AccessRule } from './access.decorators.js';
 import { PLATEFORME_MEMBRES, type PlateformeMembres } from './plateforme-membres.js';
@@ -29,6 +31,16 @@ export type ScolalyRequest = FastifyRequest & {
 };
 
 const METHODES_LECTURE = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/** Code d'erreur repris par l'interface pour proposer la mise en place (RG-00-13, RG-19-10). */
+export const DOUBLE_AUTHENTIFICATION_REQUISE = 'DOUBLE_AUTHENTIFICATION_REQUISE';
+
+const doubleAuthentificationRequise = () =>
+  new ForbiddenException({
+    code: DOUBLE_AUTHENTIFICATION_REQUISE,
+    message:
+      'Votre rôle exige la double authentification. Activez-la depuis « Sécurité de mon compte » : cela prend moins d’une minute.',
+  });
 
 export function accessRuleOf(reflector: Reflector, context: ExecutionContext) {
   return reflector.getAllAndOverride<AccessRule | undefined>(ACCESS_RULE, [
@@ -48,8 +60,18 @@ export class AccessGuard implements CanActivate {
     private readonly reflector: Reflector,
     @Inject(AUTH) private readonly auth: Auth,
     @Inject(ACCESS_RESOLVER) private readonly resolver: AccessResolver,
+    @Inject(DATABASE) private readonly db: Database,
     @Optional() @Inject(PLATEFORME_MEMBRES) private readonly membres?: PlateformeMembres,
   ) {}
+
+  /** État réel de la double authentification, lu en base (une réinitialisation s'applique aussitôt). */
+  private async doubleAuthentificationActive(userId: string): Promise<boolean> {
+    const [compte] = await this.db
+      .select({ actif: authUser.twoFactorEnabled })
+      .from(authUser)
+      .where(eq(authUser.id, userId));
+    return compte?.actif ?? false;
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const rule = accessRuleOf(this.reflector, context);
@@ -76,6 +98,9 @@ export class AccessGuard implements CanActivate {
         // La console n'existe pas pour qui n'en fait pas partie.
         throw new NotFoundException();
       }
+      // RG-19-10 : la double authentification est obligatoire pour les comptes Scolaly.
+      if (!(await this.doubleAuthentificationActive(session.user.id)))
+        throw doubleAuthentificationRequise();
       request.rolePlateforme = role;
       return true;
     }
@@ -89,6 +114,13 @@ export class AccessGuard implements CanActivate {
         "Vous n'avez pas le droit d'effectuer cette action dans cette école. " +
           'Demandez à un administrateur de vous attribuer le rôle adapté.',
       );
+    }
+    // RG-00-13 : un rôle en cours exige la double authentification (dès la première connexion).
+    if (
+      access.doubleAuthentificationExigee &&
+      !(await this.doubleAuthentificationActive(session.user.id))
+    ) {
+      throw doubleAuthentificationRequise();
     }
     const module = this.reflector.getAllAndOverride<string | undefined>(MODULE_REQUIS, [
       context.getHandler(),

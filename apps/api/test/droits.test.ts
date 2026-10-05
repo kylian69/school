@@ -173,7 +173,9 @@ describe('RG-01-16 et RG-00-11 droits réels, recalculés à chaque requête', (
       name: 'Sans Fiche',
       password: PASSWORD,
     });
-    const autre = await signInCookie(app, 'sans.fiche@exemple.test', PASSWORD);
+    const autre = await signInCookie(app, 'sans.fiche@exemple.test', PASSWORD, {
+      doubleAuthentification: false,
+    });
     const ctx = (
       await app.inject({ method: 'GET', url: '/api/session/contexte', headers: { cookie: autre } })
     ).json<ContexteSession>();
@@ -183,6 +185,7 @@ describe('RG-01-16 et RG-00-11 droits réels, recalculés à chaque requête', (
       permissions: [],
       modules: [],
       doubleAuthentificationExigee: false,
+      doubleAuthentificationActive: false,
     });
   });
 });

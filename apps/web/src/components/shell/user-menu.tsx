@@ -1,7 +1,8 @@
 'use client';
 
 import { Button, cn } from '@scolaly/ui';
-import { LogOut, Monitor, Moon, Sun } from 'lucide-react';
+import { LogOut, Monitor, Moon, ShieldCheck, Sun } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { fr } from '@/i18n/fr';
@@ -22,7 +23,7 @@ const initials = (name: string) =>
     .slice(0, 2)
     .toUpperCase();
 
-/** Carte de la personne connectée : thème de l'interface et déconnexion. */
+/** Carte de la personne connectée : thème, sécurité du compte et déconnexion. */
 export function UserMenu({ user, ecole }: { user: SessionUser; ecole?: string | undefined }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -72,6 +73,12 @@ export function UserMenu({ user, ecole }: { user: SessionUser; ecole?: string | 
           </button>
         ))}
       </div>
+      <Button asChild variant="ghost">
+        <Link href="/securite">
+          <ShieldCheck className="size-4" aria-hidden="true" />
+          {fr.securite.lien}
+        </Link>
+      </Button>
       <Button variant="secondary" onClick={() => void signOut()}>
         <LogOut className="size-4" aria-hidden="true" />
         {t.deconnexion}

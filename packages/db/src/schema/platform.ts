@@ -12,6 +12,7 @@ export const AUTH_TABLES: readonly string[] = [
   'auth_session',
   'auth_account',
   'auth_verification',
+  'auth_two_factor',
 ];
 
 /** Tables privées de la console (ADR 0004) : aucun droit pour le rôle applicatif. */

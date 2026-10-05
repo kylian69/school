@@ -147,6 +147,41 @@ export const fr = {
     },
     erreur: 'L’activation a échoué.',
   },
+  securite: {
+    titre: 'Sécurité de mon compte',
+    lien: 'Sécurité de mon compte',
+    doubleAuthentification: 'Double authentification',
+    exigee:
+      'Votre rôle exige la double authentification. Mettez-la en place pour accéder à votre espace : cela prend moins d’une minute.',
+    active: 'La double authentification est active : un code vous est demandé à chaque connexion.',
+    inactive:
+      'Protégez votre compte avec un code à usage unique, demandé en plus de votre mot de passe.',
+    perdu:
+      'Téléphone perdu ? Utilisez un code de secours, ou demandez à un administrateur de votre école de réinitialiser votre double authentification.',
+    etapes: {
+      motDePasse: '1. Confirmez votre mot de passe',
+      scanner: '2. Scannez ce QR code avec votre application d’authentification',
+      codes: '3. Conservez vos codes de secours',
+      verifier: '4. Saisissez le code affiché par l’application',
+    },
+    commencer: 'Commencer',
+    preparation: 'Préparation…',
+    qrCode: 'QR code à scanner avec votre application d’authentification',
+    cleManuelle: 'Vous ne pouvez pas scanner ? Saisissez cette clé dans l’application :',
+    aideCodes:
+      'Chacun de ces 10 codes permet une connexion si vous n’avez plus votre téléphone. Rangez-les en lieu sûr, par exemple dans votre gestionnaire de mots de passe : ils ne seront plus affichés.',
+    copier: 'Copier les codes',
+    copies: 'Codes copiés',
+    activer: 'Activer la double authentification',
+    activation: 'Activation…',
+    succes: 'La double authentification est activée.',
+    continuer: 'Accéder à mon espace',
+    retour: 'Retour à mon espace',
+    erreurs: {
+      motDePasse: 'Mot de passe incorrect. Saisissez le mot de passe de votre compte Scolaly.',
+      code: 'Code incorrect. Saisissez le code actuellement affiché par l’application (il change toutes les 30 secondes).',
+    },
+  },
   conditions: {
     titre: 'Conditions d’utilisation',
     provisoire:
@@ -172,6 +207,22 @@ export const fr = {
       envoye:
         'Si un compte existe pour cette adresse, un lien de connexion vient d’être envoyé. Il est valable 15 minutes.',
       retour: 'Se connecter avec un mot de passe',
+    },
+    code: {
+      titre: 'Code de vérification',
+      aide: 'Saisissez le code à 6 chiffres affiché par votre application d’authentification.',
+      champ: 'Code à 6 chiffres',
+      champSecours: 'Code de secours',
+      aideSecours:
+        'Saisissez l’un des 10 codes de secours remis lors de la mise en place. Chacun ne sert qu’une fois.',
+      valider: 'Vérifier',
+      enCours: 'Vérification…',
+      utiliserSecours: 'Utiliser un code de secours',
+      utiliserApplication: 'Utiliser l’application d’authentification',
+      incorrect:
+        'Code incorrect. Vérifiez que l’heure de votre téléphone est juste, puis saisissez le nouveau code.',
+      expire: 'La vérification a expiré. Reconnectez-vous avec votre mot de passe.',
+      recommencer: 'Recommencer la connexion',
     },
     erreurs: {
       identifiants:

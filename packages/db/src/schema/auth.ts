@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { primaryId } from './columns.js';
 
 /**
@@ -16,6 +16,8 @@ export const authUser = pgTable('auth_user', {
   name: text().notNull(),
   email: text().notNull().unique(),
   emailVerified: boolean().notNull().default(false),
+  /** Double authentification activée (RG-00-13, RG-01-11). */
+  twoFactorEnabled: boolean().notNull().default(false),
   image: text(),
   ...timestamps(),
 });
@@ -71,4 +73,27 @@ export const authVerification = pgTable(
     ...timestamps(),
   },
   (t) => [index('auth_verification_identifier_idx').on(t.identifier)],
+);
+
+/**
+ * Double authentification (module two-factor de Better Auth) : secret TOTP et 10 codes de
+ * secours, chiffrés par Better Auth (RG-01-11).
+ */
+export const authTwoFactor = pgTable(
+  'auth_two_factor',
+  {
+    id: primaryId(),
+    userId: uuid()
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    secret: text().notNull(),
+    backupCodes: text().notNull(),
+    verified: boolean().notNull().default(true),
+    failedVerificationCount: integer().notNull().default(0),
+    lockedUntil: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    index('auth_two_factor_user_id_idx').on(t.userId),
+    index('auth_two_factor_secret_idx').on(t.secret),
+  ],
 );

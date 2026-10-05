@@ -3,3 +3,4 @@ export * from './calendrier/jours-feries.js';
 export * from './plateforme/client.js';
 export * from './droits/droits.js';
 export * from './comptes/invitation.js';
+export * from './securite/mots-de-passe.js';
