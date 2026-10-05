@@ -64,9 +64,17 @@ export async function startApp(
   return app;
 }
 
-let ipCounter = 0;
+/**
+ * Chaque fichier de test réévalue ce module alors que les compteurs de limitation de débit
+ * persistent dans Valkey : le compteur part d'un point aléatoire de la plage réservée aux tests
+ * (198.18.0.0/15, 131 072 adresses) pour que deux fichiers ne réutilisent pas les mêmes adresses.
+ */
+let ipCounter = Math.floor(Math.random() * 120_000);
 /** Adresse IP distincte par appel, pour ne pas partager les compteurs de limitation de débit. */
-export const freshIp = () => `198.18.${Math.floor(++ipCounter / 250)}.${ipCounter % 250}`;
+export const freshIp = () => {
+  const n = ++ipCounter % 131_072;
+  return `198.${String(18 + (n >> 16))}.${String((n >> 8) & 255)}.${String(n & 255)}`;
+};
 
 /** Code TOTP (RFC 6238, SHA-1, 6 chiffres, 30 s) d'un secret en base32, comme une application. */
 export function codeTotp(secretBase32: string, instant = Date.now()): string {

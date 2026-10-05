@@ -180,6 +180,16 @@ describe('US-01-09 rôles et périmètres d’une personne', () => {
   });
 
   it('retire un rôle en cours (terminé ce jour) ou annule un rôle à venir', async () => {
+    // Commencé il y a un mois : le retrait le termine aujourd'hui, l'historique reste.
+    const ancien = (
+      await requete('POST', `/api/personnes/${lea}/attributions`, admin, {
+        roleId: roles.get('tuteur'),
+        perimetreType: 'organisation',
+        debut: aujourdhui('Europe/Paris', new Date(Date.now() - 30 * 86_400_000)),
+      })
+    ).json<AttributionPersonne>();
+    expect((await requete('POST', `/api/attributions/${ancien.id}/retrait`)).statusCode).toBe(204);
+    // Commencé aujourd'hui : le retrait l'annule.
     expect((await requete('POST', `/api/attributions/${scolarite.id}/retrait`)).statusCode).toBe(
       204,
     );
@@ -194,14 +204,12 @@ describe('US-01-09 rôles et périmètres d’une personne', () => {
     expect((await requete('POST', `/api/attributions/${avenir.id}/retrait`)).statusCode).toBe(204);
 
     const liste = await attributions(lea);
-    expect(liste.find((a) => a.id === scolarite.id)).toMatchObject({
+    expect(liste.find((a) => a.id === ancien.id)).toMatchObject({
       statut: 'terminee',
       fin: aujourdhui(),
     });
-    expect(liste.some((a) => a.id === avenir.id)).toBe(false);
-    expect((await requete('POST', `/api/attributions/${scolarite.id}/retrait`)).statusCode).toBe(
-      409,
-    );
+    expect(liste.some((a) => a.id === scolarite.id || a.id === avenir.id)).toBe(false);
+    expect((await requete('POST', `/api/attributions/${ancien.id}/retrait`)).statusCode).toBe(409);
   });
 
   it('RG-01-12 ne retire jamais le rôle du dernier administrateur', async () => {
