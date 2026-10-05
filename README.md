@@ -21,4 +21,13 @@ pnpm check   # format, lint, typage, tests
 pnpm dev     # applications en mode développement
 ```
 
+## Installer sur un serveur
+
+```bash
+SCOLALY_DOMAIN=scolaly.mon-ecole.fr sh infra/compose/install.sh   # installation à neuf
+SCOLALY_VERSION=2026.10.1 sh infra/compose/update.sh               # mise à jour
+```
+
+Réseau local sans certificat public : ajouter `SCOLALY_TLS=internal` (par exemple `SCOLALY_DOMAIN=scolaly.192.168.1.10.sslip.io`). Sauvegarder `infra/compose/.env` avec les données : il contient les secrets.
+
 Les règles de travail des agents IA sont résumées dans [`CLAUDE.md`](CLAUDE.md).

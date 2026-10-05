@@ -118,6 +118,64 @@ jobs:
           path: apps/web/playwright-report
           retention-days: 7
 
+  installation:
+    name: Installation Docker Compose (test de fumée)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Image api
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/docker/node-app.Dockerfile
+          build-args: APP=api
+          load: true
+          tags: ghcr.io/kylian69/scolaly-api:ci
+          cache-from: type=gha,scope=api
+      - name: Image worker
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/docker/node-app.Dockerfile
+          build-args: APP=worker
+          load: true
+          tags: ghcr.io/kylian69/scolaly-worker:ci
+          cache-from: type=gha,scope=worker
+      - name: Image web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          load: true
+          tags: ghcr.io/kylian69/scolaly-web:ci
+          cache-from: type=gha,scope=web
+      - name: Installation à neuf en une commande
+        run: SCOLALY_DOMAIN=localhost SCOLALY_VERSION=ci sh infra/compose/install.sh
+      - name: Jeu de démonstration
+        run: DEMO_PASSWORD=demonstration-scolaly sh infra/compose/demo-seed.sh
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Navigateur Chromium
+        run: pnpm --filter @scolaly/web exec playwright install --with-deps chromium
+      - name: Test de fumée (connexion réelle, en-têtes de sécurité)
+        run: pnpm --filter @scolaly/web e2e:installation
+        env:
+          DEMO_PASSWORD: demonstration-scolaly
+      - name: Relance de l'installation (idempotente) et de la mise à jour
+        run: sh infra/compose/install.sh && sh infra/compose/update.sh
+      - name: Budget mémoire
+        if: always()
+        run: docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}'
+      - name: Journaux des services
+        if: failure()
+        run: docker compose --env-file infra/compose/.env -f infra/compose/compose.yml logs --tail 200
+
   secrets:
     name: Recherche de secrets
     runs-on: ubuntu-latest

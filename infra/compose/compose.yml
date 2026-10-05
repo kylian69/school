@@ -1,0 +1,172 @@
+# Installation de Scolaly sur un serveur (auto-hébergement et préproduction) : mêmes images qu'en
+# SaaS (architecture section 7). Installation à neuf : sh infra/compose/install.sh
+# Configuration : infra/compose/.env (généré par install.sh, secrets compris).
+name: scolaly
+
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgres://scolaly_app:${APP_DATABASE_PASSWORD}@pgbouncer:5432/scolaly
+  VALKEY_URL: redis://valkey:6379/0
+
+services:
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      SCOLALY_DOMAIN: ${SCOLALY_DOMAIN}
+      SCOLALY_CADDY_OPTIONS: ${SCOLALY_CADDY_OPTIONS:-}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api: { condition: service_healthy }
+      web: { condition: service_healthy }
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: scolaly
+    volumes: ['postgres:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d scolaly']
+      interval: 2s
+      retries: 30
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.26.0-p0
+    restart: unless-stopped
+    environment:
+      DB_USER: scolaly_app
+      DB_PASSWORD: ${APP_DATABASE_PASSWORD}
+      AUTH_TYPE: scram-sha-256
+    volumes: ['./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro']
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  valkey:
+    image: valkey/valkey:8
+    restart: unless-stopped
+    command: ['valkey-server', '--appendonly', 'yes']
+    volumes: ['valkey:/data']
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 2s
+      retries: 30
+
+  garage:
+    image: dxflrs/garage:v2.4.1
+    restart: unless-stopped
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+    volumes:
+      - ../garage/garage.toml:/etc/garage.toml:ro
+      - garage:/var/lib/garage
+
+  # Tâches ponctuelles lancées par install.sh et update.sh avant le démarrage des applications.
+  garage-init:
+    image: node:24-slim
+    profiles: [setup]
+    command: ['node', '/init.mjs']
+    environment:
+      GARAGE_ADMIN_URL: http://garage:3903
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: scolaly
+    volumes: ['../garage/init.mjs:/init.mjs:ro']
+    depends_on: [garage]
+
+  db-setup:
+    image: ghcr.io/kylian69/scolaly-api:${SCOLALY_VERSION:-main}
+    profiles: [setup]
+    command:
+      - sh
+      - -c
+      - node node_modules/@scolaly/db/dist/cli/bootstrap.js && node node_modules/@scolaly/db/dist/cli/migrate.js
+    environment:
+      ADMIN_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/scolaly
+      MIGRATOR_DATABASE_URL: postgres://scolaly_migrator:${MIGRATOR_DATABASE_PASSWORD}@postgres:5432/scolaly
+      MIGRATOR_DATABASE_PASSWORD: ${MIGRATOR_DATABASE_PASSWORD}
+      APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    image: ghcr.io/kylian69/scolaly-api:${SCOLALY_VERSION:-main}
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PUBLIC_URL: https://${SCOLALY_DOMAIN}
+      WEB_ORIGIN: https://${SCOLALY_DOMAIN}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      S3_ENDPOINT: http://garage:3900
+      S3_BUCKET: scolaly
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      CLAMAV_HOST: ${CLAMAV_HOST:-}
+      ANTIVIRUS_DISABLED: ${ANTIVIRUS_DISABLED:-false}
+      ENCRYPTION_MASTER_KEY_V1: ${ENCRYPTION_MASTER_KEY_V1}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3001/health').then((r)=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 5s
+      retries: 30
+    depends_on:
+      pgbouncer: { condition: service_started }
+      valkey: { condition: service_healthy }
+      garage: { condition: service_started }
+
+  worker:
+    image: ghcr.io/kylian69/scolaly-worker:${SCOLALY_VERSION:-main}
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      SMTP_URL: ${SMTP_URL}
+      MAIL_FROM: ${MAIL_FROM}
+    depends_on:
+      api: { condition: service_healthy }
+
+  web:
+    image: ghcr.io/kylian69/scolaly-web:${SCOLALY_VERSION:-main}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:3001
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/manifest.webmanifest').then((r)=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 5s
+      retries: 30
+
+  # Antivirus (plus de 1 Go de mémoire) : COMPOSE_PROFILES=antivirus et CLAMAV_HOST=clamav.
+  clamav:
+    image: clamav/clamav:1.5.4
+    restart: unless-stopped
+    profiles: [antivirus]
+
+  # Serveur de mails de test (préproduction, test de fumée) : COMPOSE_PROFILES=mailpit.
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    restart: unless-stopped
+    profiles: [mailpit]
+
+volumes:
+  postgres:
+  valkey:
+  garage:
+  caddy-data:
+  caddy-config:

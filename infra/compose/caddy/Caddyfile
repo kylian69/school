@@ -1,0 +1,22 @@
+# Point d'entrée HTTPS de Scolaly (architecture section 7) : certificat Let's Encrypt automatique
+# pour un nom de domaine public ; autorité interne de Caddy pour « localhost » ou avec
+# SCOLALY_TLS=internal (réseau local). Un nom d'hôte est requis : les navigateurs n'annoncent pas
+# d'adresse IP dans la négociation TLS.
+{
+	admin off
+	{$SCOLALY_CADDY_OPTIONS}
+}
+
+{$SCOLALY_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		-Server
+	}
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}
