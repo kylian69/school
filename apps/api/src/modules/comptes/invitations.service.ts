@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  cheminLogo,
   emailInvitation,
   ROLE_ADMINISTRATEUR,
   type ActivationCompte,
@@ -107,7 +108,12 @@ export class InvitationsService {
       apres: { compteEtat: 'invite', email: fiche.email, expireLe: expireLe.toISOString() },
     });
     const [ecole] = await tx
-      .select({ nom: organisation.nom })
+      .select({
+        nom: organisation.nom,
+        nomAffichage: organisation.nomAffichage,
+        couleur: organisation.couleurPrincipale,
+        logoEmpreinte: organisation.logoEmpreinte,
+      })
       .from(organisation)
       .where(eq(organisation.id, organisationId));
     const lien = new URL(`/activation/${jeton}`, this.env.PUBLIC_URL).toString();
@@ -121,6 +127,19 @@ export class InvitationsService {
             ecole: ecole?.nom ?? 'Votre école',
             lien,
             expireLe,
+            // US-01-14 : l'email porte le nom affiché, la couleur et le logo de l'école.
+            marque: ecole
+              ? {
+                  nom: ecole.nomAffichage,
+                  couleur: ecole.couleur,
+                  logoUrl: ecole.logoEmpreinte
+                    ? new URL(
+                        cheminLogo(organisationId, ecole.logoEmpreinte),
+                        this.env.PUBLIC_URL,
+                      ).toString()
+                    : null,
+                }
+              : null,
           }),
         ),
     };

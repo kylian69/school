@@ -1,5 +1,6 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  cheminLogo,
   LOGO_TAILLE_MAX,
   TYPES_LOGO,
   type ApparenceEcole,
@@ -199,9 +200,7 @@ export class ApparenceService {
       palette: ligne.couleurPrincipale
         ? paletteDe(ligne.couleurPrincipale, FONDS, this.seuil())
         : null,
-      logoUrl: ligne.logoEmpreinte
-        ? `/api/ecoles/${ligne.id}/logo?v=${ligne.logoEmpreinte.slice(0, 16)}`
-        : null,
+      logoUrl: ligne.logoEmpreinte ? cheminLogo(ligne.id, ligne.logoEmpreinte) : null,
     };
   }
 }
