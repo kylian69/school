@@ -15,3 +15,5 @@ export * from './demarrage/etapes.js';
 export * from './personnes/doublons.js';
 export * from './droits/attributions.js';
 export * from './personnes/matricule.js';
+export * from './imports/csv.js';
+export * from './imports/personnes.js';
