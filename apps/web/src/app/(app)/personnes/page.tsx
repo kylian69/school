@@ -1,0 +1,173 @@
+import { ETATS_COMPTE, ListePersonnes, ListeRoles } from '@scolaly/contracts';
+import { Badge, Button, Card, Input, Label } from '@scolaly/ui';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { fr } from '@/i18n/fr';
+import { apiGet } from '@/lib/api';
+import { getContexte } from '@/lib/contexte';
+
+const t = fr.personnes;
+export const metadata: Metadata = { title: t.titre };
+
+const TONS = { cree: 'neutral', invite: 'warn', actif: 'ok', desactive: 'bad' } as const;
+
+/** E-01-04 · Personnes : tableau filtrable, pagination côté serveur. */
+export default async function PersonnesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; role?: string; etat?: string; page?: string }>;
+}) {
+  const contexte = await getContexte();
+  const permissions = contexte?.permissions ?? [];
+  if (!permissions.includes('personnes:lire')) notFound();
+  const { q = '', role = '', etat = '', page = '1' } = await searchParams;
+  const params = new URLSearchParams({
+    ...(q ? { q } : {}),
+    ...(role ? { role } : {}),
+    ...(etat ? { etat } : {}),
+    page,
+  });
+  const [{ data }, { data: roles }] = await Promise.all([
+    apiGet(`/api/personnes?${params.toString()}`, ListePersonnes),
+    apiGet('/api/roles', ListeRoles),
+  ]);
+  const peutCreer =
+    permissions.includes('apprenants:inviter') || permissions.includes('personnel:inviter');
+  const pages = data ? Math.max(1, Math.ceil(data.total / data.parPage)) : 1;
+  const lien = (cible: number) => {
+    const suivant = new URLSearchParams(params);
+    suivant.set('page', String(cible));
+    return `/personnes?${suivant.toString()}`;
+  };
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[26px] font-[650] tracking-[-0.035em] md:text-[30px]">{t.titre}</h1>
+          {data ? <p className="text-sm text-muted">{t.resume(data.total)}</p> : null}
+        </div>
+        {peutCreer ? (
+          <Button asChild>
+            <Link href="/personnes/nouvelle">{t.nouvelle}</Link>
+          </Button>
+        ) : null}
+      </div>
+
+      <form
+        role="search"
+        className="flex flex-wrap items-end gap-3"
+        action="/personnes"
+        method="get"
+      >
+        <div className="flex min-w-60 grow flex-col gap-1.5">
+          <Label htmlFor="recherche-personnes">{t.rechercher}</Label>
+          <Input id="recherche-personnes" name="q" type="search" defaultValue={q} />
+        </div>
+        {roles ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="filtre-role">{t.role}</Label>
+            <select
+              id="filtre-role"
+              name="role"
+              defaultValue={role}
+              className="h-11 rounded-control border border-line bg-surface px-3 text-sm md:h-10"
+            >
+              <option value="">{t.tousLesRoles}</option>
+              {roles.roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.libelle}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="filtre-etat">{t.etat}</Label>
+          <select
+            id="filtre-etat"
+            name="etat"
+            defaultValue={etat}
+            className="h-11 rounded-control border border-line bg-surface px-3 text-sm md:h-10"
+          >
+            <option value="">{t.tousLesEtats}</option>
+            {ETATS_COMPTE.map((e) => (
+              <option key={e} value={e}>
+                {t.etats[e]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button type="submit" variant="secondary">
+          {t.filtrer}
+        </Button>
+      </form>
+
+      {data ? (
+        <Card className="overflow-x-auto p-0">
+          {data.personnes.length === 0 ? (
+            <p className="p-5 text-sm text-muted">{t.aucune}</p>
+          ) : (
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="border-b border-line text-xs text-muted">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    {t.colonnes.nom}
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    {t.colonnes.email}
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    {t.colonnes.roles}
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    {t.colonnes.compte}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {data.personnes.map((p) => (
+                  <tr key={p.id}>
+                    <td className="px-4 py-3">
+                      <Link href={`/personnes/${p.id}`} className="font-semibold hover:underline">
+                        {p.nomUsage ?? p.nom} {p.prenom}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-muted">{p.email}</td>
+                    <td className="px-4 py-3">{p.roles.join(', ') || '—'}</td>
+                    <td className="px-4 py-3">
+                      <Badge tone={TONS[p.compteEtat]}>{t.etats[p.compteEtat]}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      ) : (
+        <Card>
+          <p role="alert" className="text-sm">
+            {t.indisponible}
+          </p>
+        </Card>
+      )}
+
+      {data && pages > 1 ? (
+        <nav aria-label={t.pagination} className="flex items-center gap-3 text-sm">
+          {data.page > 1 ? (
+            <Link href={lien(data.page - 1)} className="font-medium hover:underline">
+              {t.precedente}
+            </Link>
+          ) : null}
+          <span className="text-muted">{t.pageSur(data.page, pages)}</span>
+          {data.page < pages ? (
+            <Link href={lien(data.page + 1)} className="font-medium hover:underline">
+              {t.suivante}
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
+    </>
+  );
+}

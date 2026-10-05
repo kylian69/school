@@ -802,6 +802,124 @@
         }
       }
     },
+    "/api/personnes": {
+      "get": {
+        "operationId": "PersonnesController.lister",
+        "summary": "Personnes de l’école : recherche, filtres et pagination",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:lire"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListePersonnes"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "PersonnesController.creer",
+        "summary": "Créer une fiche, après recherche des doublons (RG-01-07)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvellePersonne"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonneDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personnes/{id}": {
+      "get": {
+        "operationId": "PersonnesController.lire",
+        "summary": "Fiche d’une personne",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:lire"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonneDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "PersonnesController.modifier",
+        "summary": "Modifier l’identité d’une personne (version contrôlée)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationPersonne"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonneDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/plateforme/clients": {
       "get": {
         "operationId": "ClientsController.lister",
@@ -2226,6 +2344,39 @@
         ],
         "additionalProperties": false
       },
+      "ListePersonnes": {
+        "type": "object",
+        "properties": {
+          "personnes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonneResume"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "parPage": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "personnes",
+          "total",
+          "page",
+          "parPage"
+        ],
+        "additionalProperties": false
+      },
       "ListeRoles": {
         "type": "object",
         "properties": {
@@ -2425,6 +2576,78 @@
             "maxLength": 20
           }
         },
+        "additionalProperties": false
+      },
+      "ModificationPersonne": {
+        "type": "object",
+        "properties": {
+          "civilite": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "madame",
+              "monsieur"
+            ]
+          },
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "nomUsage": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "prenom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "telephone": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 30
+          },
+          "adresseLigne1": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          },
+          "dateNaissance": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "lieuNaissance": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
         "additionalProperties": false
       },
       "ModificationRole": {
@@ -2799,6 +3022,80 @@
         ],
         "additionalProperties": false
       },
+      "NouvellePersonne": {
+        "type": "object",
+        "properties": {
+          "civilite": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "madame",
+              "monsieur"
+            ]
+          },
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "nomUsage": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 100
+          },
+          "prenom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "telephone": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 30
+          },
+          "adresseLigne1": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          },
+          "dateNaissance": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "lieuNaissance": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          },
+          "ignorerDoublons": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nom",
+          "prenom",
+          "email"
+        ],
+        "additionalProperties": false
+      },
       "OrganisationDetail": {
         "type": "object",
         "properties": {
@@ -2912,6 +3209,151 @@
           "dateDebut",
           "dateFin",
           "ordre"
+        ],
+        "additionalProperties": false
+      },
+      "PersonneDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "civilite": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "madame",
+              "monsieur"
+            ]
+          },
+          "nom": {
+            "type": "string"
+          },
+          "nomUsage": {
+            "nullable": true,
+            "type": "string"
+          },
+          "prenom": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "telephone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "adresseLigne1": {
+            "nullable": true,
+            "type": "string"
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dateNaissance": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "lieuNaissance": {
+            "nullable": true,
+            "type": "string"
+          },
+          "naissanceVisible": {
+            "type": "boolean"
+          },
+          "compteEtat": {
+            "type": "string",
+            "enum": [
+              "cree",
+              "invite",
+              "actif",
+              "desactive"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "civilite",
+          "nom",
+          "nomUsage",
+          "prenom",
+          "email",
+          "telephone",
+          "adresseLigne1",
+          "codePostal",
+          "ville",
+          "dateNaissance",
+          "lieuNaissance",
+          "naissanceVisible",
+          "compteEtat",
+          "roles",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "PersonneResume": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "nomUsage": {
+            "nullable": true,
+            "type": "string"
+          },
+          "prenom": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "compteEtat": {
+            "type": "string",
+            "enum": [
+              "cree",
+              "invite",
+              "actif",
+              "desactive"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nom",
+          "nomUsage",
+          "prenom",
+          "email",
+          "compteEtat",
+          "roles"
         ],
         "additionalProperties": false
       },

@@ -1,14 +1,26 @@
 import { sql } from 'drizzle-orm';
-import { pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  date,
+  index,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { authUser } from './auth.js';
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 
 /**
- * Personne (module 01, section 6). Les autres attributs (naissance, matricule, INE, photo…)
- * arrivent avec l'incrément I1.4, chacun justifié par sa story (minimisation, RGPD).
+ * Personne (module 01, section 6). Le matricule, l'INE et la photo arrivent avec leurs stories
+ * (minimisation, RGPD). La date et le lieu de naissance ne sont montrés qu'à la scolarité et à
+ * l'administration (module 01, section 9).
  */
 export const compteEtat = pgEnum('compte_etat', ['cree', 'invite', 'actif', 'desactive']);
+
+export const civilite = pgEnum('civilite', ['madame', 'monsieur']);
 
 export const personne = pgTable(
   'personne',
@@ -18,6 +30,14 @@ export const personne = pgTable(
     nomUsage: text(),
     prenom: text().notNull(),
     email: text().notNull(),
+    /** Identité (US-01-02 du module 01, fiche personne E-01-05). */
+    civilite: civilite(),
+    dateNaissance: date(),
+    lieuNaissance: text(),
+    telephone: text(),
+    adresseLigne1: text(),
+    codePostal: text(),
+    ville: text(),
     /**
      * Compte de connexion (RG-00-26 : un seul compte pour les fiches d'une même personne dans les
      * écoles d'un groupe). Null tant que la personne n'a pas activé son compte.
@@ -35,6 +55,12 @@ export const personne = pgTable(
     uniqueIndex('personne_organisation_id_email_key')
       .on(t.organisationId, sql`lower(${t.email})`)
       .where(sql`${t.deletedAt} is null`),
+    // Liste des personnes triée par nom (E-01-04 : pagination côté serveur).
+    index('personne_organisation_id_nom_prenom_idx').on(
+      t.organisationId,
+      sql`lower(${t.nom})`,
+      sql`lower(${t.prenom})`,
+    ),
     uniqueIndex('personne_organisation_id_user_id_key')
       .on(t.organisationId, t.userId)
       .where(sql`${t.userId} is not null`),
