@@ -138,26 +138,24 @@ describe('E-01-07 rôles et permissions', () => {
 
   it('RG-01-16 et RG-00-12 modifie les permissions : effet immédiat, avant et après tracés', async () => {
     const cible = await parCode('scolarite');
-    expect((await requete('GET', '/api/session/contexte', scolarite)).json()).toMatchObject({
-      permissions: expect.arrayContaining(['personnes:lire']),
-    });
+    const permissionsDe = async () =>
+      (await requete('GET', '/api/session/contexte', scolarite)).json<{ permissions: string[] }>()
+        .permissions;
+    expect(await permissionsDe()).toContain('personnes:lire');
     const reponse = await requete('PATCH', `/api/roles/${cible.id}`, admin, {
       permissions: cible.permissions.filter((p) => p !== 'personnes:lire'),
     });
     expect(reponse.statusCode).toBe(200);
-    const contexte = (await requete('GET', '/api/session/contexte', scolarite)).json<{
-      permissions: string[];
-    }>();
-    expect(contexte.permissions).not.toContain('personnes:lire');
+    expect(await permissionsDe()).not.toContain('personnes:lire');
 
     const [trace] = await owner.db
       .select()
       .from(auditEvenement)
       .where(and(eq(auditEvenement.objetId, cible.id), eq(auditEvenement.action, 'role.modifier')));
-    expect(trace?.avant).toMatchObject({ permissions: expect.arrayContaining(['personnes:lire']) });
-    expect(trace?.apres).not.toMatchObject({
-      permissions: expect.arrayContaining(['personnes:lire']),
-    });
+    const permissionsTracees = (valeur: unknown) =>
+      (valeur as { permissions: string[] }).permissions;
+    expect(permissionsTracees(trace?.avant)).toContain('personnes:lire');
+    expect(permissionsTracees(trace?.apres)).not.toContain('personnes:lire');
   });
 
   it('refuse de modifier l’administrateur, une permission inconnue ou l’exigence d’un rôle par défaut', async () => {
