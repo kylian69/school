@@ -142,6 +142,7 @@ const ECOLES = [
   {
     nom: 'École de gestion de Lumerac',
     nomAffichage: 'EGL',
+    couleur: '#8C1D40',
     campus: [
       {
         nom: 'Campus Centre',
@@ -240,6 +241,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       groupeId: dataset.groupe.id ?? null,
       nom: ecole.nom,
       nomAffichage: ecole.nomAffichage,
+      couleurPrincipale: 'couleur' in ecole ? ecole.couleur : null,
       createdAt: CREATED_AT,
     });
     for (const module of DEMO_MODULES_FORMULE) {

@@ -42,6 +42,12 @@ export const organisation = pgTable(
     nomAffichage: text().notNull(),
     siren: char({ length: 9 }),
     acces: organisationAcces().notNull().default('complet'),
+    /** Apparence (US-01-14, RG-01-24) : couleur principale #RRGGBB et logo PNG ou SVG. */
+    couleurPrincipale: char({ length: 7 }),
+    logoCle: text(),
+    logoType: text(),
+    /** Empreinte SHA-256 du logo : version de l'URL publique, pour les caches. */
+    logoEmpreinte: char({ length: 64 }),
     ...trackingColumns(),
   },
   () => [

@@ -2,6 +2,7 @@ import helmet from '@fastify/helmet';
 import type { Provider, Type } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { LOGO_TAILLE_MAX, TYPES_LOGO } from '@scolaly/contracts';
 import { createDatabase } from '@scolaly/db';
 import { createAuth } from './auth/auth.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
@@ -90,6 +91,18 @@ export async function createApp(
     strictTransportSecurity: { maxAge: 63_072_000, includeSubDomains: true },
   });
   registerAuthRoutes(app.getHttpAdapter().getInstance(), auth, env.PUBLIC_URL);
+  // Logo de l'école envoyé tel quel (US-01-14) ; la limite métier de 2 Mo est contrôlée par le
+  // service, avec un message clair, sous cette limite technique.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addContentTypeParser(
+      Object.keys(TYPES_LOGO),
+      { parseAs: 'buffer', bodyLimit: 4 * LOGO_TAILLE_MAX },
+      (_request, body, done) => {
+        done(null, body);
+      },
+    );
   app.enableShutdownHooks();
   return app;
 }

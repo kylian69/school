@@ -8,7 +8,9 @@ import type { SessionUser } from '@/lib/session';
 import type { ContexteSession } from '@scolaly/contracts';
 import { CommandPalette } from './command-palette';
 import { EcoleSelector } from './ecole-selector';
+import { IdentiteEcole } from './identite-ecole';
 import { NavLinks } from './nav-links';
+import { PaletteEcole } from './palette-ecole';
 import { UserMenu } from './user-menu';
 
 /**
@@ -32,6 +34,7 @@ export function AppShell({
   const sidebar = (onNavigate?: () => void) => (
     <div className="flex h-full flex-col gap-[18px] px-3.5 py-5">
       <Logo className="px-2 pt-1" />
+      <IdentiteEcole apparence={contexte?.apparence} nom={contexte?.ecoleActive?.nom} />
       <CommandPalette />
       {contexte ? <EcoleSelector contexte={contexte} /> : null}
       <NavLinks
@@ -47,6 +50,7 @@ export function AppShell({
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[248px_minmax(0,1fr)]">
+      <PaletteEcole palette={contexte?.apparence?.palette} />
       <aside className="sticky top-0 hidden h-dvh border-r border-line bg-surface md:block">
         {sidebar()}
       </aside>

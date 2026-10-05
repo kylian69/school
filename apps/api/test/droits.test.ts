@@ -186,6 +186,7 @@ describe('RG-01-16 et RG-00-11 droits réels, recalculés à chaque requête', (
       modules: [],
       doubleAuthentificationExigee: false,
       doubleAuthentificationActive: false,
+      apparence: null,
     });
   });
 });

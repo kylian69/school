@@ -9,7 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ChoixEcole, ContexteSession } from '@scolaly/contracts';
-import { authUser, ecolesDuCompte, type Database } from '@scolaly/db';
+import { authUser, ecolesDuCompte, withOrganisation, type Database } from '@scolaly/db';
 import { eq } from 'drizzle-orm';
 import { ACCESS_RESOLVER, type AccessResolver } from '../../access/access-resolver.js';
 import { Authenticated } from '../../access/access.decorators.js';
@@ -17,6 +17,7 @@ import type { ScolalyRequest } from '../../access/access.guard.js';
 import type { Auth } from '../../auth/auth.js';
 import { ApiContract } from '../../contracts/api-contract.js';
 import { AUTH, DATABASE } from '../../shared/tokens.js';
+import { ApparenceService } from '../structure/index.js';
 
 /** Contexte de la session et sélecteur d'école (RG-00-26, RG-01-29). */
 @Controller('api/session')
@@ -25,6 +26,7 @@ export class SessionController {
     @Inject(AUTH) private readonly auth: Auth,
     @Inject(DATABASE) private readonly db: Database,
     @Inject(ACCESS_RESOLVER) private readonly resolver: AccessResolver,
+    private readonly apparence: ApparenceService,
   ) {}
 
   @Get('contexte')
@@ -82,6 +84,13 @@ export class SessionController {
       modules: access ? [...access.modules].sort() : [],
       doubleAuthentificationExigee: access?.doubleAuthentificationExigee ?? false,
       doubleAuthentificationActive: compte?.actif ?? false,
+      // Apparence de l'école active (US-01-14), lue dans son contexte (RLS).
+      apparence:
+        access && ecoleActive
+          ? await withOrganisation(this.db, ecoleActive.id, (tx) =>
+              this.apparence.lire(tx, ecoleActive.id),
+            )
+          : null,
     };
   }
 }

@@ -8,7 +8,11 @@ const SIGNATURES = {
   pdf: { mime: 'application/pdf', magic: [0x25, 0x50, 0x44, 0x46, 0x2d] },
   png: { mime: 'image/png', magic: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
   jpeg: { mime: 'image/jpeg', magic: [0xff, 0xd8, 0xff] },
+  // Un SVG est du texte, sans signature : reconnu par son début, et son contenu analysé à part.
+  svg: { mime: 'image/svg+xml', magic: null },
 } as const;
+
+const DEBUT_SVG = /^\s*<(?:\?xml|svg[\s>]|!--|!DOCTYPE\s+svg)/i;
 
 export type FileType = keyof typeof SIGNATURES;
 
@@ -49,9 +53,9 @@ export function detectType(content: Buffer): FileType | null {
     FileType,
     (typeof SIGNATURES)[FileType],
   ][]) {
-    if (magic.every((byte, i) => content[i] === byte)) return type;
+    if (magic?.every((byte, i) => content[i] === byte)) return type;
   }
-  return null;
+  return DEBUT_SVG.test(content.subarray(0, 512).toString('utf8')) ? 'svg' : null;
 }
 
 /**
