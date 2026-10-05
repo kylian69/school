@@ -14,11 +14,13 @@ import type { Auth } from './auth/auth.js';
 import type { Env } from './config/env.js';
 import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
+import { ComptesModule } from './modules/comptes/index.js';
 import { SessionController } from './modules/session/index.js';
 import { PlateformeModule } from './modules/plateforme/index.js';
 import type { ObjectStorage } from './shared/storage/object-storage.js';
 import type { UploadService } from './shared/storage/uploads.js';
-import { AUTH, DATABASE, ENV, OBJECT_STORAGE, UPLOADS, VALKEY } from './shared/tokens.js';
+import type { EmailsQueue } from './shared/emails.js';
+import { AUTH, DATABASE, EMAILS, ENV, OBJECT_STORAGE, UPLOADS, VALKEY } from './shared/tokens.js';
 
 export interface AppResources {
   env: Env;
@@ -27,6 +29,7 @@ export interface AppResources {
   auth: Auth;
   storage: ObjectStorage;
   uploads: UploadService;
+  emails: EmailsQueue;
   /** Connexion du rôle plateforme (mode SaaS seulement, ADR 0004). */
   platformDatabase?: DatabaseHandle;
 }
@@ -41,6 +44,7 @@ class ResourcesLifecycle implements OnApplicationShutdown {
     this.resources.valkey.disconnect();
     this.resources.storage.destroy();
     await this.resources.platformDatabase?.close();
+    await this.resources.emails.close();
   }
 }
 
@@ -55,6 +59,7 @@ export class AppModule {
       global: true,
       imports: [
         AccessModule.forRoot(options.accessResolver),
+        ComptesModule,
         ...(resources.platformDatabase
           ? [PlateformeModule.forRoot(resources.platformDatabase.db)]
           : []),
@@ -69,10 +74,11 @@ export class AppModule {
         { provide: AUTH, useValue: resources.auth },
         { provide: OBJECT_STORAGE, useValue: resources.storage },
         { provide: UPLOADS, useValue: resources.uploads },
+        { provide: EMAILS, useValue: resources.emails },
         ResourcesLifecycle,
         { provide: APP_INTERCEPTOR, useClass: ContractValidationInterceptor },
       ],
-      exports: [ENV, DATABASE, VALKEY, AUTH, OBJECT_STORAGE, UPLOADS],
+      exports: [ENV, DATABASE, VALKEY, AUTH, OBJECT_STORAGE, UPLOADS, EMAILS],
     };
   }
 }

@@ -5,6 +5,84 @@
     "version": "0.0.0"
   },
   "paths": {
+    "/api/comptes/{personneId}/invitation": {
+      "post": {
+        "operationId": "ComptesController.inviter",
+        "summary": "Envoyer ou renvoyer l’invitation d’une personne",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationEnvoyee"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invitations/{jeton}": {
+      "get": {
+        "operationId": "InvitationsController.consulter",
+        "summary": "Consulter une invitation",
+        "x-scolaly-access": {
+          "kind": "public"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationPublique"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invitations/{jeton}/activation": {
+      "post": {
+        "operationId": "InvitationsController.activer",
+        "summary": "Activer son compte",
+        "x-scolaly-access": {
+          "kind": "public"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationCompte"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatActivation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/plateforme/clients": {
       "get": {
         "operationId": "ClientsController.lister",
@@ -256,6 +334,27 @@
   },
   "components": {
     "schemas": {
+      "ActivationCompte": {
+        "type": "object",
+        "properties": {
+          "motDePasse": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128
+          },
+          "conditionsAcceptees": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "motDePasse",
+          "conditionsAcceptees"
+        ],
+        "additionalProperties": false
+      },
       "ChangementEtatClient": {
         "type": "object",
         "properties": {
@@ -774,6 +873,63 @@
         ],
         "additionalProperties": false
       },
+      "InvitationEnvoyee": {
+        "type": "object",
+        "properties": {
+          "etat": {
+            "type": "string",
+            "enum": [
+              "invite"
+            ]
+          },
+          "expireLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "etat",
+          "expireLe"
+        ],
+        "additionalProperties": false
+      },
+      "InvitationPublique": {
+        "type": "object",
+        "properties": {
+          "etat": {
+            "type": "string",
+            "enum": [
+              "valide",
+              "expiree",
+              "utilisee",
+              "revoquee"
+            ]
+          },
+          "prenom": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "ecole": {
+            "type": "string"
+          },
+          "expireLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "etat",
+          "prenom",
+          "email",
+          "ecole",
+          "expireLe"
+        ],
+        "additionalProperties": false
+      },
       "ListeClients": {
         "type": "object",
         "properties": {
@@ -932,6 +1088,22 @@
           "dateFin",
           "administrateur",
           "ecoles"
+        ],
+        "additionalProperties": false
+      },
+      "ResultatActivation": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "compteExistant": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "compteExistant"
         ],
         "additionalProperties": false
       }

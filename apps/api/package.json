@@ -30,6 +30,7 @@
     "@scolaly/domain": "workspace:*",
     "@scolaly/referentials": "workspace:*",
     "better-auth": "catalog:",
+    "bullmq": "catalog:",
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
     "ioredis": "catalog:",

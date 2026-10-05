@@ -16,7 +16,7 @@ import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
 import { creerSuperAdministrateur } from '../src/modules/plateforme/index.js';
 import { AUTH, DATABASE } from '../src/shared/tokens.js';
 import type { Database } from '@scolaly/db';
-import { signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
+import { emailsEnFile, signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
 
 const PASSWORD = 'mot de passe de la console';
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
@@ -153,6 +153,10 @@ describe('US-19-01 créer le client d’un devis signé en une opération', () =
       (tx) => tx.select({ code: role.code }).from(role),
     );
     expect(roles).toHaveLength(ROLES_PAR_DEFAUT.length);
+    // RG-19-01 : l'administrateur a sa fiche, son rôle et son invitation dans chaque école.
+    const emails = (await emailsEnFile()).filter((e) => e.to === 'claire@exemple.test');
+    expect(emails.length).toBeGreaterThanOrEqual(2);
+    expect(emails[0]?.text).toMatch(/\/activation\//);
     const traces = await owner.db
       .select()
       .from(plateformeAudit)

@@ -122,6 +122,36 @@ export const fr = {
       erreur: 'L’opération a échoué.',
     },
   },
+  activation: {
+    titre: 'Activer mon compte',
+    bonjour: (prenom: string, ecole: string) =>
+      `Bonjour ${prenom}, ${ecole} vous invite sur Scolaly.`,
+    email: 'Votre identifiant',
+    motDePasse: 'Choisissez un mot de passe',
+    motDePasseAide: '12 caractères au moins. Une phrase facile à retenir fonctionne très bien.',
+    confirmation: 'Confirmez le mot de passe',
+    differents: 'Les deux mots de passe ne correspondent pas.',
+    conditions: 'J’accepte les',
+    conditionsLien: 'conditions d’utilisation',
+    valider: 'Activer mon compte',
+    enCours: 'Activation…',
+    compteExistant:
+      'Vous avez déjà un compte Scolaly avec cette adresse : il est maintenant rattaché à cette école. Connectez-vous avec votre mot de passe habituel.',
+    seConnecter: 'Se connecter',
+    etats: {
+      expiree: 'Ce lien d’invitation a expiré. Demandez à votre établissement de vous le renvoyer.',
+      utilisee: 'Ce lien a déjà servi : votre compte est activé.',
+      revoquee: 'Ce lien n’est plus valable. Utilisez le dernier email d’invitation reçu.',
+      invalide:
+        'Ce lien d’invitation est invalide. Vérifiez qu’il est complet, ou demandez un nouvel envoi.',
+    },
+    erreur: 'L’activation a échoué.',
+  },
+  conditions: {
+    titre: 'Conditions d’utilisation',
+    provisoire:
+      'Le texte des conditions d’utilisation sera publié ici avant l’ouverture du service aux écoles. En activant votre compte, vous vous engagez à utiliser Scolaly dans le cadre de votre formation ou de votre activité, à garder votre mot de passe confidentiel et à respecter la confidentialité des données des autres personnes.',
+  },
   horsLigne: {
     titre: 'Hors ligne',
     message: 'Vous êtes hors ligne. Cette page sera de nouveau disponible dès le retour du réseau.',

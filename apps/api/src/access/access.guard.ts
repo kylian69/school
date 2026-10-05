@@ -84,7 +84,7 @@ export class AccessGuard implements CanActivate {
       session.user.id,
       session.session.activeOrganisationId ?? null,
     );
-    if (!access?.permissions.has(rule.permission)) {
+    if (!access || !rule.permissions.some((p) => access.permissions.has(p))) {
       throw new ForbiddenException(
         "Vous n'avez pas le droit d'effectuer cette action dans cette école. " +
           'Demandez à un administrateur de vous attribuer le rôle adapté.',

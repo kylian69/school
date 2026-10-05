@@ -121,7 +121,7 @@ createServer(async (request, response) => {
   if (path === '/api/auth/sign-in/email' && request.method === 'POST') {
     const body = await readBody(request);
     const [cle] = Object.entries(USERS).find(([, u]) => u.email === body.email) ?? [];
-    if (cle && body.password === MOT_DE_PASSE) {
+    if (cle && body.password === (USERS[cle].motDePasse ?? MOT_DE_PASSE)) {
       return json(
         200,
         { user: USERS[cle] },
@@ -132,6 +132,48 @@ createServer(async (request, response) => {
   }
   if (path === '/api/auth/sign-out' && request.method === 'POST') {
     return json(200, { success: true }, { 'set-cookie': `${COOKIE}=; Path=/; Max-Age=0` });
+  }
+
+  // Invitations : « valide-<suffixe> » est valide (compte nora-<suffixe>), « expire-… » a expiré.
+  const invitation = path.match(/^\/api\/invitations\/([^/]+)(\/activation)?$/);
+  if (invitation) {
+    const [, jeton, activation] = invitation;
+    const suffixe = jeton.replace(/^(valide|expire)-/, '');
+    const email = `nora-${suffixe}@exemple.test`;
+    if (!/^(valide|expire)-/.test(jeton))
+      return json(404, { message: 'Lien d’invitation invalide.' });
+    const utilisee = Object.values(USERS).some((u) => u.email === email);
+    const etat = jeton.startsWith('expire') ? 'expiree' : utilisee ? 'utilisee' : 'valide';
+    if (!activation) {
+      return json(200, {
+        etat,
+        prenom: 'Nora',
+        email,
+        ecole: 'École de gestion de Lumerac',
+        expireLe: '2030-01-01T00:00:00.000Z',
+      });
+    }
+    const body = await readBody(request);
+    if (etat !== 'valide') return json(410, { message: 'Ce lien d’invitation a expiré.' });
+    if (typeof body.motDePasse !== 'string' || body.motDePasse.length < 12) {
+      return json(400, {
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: ['motDePasse : Le mot de passe doit contenir au moins 12 caractères.'],
+      });
+    }
+    if (body.conditionsAcceptees !== true) {
+      return json(400, {
+        message: 'Données invalides.',
+        details: ['conditionsAcceptees : Acceptez les conditions d’utilisation pour continuer.'],
+      });
+    }
+    USERS[`nora${suffixe.replace(/\W/g, '')}`] = {
+      id: randomUUID(),
+      name: 'Nora Fictive',
+      email,
+      motDePasse: body.motDePasse,
+    };
+    return json(200, { email, compteExistant: false });
   }
 
   if (path.startsWith('/api/session/')) {

@@ -22,12 +22,17 @@ export class OrganisationContextInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const access = context.switchToHttp().getRequest<ScolalyRequest>().access;
     if (!access) return next.handle();
+    const apresValidation: (() => Promise<void>)[] = [];
     return from(
       withOrganisation(this.db, access.organisationId, (tx) =>
-        RequestContext.run({ access, tx }, () =>
-          lastValueFrom(next.handle(), { defaultValue: undefined }),
+        RequestContext.run({ access, tx, apresValidation }, () =>
+          lastValueFrom<unknown, undefined>(next.handle(), { defaultValue: undefined }),
         ),
-      ),
+      ).then(async (resultat: unknown) => {
+        // Transaction validée : les effets externes (emails…) peuvent partir.
+        for (const action of apresValidation) await action();
+        return resultat;
+      }),
     );
   }
 }
