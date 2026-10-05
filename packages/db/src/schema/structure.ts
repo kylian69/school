@@ -144,3 +144,23 @@ export const fermetureEtablissement = pgTable(
     }),
   ],
 ).enableRLS();
+
+export const choixEtapeDemarrage = pgEnum('choix_etape_demarrage', ['faite', 'sautee']);
+
+/**
+ * Étape de la liste de démarrage marquée faite ou passée par l'administrateur (US-01-01). Une
+ * étape sans ligne suit les données de l'école ; « reprendre » supprime la ligne.
+ */
+export const demarrageEtape = pgTable(
+  'demarrage_etape',
+  {
+    ...organisationScoped(),
+    etape: text().notNull(),
+    choix: choixEtapeDemarrage().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('demarrage_etape', t),
+    uniqueIndex('demarrage_etape_organisation_id_etape_key').on(t.organisationId, t.etape),
+  ],
+).enableRLS();

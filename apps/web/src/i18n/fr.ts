@@ -151,11 +151,61 @@ export const fr = {
     titre: 'Paramètres',
     navigation: 'Sections des paramètres',
     sections: {
+      demarrage: 'Démarrage',
       organisation: 'Organisation',
       calendrier: 'Calendrier',
       apparence: 'Apparence',
       roles: 'Rôles et permissions',
     },
+  },
+  demarrage: {
+    titre: 'Votre école est presque prête',
+    titreTermine: 'Votre école est prête',
+    filAriane: 'Paramètres · mise en route',
+    aide: 'Suivez ces étapes pour rendre votre espace utilisable : chacune peut être passée puis reprise.',
+    avancement: (pct: number) => `${pct} %`,
+    avancementLong: (pct: number) => `Configuration terminée à ${pct} %`,
+    etapes: {
+      organisation: 'Organisation et établissements',
+      calendrier: 'Calendrier de l’année',
+      apparence: 'Apparence',
+      roles: 'Rôles et permissions',
+    },
+    liens: {
+      organisation: '/parametres/organisation',
+      calendrier: '/parametres/calendrier',
+      apparence: '/parametres/apparence',
+      roles: '/parametres/roles',
+    },
+    resumes: {
+      organisation: (n: number) =>
+        n > 0
+          ? `${n} établissement${n > 1 ? 's' : ''} complet${n > 1 ? 's' : ''}`
+          : 'adresse, UAI, SIRET, NDA, fuseau horaire',
+      calendrier: (annees: number, fermetures: number) =>
+        annees > 0
+          ? `${annees} année${annees > 1 ? 's' : ''} · ${fermetures} fermeture${fermetures > 1 ? 's' : ''}`
+          : 'périodes, fériés, fermetures',
+      apparence: (couleur: boolean, logo: boolean) =>
+        couleur && logo
+          ? 'logo et couleur choisis'
+          : couleur
+            ? 'couleur choisie'
+            : logo
+              ? 'logo déposé'
+              : 'logo, couleur, nom affiché',
+      roles: (roles: number, personnes: number) =>
+        `${roles} rôles prêts à l’emploi · ${personnes} personne${personnes > 1 ? 's' : ''} avec un rôle`,
+    },
+    statuts: { faite: 'Faite', sautee: 'Passée', 'a-faire': 'À faire' },
+    ouvrir: (etape: string) => `Ouvrir « ${etape} »`,
+    marquerFaite: 'Marquer comme faite',
+    passer: 'Passer cette étape',
+    reprendre: 'Reprendre',
+    carte: 'Terminez la configuration de votre école : il reste quelques étapes.',
+    continuer: 'Continuer la mise en route',
+    indisponible: 'La liste de démarrage n’a pas pu être chargée. Rechargez la page.',
+    erreur: 'Le changement n’a pas été enregistré. Réessayez.',
   },
   apparence: {
     titre: 'Apparence',

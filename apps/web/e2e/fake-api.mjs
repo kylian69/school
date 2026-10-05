@@ -162,6 +162,7 @@ const detailApparence = () => ({
 });
 
 const annees = [];
+const choixDemarrage = new Map();
 const resumeAnnee = ({ fermetures: _fermetures, ...annee }) => annee;
 // Jours fériés simplifiés : le calcul réel est couvert par les tests du domaine et de l'API.
 const detailAnnee = (annee) => ({
@@ -377,6 +378,44 @@ createServer(async (request, response) => {
     });
   }
 
+  // Liste de démarrage (E-01-01) : constats tirés de l'état de la fausse API.
+  const etapeRoute = path.match(/^\/api\/demarrage(?:\/etapes\/(\w+))?$/);
+  if (etapeRoute) {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (etapeRoute[1]) {
+      const { choix } = await readBody(request);
+      if (choix) choixDemarrage.set(etapeRoute[1], choix);
+      else choixDemarrage.delete(etapeRoute[1]);
+    }
+    const constats = {
+      etablissementsComplets: ecole.etablissements.filter(
+        (e) => e.statut === 'actif' && manquantes(e)[0] !== 'adresse',
+      ).length,
+      annees: annees.length,
+      fermetures: annees.reduce((n, a) => n + a.fermetures.length, 0),
+      couleur: apparence.couleur !== null,
+      logo: apparence.logo !== null,
+      roles: roles.length,
+      personnesAvecRole: 1,
+    };
+    const faites = {
+      organisation: constats.etablissementsComplets > 0,
+      calendrier: constats.annees > 0 && constats.fermetures > 0,
+      apparence: constats.couleur || constats.logo,
+      roles: false,
+    };
+    const etapes = Object.entries(faites).map(([code, automatique]) => ({
+      code,
+      automatique,
+      statut: automatique ? 'faite' : (choixDemarrage.get(code) ?? 'a-faire'),
+    }));
+    return json(200, {
+      etapes,
+      avancement: Math.round((etapes.filter((e) => e.statut === 'faite').length / 4) * 100),
+      termine: etapes.every((e) => e.statut !== 'a-faire'),
+      constats,
+    });
+  }
   if (path === `/api/ecoles/${ecole.id}/logo`) {
     if (!apparence.logo) return json(404, { message: 'Cette école n’a pas de logo.' });
     response.writeHead(200, { 'content-type': apparence.logo.type });

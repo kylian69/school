@@ -7,7 +7,7 @@ test.describe('E-01-02 Organisation et établissements', () => {
     await seConnecter(page);
   });
 
-  test('« Paramètres » ouvre l’organisation, sans violation d’accessibilité', async ({
+  test('« Paramètres » puis « Organisation », sans violation d’accessibilité', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile-360', 'Navigation latérale propre au bureau');
@@ -15,12 +15,18 @@ test.describe('E-01-02 Organisation et établissements', () => {
       .getByRole('navigation', { name: 'Navigation principale' })
       .getByRole('link', { name: 'Paramètres' })
       .click();
+    const sections = page.getByRole('navigation', { name: 'Sections des paramètres' });
+    await expect(sections.getByRole('link')).toHaveText([
+      'Démarrage',
+      'Organisation',
+      'Calendrier',
+      'Apparence',
+      'Rôles et permissions',
+    ]);
+    await sections.getByRole('link', { name: 'Organisation' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Organisation et établissements',
     );
-    await expect(
-      page.getByRole('navigation', { name: 'Sections des paramètres' }).getByRole('link'),
-    ).toHaveText(['Organisation', 'Calendrier', 'Apparence', 'Rôles et permissions']);
     await expectNoAccessibilityViolations(page);
   });
 

@@ -429,6 +429,66 @@
         }
       }
     },
+    "/api/demarrage": {
+      "get": {
+        "operationId": "DemarrageController.lire",
+        "summary": "Étapes de configuration de l’école et avancement",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Demarrage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demarrage/etapes/{etape}": {
+      "put": {
+        "operationId": "DemarrageController.choisir",
+        "summary": "Marquer une étape faite ou passée, ou la reprendre",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoixEtapeDemarrage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Demarrage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ecoles/{id}/logo": {
       "get": {
         "operationId": "ApparenceController.logo",
@@ -1310,6 +1370,23 @@
         ],
         "additionalProperties": false
       },
+      "ChoixEtapeDemarrage": {
+        "type": "object",
+        "properties": {
+          "choix": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "faite",
+              "sautee"
+            ]
+          }
+        },
+        "required": [
+          "choix"
+        ],
+        "additionalProperties": false
+      },
       "ClientFiche": {
         "type": "object",
         "properties": {
@@ -1750,6 +1827,106 @@
           "doubleAuthentificationExigee",
           "doubleAuthentificationActive",
           "apparence"
+        ],
+        "additionalProperties": false
+      },
+      "Demarrage": {
+        "type": "object",
+        "properties": {
+          "etapes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "organisation",
+                    "calendrier",
+                    "apparence",
+                    "roles"
+                  ]
+                },
+                "statut": {
+                  "type": "string",
+                  "enum": [
+                    "faite",
+                    "sautee",
+                    "a-faire"
+                  ]
+                },
+                "automatique": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "code",
+                "statut",
+                "automatique"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "avancement": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "termine": {
+            "type": "boolean"
+          },
+          "constats": {
+            "type": "object",
+            "properties": {
+              "etablissementsComplets": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "annees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "fermetures": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "couleur": {
+                "type": "boolean"
+              },
+              "logo": {
+                "type": "boolean"
+              },
+              "roles": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "personnesAvecRole": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "etablissementsComplets",
+              "annees",
+              "fermetures",
+              "couleur",
+              "logo",
+              "roles",
+              "personnesAvecRole"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "etapes",
+          "avancement",
+          "termine",
+          "constats"
         ],
         "additionalProperties": false
       },

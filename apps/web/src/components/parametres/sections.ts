@@ -10,6 +10,11 @@ export interface SectionParametres {
 
 export const SECTIONS_PARAMETRES: readonly SectionParametres[] = [
   {
+    label: fr.parametres.sections.demarrage,
+    href: '/parametres/demarrage',
+    permissions: ['organisation:modifier'],
+  },
+  {
     label: fr.parametres.sections.organisation,
     href: '/parametres/organisation',
     permissions: ['organisation:lire', 'organisation:modifier'],
