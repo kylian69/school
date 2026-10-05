@@ -11,6 +11,8 @@ pédagogique, emplois du temps, cahier de texte, émargement QR, notes et bullet
 - [`docs/maquettes/`](docs/maquettes/) — maquettes du MVP (43 écrans) et identité visuelle
 - [`docs/plan-developpement/`](docs/plan-developpement/) — plan de développement du MVP (phases, jalons, outillage, risques)
 - [`docs/adr/`](docs/adr/) — décisions d'architecture prises après la validation de l'architecture
+- [`docs/rgpd/registre.md`](docs/rgpd/registre.md) — registre des traitements, tenu à jour à chaque incrément
+- [`docs/notes-de-version/`](docs/notes-de-version/) — notes de version
 
 ## Démarrer
 

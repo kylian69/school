@@ -1,0 +1,41 @@
+# Registre des traitements de Scolaly
+
+> Tenu à jour à chaque incrément (plan de développement, section 6). Il alimente le registre et l'analyse d'impact (AIPD) fournis aux écoles (RGPD-02).
+> **Rôles** : l'école (organisation cliente) est **responsable de traitement** ; Scolaly agit comme **sous-traitant** en SaaS (RGPD-01). En auto-hébergement, l'école héberge et traite elle-même ; Scolaly n'accède pas aux données.
+> **Bases légales** : elles relèvent du responsable de traitement. Les propositions ci-dessous sont **à confirmer par chaque établissement** et par un juriste ou un DPO (question ouverte du module 00, à trancher avant J7).
+
+Dernière mise à jour : version 2026.10.1 (phase P0, socle technique).
+
+## Traitements en place
+
+| N° | Traitement | Finalité | Personnes concernées | Données | Conservation | Destinataires |
+| --- | --- | --- | --- | --- | --- | --- |
+| T1 | Comptes et authentification (module 01) | Permettre l'accès sécurisé à l'espace Scolaly | Personnel, intervenants, apprenants, tuteurs disposant d'un compte | Nom, email, mot de passe **haché (Argon2id)**, état de vérification de l'email ; jetons de fournisseurs externes chiffrés (connexion unique, V2) | Durée du compte ; durée après désactivation **à définir** (table datée des durées, après relecture juridique) | Personnes habilitées de l'école ; support Scolaly uniquement sur autorisation datée (RG-19-09, P1) |
+| T2 | Sessions | Maintenir la connexion, limiter les abus, permettre la révocation (RG-01-13) | Titulaires d'un compte | Identifiant de session, adresse IP, navigateur (agent utilisateur), dates de création et d'expiration, école active | Jusqu'à expiration ou révocation ; purge des sessions expirées **à définir** | Titulaire du compte (« Mes appareils », P1) |
+| T3 | Fiche personne (module 01, attributs minimaux) | Identifier chaque personne dans l'école (RG-01-06) | Apprenants, personnel, intervenants | Nom, nom d'usage, prénom, email | Dossier pédagogique : 5 ans après la sortie, puis anonymisation (valeur par défaut **à valider**, table `durees-conservation`) | Personnes habilitées selon leur rôle et leur périmètre (RLS et permissions) |
+| T4 | Journal d'audit (RG-01-22) | Tracer les actions sensibles (qui, quoi, quand, valeurs avant et après) | Auteurs des actions ; personnes concernées par les objets modifiés | Identifiant de l'auteur, adresse IP, action, objet, valeurs avant et après (**jamais de donnée sensible en clair**) | **À définir** ; ajout seul, partitions mensuelles purgées par partition entière à l'échéance | Administrateurs de l'école ; personne ne peut le modifier |
+| T5 | Envoi d'emails transactionnels | Invitations, relances et notifications | Destinataires des messages | Adresse email, objet et contenu du message | Non conservés par Scolaly après envoi (journal technique sans contenu) | Fournisseur d'envoi de l'établissement ou de Scolaly (**à choisir, situé dans l'UE**, RGPD-06) |
+| T6 | Fichiers déposés (socle) | Stocker les pièces utiles (photos, justificatifs, documents) | Personnes qui déposent ou sont concernées par les pièces | Contenu du fichier, type, taille, empreinte SHA-256 | Selon le type de pièce (photo : suppression à la sortie, RG-01-27) | Personnes habilitées, par lien signé de 5 minutes |
+| T7 | Journaux techniques | Exploitation, sécurité, diagnostic | Utilisateurs de la plateforme | Méthode et chemin des requêtes, statut, durée, adresse IP ; **sans mot de passe, cookie, jeton ni contenu d'email** (masqués et testés) | **À définir** (exploitation, section 7) | Exploitants de la plateforme |
+
+## Mesures de sécurité communes
+
+- Cloisonnement par organisation dans la base (RLS), vérifié table par table par un test automatique ; contrôle des permissions à chaque route.
+- Chiffrement en transit (HTTPS, HSTS) ; chiffrement par champ des données sensibles avec une clé par organisation (ADR 0002).
+- Mots de passe hachés (Argon2id) ; sessions côté serveur ; cookies `HttpOnly`, `Secure`, `SameSite=Lax` ; limitation des tentatives.
+- Fichiers : type réel contrôlé, taille limitée, antivirus, liens signés de courte durée.
+- Données de démonstration et de test **entièrement fictives** ; aucune donnée réelle hors production.
+
+## Sous-traitants ultérieurs (SaaS)
+
+| Service | Statut |
+| --- | --- |
+| Hébergement | Infrastructure de Scolaly en France (architecture, section 7) |
+| Envoi d'emails | À choisir, dans l'Union européenne (plan, point « fournisseur d'emails ») |
+| Notifications push | P6 ; services des navigateurs (Apple, Google, Mozilla), contenu chiffré et sans donnée sensible (plan, points signalés) |
+
+## Points ouverts
+
+- Durées de conservation par défaut à faire relire par un juriste ou un DPO (avant J7).
+- Bases légales à confirmer avec les écoles pilotes.
+- Choix du fournisseur d'emails.
