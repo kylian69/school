@@ -11,6 +11,7 @@ import type {
   ListeAnnees,
   ModificationAnnee,
   NouvelleAnnee,
+  PropositionDuplication,
   SaisieFermeture,
 } from '@scolaly/contracts';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@scolaly/db';
 import {
   joursFeriesEntre,
+  proposerDuplication,
   verifierAnnee,
   verifierFermeture,
   verifierModificationAnnee,
@@ -105,6 +107,14 @@ export class CalendrierService {
     adresseIp: string,
   ): Promise<CalendrierAnnee> {
     refuser(verifierAnnee(entree, entree.periodes), 'periodes');
+    const fermetures = entree.fermetures ?? [];
+    for (const [rang, saisie] of fermetures.entries()) {
+      refuser(verifierFermeture(entree, saisie), `fermetures.${String(rang)}`);
+    }
+    await this.verifierEtablissements(
+      tx,
+      fermetures.flatMap((f) => f.etablissementIds),
+    );
     const [creee] = await tx
       .insert(anneeScolaire)
       .values({
@@ -117,6 +127,7 @@ export class CalendrierService {
       .returning();
     if (!creee) throw new Error('Création de l’année impossible.');
     await this.ecrirePeriodes(tx, access, creee.id, entree.periodes);
+    for (const saisie of fermetures) await this.insererFermeture(tx, access, creee.id, saisie);
     const resultat = await this.lire(tx, creee.id);
     await enregistrerAudit(tx, {
       action: 'annee.creer',
@@ -124,9 +135,30 @@ export class CalendrierService {
       objetId: creee.id,
       auteurId: access.userId,
       adresseIp,
-      apres: this.trace(resultat),
+      apres: {
+        ...this.trace(resultat),
+        ...(entree.dupliqueDe ? { dupliqueDe: entree.dupliqueDe } : {}),
+      },
     });
     return resultat;
+  }
+
+  /** RG-01-05 : l'année suivante, périodes et fermetures décalées d'un an, sans inscription. */
+  async proposerDuplication(tx: Transaction, id: string): Promise<PropositionDuplication> {
+    const annee = await this.lire(tx, id);
+    const proposition = proposerDuplication(annee);
+    return {
+      libelle: proposition.libelle,
+      dateDebut: proposition.dateDebut,
+      dateFin: proposition.dateFin,
+      periodes: proposition.periodes.map(({ libelle, dateDebut, dateFin }) => ({
+        libelle,
+        dateDebut,
+        dateFin,
+      })),
+      fermetures: proposition.fermetures.map(({ id: _id, ...fermeture }) => fermeture),
+      dupliqueDe: id,
+    };
   }
 
   async modifier(
@@ -196,25 +228,11 @@ export class CalendrierService {
     refuser(verifierModificationAnnee(annee.statut));
     refuser(verifierFermeture(annee, saisie));
     await this.verifierEtablissements(tx, saisie.etablissementIds);
-    const [creee] = await tx
-      .insert(fermeture)
-      .values({
-        organisationId: access.organisationId,
-        anneeScolaireId: anneeId,
-        libelle: saisie.libelle,
-        dateDebut: saisie.dateDebut,
-        dateFin: saisie.dateFin,
-        type: saisie.type,
-        createdBy: access.userId,
-      })
-      .returning();
-    if (!creee) throw new Error('Création de la fermeture impossible.');
-    await this.ecrireEtablissements(tx, access, creee.id, saisie.etablissementIds);
-    const resultat = { ...this.fermeture(creee), etablissementIds: saisie.etablissementIds };
+    const resultat = await this.insererFermeture(tx, access, anneeId, saisie);
     await enregistrerAudit(tx, {
       action: 'fermeture.creer',
       objetType: 'fermeture',
-      objetId: creee.id,
+      objetId: resultat.id,
       auteurId: access.userId,
       adresseIp,
       apres: resultat,
@@ -282,6 +300,29 @@ export class CalendrierService {
       adresseIp,
       avant,
     });
+  }
+
+  private async insererFermeture(
+    tx: Transaction,
+    access: Access,
+    anneeId: string,
+    saisie: SaisieFermeture,
+  ): Promise<Fermeture> {
+    const [creee] = await tx
+      .insert(fermeture)
+      .values({
+        organisationId: access.organisationId,
+        anneeScolaireId: anneeId,
+        libelle: saisie.libelle,
+        dateDebut: saisie.dateDebut,
+        dateFin: saisie.dateFin,
+        type: saisie.type,
+        createdBy: access.userId,
+      })
+      .returning();
+    if (!creee) throw new Error('Création de la fermeture impossible.');
+    await this.ecrireEtablissements(tx, access, creee.id, saisie.etablissementIds);
+    return { ...this.fermeture(creee), etablissementIds: saisie.etablissementIds };
   }
 
   private async charger(tx: Transaction, id: string): Promise<LigneAnnee> {

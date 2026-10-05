@@ -172,6 +172,12 @@ export const fr = {
     confirmerCloture: (annee: string) =>
       `Clôturer l’année « ${annee} » ? Elle passera en lecture seule ; une correction demandera ensuite un droit spécifique, tracé.`,
     supprimerAnnee: 'Supprimer l’année',
+    dupliquer: 'Dupliquer pour l’année suivante',
+    dupliquerTitre: 'Année suivante',
+    aideDuplication:
+      'Périodes et fermetures sont reprises et décalées d’un an : vérifiez les dates (les jours de la semaine changent) avant d’enregistrer. Les inscriptions ne sont jamais copiées.',
+    fermeturesReprises: 'Fermetures reprises',
+    erreurDuplication: 'La proposition d’année suivante n’a pas pu être préparée. Réessayez.',
     confirmerSuppressionAnnee: (annee: string) =>
       `Supprimer l’année « ${annee} », ses périodes et ses fermetures ? La suppression est tracée.`,
     du: (debut: string, fin: string) => `du ${debut} au ${fin}`,
