@@ -81,6 +81,16 @@ describe('Console de la plateforme : accès', () => {
     expect((await requete('GET', '/api/plateforme/clients', personne)).statusCode).toBe(404);
   });
 
+  it('indique le rôle de la personne connectée dans la console', async () => {
+    expect((await requete('GET', '/api/plateforme/moi', superAdmin)).json()).toEqual({
+      role: 'super_administrateur',
+    });
+    expect((await requete('GET', '/api/plateforme/moi', support)).json()).toEqual({
+      role: 'support',
+    });
+    expect((await requete('GET', '/api/plateforme/moi', personne)).statusCode).toBe(404);
+  });
+
   it('le support consulte mais ne crée pas de client', async () => {
     expect((await requete('GET', '/api/plateforme/clients', support)).statusCode).toBe(200);
     const creation = await requete(

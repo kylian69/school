@@ -457,6 +457,9 @@ importers:
       server-only:
         specifier: 'catalog:'
         version: 0.0.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@axe-core/playwright':
         specifier: 'catalog:'

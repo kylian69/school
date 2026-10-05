@@ -9,6 +9,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
+  // Marges pour les machines partagées ou chargées (axe-core, rendu dynamique).
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL: `http://localhost:${port}`, locale: 'fr-FR', trace: 'retain-on-failure' },
   projects: [

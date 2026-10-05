@@ -1,12 +1,19 @@
 'use client';
 
 import { cn } from '@scolaly/ui';
+import { Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { fr } from '@/i18n/fr';
 import { NAVIGATION } from './navigation';
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+export function NavLinks({
+  onNavigate,
+  consoleAccessible = false,
+}: {
+  onNavigate?: () => void;
+  consoleAccessible?: boolean;
+}) {
   const pathname = usePathname();
   return (
     <nav aria-label={fr.coquille.navigation} className="flex flex-col gap-0.5">
@@ -39,6 +46,16 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         );
       })}
+      {consoleAccessible ? (
+        <Link
+          href="/plateforme"
+          {...(onNavigate ? { onClick: onNavigate } : {})}
+          className="mt-2 flex h-11 items-center gap-2.5 rounded-control border border-line px-2.5 text-sm font-medium text-muted hover:bg-surface-2 hover:text-fg md:h-[38px]"
+        >
+          <Building2 className="size-[18px]" aria-hidden="true" />
+          {fr.console.acces}
+        </Link>
+      ) : null}
     </nav>
   );
 }

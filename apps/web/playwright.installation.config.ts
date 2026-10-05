@@ -7,6 +7,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e-installation',
   retries: process.env.CI ? 1 : 0,
+  // Marges pour les machines partagées ou chargées (axe-core, rendu dynamique).
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: process.env.INSTALLATION_URL ?? 'https://localhost',

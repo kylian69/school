@@ -13,13 +13,22 @@ import { UserMenu } from './user-menu';
  * Coquille de l'application (maquette « Tableau de bord ») : colonne de 248 px sur ordinateur,
  * barre supérieure et menu en tiroir sur mobile (360 px et plus).
  */
-export function AppShell({ user, children }: { user: SessionUser; children: ReactNode }) {
+export function AppShell({
+  user,
+  consoleAccessible = false,
+  children,
+}: {
+  user: SessionUser;
+  /** Membre de l'équipe Scolaly : lien vers la console de la plateforme. */
+  consoleAccessible?: boolean;
+  children: ReactNode;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const sidebar = (onNavigate?: () => void) => (
     <div className="flex h-full flex-col gap-[18px] px-3.5 py-5">
       <Logo className="px-2 pt-1" />
       <CommandPalette />
-      <NavLinks {...(onNavigate ? { onNavigate } : {})} />
+      <NavLinks consoleAccessible={consoleAccessible} {...(onNavigate ? { onNavigate } : {})} />
       <div className="grow" />
       <UserMenu user={user} />
     </div>
