@@ -31,8 +31,9 @@ const withDatabase = (url: string, database: string, user?: string, password?: s
  * leur base en parallèle : mots de passe fixes (réservés aux tests) et amorçage sérialisé par un
  * verrou consultatif pris sur la base d'administration.
  */
-const TEST_MIGRATOR_PASSWORD = 'scolaly-test-migrator';
-const TEST_APP_PASSWORD = 'scolaly-test-app';
+// Mêmes valeurs que .env.example : développement et tests partagent le serveur PostgreSQL local.
+const TEST_MIGRATOR_PASSWORD = 'scolaly-dev-migrator';
+const TEST_APP_PASSWORD = 'scolaly-dev-app';
 const BOOTSTRAP_LOCK_KEY = 7_302_118_002;
 
 async function adminQuery(url: string, query: string): Promise<void> {
