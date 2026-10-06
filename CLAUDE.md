@@ -56,6 +56,7 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | --- | --- |
 | `pnpm install` | Installe les dépendances du monorepo |
 | `pnpm build` | Construit tous les paquets et applications (Turborepo, avec cache) |
+| `pnpm dev:up` / `pnpm dev:down` | Démarre (et prépare la base) ou arrête les services de développement |
 | `pnpm dev` | Lance les applications en mode développement |
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Lint, typage strict, tests Vitest |
 | `pnpm format` / `pnpm format:check` | Formatage Prettier |
@@ -65,7 +66,9 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | `pnpm deps:check` | Règles de dépendance entre modules (dependency-cruiser) |
 | `docker build -f infra/docker/node-app.Dockerfile --build-arg APP=api .` | Image de l'API (`APP=worker` pour le worker ; `infra/docker/web.Dockerfile` pour l'interface) |
 
-Les tests de `packages/db` demandent un PostgreSQL 17 (base jetable créée par test) : `docker run -d --name scolaly-pg-dev -e POSTGRES_PASSWORD=postgres -p 127.0.0.1:55432:5432 postgres:17`, ou `TEST_ADMIN_DATABASE_URL` vers un autre serveur. Ceux de `apps/api` demandent aussi Valkey : `docker run -d --name scolaly-valkey-dev -p 127.0.0.1:56379:6379 valkey/valkey:8` (ou `TEST_VALKEY_URL`) et un stockage S3 Garage (ADR 0003) : `docker run -d --name scolaly-garage-dev -p 127.0.0.1:59000:3900 -p 127.0.0.1:59003:3903 -e GARAGE_RPC_SECRET=$(openssl rand -hex 32) -e GARAGE_ADMIN_TOKEN=scolaly-dev-garage-admin -v $PWD/infra/garage/garage.toml:/etc/garage.toml:ro dxflrs/garage:v2.4.1`, puis `GARAGE_ADMIN_URL=http://localhost:59003 GARAGE_ADMIN_TOKEN=scolaly-dev-garage-admin S3_ACCESS_KEY_ID=GK0000000000000000000000d1 S3_SECRET_ACCESS_KEY=00000000000000000000000000000000000000000000000000000000000000d1 S3_BUCKET=scolaly-test node infra/garage/init.mjs`. Ceux de `apps/worker` utilisent aussi Mailpit : `docker run -d --name scolaly-mailpit-dev -p 127.0.0.1:51025:1025 -p 127.0.0.1:58025:8025 axllent/mailpit`. Le Docker Compose de développement (I0.5) remplacera ces commandes. Après une modification de `packages/db/src/schema`, générer la migration avec `pnpm --filter @scolaly/db db:generate` ; la CI vérifie la concordance (`db:check`). Toute nouvelle table cloisonnée ajoute une ligne d'exemple dans `packages/db/test/isolation/registry.ts` (sinon le test d'isolation échoue) ; une table sans `organisation_id` exige un ADR et une entrée dans `PLATFORM_TABLES`.
+Environnement de développement : `pnpm dev:up` démarre PostgreSQL, PgBouncer, Valkey, Garage (ADR 0003) et Mailpit (`infra/compose/compose.dev.yml`), crée `.env` à partir de `.env.example`, puis applique rôles et migrations ; `pnpm dev` lance les applications ; `pnpm dev:down` arrête les services (ClamAV en option : `pnpm dev:up --profile antivirus`). Les tests d'intégration utilisent ces mêmes services (bases PostgreSQL jetables, bucket `scolaly-test`) ; variables `TEST_*` pour d'autres serveurs.
+
+Après une modification de `packages/db/src/schema`, générer la migration avec `pnpm --filter @scolaly/db db:generate` ; la CI vérifie la concordance (`db:check`). Toute nouvelle table cloisonnée ajoute une ligne d'exemple dans `packages/db/test/isolation/registry.ts` (sinon le test d'isolation échoue) ; une table sans `organisation_id` exige un ADR et une entrée dans `PLATFORM_TABLES`.
 
 Les versions partagées sont figées dans le `catalog` de `pnpm-workspace.yaml`. Les configurations communes (TypeScript, ESLint, Vitest) sont dans `packages/config`.
 

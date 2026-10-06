@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { AUTH_BASE_PATH, type Auth } from './auth.js';
+import { AUTH_BASE_PATH, CLIENT_IP_HEADER, type Auth } from './auth.js';
 
 /**
  * Monte le gestionnaire de Better Auth (API Fetch) sur Fastify. L'URL est reconstruite à partir
@@ -15,6 +15,9 @@ export function registerAuthRoutes(fastify: FastifyInstance, auth: Auth, publicU
         if (value === undefined) continue;
         headers.append(key, Array.isArray(value) ? value.join(', ') : value);
       }
+      // Adresse du client calculée par Fastify (mandataires de confiance) : base de la limitation
+      // des tentatives par adresse IP. Un en-tête envoyé par le client sous ce nom est écrasé.
+      headers.set(CLIENT_IP_HEADER, request.ip);
       const response = await auth.handler(
         new Request(new URL(request.url, publicUrl), {
           method: request.method,

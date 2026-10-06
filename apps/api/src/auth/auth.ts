@@ -15,6 +15,9 @@ import { hashPassword, verifyPassword } from './password.js';
 
 export const AUTH_BASE_PATH = '/api/auth';
 
+/** En-tête interne qui porte l'adresse IP du client jusqu'à Better Auth. */
+export const CLIENT_IP_HEADER = 'x-scolaly-client-ip';
+
 /** Longueur minimale des mots de passe (RG-01-10). */
 export const MIN_PASSWORD_LENGTH = 12;
 
@@ -70,7 +73,7 @@ export function createAuth(env: Env, db: Database, valkey: Redis) {
       cookiePrefix: 'scolaly',
       useSecureCookies: production,
       defaultCookieAttributes: { httpOnly: true, sameSite: 'lax', secure: production },
-      ipAddress: { ipAddressHeaders: ['x-forwarded-for'] },
+      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
       database: { generateId: () => newId() },
     },
     logger: { level: production ? 'error' : 'warn' },

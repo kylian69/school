@@ -1,0 +1,72 @@
+# Services de développement de Scolaly (les applications tournent sur le poste avec `pnpm dev`).
+# Démarrage : pnpm dev:up — arrêt : pnpm dev:down. Ports publiés sur 127.0.0.1 uniquement.
+# Mots de passe de développement uniquement : jamais en production.
+name: scolaly-dev
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ['127.0.0.1:55432:5432']
+    volumes: ['postgres:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      retries: 30
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.26.0-p0
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ['127.0.0.1:56432:5432']
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.dev.txt:/etc/pgbouncer/userlist.txt:ro
+
+  valkey:
+    image: valkey/valkey:8
+    ports: ['127.0.0.1:56379:6379']
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 2s
+      retries: 30
+
+  garage:
+    image: dxflrs/garage:v2.4.1
+    environment:
+      GARAGE_RPC_SECRET: 0000000000000000000000000000000000000000000000000000000000000de1
+      GARAGE_ADMIN_TOKEN: scolaly-dev-garage-admin
+    ports: ['127.0.0.1:59000:3900', '127.0.0.1:59003:3903']
+    volumes:
+      - ../garage/garage.toml:/etc/garage.toml:ro
+      - garage:/var/lib/garage
+
+  # Tâche ponctuelle, lancée par dev-up.sh après le démarrage des services.
+  garage-init:
+    image: node:24-slim
+    profiles: [init]
+    depends_on: [garage]
+    command: ['node', '/init.mjs']
+    environment:
+      GARAGE_ADMIN_URL: http://garage:3903
+      GARAGE_ADMIN_TOKEN: scolaly-dev-garage-admin
+      S3_ACCESS_KEY_ID: GK0000000000000000000000d1
+      S3_SECRET_ACCESS_KEY: 00000000000000000000000000000000000000000000000000000000000000d1
+      # Bucket du développement et bucket des tests automatisés.
+      S3_BUCKET: scolaly-dev,scolaly-test
+    volumes: ['../garage/init.mjs:/init.mjs:ro']
+
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports: ['127.0.0.1:51025:1025', '127.0.0.1:58025:8025']
+
+  # Antivirus (plus de 1 Go de mémoire) : `pnpm dev:up --profile antivirus`.
+  clamav:
+    image: clamav/clamav:1.5.4
+    profiles: [antivirus]
+    ports: ['127.0.0.1:53310:3310']
+
+volumes:
+  postgres:
+  garage:

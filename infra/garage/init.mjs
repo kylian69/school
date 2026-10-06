@@ -1,7 +1,7 @@
 // Initialise un nœud Garage unique par son API d'administration (v2), sans dépendance :
 // topologie, clé d'accès importée et bucket. Idempotent : peut être relancé à chaque démarrage.
 // Variables : GARAGE_ADMIN_URL, GARAGE_ADMIN_TOKEN, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
-// S3_BUCKET, GARAGE_CAPACITY (octets, 10 Gio par défaut).
+// S3_BUCKET (un ou plusieurs, séparés par des virgules), GARAGE_CAPACITY (octets, 10 Gio par défaut).
 const env = (name, fallback) => {
   const value = process.env[name] ?? fallback;
   if (value === undefined) throw new Error(`Variable d'environnement manquante : ${name}`);
@@ -11,7 +11,10 @@ const adminUrl = env('GARAGE_ADMIN_URL', 'http://localhost:3903');
 const token = env('GARAGE_ADMIN_TOKEN');
 const accessKeyId = env('S3_ACCESS_KEY_ID');
 const secretAccessKey = env('S3_SECRET_ACCESS_KEY');
-const bucket = env('S3_BUCKET');
+const buckets = env('S3_BUCKET')
+  .split(',')
+  .map((name) => name.trim())
+  .filter(Boolean);
 const capacity = Number(env('GARAGE_CAPACITY', String(10 * 1024 ** 3)));
 
 async function call(method, path, body) {
@@ -56,16 +59,18 @@ try {
   await call('POST', '/v2/ImportKey', { accessKeyId, secretAccessKey, name: 'scolaly' });
 }
 
-let bucketInfo;
-try {
-  bucketInfo = await call('GET', `/v2/GetBucketInfo?globalAlias=${encodeURIComponent(bucket)}`);
-} catch (error) {
-  if (error.status !== 404 && error.status !== 400) throw error;
-  bucketInfo = await call('POST', '/v2/CreateBucket', { globalAlias: bucket });
+for (const bucket of buckets) {
+  let bucketInfo;
+  try {
+    bucketInfo = await call('GET', `/v2/GetBucketInfo?globalAlias=${encodeURIComponent(bucket)}`);
+  } catch (error) {
+    if (error.status !== 404 && error.status !== 400) throw error;
+    bucketInfo = await call('POST', '/v2/CreateBucket', { globalAlias: bucket });
+  }
+  await call('POST', '/v2/AllowBucketKey', {
+    bucketId: bucketInfo.id,
+    accessKeyId,
+    permissions: { read: true, write: true, owner: true },
+  });
 }
-await call('POST', '/v2/AllowBucketKey', {
-  bucketId: bucketInfo.id,
-  accessKeyId,
-  permissions: { read: true, write: true, owner: true },
-});
-console.warn(`Garage prêt : bucket « ${bucket} », clé ${accessKeyId}.`);
+console.warn(`Garage prêt : ${buckets.map((b) => `« ${b} »`).join(', ')}, clé ${accessKeyId}.`);

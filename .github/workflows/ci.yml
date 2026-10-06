@@ -46,6 +46,8 @@ jobs:
       TEST_VALKEY_URL: redis://localhost:6379/15
       TEST_SMTP_URL: smtp://localhost:1025
       TEST_MAILPIT_API: http://localhost:8025
+      TEST_PGBOUNCER: '1'
+      TEST_PGBOUNCER_HOST: localhost:6432
       TEST_S3_ENDPOINT: http://localhost:3900
       TEST_S3_REGION: garage
       TEST_S3_ACCESS_KEY: GK0000000000000000000000c1
@@ -75,6 +77,15 @@ jobs:
           S3_ACCESS_KEY_ID: GK0000000000000000000000c1
           S3_SECRET_ACCESS_KEY: 00000000000000000000000000000000000000000000000000000000000000c1
           S3_BUCKET: scolaly-test
+      - name: PgBouncer (mode transaction)
+        run: |
+          sed -e 's/host=postgres port=5432/host=127.0.0.1 port=5432/' \
+            -e 's/listen_port = 5432/listen_port = 6432/' \
+            infra/compose/pgbouncer/pgbouncer.ini > "$RUNNER_TEMP/pgbouncer.ini"
+          docker run -d --name pgbouncer --network host \
+            -v "$RUNNER_TEMP/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro" \
+            -v "$PWD/infra/compose/pgbouncer/userlist.dev.txt:/etc/pgbouncer/userlist.txt:ro" \
+            edoburu/pgbouncer:v1.26.0-p0
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm turbo run build lint typecheck test
