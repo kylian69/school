@@ -155,7 +155,8 @@ export const RegleParticuliere = z
     }),
     z.object({
       type: z.literal('ue_bonus'),
-      source: z.object({ niveau: z.enum(['ue', 'module']), id: z.uuid() }),
+      /** Choisie à l'activation dans une version ; null dans la bibliothèque de l'école. */
+      source: z.object({ niveau: z.enum(['ue', 'module']), id: z.uuid() }).nullable(),
       seuil: note,
       diviseur: z.number().positive('Le diviseur doit être positif.').max(100),
       cible: CibleRegle,

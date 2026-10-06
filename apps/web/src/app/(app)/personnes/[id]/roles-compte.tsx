@@ -23,12 +23,15 @@ export function RolesCompte({
   attributions,
   roles,
   etablissements,
+  formations = [],
   droits,
 }: {
   personne: PersonneDetail;
   attributions: readonly AttributionPersonne[];
   roles: readonly RoleDetail[];
   etablissements: readonly Etablissement[];
+  /** Formations proposées comme périmètre (module 02) ; vide sans droit de lecture. */
+  formations?: readonly { id: string; intitule: string }[];
   droits: { attribuer: boolean; inviter: boolean; desactiver: boolean };
 }) {
   const router = useRouter();
@@ -75,8 +78,10 @@ export function RolesCompte({
     const fin = texte('fin');
     void action(`/api/personnes/${personne.id}/attributions`, t.roles.effet, {
       roleId: data.get('roleId'),
-      perimetreType: perimetre.startsWith('etablissement:') ? 'etablissement' : perimetre,
-      perimetreId: perimetre.startsWith('etablissement:') ? perimetre.slice(14) : null,
+      perimetreType: perimetre.includes(':')
+        ? perimetre.slice(0, perimetre.indexOf(':'))
+        : perimetre,
+      perimetreId: perimetre.includes(':') ? perimetre.slice(perimetre.indexOf(':') + 1) : null,
       debut: texte('debut') || undefined,
       fin: fin || null,
     }).then((ok) => {
@@ -89,7 +94,9 @@ export function RolesCompte({
       ? t.roles.ecole
       : a.perimetreType === 'soi'
         ? t.roles.soi
-        : t.roles.etablissement(a.perimetreLibelle ?? '—');
+        : a.perimetreType === 'formation'
+          ? t.roles.formation(a.perimetreLibelle ?? '—')
+          : t.roles.etablissement(a.perimetreLibelle ?? '—');
 
   return (
     <div className="grid max-w-3xl gap-4">
@@ -156,6 +163,11 @@ export function RolesCompte({
                 {etablissements.map((e) => (
                   <option key={e.id} value={`etablissement:${e.id}`}>
                     {t.roles.etablissement(e.nom)}
+                  </option>
+                ))}
+                {formations.map((f) => (
+                  <option key={f.id} value={`formation:${f.id}`}>
+                    {t.roles.formation(f.intitule)}
                   </option>
                 ))}
                 <option value="soi">{t.roles.soi}</option>

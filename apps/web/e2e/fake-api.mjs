@@ -314,6 +314,344 @@ creerFiche({
   ],
 });
 
+// Référentiel (module 02) : formations et maquettes en mémoire, totaux simplifiés. Le vrai
+// calcul (totaux, versions, moteur de résultats) est couvert par les tests du domaine et de l'API.
+const formations = [];
+const maquettes = new Map();
+const echelle = {
+  parDefaut: true,
+  niveaux: [
+    {
+      id: 'defaut-1',
+      libelle: 'Non acquis',
+      couleur: '#DC2626',
+      valeur: 0,
+      ordre: 1,
+      valide: false,
+    },
+    {
+      id: 'defaut-2',
+      libelle: 'En cours d’acquisition',
+      couleur: '#D97706',
+      valeur: 1,
+      ordre: 2,
+      valide: false,
+    },
+    { id: 'defaut-3', libelle: 'Acquis', couleur: '#16A34A', valeur: 2, ordre: 3, valide: true },
+    { id: 'defaut-4', libelle: 'Expert', couleur: '#4F46E5', valeur: 3, ordre: 4, valide: true },
+  ],
+};
+const bibliotheque = [];
+const REGLES_DEFAUT = {
+  mode: 'lmd',
+  seuil: 10,
+  noteEliminatoire: null,
+  compensationModules: true,
+  compensationSemestres: false,
+  arrondi: { decimales: 2, methode: 'plus_proche' },
+  mentions: [
+    { libelle: 'Assez bien', seuil: 12 },
+    { libelle: 'Bien', seuil: 14 },
+    { libelle: 'Très bien', seuil: 16 },
+  ],
+  modeEvaluation: 'notes',
+  validationBlocs: 'notes',
+  regleNiveau: 'derniere',
+};
+const TYPES_H = ['cm', 'td', 'tp', 'projet', 'elearning'];
+const nouvelleVersion = (formation, numero, source) => {
+  const id = randomUUID();
+  const copie = source
+    ? structuredClone(source)
+    : {
+        blocs: [],
+        ues: [],
+        modules: [],
+        competences: [],
+        regles: REGLES_DEFAUT,
+        reglesParticulieres: [],
+      };
+  maquettes.set(id, {
+    ...copie,
+    id,
+    formationId: formation.id,
+    numero,
+    statut: 'brouillon',
+    publieeLe: null,
+  });
+  return id;
+};
+const resumeVersion = (m) => ({
+  id: m.id,
+  numero: m.numero,
+  statut: m.statut,
+  publieeLe: m.publieeLe,
+  utilisee: false,
+});
+const versionsDe = (formationId) =>
+  [...maquettes.values()]
+    .filter((m) => m.formationId === formationId)
+    .sort((a, b) => a.numero - b.numero);
+const detailFormation = (f) => ({
+  ...f,
+  versions: versionsDe(f.id).map(resumeVersion),
+  modifiable: true,
+  publiable: true,
+});
+const heuresVides = () => Object.fromEntries(TYPES_H.map((t) => [t, 0]));
+function detailMaquette(m) {
+  const f = formations.find((x) => x.id === m.formationId);
+  const ues = {};
+  const heures = heuresVides();
+  for (const u of m.ues) ues[u.id] = { heures: heuresVides(), heuresTotal: 0, modules: 0 };
+  for (const mod of m.modules) {
+    const total = ues[mod.ueId];
+    for (const t of TYPES_H) {
+      heures[t] += mod.heures[t];
+      total.heures[t] += mod.heures[t];
+      total.heuresTotal += mod.heures[t];
+    }
+    total.modules += 1;
+  }
+  const periodes = [];
+  for (const u of m.ues) {
+    let p = periodes.find((x) => x.annee === u.annee && x.semestre === u.semestre);
+    if (!p)
+      periodes.push((p = { annee: u.annee, semestre: u.semestre, ects: 0, heures: heuresVides() }));
+    p.ects += u.ects;
+  }
+  periodes.sort(
+    (a, b) => a.annee * 100 + (a.semestre ?? 99) - (b.annee * 100 + (b.semestre ?? 99)),
+  );
+  const ects = m.ues.reduce((s, u) => s + u.ects, 0);
+  const avertissements = [
+    ...(ects > 0
+      ? periodes
+          .filter((p) => p.semestre !== null && p.ects !== 30)
+          .map((p) => ({
+            type: 'semestre-ects',
+            annee: p.annee,
+            semestre: p.semestre,
+            ects: p.ects,
+            attendu: 30,
+          }))
+      : []),
+    ...m.ues
+      .filter((u) => ues[u.id].modules === 0)
+      .map((u) => ({ type: 'ue-sans-module', ueId: u.id, code: u.code })),
+  ];
+  return {
+    formation: { id: f.id, intitule: f.intitule, dureeAnnees: f.dureeAnnees },
+    version: resumeVersion(m),
+    versions: versionsDe(f.id).map(resumeVersion),
+    modifiable: m.statut !== 'archivee',
+    publiable: m.statut === 'brouillon',
+    regles: m.regles,
+    reglesParticulieres: m.reglesParticulieres,
+    reglement: { disponible: false },
+    blocs: m.blocs,
+    ues: m.ues,
+    modules: m.modules,
+    competences: m.competences,
+    totaux: {
+      heures,
+      heuresTotal: TYPES_H.reduce((s, t) => s + heures[t], 0),
+      ects,
+      periodes,
+      annees: [...new Set(m.ues.map((u) => u.annee))].map((annee) => ({
+        annee,
+        ects: m.ues.filter((u) => u.annee === annee).reduce((s, u) => s + u.ects, 0),
+      })),
+      ues,
+      blocs: Object.fromEntries(
+        m.blocs.map((b) => [
+          b.id,
+          {
+            ects: m.ues.filter((u) => u.blocId === b.id).reduce((s, u) => s + u.ects, 0),
+            heuresTotal: 0,
+          },
+        ]),
+      ),
+    },
+    avertissements,
+  };
+}
+const invalideRef = (champ, message) => ({
+  message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+  details: [`${champ} : ${message}`],
+});
+async function routeReferentiel(path, request, json, response) {
+  if (path === '/api/referentiel/echelle') {
+    if (request.method === 'PUT') {
+      const { niveaux } = await readBody(request);
+      echelle.parDefaut = false;
+      echelle.niveaux = niveaux.map((n, i) => ({
+        id: randomUUID(),
+        ordre: i + 1,
+        ...n,
+        couleur: n.couleur.toUpperCase(),
+      }));
+    }
+    return json(200, echelle);
+  }
+  const regle = path.match(/^\/api\/referentiel\/regles(?:\/([^/]+))?$/);
+  if (regle) {
+    if (!regle[1] && request.method === 'GET') return json(200, { regles: bibliotheque });
+    if (!regle[1]) {
+      const r = { id: randomUUID(), ...(await readBody(request)) };
+      bibliotheque.push(r);
+      return json(201, r);
+    }
+    const rang = bibliotheque.findIndex((r) => r.id === regle[1]);
+    if (request.method === 'DELETE') {
+      bibliotheque.splice(rang, 1);
+      response.writeHead(204);
+      return response.end();
+    }
+    bibliotheque[rang] = { id: regle[1], ...(await readBody(request)) };
+    return json(200, bibliotheque[rang]);
+  }
+  const formation = path.match(/^\/api\/formations(?:\/([^/]+))?(\/duplication)?$/);
+  if (formation) {
+    const [, id, duplication] = formation;
+    if (!id && request.method === 'GET')
+      return json(200, { formations: formations.map(detailFormation), creation: true });
+    if (!id) {
+      const body = await readBody(request);
+      if (
+        body.codeRncp &&
+        !/^(RNCP|RS)\d{1,6}$/.test(body.codeRncp.replace(/\s+/g, '').toUpperCase())
+      )
+        return json(400, invalideRef('codeRncp', 'Code attendu au format RNCP12345 ou RS1234.'));
+      const f = {
+        id: randomUUID(),
+        statut: 'active',
+        ...body,
+        codeRncp: body.codeRncp ? body.codeRncp.toUpperCase() : null,
+      };
+      formations.push(f);
+      nouvelleVersion(f, 1);
+      return json(201, detailFormation(f));
+    }
+    const f = formations.find((x) => x.id === id);
+    if (!f) return json(404, { message: 'Formation introuvable.' });
+    if (duplication) {
+      const { intitule } = await readBody(request);
+      const copie = { ...f, id: randomUUID(), intitule };
+      formations.push(copie);
+      nouvelleVersion(copie, 1, versionsDe(f.id).at(-1));
+      return json(201, detailFormation(copie));
+    }
+    if (request.method === 'PATCH') Object.assign(f, await readBody(request));
+    return json(200, detailFormation(f));
+  }
+  const maquette = path.match(
+    /^\/api\/maquettes\/([^/]+)(?:\/(publication|nouvelle-version|archivage|regles|simulation|blocs|ues|modules|competences)(?:\/([^/]+))?)?$/,
+  );
+  if (!maquette) return false;
+  const [, versionId, action, elementId] = maquette;
+  const m = maquettes.get(versionId);
+  if (!m) return json(404, { message: 'Version de maquette introuvable.' });
+  if (action === 'publication') {
+    m.statut = 'publiee';
+    m.publieeLe = new Date().toISOString();
+  }
+  if (action === 'archivage') m.statut = 'archivee';
+  if (action === 'nouvelle-version') {
+    const f = formations.find((x) => x.id === m.formationId);
+    return json(
+      201,
+      detailMaquette(maquettes.get(nouvelleVersion(f, versionsDe(f.id).length + 1, m))),
+    );
+  }
+  if (action === 'regles') {
+    const body = await readBody(request);
+    m.regles = body.regles;
+    m.reglesParticulieres = body.reglesParticulieres.map((r) => ({ id: randomUUID(), ...r }));
+  }
+  if (action === 'simulation') {
+    const { evaluations } = await readBody(request);
+    const note = (moduleId) => evaluations.find((e) => e.moduleId === moduleId)?.note ?? null;
+    const ues = m.ues.map((u) => {
+      const notes = m.modules
+        .filter((x) => x.ueId === u.id)
+        .map((x) => note(x.id))
+        .filter((n) => n !== null);
+      const moyenne = notes.length
+        ? Math.round((notes.reduce((s, n) => s + n, 0) / notes.length) * 100) / 100
+        : null;
+      return {
+        id: u.id,
+        moyenne,
+        acquise: moyenne === null ? null : moyenne >= m.regles.seuil,
+        par: moyenne >= m.regles.seuil ? 'moyenne' : null,
+        ects: moyenne >= m.regles.seuil ? u.ects : 0,
+        eliminatoire: false,
+        bonus: false,
+      };
+    });
+    const valeurs = ues.filter((u) => u.moyenne !== null);
+    const generale = valeurs.length
+      ? Math.round((valeurs.reduce((s, u) => s + u.moyenne, 0) / valeurs.length) * 100) / 100
+      : null;
+    return json(200, {
+      modules: [],
+      ues,
+      periodes: [],
+      blocs: [],
+      moyenneGenerale: generale,
+      admis: ues.some((u) => u.acquise === null) ? null : ues.every((u) => u.acquise),
+      mention: null,
+      ects: ues.reduce((s, u) => s + u.ects, 0),
+      explications: [],
+      anomalies: [],
+    });
+  }
+  const listes = { blocs: 'blocs', ues: 'ues', modules: 'modules', competences: 'competences' };
+  if (listes[action]) {
+    const liste = m[listes[action]];
+    if (request.method === 'DELETE') {
+      liste.splice(
+        liste.findIndex((e) => e.id === elementId),
+        1,
+      );
+      if (action === 'ues') m.modules = m.modules.filter((x) => x.ueId !== elementId);
+      return json(200, detailMaquette(m));
+    }
+    const body = await readBody(request);
+    if (!body.code || !body.intitule)
+      return json(400, invalideRef(body.code ? 'intitule' : 'code', 'Ce champ est obligatoire.'));
+    if (elementId) {
+      Object.assign(
+        liste.find((e) => e.id === elementId),
+        body,
+      );
+      return json(200, detailMaquette(m));
+    }
+    const element = { id: randomUUID(), ordre: liste.length, ...body };
+    if (action === 'ues')
+      Object.assign(element, {
+        blocId: null,
+        annee: 1,
+        semestre: 1,
+        ects: 0,
+        coefficient: 1,
+        option: null,
+        ...body,
+      });
+    if (action === 'modules')
+      Object.assign(element, {
+        coefficient: 1,
+        ...body,
+        heures: { ...heuresVides(), ...body.heures },
+      });
+    if (action === 'competences') Object.assign(element, { criteres: [], moduleIds: [], ...body });
+    liste.push(element);
+    return json(201, { id: element.id, maquette: detailMaquette(m) });
+  }
+  return json(200, detailMaquette(m));
+}
+
 const readBody = (request) =>
   new Promise((resolve) => {
     let data = '';
@@ -468,11 +806,15 @@ createServer(async (request, response) => {
             'emargement:animer',
             'organisation:lire',
             'organisation:modifier',
+            'referentiel:gerer',
+            'referentiel:lire',
+            'referentiel:parametrer',
+            'referentiel:publier',
             'roles:attribuer',
             'roles:gerer',
           ]
         : [],
-      modules: active ? ['socle', 'emargement'] : [],
+      modules: active ? ['socle', 'emargement', 'referentiel'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
@@ -976,6 +1318,16 @@ createServer(async (request, response) => {
       return response.end();
     }
     return json(200, detailAnnee(annee));
+  }
+
+  if (
+    path.startsWith('/api/formations') ||
+    path.startsWith('/api/maquettes/') ||
+    path.startsWith('/api/referentiel/')
+  ) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const traite = await routeReferentiel(path, request, json, response);
+    if (traite !== false) return traite;
   }
 
   if (path === '/api/organisation') {

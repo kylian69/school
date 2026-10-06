@@ -7167,6 +7167,7 @@
                 ]
               },
               "source": {
+                "nullable": true,
                 "type": "object",
                 "properties": {
                   "niveau": {

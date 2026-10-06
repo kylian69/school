@@ -1,6 +1,7 @@
 import {
   JournalAudit,
   ListeAttributions,
+  ListeFormations,
   ListeRoles,
   OrganisationDetail,
   PersonneDetail,
@@ -37,16 +38,25 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
       </Card>
     );
   }
-  const [{ data: attributions }, { data: roles }, { data: organisation }, { data: historique }] =
-    await Promise.all([
-      apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
-      apiGet('/api/roles', ListeRoles),
-      apiGet('/api/organisation', OrganisationDetail),
-      // E-01-05 : historique de la fiche, pour qui peut lire le journal d'audit.
-      permissions.includes('audit:lire')
-        ? apiGet(`/api/audit?objet=${id}&parPage=20`, JournalAudit)
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    { data: attributions },
+    { data: roles },
+    { data: organisation },
+    { data: historique },
+    { data: catalogue },
+  ] = await Promise.all([
+    apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
+    apiGet('/api/roles', ListeRoles),
+    apiGet('/api/organisation', OrganisationDetail),
+    // E-01-05 : historique de la fiche, pour qui peut lire le journal d'audit.
+    permissions.includes('audit:lire')
+      ? apiGet(`/api/audit?objet=${id}&parPage=20`, JournalAudit)
+      : Promise.resolve({ data: null }),
+    // Périmètre « formation » (RG-00-10) : les formations que la personne connectée peut lire.
+    permissions.includes('roles:attribuer') && permissions.includes('referentiel:lire')
+      ? apiGet('/api/formations?statut=active', ListeFormations)
+      : Promise.resolve({ data: null }),
+  ]);
   const nom = `${personne.prenom} ${personne.nomUsage ?? personne.nom}`;
   const initiales = `${personne.prenom[0] ?? ''}${(personne.nomUsage ?? personne.nom)[0] ?? ''}`;
 
@@ -109,6 +119,7 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
         attributions={attributions?.attributions ?? []}
         roles={roles?.roles ?? []}
         etablissements={(organisation?.etablissements ?? []).filter((e) => e.statut === 'actif')}
+        formations={catalogue?.formations ?? []}
         droits={{
           attribuer: permissions.includes('roles:attribuer'),
           inviter:

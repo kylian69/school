@@ -788,11 +788,17 @@ export class MaquettesService {
     versionId: string,
     regles: readonly RegleParticuliere[],
   ) {
+    if (regles.some((r) => r.type === 'ue_bonus' && !r.source)) {
+      throw invalide(
+        'reglesParticulieres',
+        'Une règle « UE ou module bonus » doit désigner l’UE ou le module bonus de cette maquette.',
+      );
+    }
     const ids = regles.flatMap((r) => {
       const liste: string[] = [];
       if ((r.type === 'bonus' || r.type === 'ue_bonus') && r.cible.niveau !== 'generale')
         liste.push(r.cible.id);
-      if (r.type === 'ue_bonus') liste.push(r.source.id);
+      if (r.type === 'ue_bonus' && r.source) liste.push(r.source.id);
       return liste;
     });
     if (ids.length === 0) return;
