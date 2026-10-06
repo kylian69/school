@@ -16,6 +16,8 @@
     "openapi": "node dist/cli/openapi.js",
     "demo:seed": "node --env-file-if-exists=../../.env dist/cli/seed-demo.js",
     "demo:seance": "node --env-file-if-exists=../../.env dist/cli/seance-demo.js",
+    "charge:preparer": "node --env-file-if-exists=../../.env dist/cli/charge-preparer.js",
+    "charge:verifier": "node --env-file-if-exists=../../.env dist/cli/charge-verifier.js",
     "plateforme:super-admin": "node --env-file-if-exists=../../.env dist/cli/super-administrateur.js"
   },
   "dependencies": {
