@@ -111,6 +111,9 @@ describe('Boîte d’envoi des événements internes', () => {
     const miens = publies.filter(deMaMarque(type));
     expect(miens.map((e) => e.charge)).toEqual([{ n: 1 }, { n: 2 }]);
     expect(miens.map((e) => e.organisationId)).toEqual([orgA, orgB]);
+    expect(
+      miens.every((e) => e.survenuLe instanceof Date && !Number.isNaN(e.survenuLe.getTime())),
+    ).toBe(true);
     expect(await publierEvenements(app.db, 50, () => Promise.resolve())).toBe(0);
   });
 

@@ -1,11 +1,38 @@
-// Point d'entrée du worker : les consommateurs BullMQ et le planificateur arrivent en I0.3.
-const keepAlive = setInterval(() => undefined, 60_000);
+import { QUEUES } from '@scolaly/contracts';
+import { createDatabase } from '@scolaly/db';
+import { Queue } from 'bullmq';
+import { loadWorkerEnv } from './config/env.js';
+import { createLogger } from './logger.js';
+import { createSmtpMailer } from './mailer.js';
+import { startOutboxPublisher } from './outbox-publisher.js';
+import { registerSchedules, startWorkers } from './workers.js';
 
-function shutdown(signal: NodeJS.Signals): void {
-  console.warn(`Worker arrêté (${signal}).`);
-  clearInterval(keepAlive);
+const env = loadWorkerEnv();
+const logger = createLogger(env.LOG_LEVEL);
+const connection = { url: env.VALKEY_URL };
+const database = createDatabase(env.DATABASE_URL);
+const mailer = createSmtpMailer(env.SMTP_URL, env.MAIL_FROM);
+const maintenance = new Queue(QUEUES.maintenance, { connection });
+const evenements = new Queue(QUEUES.evenements, { connection });
+
+await registerSchedules(maintenance);
+const workers = startWorkers({ connection, db: database.db, mailer, logger });
+const publisher = startOutboxPublisher({
+  db: database.db,
+  queue: evenements,
+  logger,
+  pollMs: env.OUTBOX_POLL_MS,
+});
+logger.info('Worker démarré');
+
+async function shutdown(signal: NodeJS.Signals): Promise<void> {
+  logger.info({ signal }, 'Arrêt du worker');
+  await publisher.stop();
+  await Promise.all(workers.map((w) => w.close()));
+  await Promise.all([maintenance.close(), evenements.close()]);
+  mailer.close();
+  await database.close();
 }
 
-process.once('SIGTERM', shutdown);
-process.once('SIGINT', shutdown);
-console.warn('Worker démarré.');
+process.once('SIGTERM', (signal) => void shutdown(signal));
+process.once('SIGINT', (signal) => void shutdown(signal));
