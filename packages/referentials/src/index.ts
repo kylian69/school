@@ -14,3 +14,4 @@ export const REFERENTIALS: readonly DatedTable<unknown>[] = [
   dureesConservation,
   modulesParFormule,
 ];
+export * from './mots-de-passe-compromis.js';

@@ -16,6 +16,8 @@ export const ContexteSession = z
     permissions: z.array(z.enum(PERMISSION_CODES as [string, ...string[]])),
     modules: z.array(z.string()),
     doubleAuthentificationExigee: z.boolean(),
+    /** Double authentification activée sur le compte. */
+    doubleAuthentificationActive: z.boolean(),
   })
   .meta({ id: 'ContexteSession' });
 export type ContexteSession = z.infer<typeof ContexteSession>;

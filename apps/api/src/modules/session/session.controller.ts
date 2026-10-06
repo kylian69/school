@@ -9,7 +9,8 @@ import {
   Req,
 } from '@nestjs/common';
 import { ChoixEcole, ContexteSession } from '@scolaly/contracts';
-import { ecolesDuCompte, type Database } from '@scolaly/db';
+import { authUser, ecolesDuCompte, type Database } from '@scolaly/db';
+import { eq } from 'drizzle-orm';
 import { ACCESS_RESOLVER, type AccessResolver } from '../../access/access-resolver.js';
 import { Authenticated } from '../../access/access.decorators.js';
 import type { ScolalyRequest } from '../../access/access.guard.js';
@@ -69,6 +70,10 @@ export class SessionController {
       acces: e.acces,
     }));
     const ecoleActive = ecoles.find((e) => e.id === activeOrganisationId) ?? null;
+    const [compte] = await this.db
+      .select({ actif: authUser.twoFactorEnabled })
+      .from(authUser)
+      .where(eq(authUser.id, userId));
     const access = ecoleActive ? await this.resolver.resolve(userId, ecoleActive.id) : null;
     return {
       ecoleActive,
@@ -76,6 +81,7 @@ export class SessionController {
       permissions: access ? [...access.permissions].sort() : [],
       modules: access ? [...access.modules].sort() : [],
       doubleAuthentificationExigee: access?.doubleAuthentificationExigee ?? false,
+      doubleAuthentificationActive: compte?.actif ?? false,
     };
   }
 }

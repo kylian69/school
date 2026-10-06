@@ -121,8 +121,12 @@ describe('Authentification (architecture section 4)', () => {
   it('limite les tentatives de connexion par adresse IP (compteurs dans Valkey)', async () => {
     const ip = freshIp();
     const statuts: number[] = [];
+    // Une adresse différente à chaque essai : seul le compteur par IP intervient (le verrou par
+    // compte est vérifié ailleurs).
     for (let i = 0; i < 12; i++)
-      statuts.push((await signIn('camille@exemple.test', 'mauvais mot de passe', ip)).statusCode);
+      statuts.push(
+        (await signIn(`inconnu.${i}@exemple.test`, 'mauvais mot de passe', ip)).statusCode,
+      );
     expect(statuts.slice(0, 10).every((s) => s === 401)).toBe(true);
     expect(statuts.slice(10)).toEqual([429, 429]);
   });

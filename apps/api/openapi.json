@@ -34,6 +34,35 @@
         }
       }
     },
+    "/api/comptes/{personneId}/double-authentification/reinitialisation": {
+      "post": {
+        "operationId": "ComptesController.reinitialiserDoubleAuthentification",
+        "summary": "Réinitialiser la double authentification d’un compte",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "roles:attribuer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/comptes/{personneId}/invitation": {
       "post": {
         "operationId": "ComptesController.inviter",
@@ -869,6 +898,9 @@
           },
           "doubleAuthentificationExigee": {
             "type": "boolean"
+          },
+          "doubleAuthentificationActive": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -876,7 +908,8 @@
           "ecoles",
           "permissions",
           "modules",
-          "doubleAuthentificationExigee"
+          "doubleAuthentificationExigee",
+          "doubleAuthentificationActive"
         ],
         "additionalProperties": false
       },

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const ADMINISTRATEUR = 'administrateur@egl.demo.scolaly.test';
+const APPRENANT = 'apprenant@egl.demo.scolaly.test';
 const motDePasse = process.env.DEMO_PASSWORD ?? 'demonstration-scolaly';
 
 test.describe('Installation Docker Compose : test de fumée', () => {
@@ -19,19 +20,30 @@ test.describe('Installation Docker Compose : test de fumée', () => {
   test('connexion réelle avec un compte de démonstration, puis déconnexion', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/connexion$/);
-    await page.getByLabel('Adresse email').fill(ADMINISTRATEUR);
+    await page.getByLabel('Adresse email').fill(APPRENANT);
     await page.getByLabel('Mot de passe').fill(motDePasse);
     await page.getByRole('button', { name: 'Se connecter' }).click();
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Bonjour Administration.' }),
-    ).toBeVisible();
-    await expect(page.getByText(ADMINISTRATEUR)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Bonjour Apprenant.' })).toBeVisible();
+    await expect(page.getByText(APPRENANT)).toBeVisible();
 
     const cookies = await page.context().cookies();
     const session = cookies.find((c) => c.name.endsWith('session_token'));
     expect(session).toMatchObject({ httpOnly: true, secure: true, sameSite: 'Lax' });
     expect(session?.name).toBe('__Secure-scolaly.session_token');
 
+    await page.getByRole('button', { name: 'Se déconnecter' }).click();
+    await expect(page).toHaveURL(/\/connexion$/);
+  });
+
+  test('RG-00-13 conduit l’administrateur à mettre en place la double authentification', async ({
+    page,
+  }) => {
+    await page.goto('/connexion');
+    await page.getByLabel('Adresse email').fill(ADMINISTRATEUR);
+    await page.getByLabel('Mot de passe').fill(motDePasse);
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+    await expect(page).toHaveURL(/\/securite$/);
+    await expect(page.getByText(/Votre rôle exige la double authentification/)).toBeVisible();
     await page.getByRole('button', { name: 'Se déconnecter' }).click();
     await expect(page).toHaveURL(/\/connexion$/);
   });

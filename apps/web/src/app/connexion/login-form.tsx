@@ -7,14 +7,20 @@ import { fr } from '@/i18n/fr';
 
 const t = fr.connexion;
 
-function messageFor(status: number): string {
+function messageFor(status: number, body: unknown): string {
   if (status === 401 || status === 400) return t.erreurs.identifiants;
-  if (status === 429) return t.erreurs.tropDeTentatives;
+  if (status === 429) {
+    // Verrouillage progressif : l'API indique la durée d'attente.
+    const message = (body as { message?: unknown } | null)?.message;
+    return typeof message === 'string' && message.startsWith('Trop de tentatives')
+      ? message
+      : t.erreurs.tropDeTentatives;
+  }
   return t.erreurs.inattendue;
 }
 
 /** Connexion par email et mot de passe (Better Auth, servi sur la même origine sous /api/auth). */
-export function LoginForm() {
+export function LoginForm({ onCodeRequis }: { onCodeRequis: () => void }) {
   const router = useRouter();
   const errorId = useId();
   const [error, setError] = useState<string | null>(null);
@@ -31,12 +37,18 @@ export function LoginForm() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: data.get('email'), password: data.get('password') }),
       });
+      const body: unknown = await response.json().catch(() => null);
       if (response.ok) {
+        // Double authentification active : le code est demandé avant d'ouvrir la session.
+        if ((body as { twoFactorRedirect?: boolean } | null)?.twoFactorRedirect) {
+          onCodeRequis();
+          return;
+        }
         router.replace('/');
         router.refresh();
         return;
       }
-      setError(messageFor(response.status));
+      setError(messageFor(response.status, body));
     } catch {
       setError(t.erreurs.reseau);
     } finally {

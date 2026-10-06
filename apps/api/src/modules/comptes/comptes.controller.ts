@@ -50,6 +50,25 @@ export class ComptesController {
     );
   }
 
+  @Post(':personneId/double-authentification/reinitialisation')
+  @HttpCode(204)
+  @RequirePermission('roles:attribuer')
+  @ApiContract({
+    summary: 'Réinitialiser la double authentification d’un compte',
+    response: z.null(),
+  })
+  async reinitialiserDoubleAuthentification(
+    @Param('personneId', ParseUUIDPipe) personneId: string,
+    @Req() request: ScolalyRequest,
+  ) {
+    await this.comptes.reinitialiserDoubleAuthentification(
+      RequestContext.tx(),
+      RequestContext.access(),
+      personneId,
+      request.ip,
+    );
+  }
+
   @Post(':personneId/reactivation')
   @HttpCode(204)
   @RequirePermission('comptes:desactiver')

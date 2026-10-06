@@ -77,3 +77,13 @@ describe('Tables livrées', () => {
     },
   );
 });
+
+describe('RG-01-10 liste de mots de passe compromis', () => {
+  it('est chargée depuis les données embarquées, en minuscules, 12 caractères au moins', async () => {
+    const { motsDePasseCompromis } = await import('./mots-de-passe-compromis.js');
+    const liste = motsDePasseCompromis();
+    expect(liste.size).toBeGreaterThan(30_000);
+    expect([...liste].every((m) => m.length >= 12 && m === m.toLowerCase())).toBe(true);
+    expect(liste.has('123456789012')).toBe(true);
+  });
+});
