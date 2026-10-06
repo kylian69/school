@@ -37,6 +37,7 @@ export function AppShell({
       <NavLinks
         consoleAccessible={consoleAccessible}
         modules={contexte?.modules ?? []}
+        permissions={contexte?.permissions ?? []}
         {...(onNavigate ? { onNavigate } : {})}
       />
       <div className="grow" />

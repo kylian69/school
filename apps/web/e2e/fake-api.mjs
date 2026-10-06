@@ -68,6 +68,34 @@ const ESSENTIEL = [
 ];
 const clients = new Map();
 
+// Rôles de l'école (E-01-07) : deux rôles par défaut et un rôle personnalisé.
+const roles = [
+  {
+    id: '01a10000-0000-7000-8000-0000000000a1',
+    code: 'administrateur',
+    libelle: 'Administrateur d’organisation',
+    description: 'Paramétrage, utilisateurs, rôles',
+    perimetreParDefaut: 'organisation',
+    doubleAuthentificationRequise: true,
+    permissions: ['organisation:lire', 'roles:gerer', 'roles:attribuer'],
+    personnes: 2,
+    parDefaut: true,
+    verrouille: true,
+  },
+  {
+    id: '01a10000-0000-7000-8000-0000000000a2',
+    code: 'scolarite',
+    libelle: 'Scolarité',
+    description: 'Gestion courante',
+    perimetreParDefaut: 'etablissement',
+    doubleAuthentificationRequise: true,
+    permissions: ['organisation:lire', 'personnes:lire'],
+    personnes: 6,
+    parDefaut: true,
+    verrouille: false,
+  },
+];
+
 function creerFiche(entree) {
   const id = randomUUID();
   const fiche = {
@@ -256,11 +284,51 @@ createServer(async (request, response) => {
     return json(200, {
       ecoleActive: active,
       ecoles,
-      permissions: active ? ['organisation:lire'] : [],
+      permissions: active ? ['organisation:lire', 'roles:gerer', 'roles:attribuer'] : [],
       modules: active ? ['socle'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
     });
+  }
+
+  if (path === '/api/roles' || path.startsWith('/api/roles/')) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const id = path.split('/')[3];
+    if (!id && request.method === 'GET') return json(200, { roles });
+    if (!id && request.method === 'POST') {
+      const body = await readBody(request);
+      const source = roles.find((r) => r.id === body.sourceId);
+      const role = {
+        id: randomUUID(),
+        code: null,
+        libelle: body.libelle,
+        description: body.description ?? null,
+        perimetreParDefaut: source?.perimetreParDefaut ?? 'organisation',
+        doubleAuthentificationRequise:
+          (source?.doubleAuthentificationRequise ?? false) ||
+          body.doubleAuthentificationRequise === true,
+        permissions: body.permissions ?? source?.permissions ?? [],
+        personnes: 0,
+        parDefaut: false,
+        verrouille: false,
+      };
+      roles.push(role);
+      return json(201, role);
+    }
+    const role = roles.find((r) => r.id === id);
+    if (!role) return json(404, { message: 'Rôle introuvable dans cette école.' });
+    if (request.method === 'PATCH') {
+      const body = await readBody(request);
+      if (role.verrouille)
+        return json(409, { message: 'Le rôle d’administrateur garde toutes ses permissions.' });
+      Object.assign(role, body);
+      return json(200, role);
+    }
+    if (request.method === 'DELETE') {
+      roles.splice(roles.indexOf(role), 1);
+      response.writeHead(204);
+      return response.end();
+    }
   }
 
   if (path.startsWith('/api/plateforme')) {
