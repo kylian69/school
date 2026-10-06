@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { MaFormation } from '@scolaly/contracts';
 import { inscription, promotion, type Transaction } from '@scolaly/db';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
-import { MaquettesService } from '../referentiel/maquettes.service.js';
+import { MaquettesService } from '../referentiel/index.js';
 
 /** E-02-07 · Ma formation : maquettes suivies par l'apprenant connecté (US-02-10). */
 @Injectable()
