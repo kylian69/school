@@ -211,6 +211,20 @@
       "when": 1791306217504,
       "tag": "0029_referentiel_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791324311861,
+      "tag": "0030_scolarite",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791324313407,
+      "tag": "0031_scolarite_permissions",
+      "breakpoints": true
     }
   ]
 }

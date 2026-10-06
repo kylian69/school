@@ -53,7 +53,7 @@ import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
 import { BibliothequeService } from './bibliotheque.service.js';
 import { copierVersion } from './copie-version.js';
-import { resumeVersion } from './formations.service.js';
+import { resumeVersion, versionsUtilisees } from './formations.service.js';
 import { droitsSurFormation, exigerModification } from './perimetre.js';
 
 const MESSAGES_VERSION: Record<RefusVersion, string> = {
@@ -620,7 +620,10 @@ export class MaquettesService {
     const ctx = await this.contexte(tx, access, versionId);
     exigerModification(ctx);
     const verdict = verifierModificationVersion(
-      { statut: ctx.version.statut, utilisee: resumeVersion(ctx.version).utilisee },
+      {
+        statut: ctx.version.statut,
+        utilisee: (await versionsUtilisees(tx, [ctx.version.id])).has(ctx.version.id),
+      },
       natures,
     );
     if (!verdict.ok) throw new ConflictException(MESSAGES_VERSION[verdict.refus]);
@@ -677,6 +680,10 @@ export class MaquettesService {
       .where(eq(maquetteVersion.formationId, ctx.formation.id))
       .orderBy(asc(maquetteVersion.numero));
 
+    const utilisees = await versionsUtilisees(
+      tx,
+      versions.map((v) => v.id),
+    );
     const arbre = {
       blocs: blocs.map((b) => ({ id: b.id, code: b.code, intitule: b.intitule, ordre: b.ordre })),
       ues: ues.map((u) => ({
@@ -709,8 +716,8 @@ export class MaquettesService {
         intitule: ctx.formation.intitule,
         dureeAnnees: ctx.formation.dureeAnnees,
       },
-      version: resumeVersion(version),
-      versions: versions.map(resumeVersion),
+      version: resumeVersion(utilisees)(version),
+      versions: versions.map(resumeVersion(utilisees)),
       modifiable: ctx.modifiable && version.statut !== 'archivee',
       publiable: ctx.publiable && version.statut === 'brouillon',
       regles: reglesDe(version),

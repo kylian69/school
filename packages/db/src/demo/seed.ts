@@ -9,6 +9,12 @@ import {
   contrat,
   formation,
   formationEtablissement,
+  groupeEleves,
+  groupeMembre,
+  groupePromotion,
+  inscription,
+  inscriptionStatut,
+  promotion,
   maquetteBloc,
   maquetteModule,
   maquetteUe,
@@ -60,6 +66,15 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
       await tx.insert(maquetteModule).values(referentiel.modules);
       await tx.insert(competence).values(referentiel.competences);
       await tx.insert(competenceModule).values(referentiel.competenceModules);
+    }
+    const scolarite = dataset.scolarite;
+    if (scolarite.promotions.length > 0) {
+      await tx.insert(promotion).values(scolarite.promotions);
+      await tx.insert(groupeEleves).values(scolarite.groupes);
+      await tx.insert(groupePromotion).values(scolarite.groupePromotions);
+      await tx.insert(inscription).values(scolarite.inscriptions);
+      await tx.insert(inscriptionStatut).values(scolarite.statuts);
+      await tx.insert(groupeMembre).values(scolarite.membres);
     }
   });
   return true;

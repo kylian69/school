@@ -20,6 +20,7 @@ import {
   formationEtablissement,
   maquetteVersion,
   newId,
+  promotion,
   type Transaction,
 } from '@scolaly/db';
 import { REGLES_VALIDATION_PAR_DEFAUT, versionDeReference } from '@scolaly/domain';
@@ -44,14 +45,29 @@ const invalide = (champ: string, message: string) =>
     details: [`${champ} : ${message}`],
   });
 
-/** Version résumée ; « utilisée » s'appuiera sur les promotions (I3.2). */
-export const resumeVersion = (v: LigneVersion): VersionResume => ({
-  id: v.id,
-  numero: v.numero,
-  statut: v.statut,
-  publieeLe: v.publieeLe?.toISOString() ?? null,
-  utilisee: false,
-});
+/** Version résumée ; « utilisée » : suivie par au moins une promotion (RG-02-05). */
+export const resumeVersion =
+  (utilisees: ReadonlySet<string>) =>
+  (v: LigneVersion): VersionResume => ({
+    id: v.id,
+    numero: v.numero,
+    statut: v.statut,
+    publieeLe: v.publieeLe?.toISOString() ?? null,
+    utilisee: utilisees.has(v.id),
+  });
+
+/** Versions de maquette suivies par au moins une promotion. */
+export async function versionsUtilisees(
+  tx: Transaction,
+  ids: readonly string[],
+): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const lignes = await tx
+    .selectDistinct({ id: promotion.versionId })
+    .from(promotion)
+    .where(and(inArray(promotion.versionId, [...ids]), isNull(promotion.deletedAt)));
+  return new Set(lignes.map((l) => l.id));
+}
 
 /** Catalogue des formations (E-02-01 ; US-02-01, US-02-04, RG-02-01). */
 @Injectable()
@@ -253,6 +269,10 @@ export class FormationsService {
       .from(maquetteVersion)
       .where(inArray(maquetteVersion.formationId, ids))
       .orderBy(asc(maquetteVersion.numero));
+    const utilisees = await versionsUtilisees(
+      tx,
+      versions.map((v) => v.id),
+    );
     const gestion = access.permissions.has('referentiel:gerer')
       ? await formationsCouvertes(tx, access, ['referentiel:gerer'])
       : new Set<string>();
@@ -271,7 +291,7 @@ export class FormationsService {
       etablissementIds: etablissements
         .filter((e) => e.formationId === f.id)
         .map((e) => e.etablissementId),
-      versions: versions.filter((v) => v.formationId === f.id).map(resumeVersion),
+      versions: versions.filter((v) => v.formationId === f.id).map(resumeVersion(utilisees)),
       modifiable: couvre(gestion, f.id),
       publiable: couvre(publication, f.id),
     }));

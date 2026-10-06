@@ -1,6 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Permission } from '@scolaly/contracts';
-import { formationEtablissement, type Transaction } from '@scolaly/db';
+import { formationEtablissement, promotion, type Transaction } from '@scolaly/db';
 import { inArray } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 
@@ -24,6 +24,15 @@ export async function formationsCouvertes(
       .from(formationEtablissement)
       .where(inArray(formationEtablissement.etablissementId, etablissements));
     for (const { formationId } of dispensees) ids.add(formationId);
+  }
+  // Un périmètre « promotion » donne la lecture de la formation suivie, jamais sa gestion.
+  const promotions = perimetres.filter((p) => p.type === 'promotion').flatMap((p) => p.id ?? []);
+  if (promotions.length > 0 && permissions.includes('referentiel:lire')) {
+    const suivies = await tx
+      .select({ formationId: promotion.formationId })
+      .from(promotion)
+      .where(inArray(promotion.id, promotions));
+    for (const { formationId } of suivies) ids.add(formationId);
   }
   return ids;
 }

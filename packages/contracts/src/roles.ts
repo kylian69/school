@@ -47,6 +47,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'referentiel:gerer',
       'referentiel:publier',
       'referentiel:parametrer',
+      'promotions:lire',
+      'promotions:gerer',
+      'promotions:changer-version',
     ],
   },
   {
@@ -63,6 +66,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'personnes:exporter',
       'audit:lire',
       'referentiel:lire',
+      'promotions:lire',
     ],
   },
   {
@@ -81,6 +85,8 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'referentiel:lire',
       'referentiel:gerer',
       'referentiel:publier',
+      'promotions:lire',
+      'promotions:gerer',
     ],
   },
   {
@@ -101,6 +107,8 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'corbeille:restaurer',
       'emargement:animer',
       'referentiel:lire',
+      'promotions:lire',
+      'promotions:gerer',
     ],
   },
   {
