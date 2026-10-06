@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Lu uniquement par dependency-cruiser pour résoudre l'alias « @/ » de apps/web.",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["apps/web/src/*"] },
+    "allowJs": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["apps/web/src"]
+}

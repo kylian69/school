@@ -61,6 +61,7 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | `pnpm format` / `pnpm format:check` | Formatage Prettier |
 | `pnpm check` | Tout ce que vérifie la CI avant une PR |
 | `pnpm --filter @scolaly/api test` | Tests d'un seul paquet |
+| `pnpm --filter @scolaly/web e2e` | Tests de bout en bout et d'accessibilité (Playwright, axe ; après `pnpm build`, Chromium installé par `pnpm --filter @scolaly/web exec playwright install chromium`) |
 | `pnpm deps:check` | Règles de dépendance entre modules (dependency-cruiser) |
 | `docker build -f infra/docker/node-app.Dockerfile --build-arg APP=api .` | Image de l'API (`APP=worker` pour le worker ; `infra/docker/web.Dockerfile` pour l'interface) |
 

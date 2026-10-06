@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+@import '@scolaly/ui/theme.css';
+
+/* Les composants du système de design sont aussi analysés par Tailwind. */
+@source '../../../../packages/ui/src';

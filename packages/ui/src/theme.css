@@ -1,0 +1,103 @@
+/*
+ * Système de design Scolaly : jetons des maquettes (docs/maquettes, thèmes .light et .dark).
+ * À importer après Tailwind : @import "tailwindcss"; @import "@scolaly/ui/theme.css";
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root,
+.light {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface2: #f0f1f5;
+  --line: #e3e5ec;
+  --fg: #0e1022;
+  --muted: #545870;
+  --subtle: #686c82;
+  --accent: #4f46e5;
+  --accent-soft: #eceeff;
+  --accent-fg: #ffffff;
+  --ok: #0b7a4b;
+  --ok-soft: #e2f5eb;
+  --warn: #9a5800;
+  --warn-soft: #fff1d9;
+  --bad: #bf2338;
+  --bad-soft: #fde7ea;
+  --teal: #0b6b66;
+  --teal-soft: #ddf3f1;
+  --grid: rgba(14, 16, 34, 0.045);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0b0c10;
+  --surface: #13151c;
+  --surface2: #1b1e28;
+  --line: #272b38;
+  --fg: #f2f3f8;
+  --muted: #a6aabf;
+  --subtle: #8e93aa;
+  --accent: #8e8cff;
+  --accent-soft: #1f2052;
+  --accent-fg: #0b0c10;
+  --ok: #4ade95;
+  --ok-soft: #0f2a1f;
+  --warn: #f5b454;
+  --warn-soft: #2e2312;
+  --bad: #ff7d8c;
+  --bad-soft: #331820;
+  --teal: #5fd3c9;
+  --teal-soft: #0f2928;
+  --grid: rgba(255, 255, 255, 0.035);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-control: 10px;
+  --radius-card: 18px;
+}
+
+/* Fin quadrillage de fond, signature visuelle des maquettes. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Chiffres de largeur fixe : notes, montants, horaires. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
