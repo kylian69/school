@@ -111,15 +111,13 @@ describe('RG-01-23 effacement définitif de la corbeille', () => {
       { id: cite, organisationId: ecole, libelle: 'Cité', deletedAt: ilYA(31) },
     ]);
     const fiche = newId();
-    await owner.db
-      .insert(personne)
-      .values({
-        id: fiche,
-        organisationId: ecole,
-        nom: 'Roux',
-        prenom: 'Noa',
-        email: 'noa.purge@exemple.test',
-      });
+    await owner.db.insert(personne).values({
+      id: fiche,
+      organisationId: ecole,
+      nom: 'Roux',
+      prenom: 'Noa',
+      email: 'noa.purge@exemple.test',
+    });
     await owner.db.insert(attribution).values({
       organisationId: ecole,
       personneId: fiche,
