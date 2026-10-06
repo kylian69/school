@@ -71,6 +71,20 @@
       "when": 1791196328941,
       "tag": "0009_organisation_colonnes_ecole",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791201314500,
+      "tag": "0010_droits",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791201339690,
+      "tag": "0011_initialisation_roles",
+      "breakpoints": true
     }
   ]
 }

@@ -4,3 +4,4 @@ export * from './socle/health.js';
 export * from './jobs.js';
 export * from './modules.js';
 export * from './plateforme.js';
+export * from './roles.js';

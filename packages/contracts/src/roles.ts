@@ -1,0 +1,173 @@
+import type { Permission, Scope } from './permissions.js';
+
+/**
+ * Les 13 rôles d'école livrés par défaut (module 00, section 4 ; RG-01-15) : non supprimables,
+ * duplicables, et leurs permissions modifiables par l'administrateur, sauf mention contraire.
+ * Les permissions viennent de la matrice du module 01 ; les autres modules ajouteront les leurs.
+ * Les rôles de la plateforme (super-administrateur, support) et la direction de groupe ne sont
+ * pas des rôles d'école.
+ */
+export interface RoleParDefaut {
+  code: string;
+  libelle: string;
+  description: string;
+  perimetre: Scope;
+  /** RG-00-13 : administration, direction, scolarité et finance. */
+  doubleAuthentificationRequise: boolean;
+  permissions: readonly Permission[];
+  phase: 'MVP' | 'V2' | 'V3';
+}
+
+export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
+  {
+    code: 'administrateur',
+    libelle: 'Administrateur d’organisation',
+    description: 'Paramétrage, utilisateurs, rôles, imports, personnalisation',
+    perimetre: 'organisation',
+    doubleAuthentificationRequise: true,
+    phase: 'MVP',
+    permissions: [
+      'organisation:lire',
+      'organisation:modifier',
+      'calendrier:lire',
+      'calendrier:gerer',
+      'personnes:lire',
+      'apprenants:inviter',
+      'personnel:inviter',
+      'personnes:importer',
+      'personnes:exporter',
+      'comptes:desactiver',
+      'roles:attribuer',
+      'roles:gerer',
+      'audit:lire',
+      'apparence:gerer',
+      'corbeille:restaurer',
+    ],
+  },
+  {
+    code: 'direction',
+    libelle: 'Direction',
+    description: 'Lecture globale, tableaux de bord, validations',
+    perimetre: 'organisation',
+    doubleAuthentificationRequise: true,
+    phase: 'MVP',
+    permissions: [
+      'organisation:lire',
+      'calendrier:lire',
+      'personnes:lire',
+      'personnes:exporter',
+      'audit:lire',
+    ],
+  },
+  {
+    code: 'responsable-pedagogique',
+    libelle: 'Responsable pédagogique',
+    description: 'Maquettes, emplois du temps, évaluations, suivi des apprenants',
+    perimetre: 'formation',
+    doubleAuthentificationRequise: false,
+    phase: 'MVP',
+    permissions: ['calendrier:lire', 'personnes:lire', 'personnel:inviter', 'personnes:exporter'],
+  },
+  {
+    code: 'scolarite',
+    libelle: 'Scolarité',
+    description: 'Inscriptions, absences et justificatifs, bulletins, attestations',
+    perimetre: 'etablissement',
+    doubleAuthentificationRequise: true,
+    phase: 'MVP',
+    permissions: [
+      'calendrier:lire',
+      'personnes:lire',
+      'apprenants:inviter',
+      'personnes:importer',
+      'personnes:exporter',
+      'personnes:voir-en-tant-que',
+      'comptes:desactiver',
+      'corbeille:restaurer',
+    ],
+  },
+  {
+    code: 'intervenant',
+    libelle: 'Intervenant',
+    description: 'Appel, cahier de texte, saisie des notes de ses séances et groupes',
+    perimetre: 'soi',
+    doubleAuthentificationRequise: false,
+    phase: 'MVP',
+    permissions: [],
+  },
+  {
+    code: 'apprenant',
+    libelle: 'Apprenant',
+    description: 'Emploi du temps, émargement, notes, absences, documents',
+    perimetre: 'soi',
+    doubleAuthentificationRequise: false,
+    phase: 'MVP',
+    permissions: [],
+  },
+  {
+    code: 'tuteur',
+    libelle: 'Tuteur entreprise',
+    description: 'Assiduité, cahier de texte et livret de ses alternants',
+    perimetre: 'soi',
+    doubleAuthentificationRequise: false,
+    phase: 'MVP',
+    permissions: [],
+  },
+  {
+    code: 'charge-relations-entreprises',
+    libelle: 'Chargé de relations entreprises',
+    description: 'CRM, candidatures, contrats, OPCO',
+    perimetre: 'etablissement',
+    doubleAuthentificationRequise: false,
+    phase: 'V2',
+    permissions: [],
+  },
+  {
+    code: 'comptable',
+    libelle: 'Comptable / financier',
+    description: 'Facturation, encaissements, exports comptables',
+    perimetre: 'organisation',
+    doubleAuthentificationRequise: true,
+    phase: 'V2',
+    permissions: [],
+  },
+  {
+    code: 'referent-handicap',
+    libelle: 'Référent handicap',
+    description: 'Aménagements, suivi confidentiel',
+    perimetre: 'organisation',
+    doubleAuthentificationRequise: true,
+    phase: 'V3',
+    permissions: [],
+  },
+  {
+    code: 'auditeur',
+    libelle: 'Auditeur (lecture seule)',
+    description: 'Consultation des preuves Qualiopi lors d’un audit, pour une durée limitée',
+    perimetre: 'organisation',
+    doubleAuthentificationRequise: false,
+    phase: 'V2',
+    permissions: [],
+  },
+  {
+    code: 'candidat',
+    libelle: 'Candidat',
+    description: 'Candidature, réservation de créneaux, pré-inscription',
+    perimetre: 'soi',
+    doubleAuthentificationRequise: false,
+    phase: 'V2',
+    permissions: [],
+  },
+  {
+    code: 'recruteur',
+    libelle: 'Recruteur d’entreprise',
+    description: 'Dépôt d’offres d’alternance, consultation des profils proposés',
+    perimetre: 'soi',
+    doubleAuthentificationRequise: false,
+    phase: 'V2',
+    permissions: [],
+  },
+];
+
+/** RG-01-12 : seul un administrateur attribue ce rôle, et il en reste toujours un actif. */
+export const ROLE_ADMINISTRATEUR = 'administrateur';
