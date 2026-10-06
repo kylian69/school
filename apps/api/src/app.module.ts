@@ -16,6 +16,7 @@ import { ContractValidationInterceptor } from './contracts/contract-validation.i
 import { HealthController } from './health/health.controller.js';
 import { AuditModule } from './modules/audit/index.js';
 import { ComptesModule } from './modules/comptes/index.js';
+import { CorbeilleModule } from './modules/corbeille/index.js';
 import { PersonnesModule } from './modules/personnes/index.js';
 import { RolesModule } from './modules/roles/index.js';
 import { StructureModule } from './modules/structure/index.js';
@@ -65,6 +66,7 @@ export class AppModule {
         AccessModule.forRoot(options.accessResolver),
         AuditModule,
         ComptesModule,
+        CorbeilleModule,
         PersonnesModule,
         RolesModule,
         StructureModule,

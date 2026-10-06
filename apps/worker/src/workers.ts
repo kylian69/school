@@ -1,5 +1,6 @@
 import { EmailJob, QUEUES } from '@scolaly/contracts';
-import { creerPartitionsAudit, type Database } from '@scolaly/db';
+import { creerPartitionsAudit, purgerCorbeille, type Database } from '@scolaly/db';
+import { DELAI_CORBEILLE_JOURS } from '@scolaly/domain';
 import type { Queue } from 'bullmq';
 import { Worker, type ConnectionOptions } from 'bullmq';
 import type { Logger } from 'pino';
@@ -9,6 +10,7 @@ import { relancerInvitations } from './relances.js';
 export const MAINTENANCE_JOBS = {
   partitionsAudit: 'partitions-audit',
   relancesInvitations: 'relances-invitations',
+  purgeCorbeille: 'purge-corbeille',
 } as const;
 
 /** Tâches planifiées (architecture section 6). Idempotent : à appeler à chaque démarrage. */
@@ -27,6 +29,12 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
       name: MAINTENANCE_JOBS.relancesInvitations,
       opts: { removeOnComplete: 30, removeOnFail: 100 },
     },
+  );
+  // Chaque jour à 3 h (Paris) : effacement des éléments restés 30 jours dans la corbeille (RG-01-23).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.purgeCorbeille,
+    { pattern: '0 3 * * *', tz: 'Europe/Paris' },
+    { name: MAINTENANCE_JOBS.purgeCorbeille, opts: { removeOnComplete: 30, removeOnFail: 100 } },
   );
 }
 
@@ -48,6 +56,12 @@ export function startWorkers(options: {
       if (job.name === MAINTENANCE_JOBS.partitionsAudit) await creerPartitionsAudit(db, 3);
       else if (job.name === MAINTENANCE_JOBS.relancesInvitations) {
         await relancerInvitations(db, (email) => mailer.send(email), options.publicUrl);
+      } else if (job.name === MAINTENANCE_JOBS.purgeCorbeille) {
+        const bilan = await purgerCorbeille(
+          db,
+          new Date(Date.now() - DELAI_CORBEILLE_JOURS * 86_400_000),
+        );
+        logger.info({ bilan }, 'Corbeille purgée');
       } else throw new Error(`Tâche de maintenance inconnue : ${job.name}`);
     },
     common,

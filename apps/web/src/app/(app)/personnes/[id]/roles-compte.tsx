@@ -6,7 +6,7 @@ import type {
   PersonneDetail,
   RoleDetail,
 } from '@scolaly/contracts';
-import { Badge, Button, Card, Label } from '@scolaly/ui';
+import { Badge, Button, Card, Dialog, DialogContent, Label } from '@scolaly/ui';
 import { useRouter } from 'next/navigation';
 import { useId, useState, type SyntheticEvent } from 'react';
 import { Champ, MessageErreur, SANS_ERREUR, type Erreurs } from '@/components/formulaire';
@@ -35,6 +35,19 @@ export function RolesCompte({
   const roleId = useId();
   const perimetreId = useId();
   const [erreurs, setErreurs] = useState<Erreurs>(SANS_ERREUR);
+  const [suppression, setSuppression] = useState(false);
+  const nomComplet = `${personne.prenom} ${personne.nomUsage ?? personne.nom}`;
+
+  async function supprimer() {
+    const resultat = await envoyer(`/api/personnes/${personne.id}`, 'DELETE', undefined, t.erreur);
+    if (!resultat.ok) {
+      setErreurs({ message: resultat.erreur, details: resultat.details });
+      setSuppression(false);
+      return;
+    }
+    router.push('/personnes');
+    router.refresh();
+  }
   const [message, setMessage] = useState<string | null>(null);
 
   async function action(url: string, succes: string, corps?: unknown) {
@@ -207,8 +220,39 @@ export function RolesCompte({
               {t.compte.reinitialiser}
             </Button>
           ) : null}
+          {droits.inviter &&
+          (personne.compteEtat === 'cree' || personne.compteEtat === 'invite') ? (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSuppression(true);
+              }}
+            >
+              {t.compte.supprimer}
+            </Button>
+          ) : null}
         </div>
       </Card>
+      <Dialog open={suppression} onOpenChange={setSuppression}>
+        <DialogContent title={t.compte.supprimer}>
+          <div className="flex flex-col gap-4 p-5">
+            <p className="text-sm">{t.compte.confirmerSuppression(nomComplet)}</p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSuppression(false);
+                }}
+              >
+                {t.fiche.annuler}
+              </Button>
+              <Button variant="danger" onClick={() => void supprimer()}>
+                {t.compte.supprimer}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <MessageErreur erreurs={erreurs} champs={['debut', 'fin']} />
       <p role="status" className="text-sm text-ok empty:hidden">
         {message}

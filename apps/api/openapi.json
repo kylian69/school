@@ -508,6 +508,60 @@
         }
       }
     },
+    "/api/corbeille": {
+      "get": {
+        "operationId": "CorbeilleController.lister",
+        "summary": "Éléments supprimés depuis moins de 30 jours (ses suppressions hors périmètre école)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "corbeille:restaurer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Corbeille"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/corbeille/{type}/{id}/restauration": {
+      "post": {
+        "operationId": "CorbeilleController.restaurer",
+        "summary": "Restaurer un élément et ce qui a été supprimé avec lui (RG-01-23)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "corbeille:restaurer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/demarrage": {
       "get": {
         "operationId": "DemarrageController.lire",
@@ -1162,6 +1216,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PersonneDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "PersonnesController.supprimer",
+        "summary": "Supprimer une fiche jamais activée (corbeille de 30 jours, RG-01-23)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
                 }
               }
             }
@@ -2687,6 +2769,21 @@
         ],
         "additionalProperties": false
       },
+      "Corbeille": {
+        "type": "object",
+        "properties": {
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ElementCorbeille"
+            }
+          }
+        },
+        "required": [
+          "elements"
+        ],
+        "additionalProperties": false
+      },
       "Demarrage": {
         "type": "object",
         "properties": {
@@ -2784,6 +2881,57 @@
           "avancement",
           "termine",
           "constats"
+        ],
+        "additionalProperties": false
+      },
+      "ElementCorbeille": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "personne",
+              "annee",
+              "fermeture",
+              "role"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "supprimeLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "supprimePar": {
+            "nullable": true,
+            "type": "string"
+          },
+          "effacementLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "lies": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "libelle",
+          "supprimeLe",
+          "supprimePar",
+          "effacementLe",
+          "lies"
         ],
         "additionalProperties": false
       },

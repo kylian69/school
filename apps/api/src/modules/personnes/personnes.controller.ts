@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  HttpCode,
   Get,
   Param,
   ParseUUIDPipe,
@@ -16,6 +18,7 @@ import {
   PersonneDetail,
   RecherchePersonnes,
 } from '@scolaly/contracts';
+import { z } from 'zod';
 import { RequirePermission } from '../../access/access.decorators.js';
 import type { ScolalyRequest } from '../../access/access.guard.js';
 import { RequestContext } from '../../access/request-context.js';
@@ -75,5 +78,16 @@ export class PersonnesController {
       changement,
       request.ip,
     );
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @RequirePermission(['apprenants:inviter', 'personnel:inviter'])
+  @ApiContract({
+    summary: 'Supprimer une fiche jamais activée (corbeille de 30 jours, RG-01-23)',
+    response: z.null(),
+  })
+  async supprimer(@Param('id', ParseUUIDPipe) id: string, @Req() request: ScolalyRequest) {
+    await this.personnes.supprimer(RequestContext.tx(), RequestContext.access(), id, request.ip);
   }
 }

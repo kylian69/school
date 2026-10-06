@@ -9,6 +9,7 @@ export {
   type AttributionDuCompte,
   type EcoleDuCompte,
 } from './droits.js';
+export { purgerCorbeille, type BilanPurge } from './corbeille.js';
 export { isUuid, newId } from './ids.js';
 export { lireJeton, nouveauJeton } from './jeton-invitation.js';
 export {

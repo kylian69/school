@@ -119,8 +119,13 @@ describe('Tâches planifiées et workers', () => {
     const schedulers = await maintenance.getJobSchedulers();
     expect(schedulers.map((s) => [s.key, s.pattern]).sort()).toEqual([
       [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],
+      [MAINTENANCE_JOBS.purgeCorbeille, '0 3 * * *'],
       [MAINTENANCE_JOBS.relancesInvitations, '0 9 * * *'],
     ]);
+  });
+
+  it('RG-01-23 la tâche de purge de la corbeille s’exécute', async () => {
+    await terminer(maintenance, MAINTENANCE_JOBS.purgeCorbeille, {});
   });
 
   it('la tâche de maintenance crée les partitions à venir', async () => {
