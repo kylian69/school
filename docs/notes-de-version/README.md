@@ -7,3 +7,4 @@ Une note par version publiée, en français, numérotée `AAAA.MM.N` (plan de d�
 | [2026.10.1](2026.10.1.md) | 10/2026 | Fondations (phase P0) |
 | [2026.10.2](2026.10.2.md) | 10/2026 | Socle et plateforme (phase P1) |
 | [2026.10.3](2026.10.3.md) | en préparation | Preuve de l'émargement (phase P2) |
+| [2026.10.4](2026.10.4.md) | en préparation | Référentiel et alternance (phase P3) |
