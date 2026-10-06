@@ -58,6 +58,13 @@ export class ObjectStorage {
     );
   }
 
+  /** Contenu d'un objet, pour le servir par l'API (logo de l'école). */
+  async get(key: string): Promise<Buffer> {
+    const reponse = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    if (!reponse.Body) throw new Error(`Objet vide : ${key}`);
+    return Buffer.from(await reponse.Body.transformToByteArray());
+  }
+
   /** Lien de téléchargement signé, valable quelques minutes, qui force le téléchargement. */
   signedDownloadUrl(
     key: string,

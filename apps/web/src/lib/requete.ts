@@ -1,7 +1,8 @@
 import { fr } from '@/i18n/fr';
 
 export type Resultat =
-  { ok: true; body: unknown } | { ok: false; erreur: string; details: readonly string[] };
+  | { ok: true; body: unknown }
+  | { ok: false; erreur: string; details: readonly string[]; body?: unknown };
 
 /**
  * Écriture depuis le navigateur vers l'API (même origine) : renvoie le corps, ou le message
@@ -10,14 +11,20 @@ export type Resultat =
 export async function envoyer(
   url: string,
   method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  /** Corps JSON, ou fichier envoyé tel quel avec son type. */
   corps?: unknown,
   erreurParDefaut: string = fr.connexion.erreurs.inattendue,
 ): Promise<Resultat> {
   try {
     const response = await fetch(url, {
       method,
-      headers: corps === undefined ? {} : { 'content-type': 'application/json' },
-      ...(corps === undefined ? {} : { body: JSON.stringify(corps) }),
+      headers:
+        corps === undefined
+          ? {}
+          : { 'content-type': corps instanceof Blob ? corps.type : 'application/json' },
+      ...(corps === undefined
+        ? {}
+        : { body: corps instanceof Blob ? corps : JSON.stringify(corps) }),
     });
     const body = (await response.json().catch(() => null)) as {
       message?: unknown;
@@ -26,6 +33,7 @@ export async function envoyer(
     if (response.ok) return { ok: true, body };
     return {
       ok: false,
+      body,
       erreur: typeof body?.message === 'string' ? body.message : erreurParDefaut,
       details: Array.isArray(body?.details)
         ? body.details.filter((d): d is string => typeof d === 'string')

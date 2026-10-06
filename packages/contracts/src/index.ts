@@ -10,3 +10,4 @@ export * from './emails.js';
 export * from './gestion-roles.js';
 export * from './structure.js';
 export * from './calendrier.js';
+export * from './apparence.js';

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ApparenceEcole } from './apparence.js';
 import { PERMISSION_CODES } from './permissions.js';
 
 /** Contexte de la session : école active, écoles du compte, droits et modules (RG-01-29). */
@@ -18,6 +19,8 @@ export const ContexteSession = z
     doubleAuthentificationExigee: z.boolean(),
     /** Double authentification activée sur le compte. */
     doubleAuthentificationActive: z.boolean(),
+    /** Apparence de l’école active (US-01-14) ; null sans école active. */
+    apparence: ApparenceEcole.nullable(),
   })
   .meta({ id: 'ContexteSession' });
 export type ContexteSession = z.infer<typeof ContexteSession>;

@@ -20,7 +20,7 @@ test.describe('E-01-02 Organisation et établissements', () => {
     );
     await expect(
       page.getByRole('navigation', { name: 'Sections des paramètres' }).getByRole('link'),
-    ).toHaveText(['Organisation', 'Calendrier', 'Rôles et permissions']);
+    ).toHaveText(['Organisation', 'Calendrier', 'Apparence', 'Rôles et permissions']);
     await expectNoAccessibilityViolations(page);
   });
 

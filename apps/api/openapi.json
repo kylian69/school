@@ -210,6 +210,112 @@
         }
       }
     },
+    "/api/apparence": {
+      "get": {
+        "operationId": "ApparenceController.lire",
+        "summary": "Apparence de l’école (nom affiché, couleur, logo)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apparence:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApparenceEcole"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "ApparenceController.modifier",
+        "summary": "Modifier le nom affiché ou la couleur principale (contraste contrôlé)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apparence:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationApparence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApparenceEcole"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apparence/logo": {
+      "put": {
+        "operationId": "ApparenceController.deposerLogo",
+        "summary": "Déposer le logo : corps image/png ou image/svg+xml, 2 Mo au plus",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apparence:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApparenceEcole"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "ApparenceController.retirerLogo",
+        "summary": "Retirer le logo",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apparence:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApparenceEcole"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/comptes/{personneId}/desactivation": {
       "post": {
         "operationId": "ComptesController.desactiver",
@@ -316,6 +422,27 @@
                   "enum": [
                     null
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ecoles/{id}/logo": {
+      "get": {
+        "operationId": "ApparenceController.logo",
+        "summary": "Logo public d’une école (PNG ou SVG)",
+        "x-scolaly-access": {
+          "kind": "public"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -1054,6 +1181,38 @@
         ],
         "additionalProperties": false
       },
+      "ApparenceEcole": {
+        "type": "object",
+        "properties": {
+          "nomAffichage": {
+            "type": "string"
+          },
+          "couleur": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "palette": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Palette"
+              }
+            ]
+          },
+          "logoUrl": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "nomAffichage",
+          "couleur",
+          "palette",
+          "logoUrl"
+        ],
+        "additionalProperties": false
+      },
       "CalendrierAnnee": {
         "type": "object",
         "properties": {
@@ -1573,6 +1732,14 @@
           },
           "doubleAuthentificationActive": {
             "type": "boolean"
+          },
+          "apparence": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApparenceEcole"
+              }
+            ]
           }
         },
         "required": [
@@ -1581,7 +1748,8 @@
           "permissions",
           "modules",
           "doubleAuthentificationExigee",
-          "doubleAuthentificationActive"
+          "doubleAuthentificationActive",
+          "apparence"
         ],
         "additionalProperties": false
       },
@@ -1973,6 +2141,21 @@
               ],
               "additionalProperties": false
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationApparence": {
+        "type": "object",
+        "properties": {
+          "nomAffichage": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "couleur": {
+            "nullable": true,
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -2470,6 +2653,52 @@
           "nomAffichage",
           "siren",
           "etablissements"
+        ],
+        "additionalProperties": false
+      },
+      "Palette": {
+        "type": "object",
+        "properties": {
+          "clair": {
+            "type": "object",
+            "properties": {
+              "accent": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "accentSoft": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            },
+            "required": [
+              "accent",
+              "accentSoft"
+            ],
+            "additionalProperties": false
+          },
+          "sombre": {
+            "type": "object",
+            "properties": {
+              "accent": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "accentSoft": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            },
+            "required": [
+              "accent",
+              "accentSoft"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "clair",
+          "sombre"
         ],
         "additionalProperties": false
       },

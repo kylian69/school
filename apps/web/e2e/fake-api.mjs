@@ -135,6 +135,32 @@ const detailEcole = () => ({
 const uaiInvalide = (uai) => uai && !/^\d{7}[A-Z]$/.test(uai.replace(/\s+/g, '').toUpperCase());
 const nul = (v) => (v === '' ? null : v);
 
+// Apparence (E-01-09) : partagée par les tests ; seul le test de l'apparence la modifie.
+const apparence = { nomAffichage: 'EGL', couleur: null, logo: null };
+const canal = (c) => {
+  const s = parseInt(c, 16) / 255;
+  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+};
+const contrasteSurBlanc = (hex) => {
+  const l =
+    0.2126 * canal(hex.slice(1, 3)) +
+    0.7152 * canal(hex.slice(3, 5)) +
+    0.0722 * canal(hex.slice(5, 7));
+  return 1.05 / (l + 0.05);
+};
+const detailApparence = () => ({
+  nomAffichage: apparence.nomAffichage,
+  couleur: apparence.couleur,
+  // Palette simplifiée : le calcul réel est couvert par les tests du domaine.
+  palette: apparence.couleur
+    ? {
+        clair: { accent: apparence.couleur, accentSoft: '#EEF4F4' },
+        sombre: { accent: '#5FD3C9', accentSoft: '#0F2928' },
+      }
+    : null,
+  logoUrl: apparence.logo ? `/api/ecoles/${ecole.id}/logo?v=${apparence.logo.version}` : null,
+});
+
 const annees = [];
 const resumeAnnee = ({ fermetures: _fermetures, ...annee }) => annee;
 // Jours fériés simplifiés : le calcul réel est couvert par les tests du domaine et de l'API.
@@ -335,6 +361,7 @@ createServer(async (request, response) => {
       ecoles,
       permissions: active
         ? [
+            'apparence:gerer',
             'calendrier:gerer',
             'calendrier:lire',
             'organisation:lire',
@@ -346,7 +373,43 @@ createServer(async (request, response) => {
       modules: active ? ['socle'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
+      apparence: active ? detailApparence() : null,
     });
+  }
+
+  if (path === `/api/ecoles/${ecole.id}/logo`) {
+    if (!apparence.logo) return json(404, { message: 'Cette école n’a pas de logo.' });
+    response.writeHead(200, { 'content-type': apparence.logo.type });
+    return response.end(apparence.logo.contenu);
+  }
+  if (path === '/api/apparence/logo') {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (request.method === 'DELETE') apparence.logo = null;
+    else {
+      const morceaux = [];
+      for await (const morceau of request) morceaux.push(morceau);
+      apparence.logo = {
+        type: request.headers['content-type'],
+        contenu: Buffer.concat(morceaux),
+        version: randomUUID().slice(0, 8),
+      };
+    }
+    return json(200, detailApparence());
+  }
+  if (path === '/api/apparence') {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (request.method === 'PATCH') {
+      const body = await readBody(request);
+      if (body.couleur && contrasteSurBlanc(body.couleur) < 4.5)
+        return json(400, {
+          message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+          details: ['couleur : Cette couleur n’est pas assez contrastée sur fond blanc.'],
+          proposition: '#806600',
+        });
+      if (body.nomAffichage !== undefined) apparence.nomAffichage = body.nomAffichage;
+      if (body.couleur !== undefined) apparence.couleur = body.couleur?.toUpperCase() ?? null;
+    }
+    return json(200, detailApparence());
   }
 
   // Calendrier (E-01-03) : chaque année est créée par le test qui l'utilise.

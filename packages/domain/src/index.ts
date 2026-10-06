@@ -9,3 +9,5 @@ export * from './structure/etablissements.js';
 export * from './structure/identifiants.js';
 export * from './calendrier/annee.js';
 export * from './calendrier/duplication.js';
+export * from './apparence/couleurs.js';
+export * from './apparence/logo.js';
