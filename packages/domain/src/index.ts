@@ -19,3 +19,4 @@ export * from './imports/csv.js';
 export * from './imports/personnes.js';
 export * from './imports/validation.js';
 export * from './corbeille/corbeille.js';
+export * from './photos/photo.js';

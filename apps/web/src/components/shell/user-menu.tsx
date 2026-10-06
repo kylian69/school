@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, cn } from '@scolaly/ui';
-import { LogOut, Monitor, Moon, ShieldCheck, Sun } from 'lucide-react';
+import { LogOut, Monitor, Moon, Camera, ShieldCheck, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -73,6 +73,12 @@ export function UserMenu({ user, ecole }: { user: SessionUser; ecole?: string | 
           </button>
         ))}
       </div>
+      <Button asChild variant="ghost">
+        <Link href="/mon-compte">
+          <Camera className="size-4" aria-hidden="true" />
+          {fr.photo.lien}
+        </Link>
+      </Button>
       <Button asChild variant="ghost">
         <Link href="/securite">
           <ShieldCheck className="size-4" aria-hidden="true" />

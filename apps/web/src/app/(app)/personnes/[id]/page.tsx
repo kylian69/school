@@ -14,6 +14,7 @@ import { fr } from '@/i18n/fr';
 import { apiGet } from '@/lib/api';
 import { getContexte } from '@/lib/contexte';
 import { FicheIdentite } from './fiche-identite';
+import { PhotoFiche } from './photo-fiche';
 import { RolesCompte } from './roles-compte';
 
 const t = fr.personnes;
@@ -58,12 +59,23 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
         / {nom}
       </nav>
       <div className="flex flex-wrap items-center gap-4">
-        <span
-          aria-hidden="true"
-          className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-lg font-bold text-accent"
-        >
-          {initiales.toUpperCase()}
-        </span>
+        {personne.photo?.url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={personne.photo.url}
+            alt={fr.photo.portrait(nom)}
+            width={56}
+            height={56}
+            className="size-14 rounded-full object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-lg font-bold text-accent"
+          >
+            {initiales.toUpperCase()}
+          </span>
+        )}
         <div className="flex min-w-0 flex-col gap-1.5">
           <h1 className="text-[26px] font-[650] tracking-[-0.035em] md:text-[30px]">{nom}</h1>
           <div className="flex flex-wrap gap-2">
@@ -83,6 +95,9 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
           </p>
         </div>
       </div>
+      {permissions.includes('apprenants:inviter') || permissions.includes('personnel:inviter') ? (
+        <PhotoFiche personne={personne} nom={nom} />
+      ) : null}
       <FicheIdentite
         personne={personne}
         modifiable={

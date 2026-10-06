@@ -9,6 +9,30 @@ const jour = z.iso.date('Date attendue au format AAAA-MM-JJ.');
 const texte = (max: number) => z.string().trim().min(1, 'Ce champ est obligatoire.').max(max);
 const facultatif = (max: number) => z.string().trim().max(max).nullable();
 
+/** Formats de photo acceptés, par type de contenu envoyé (RG-01-26). */
+export const TYPES_PHOTO = { 'image/jpeg': 'jpeg', 'image/png': 'png' } as const;
+
+export const PhotoPersonne = z
+  .object({
+    /** Photo validée, recadrée en 512 × 512 ; null s'il n'y en a pas. */
+    url: z.string().nullable(),
+    /** Photo déposée par la personne, en attente de validation par la scolarité. */
+    attenteUrl: z.string().nullable(),
+    statut: z.enum(['en_attente', 'validee', 'refusee']).nullable(),
+    /** Motif du dernier refus, expliqué à la personne. */
+    motif: z.string().nullable(),
+  })
+  .meta({ id: 'PhotoPersonne' });
+export type PhotoPersonne = z.infer<typeof PhotoPersonne>;
+
+export const DecisionPhoto = z
+  .object({
+    decision: z.enum(['valider', 'refuser']),
+    motif: z.string().trim().max(300).optional(),
+  })
+  .meta({ id: 'DecisionPhoto' });
+export type DecisionPhoto = z.infer<typeof DecisionPhoto>;
+
 export const PersonneResume = z
   .object({
     id: z.uuid(),
@@ -62,6 +86,8 @@ export const PersonneDetail = z
     /** RG-01-06 : attribué à la création, jamais réattribué. */
     matricule: z.string().nullable(),
     ine: z.string().nullable(),
+    /** Photo (RG-01-26, RG-01-27) : null pour qui ne peut pas la voir. */
+    photo: PhotoPersonne.nullable(),
     compteEtat: z.enum(ETATS_COMPTE),
     roles: z.array(z.string()),
     /** Version de la fiche : une modification concurrente est refusée (module 01, section 7). */

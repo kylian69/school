@@ -131,3 +131,36 @@ export function emailExportPret(options: {
     }),
   };
 }
+
+/** Photo refusée par la scolarité (RG-01-26), avec le motif, pour en déposer une autre. */
+export function emailPhotoRefusee(options: {
+  to: string;
+  prenom: string;
+  ecole: string;
+  motif: string;
+  lien: string;
+}): EmailJob {
+  const presentation = `${options.ecole} n’a pas retenu la photo que vous avez déposée. Motif : ${options.motif}`;
+  const suite = 'Vous pouvez en déposer une autre depuis votre compte.';
+  const mention = 'Votre photo n’est visible que par l’équipe pédagogique et administrative.';
+  return {
+    to: options.to,
+    subject: `Votre photo n’a pas été retenue · ${options.ecole}`,
+    text: [
+      `Bonjour ${options.prenom},`,
+      '',
+      presentation,
+      '',
+      suite,
+      options.lien,
+      '',
+      mention,
+    ].join('\n'),
+    html: miseEnPageEmail({
+      marque: null,
+      paragraphes: [`Bonjour ${options.prenom},`, presentation, suite],
+      bouton: { libelle: 'Déposer une autre photo', lien: options.lien },
+      mention,
+    }),
+  };
+}

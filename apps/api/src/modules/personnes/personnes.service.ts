@@ -40,6 +40,7 @@ import {
 import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
 import { attribuerMatricule } from '../../shared/matricule.js';
+import { PhotosService } from './photos.service.js';
 
 type LignePersonne = typeof personne.$inferSelect;
 
@@ -105,6 +106,8 @@ const motif = (texte: string) => `%${texte.replace(/[\\%_]/g, (c) => `\\${c}`)}%
 /** Fiches des personnes de l'école (E-01-04, E-01-05 ; RG-01-06, RG-01-07). */
 @Injectable()
 export class PersonnesService {
+  constructor(private readonly photos: PhotosService) {}
+
   /**
    * Périmètre de lecture (RG-00-10) : toute l'école avec un périmètre « organisation ». Les
    * périmètres établissement, formation et promotion s'appuieront sur les inscriptions (I3.2) ;
@@ -458,7 +461,7 @@ export class PersonnesService {
     }
   }
 
-  private async charger(tx: Transaction, access: Access, id: string): Promise<LignePersonne> {
+  async charger(tx: Transaction, access: Access, id: string): Promise<LignePersonne> {
     const [ligne] = await tx
       .select()
       .from(personne)
@@ -502,6 +505,7 @@ export class PersonnesService {
       naissanceVisible,
       matricule: p.matricule,
       ine: p.ine,
+      photo: this.photos.photoDe(p, naissanceVisible),
       compteEtat: p.compteEtat,
       roles: (await this.rolesDe(tx, [p.id])).get(p.id) ?? [],
       version: p.updatedAt.toISOString(),
