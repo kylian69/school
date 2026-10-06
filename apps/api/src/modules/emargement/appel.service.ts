@@ -4,8 +4,8 @@ import {
   type AppelEnDirect,
   type OuvertureAppel,
 } from '@scolaly/contracts';
-import { personne, presence, seance, seanceAttendu, type Transaction } from '@scolaly/db';
-import { and, eq, isNull } from 'drizzle-orm';
+import { presence, seanceEtAttendus, type Transaction } from '@scolaly/db';
+import { eq } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
@@ -25,50 +25,20 @@ export class AppelService {
 
   /** L'intervenant de la séance, ou une personne habilitée sur toute l'école. */
   private async charger(tx: Transaction, access: Access, seanceId: string) {
-    const [ligne] = await tx
-      .select()
-      .from(seance)
-      .where(and(eq(seance.id, seanceId), isNull(seance.deletedAt)));
-    if (!ligne) throw new NotFoundException('Séance introuvable dans cette école.');
+    const trouve = await seanceEtAttendus(tx, seanceId);
+    if (!trouve) throw new NotFoundException('Séance introuvable dans cette école.');
     const ecole = (access.perimetres.get('emargement:animer') ?? []).some(
       (p) => p.type === 'organisation',
     );
-    if (!ecole && ligne.intervenantId !== access.personneId) {
+    if (!ecole && trouve.seance.intervenantId !== access.personneId) {
       throw new ForbiddenException("Seul l'intervenant de cette séance peut en ouvrir l'appel.");
     }
-    return ligne;
-  }
-
-  private attendus(tx: Transaction, seanceId: string) {
-    return tx
-      .select({
-        personneId: personne.id,
-        userId: personne.userId,
-        nom: personne.nom,
-        prenom: personne.prenom,
-      })
-      .from(seanceAttendu)
-      .innerJoin(
-        personne,
-        and(
-          eq(personne.organisationId, seanceAttendu.organisationId),
-          eq(personne.id, seanceAttendu.personneId),
-        ),
-      )
-      .where(
-        and(
-          eq(seanceAttendu.seanceId, seanceId),
-          isNull(seanceAttendu.deletedAt),
-          isNull(personne.deletedAt),
-        ),
-      )
-      .orderBy(personne.nom, personne.prenom);
+    return trouve;
   }
 
   /** Précharge la séance dans Valkey (RG-00-17) et donne à l'écran de quoi calculer le QR. */
   async ouvrir(tx: Transaction, access: Access, seanceId: string): Promise<OuvertureAppel> {
-    const ligne = await this.charger(tx, access, seanceId);
-    const attendus = await this.attendus(tx, seanceId);
+    const { seance: ligne, attendus } = await this.charger(tx, access, seanceId);
     await this.cache.precharger(
       seanceId,
       {
@@ -95,9 +65,8 @@ export class AppelService {
 
   /** Présents du cache (en direct) et de la base (déjà écrits par le worker). */
   async enDirect(tx: Transaction, access: Access, seanceId: string): Promise<AppelEnDirect> {
-    await this.charger(tx, access, seanceId);
-    const [attendus, enCache, enBase] = await Promise.all([
-      this.attendus(tx, seanceId),
+    const { attendus } = await this.charger(tx, access, seanceId);
+    const [enCache, enBase] = await Promise.all([
       this.cache.presences(seanceId),
       tx.select().from(presence).where(eq(presence.seanceId, seanceId)),
     ]);

@@ -10,6 +10,7 @@ import {
   withOrganisation,
 } from '@scolaly/db';
 import { Queue, QueueEvents, type Job } from 'bullmq';
+import { Redis } from 'ioredis';
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createLogger } from '../src/logger.js';
@@ -84,7 +85,9 @@ describe('Tâches planifiées et workers', () => {
   const maintenance = queue(QUEUES.maintenance);
   const emails = queue(QUEUES.emails);
   const mailer = createSmtpMailer(inject('smtpUrl'), 'Scolaly <ne-pas-repondre@exemple.test>');
+  const valkey = new Redis(connection.url);
   const workers = startWorkers({
+    valkey,
     connection,
     db: app.db,
     mailer,
@@ -100,6 +103,7 @@ describe('Tâches planifiées et workers', () => {
       await q.close();
     }
     mailer.close();
+    valkey.disconnect();
   });
 
   const terminer = async (q: Queue, name: string, data: unknown) => {
@@ -119,6 +123,7 @@ describe('Tâches planifiées et workers', () => {
     const schedulers = await maintenance.getJobSchedulers();
     expect(schedulers.map((s) => [s.key, s.pattern]).sort()).toEqual([
       [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],
+      [MAINTENANCE_JOBS.prechargementEmargement, undefined],
       [MAINTENANCE_JOBS.purgeCorbeille, '0 3 * * *'],
       [MAINTENANCE_JOBS.relancesInvitations, '0 9 * * *'],
     ]);

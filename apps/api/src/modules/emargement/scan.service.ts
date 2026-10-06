@@ -14,6 +14,7 @@ import {
   type CodeEmargement,
   type ResultatScan,
   type ScanEmargement,
+  type SeanceEnCache,
 } from '@scolaly/contracts';
 import { evaluerScan } from '@scolaly/domain';
 import { fromNodeHeaders } from 'better-auth/node';
@@ -22,7 +23,7 @@ import type { Auth } from '../../auth/auth.js';
 import type { Env } from '../../config/env.js';
 import { AUTH, ENV, VALKEY } from '../../shared/tokens.js';
 import type { Redis } from 'ioredis';
-import { CacheEmargement, cleDeSeance, type SeanceEnCache } from './cache-emargement.js';
+import { CacheEmargement, cleDeSeance } from './cache-emargement.js';
 
 const pasOuvert = () =>
   new ConflictException(

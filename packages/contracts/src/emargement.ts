@@ -85,3 +85,64 @@ export interface PresenceEnCache {
   mode: 'qr' | 'code' | 'manuel';
   rejoue: boolean;
 }
+
+/** Séance telle que préchargée dans Valkey (RG-00-17). */
+export interface SeanceEnCache {
+  organisationId: string;
+  libelle: string;
+  debut: number;
+  fin: number;
+  distanciel: boolean;
+}
+
+/** Les clés du cache vivent jusqu'à une heure après la fin de la séance (secondes Unix). */
+export const expirationCache = (finMs: number) => Math.ceil(finMs / 1000) + 3600;
+
+/**
+ * Commandes Valkey du préchargement, partagées par l'API (ouverture de l'appel) et le worker
+ * (préchargement planifié) : la séance et ses attendus (compte → fiche), remplacés en bloc.
+ */
+export function commandesPrechargement(
+  seanceId: string,
+  seance: SeanceEnCache,
+  attendus: ReadonlyMap<string, string>,
+): string[][] {
+  const fin = String(expirationCache(seance.fin));
+  const commandes = [
+    ['del', CLES_EMARGEMENT.attendus(seanceId)],
+    [
+      'hset',
+      CLES_EMARGEMENT.seance(seanceId),
+      'organisationId',
+      seance.organisationId,
+      'libelle',
+      seance.libelle,
+      'debut',
+      String(seance.debut),
+      'fin',
+      String(seance.fin),
+      'distanciel',
+      seance.distanciel ? '1' : '0',
+    ],
+    ['expireat', CLES_EMARGEMENT.seance(seanceId), fin],
+  ];
+  if (attendus.size > 0) {
+    commandes.push(
+      ['hset', CLES_EMARGEMENT.attendus(seanceId), ...[...attendus].flat()],
+      ['expireat', CLES_EMARGEMENT.attendus(seanceId), fin],
+    );
+  }
+  return commandes;
+}
+
+/** Relit une séance préchargée ; rien si elle ne l'est pas. */
+export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCache | null {
+  if (!valeurs.organisationId) return null;
+  return {
+    organisationId: valeurs.organisationId,
+    libelle: valeurs.libelle ?? '',
+    debut: Number(valeurs.debut),
+    fin: Number(valeurs.fin),
+    distanciel: valeurs.distanciel === '1',
+  };
+}

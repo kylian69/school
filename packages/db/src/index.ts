@@ -10,6 +10,12 @@ export {
   type EcoleDuCompte,
 } from './droits.js';
 export { purgerCorbeille, type BilanPurge } from './corbeille.js';
+export {
+  enregistrerPresences,
+  seanceEtAttendus,
+  seancesAPrecharger,
+  type PresenceAEcrire,
+} from './emargement.js';
 export { isUuid, newId } from './ids.js';
 export { lireJeton, nouveauJeton } from './jeton-invitation.js';
 export {
