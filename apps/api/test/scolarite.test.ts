@@ -6,7 +6,12 @@ import {
   type Formation,
   type Groupe,
   type Inscription,
+  type AffectationsPromotion,
   type ListePromotions,
+  type ListeSalles,
+  type MaFormation,
+  type MesEnseignements,
+  type Salle,
   type Maquette,
   type ResultatRepartition,
 } from '@scolaly/contracts';
@@ -40,9 +45,11 @@ let formationId: string;
 let version: string;
 const apprenants: string[] = [];
 
+let derniereFiche = '';
+
 async function compte(
   code: string,
-  perimetre: { type: 'organisation' | 'etablissement'; id: string | null },
+  perimetre: { type: 'organisation' | 'etablissement' | 'soi'; id: string | null },
 ) {
   const email = `${code}.${newId()}@scolarite.test`;
   const { userId } = await createPasswordAccount(app.get<Auth>(AUTH), {
@@ -61,6 +68,7 @@ async function compte(
       compteEtat: 'actif',
     })
     .returning();
+  derniereFiche = fiche?.id ?? '';
   const [leRole] = await owner.db
     .select()
     .from(role)
@@ -453,5 +461,161 @@ describe('E-02-04 et E-02-05 promotions, inscriptions et groupes', () => {
     );
     expect(reponse.statusCode, reponse.body).toBe(201);
     expect(reponse.json<{ perimetreLibelle: string }>().perimetreLibelle).toBe(promo.libelle);
+  });
+});
+
+describe('E-02-06 salles, affectations, E-02-07 et E-02-08', () => {
+  let promo: DetailPromotion;
+
+  beforeAll(async () => {
+    const liste = (
+      await requete('GET', `/api/promotions?etablissementId=${campusA}`, admin)
+    ).json<ListePromotions>();
+    const id = liste.promotions.find((p) => p.anneeFormation === 1)?.id ?? '';
+    promo = (await requete('GET', `/api/promotions/${id}`, admin)).json<DetailPromotion>();
+  });
+
+  it('US-02-09 RG-02-19 décrit les salles ; la scolarité ne gère que son établissement', async () => {
+    const creee = await requete('POST', '/api/salles', admin, {
+      etablissementId: campusA,
+      nom: 'Amphi Lumière',
+      capacite: 120,
+      type: 'amphitheatre',
+      equipements: ['vidéoprojecteur', 'sonorisation'],
+      pmr: true,
+    });
+    expect(creee.statusCode, creee.body).toBe(201);
+    await requete('POST', '/api/salles', admin, {
+      etablissementId: campusA,
+      nom: 'Salle 12',
+      capacite: 20,
+    });
+    const filtre = (
+      await requete(
+        'GET',
+        `/api/salles?etablissementId=${campusA}&capaciteMin=50&equipement=sono`,
+        admin,
+      )
+    ).json<ListeSalles>();
+    expect(filtre.salles.map((x) => x.nom)).toEqual(['Amphi Lumière']);
+    const scolariteB = await compte('scolarite', { type: 'etablissement', id: campusB });
+    const refus = await requete('POST', '/api/salles', scolariteB, {
+      etablissementId: campusA,
+      nom: 'Intrus',
+    });
+    expect(refus.statusCode).toBe(403);
+    const liste = (await requete('GET', '/api/salles', scolariteB)).json<ListeSalles>();
+    expect(liste.salles.find((x) => x.nom === 'Amphi Lumière')?.modifiable).toBe(false);
+    const fermee = await requete('PATCH', `/api/salles/${creee.json<Salle>().id}`, admin, {
+      statut: 'fermee',
+    });
+    expect(fermee.json<Salle>().statut).toBe('fermee');
+  });
+
+  it('RG-02-19 un nouvel établissement a sa salle virtuelle', async () => {
+    const reponse = await requete('POST', '/api/etablissements', admin, {
+      nom: 'Campus C',
+      adresseLigne1: '3 rue des Lilas',
+      codePostal: '99300',
+      ville: 'Lumerac',
+    });
+    expect(reponse.statusCode, reponse.body).toBe(201);
+    const campusC = reponse.json<{ id: string }>().id;
+    const salles = (
+      await requete('GET', `/api/salles?etablissementId=${campusC}`, admin)
+    ).json<ListeSalles>();
+    expect(salles.salles.map((x) => x.type)).toEqual(['virtuelle']);
+  });
+
+  it('US-02-08 RG-02-18 affecte un intervenant et signale les écarts avec la maquette', async () => {
+    const intervenant = await compte('intervenant', { type: 'soi', id: null });
+    const intervenantId = derniereFiche;
+    const avant = (
+      await requete('GET', `/api/promotions/${promo.id}/affectations`, admin)
+    ).json<AffectationsPromotion>();
+    const m1 = avant.modules.find((m) => m.code === 'M1');
+    expect(m1?.ecarts).toEqual([]);
+    await requete('PATCH', `/api/maquettes/${promo.version.id}/modules/${m1?.id ?? ''}`, admin, {
+      heures: { cm: 20, td: 10 },
+    });
+    const creee = await requete('POST', `/api/promotions/${promo.id}/affectations`, admin, {
+      personneId: intervenantId,
+      moduleId: m1?.id,
+      groupeIds: [promo.groupes[0]?.id],
+      heures: { cm: 20, td: 12 },
+    });
+    expect(creee.statusCode, creee.body).toBe(201);
+    const apres = (
+      await requete('GET', `/api/promotions/${promo.id}/affectations`, admin)
+    ).json<AffectationsPromotion>();
+    expect(apres.modules.find((m) => m.code === 'M1')?.ecarts).toEqual([
+      { type: 'td', prevu: 10, affecte: 12, ecart: 2 },
+    ]);
+    const horsMaquette = await requete('POST', `/api/promotions/${promo.id}/affectations`, admin, {
+      personneId: intervenantId,
+      moduleId: newId(),
+    });
+    expect(horsMaquette.statusCode).toBe(400);
+    const scolarite = await compte('scolarite', { type: 'organisation', id: null });
+    const refus = await requete('POST', `/api/promotions/${promo.id}/affectations`, scolarite, {
+      personneId: intervenantId,
+      moduleId: m1?.id,
+    });
+    expect(refus.statusCode).toBe(403);
+
+    // E-02-08 : l'intervenant voit ses modules, groupes et heures, sans permission particulière.
+    const mes = await requete('GET', '/api/moi/enseignements', intervenant);
+    expect(mes.statusCode, mes.body).toBe(200);
+    expect(mes.json<MesEnseignements>()).toMatchObject({
+      totalHeures: 32,
+      enseignements: [
+        { module: { code: 'M1' }, groupes: [promo.groupes[0]?.libelle], realisees: null },
+      ],
+    });
+  });
+
+  it('US-02-10 l’apprenant consulte sa maquette et ses règles', async () => {
+    const email = `apprenant.${newId()}@scolarite.test`;
+    const { userId } = await createPasswordAccount(app.get<Auth>(AUTH), {
+      email,
+      name: 'Fictif',
+      password: PASSWORD,
+    });
+    const [fiche] = await owner.db
+      .insert(personne)
+      .values({
+        organisationId: ecole,
+        nom: 'Apprenant',
+        prenom: 'Lou',
+        email,
+        userId,
+        compteEtat: 'actif',
+      })
+      .returning();
+    const [leRole] = await owner.db
+      .select()
+      .from(role)
+      .where(and(eq(role.organisationId, ecole), eq(role.code, 'apprenant')));
+    await owner.db.insert(attribution).values({
+      organisationId: ecole,
+      personneId: fiche?.id ?? '',
+      roleId: leRole?.id ?? '',
+      perimetreType: 'soi',
+      debut: '2026-01-01',
+    });
+    await requete('POST', `/api/promotions/${promo.id}/inscriptions`, admin, {
+      personneId: fiche?.id,
+      statut: 'initial',
+      option: 'anglais',
+    });
+    const cookie = await signInCookie(app, email, PASSWORD, { doubleAuthentification: false });
+    const reponse = await requete('GET', '/api/moi/formation', cookie);
+    expect(reponse.statusCode, reponse.body).toBe(200);
+    const [suivie] = reponse.json<MaFormation>().formations;
+    expect(suivie).toMatchObject({ option: 'anglais', promotion: { id: promo.id } });
+    expect(suivie?.maquette.ues.map((u) => u.code)).toEqual(['UE1', 'UE2']);
+    expect(suivie?.maquette).toMatchObject({ modifiable: false, publiable: false });
+    expect(suivie?.maquette.versions).toHaveLength(1);
+    expect((await requete('GET', `/api/promotions/${promo.id}`, cookie)).statusCode).toBe(403);
   });
 });

@@ -225,3 +225,158 @@ export const ResultatRepartition = z
   })
   .meta({ id: 'ResultatRepartition' });
 export type ResultatRepartition = z.infer<typeof ResultatRepartition>;
+
+// ——— Salles (RG-02-19, E-02-06) ———
+
+export const TYPES_SALLE = [
+  'cours',
+  'tp_informatique',
+  'laboratoire',
+  'amphitheatre',
+  'virtuelle',
+] as const;
+
+export const Salle = z
+  .object({
+    id: z.uuid(),
+    etablissementId: z.uuid(),
+    nom: z.string(),
+    capacite: z.int().nullable(),
+    type: z.enum(TYPES_SALLE),
+    equipements: z.array(z.string()),
+    pmr: z.boolean(),
+    statut: z.enum(['disponible', 'fermee']),
+    modifiable: z.boolean(),
+  })
+  .meta({ id: 'Salle' });
+export type Salle = z.infer<typeof Salle>;
+
+export const ListeSalles = z
+  .object({ salles: z.array(Salle), creation: z.boolean() })
+  .meta({ id: 'ListeSalles' });
+export type ListeSalles = z.infer<typeof ListeSalles>;
+
+export const RechercheSalles = z.object({
+  etablissementId: z.uuid().optional(),
+  capaciteMin: z.coerce.number().int().min(1).optional(),
+  equipement: z.string().trim().max(60).optional(),
+  type: z.enum(TYPES_SALLE).optional(),
+});
+export type RechercheSalles = z.infer<typeof RechercheSalles>;
+
+export const SaisieSalle = z
+  .object({
+    etablissementId: z.uuid(),
+    nom: texte(80),
+    capacite: z.int().min(1).max(5000).nullable().default(null),
+    type: z.enum(TYPES_SALLE).default('cours'),
+    equipements: z.array(z.string().trim().min(1).max(60)).max(30).default([]),
+    pmr: z.boolean().default(false),
+    statut: z.enum(['disponible', 'fermee']).default('disponible'),
+  })
+  .meta({ id: 'SaisieSalle' });
+export type SaisieSalle = z.infer<typeof SaisieSalle>;
+
+export const ModificationSalle = z
+  .object({
+    nom: texte(80),
+    capacite: z.int().min(1).max(5000).nullable(),
+    type: z.enum(TYPES_SALLE),
+    equipements: z.array(z.string().trim().min(1).max(60)).max(30),
+    pmr: z.boolean(),
+    statut: z.enum(['disponible', 'fermee']),
+  })
+  .partial()
+  .meta({ id: 'ModificationSalle' });
+export type ModificationSalle = z.infer<typeof ModificationSalle>;
+
+// ——— Affectations des intervenants (RG-02-18) ———
+
+const HeuresAffectees = z.object({
+  cm: z.number(),
+  td: z.number(),
+  tp: z.number(),
+  projet: z.number(),
+  elearning: z.number(),
+});
+const SaisieHeuresAffectees = z.object({
+  cm: z.number().min(0).max(2000).default(0),
+  td: z.number().min(0).max(2000).default(0),
+  tp: z.number().min(0).max(2000).default(0),
+  projet: z.number().min(0).max(2000).default(0),
+  elearning: z.number().min(0).max(2000).default(0),
+});
+
+export const Affectation = z
+  .object({
+    id: z.uuid(),
+    promotionId: z.uuid(),
+    moduleId: z.uuid(),
+    intervenant: z.object({ id: z.uuid(), nom: z.string(), prenom: z.string() }),
+    groupeIds: z.array(z.uuid()),
+    heures: HeuresAffectees,
+  })
+  .meta({ id: 'Affectation' });
+export type Affectation = z.infer<typeof Affectation>;
+
+export const AffectationsPromotion = z
+  .object({
+    affectations: z.array(Affectation),
+    /** Modules de la maquette suivie, avec le volume prévu, le volume affecté et les écarts. */
+    modules: z.array(
+      z.object({
+        id: z.uuid(),
+        code: z.string(),
+        intitule: z.string(),
+        ueCode: z.string(),
+        prevu: HeuresAffectees,
+        affecte: HeuresAffectees,
+        ecarts: z.array(
+          z.object({
+            type: z.enum(['cm', 'td', 'tp', 'projet', 'elearning']),
+            prevu: z.number(),
+            affecte: z.number(),
+            ecart: z.number(),
+          }),
+        ),
+      }),
+    ),
+    modifiable: z.boolean(),
+  })
+  .meta({ id: 'AffectationsPromotion' });
+export type AffectationsPromotion = z.infer<typeof AffectationsPromotion>;
+
+export const SaisieAffectation = z
+  .object({
+    personneId: z.uuid(),
+    moduleId: z.uuid(),
+    groupeIds: z.array(z.uuid()).max(30).default([]),
+    heures: SaisieHeuresAffectees.prefault({}),
+  })
+  .meta({ id: 'SaisieAffectation' });
+export type SaisieAffectation = z.infer<typeof SaisieAffectation>;
+
+export const ModificationAffectation = z
+  .object({ groupeIds: z.array(z.uuid()).max(30), heures: SaisieHeuresAffectees })
+  .partial()
+  .meta({ id: 'ModificationAffectation' });
+export type ModificationAffectation = z.infer<typeof ModificationAffectation>;
+
+/** E-02-08 · Mes enseignements : modules, groupes et heures prévues de l'intervenant. */
+export const MesEnseignements = z
+  .object({
+    enseignements: z.array(
+      z.object({
+        affectationId: z.uuid(),
+        promotion: z.object({ id: z.uuid(), libelle: z.string() }),
+        module: z.object({ code: z.string(), intitule: z.string() }),
+        groupes: z.array(z.string()),
+        heures: HeuresAffectees,
+        /** Heures réalisées : avec l'emploi du temps (module 04). */
+        realisees: HeuresAffectees.nullable(),
+      }),
+    ),
+    totalHeures: z.number(),
+  })
+  .meta({ id: 'MesEnseignements' });
+export type MesEnseignements = z.infer<typeof MesEnseignements>;

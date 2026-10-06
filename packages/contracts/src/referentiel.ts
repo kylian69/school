@@ -626,3 +626,17 @@ export const ResultatImportMaquette = z
   })
   .meta({ id: 'ResultatImportMaquette' });
 export type ResultatImportMaquette = z.infer<typeof ResultatImportMaquette>;
+
+/** E-02-07 · Ma formation : la maquette suivie par l'apprenant dans chacune de ses promotions. */
+export const MaFormation = z
+  .object({
+    formations: z.array(
+      z.object({
+        promotion: z.object({ id: z.uuid(), libelle: z.string(), anneeFormation: z.int() }),
+        option: z.string().nullable(),
+        maquette: Maquette,
+      }),
+    ),
+  })
+  .meta({ id: 'MaFormation' });
+export type MaFormation = z.infer<typeof MaFormation>;

@@ -35,6 +35,9 @@ import {
   inscription,
   inscriptionStatut,
   promotion,
+  affectation,
+  affectationGroupe,
+  salle,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -214,6 +217,20 @@ async function insertGroupe(db: Database, organisationId: string): Promise<strin
   return id;
 }
 
+async function insertAffectation(db: Database, organisationId: string): Promise<string> {
+  const promotionId = await insertPromotion(db, organisationId);
+  const [promo] = await db.select().from(promotion).where(eq(promotion.id, promotionId));
+  const id = newId();
+  await db.insert(affectation).values({
+    id,
+    organisationId,
+    personneId: await insertPersonne(db, organisationId),
+    moduleId: await insertModule(db, organisationId, promo?.versionId ?? ''),
+    promotionId,
+  });
+  return id;
+}
+
 export const sampleRows: Record<string, ScopedTableSample> = {
   formation: {
     insert: async (db, organisationId) => {
@@ -331,6 +348,27 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         groupeId: await insertGroupe(db, organisationId),
         inscriptionId: await insertInscription(db, organisationId),
         debut: '2026-09-01',
+      });
+    },
+  },
+  salle: {
+    insert: async (db, organisationId) => {
+      const etablissementId = newId();
+      await db.insert(etablissement).values({ id: etablissementId, organisationId, nom: 'Campus' });
+      await db.insert(salle).values({ organisationId, etablissementId, nom: 'Salle 101' });
+    },
+  },
+  affectation: {
+    insert: async (db, organisationId) => {
+      await insertAffectation(db, organisationId);
+    },
+  },
+  affectation_groupe: {
+    insert: async (db, organisationId) => {
+      await db.insert(affectationGroupe).values({
+        organisationId,
+        affectationId: await insertAffectation(db, organisationId),
+        groupeId: await insertGroupe(db, organisationId),
       });
     },
   },

@@ -11,7 +11,13 @@ import type {
   NouvelEtablissement,
   OrganisationDetail,
 } from '@scolaly/contracts';
-import { enregistrerAudit, etablissement, organisation, type Transaction } from '@scolaly/db';
+import {
+  enregistrerAudit,
+  etablissement,
+  organisation,
+  type Transaction,
+  salle,
+} from '@scolaly/db';
 import {
   controlerNda,
   controlerSiren,
@@ -190,6 +196,14 @@ export class OrganisationService {
       })
       .returning();
     if (!cree) throw new Error('Création de l’établissement impossible.');
+    // RG-02-19 : une salle virtuelle (à distance) existe par défaut dans chaque établissement.
+    await tx.insert(salle).values({
+      organisationId: access.organisationId,
+      etablissementId: cree.id,
+      nom: 'Salle virtuelle (à distance)',
+      type: 'virtuelle',
+      createdBy: access.userId,
+    });
     await enregistrerAudit(tx, {
       action: 'etablissement.creer',
       objetType: 'etablissement',

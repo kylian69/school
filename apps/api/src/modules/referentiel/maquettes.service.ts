@@ -116,6 +116,22 @@ export class MaquettesService {
     return this.construire(tx, ctx);
   }
 
+  /**
+   * E-02-07 : maquette suivie par un apprenant, en lecture seule. L'appelant vérifie lui-même que
+   * la personne est inscrite à une promotion qui suit cette version.
+   */
+  async lirePourApprenant(tx: Transaction, versionId: string): Promise<Maquette> {
+    const [ligne] = await tx
+      .select({ version: maquetteVersion, formation })
+      .from(maquetteVersion)
+      .innerJoin(formation, eq(formation.id, maquetteVersion.formationId))
+      .where(eq(maquetteVersion.id, versionId));
+    if (!ligne) throw new NotFoundException('Version de maquette introuvable.');
+    const maquette = await this.construire(tx, { ...ligne, modifiable: false, publiable: false });
+    // L'apprenant ne voit que sa version, sans l'historique des autres.
+    return { ...maquette, versions: [maquette.version] };
+  }
+
   // ——— Versions (RG-02-04, RG-02-05) ———
 
   async publier(tx: Transaction, access: Access, versionId: string, adresseIp: string) {

@@ -29,3 +29,4 @@ export * from './referentiel/calcul.js';
 export * from './referentiel/import-maquette.js';
 export * from './scolarite/inscriptions.js';
 export * from './scolarite/groupes.js';
+export * from './scolarite/affectations.js';

@@ -15,6 +15,7 @@ import {
   inscription,
   inscriptionStatut,
   promotion,
+  salle,
   maquetteBloc,
   maquetteModule,
   maquetteUe,
@@ -68,6 +69,7 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
       await tx.insert(competenceModule).values(referentiel.competenceModules);
     }
     const scolarite = dataset.scolarite;
+    if (scolarite.salles.length > 0) await tx.insert(salle).values(scolarite.salles);
     if (scolarite.promotions.length > 0) {
       await tx.insert(promotion).values(scolarite.promotions);
       await tx.insert(groupeEleves).values(scolarite.groupes);
