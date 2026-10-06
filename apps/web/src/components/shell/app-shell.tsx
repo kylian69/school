@@ -32,7 +32,7 @@ export function AppShell({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const sidebar = (onNavigate?: () => void) => (
-    <div className="flex h-full flex-col gap-[18px] px-3.5 py-5">
+    <div className="flex h-full min-h-0 flex-col gap-[18px] overflow-y-auto px-3.5 py-5">
       <Logo className="px-2 pt-1" />
       <IdentiteEcole apparence={contexte?.apparence} nom={contexte?.ecoleActive?.nom} />
       <CommandPalette />
@@ -71,7 +71,7 @@ export function AppShell({
         <DialogContent
           title={fr.coquille.navigation}
           hideTitle
-          className="top-0 left-0 h-dvh w-[288px] max-w-none translate-x-0 rounded-none border-y-0 border-l-0"
+          className="top-0 left-0 h-dvh w-[288px] max-w-none translate-x-0 overflow-y-auto rounded-none border-y-0 border-l-0"
         >
           {sidebar(() => {
             setMenuOpen(false);
