@@ -64,6 +64,8 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | `pnpm deps:check` | Règles de dépendance entre modules (dependency-cruiser) |
 | `docker build -f infra/docker/node-app.Dockerfile --build-arg APP=api .` | Image de l'API (`APP=worker` pour le worker ; `infra/docker/web.Dockerfile` pour l'interface) |
 
+Les tests de `packages/db` demandent un PostgreSQL 17 (base jetable créée par test) : `docker run -d --name scolaly-pg-dev -e POSTGRES_PASSWORD=postgres -p 127.0.0.1:55432:5432 postgres:17`, ou `TEST_ADMIN_DATABASE_URL` vers un autre serveur. Après une modification de `packages/db/src/schema`, générer la migration avec `pnpm --filter @scolaly/db db:generate` ; la CI vérifie la concordance (`db:check`).
+
 Les versions partagées sont figées dans le `catalog` de `pnpm-workspace.yaml`. Les configurations communes (TypeScript, ESLint, Vitest) sont dans `packages/config`.
 
 ## État du dépôt
