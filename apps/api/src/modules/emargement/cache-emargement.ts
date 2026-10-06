@@ -56,9 +56,13 @@ async function surValkey<T>(operation: () => Promise<T>): Promise<T> {
 export class CacheEmargement implements Magasin {
   constructor(private readonly valkey: Redis) {}
 
-  /** Connexion prête : sinon, inutile d'attendre les nouvelles tentatives du client. */
+  /**
+   * Connexion coupée : inutile d'attendre les nouvelles tentatives du client. Une connexion pas
+   * encore ouverte (connexion paresseuse, au démarrage) n'est pas une panne : elle s'ouvre à la
+   * première commande.
+   */
   disponible() {
-    return this.valkey.status === 'ready';
+    return !['reconnecting', 'close', 'end'].includes(this.valkey.status);
   }
 
   async precharger(seanceId: string, seance: SeanceEnCache, attendus: ReadonlyMap<string, string>) {
