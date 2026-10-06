@@ -13,9 +13,10 @@ import { sampleRows } from './registry.js';
  */
 async function listScopedTables(db: Database): Promise<string[]> {
   const result = await db.execute<{ table_name: string }>(sql`
-    select table_name from information_schema.tables
-    where table_schema = 'public' and table_type = 'BASE TABLE'
-    order by table_name`);
+    select c.relname as table_name
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relispartition
+    order by c.relname`);
   const excluded = new Set([...PLATFORM_TABLES, ...SELF_SCOPED_TABLES]);
   return result.rows.map((r) => r.table_name).filter((t) => !excluded.has(t));
 }
@@ -33,10 +34,10 @@ describe('SEC-03 isolation entre organisations, table par table', async () => {
   beforeAll(async () => {
     [orgA, orgB] = (await createOrganisations(2)) as [string, string];
     for (const table of tables) {
-      const factory = sampleRows[table];
-      if (!factory) continue;
-      await factory(owner.db, orgA);
-      await factory(owner.db, orgB);
+      const sample = sampleRows[table];
+      if (!sample) continue;
+      await sample.insert(owner.db, orgA);
+      await sample.insert(owner.db, orgB);
     }
   });
 
@@ -64,7 +65,22 @@ describe('SEC-03 isolation entre organisations, table par table', async () => {
       expect(new Set(seen)).toEqual(new Set([orgA]));
     });
 
-    it("ne modifie aucune ligne d'une autre organisation", async () => {
+    const appendOnly = sampleRows[table]?.appendOnly === true;
+
+    it.runIf(appendOnly)('est en ajout seul : ni modification ni suppression', async () => {
+      await expectPgError(
+        withOrganisation(app.db, orgA, (tx) =>
+          tx.execute(sql`update ${t} set organisation_id = organisation_id`),
+        ),
+        /permission denied/,
+      );
+      await expectPgError(
+        withOrganisation(app.db, orgA, (tx) => tx.execute(sql`delete from ${t}`)),
+        /permission denied/,
+      );
+    });
+
+    it.skipIf(appendOnly)("ne modifie aucune ligne d'une autre organisation", async () => {
       const updated = await withOrganisation(app.db, orgA, (tx) =>
         organisationIds(
           tx,
@@ -74,7 +90,7 @@ describe('SEC-03 isolation entre organisations, table par table', async () => {
       expect(updated).toEqual([]);
     });
 
-    it("ne supprime aucune ligne d'une autre organisation", async () => {
+    it.skipIf(appendOnly)("ne supprime aucune ligne d'une autre organisation", async () => {
       const deleted = await withOrganisation(app.db, orgA, (tx) =>
         organisationIds(
           tx,
@@ -89,10 +105,10 @@ describe('SEC-03 isolation entre organisations, table par table', async () => {
     });
 
     it("n'écrit aucune ligne pour une autre organisation", async () => {
-      const factory = sampleRows[table];
-      if (!factory) return;
+      const sample = sampleRows[table];
+      if (!sample) return;
       await expectPgError(
-        withOrganisation(app.db, orgA, (tx) => factory(tx as unknown as Database, orgB)),
+        withOrganisation(app.db, orgA, (tx) => sample.insert(tx as unknown as Database, orgB)),
         /row-level security/,
       );
     });
@@ -103,8 +119,8 @@ describe('Isolation sur des connexions réutilisées (pool, PgBouncer en mode tr
   it("des transactions entremêlées de deux organisations ne voient jamais l'autre", async () => {
     const [orgA, orgB] = (await createOrganisations(2)) as [string, string];
     const owner = openOwner();
-    await sampleRows.etablissement?.(owner.db, orgA);
-    await sampleRows.etablissement?.(owner.db, orgB);
+    await sampleRows.etablissement?.insert(owner.db, orgA);
+    await sampleRows.etablissement?.insert(owner.db, orgB);
     await owner.close();
 
     const pooled = openApp();

@@ -22,6 +22,13 @@
       "when": 1791144395118,
       "tag": "0002_droits_plateforme",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791144893558,
+      "tag": "0003_journal_audit_et_boite_envoi",
+      "breakpoints": true
     }
   ]
 }
