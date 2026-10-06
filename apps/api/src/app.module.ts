@@ -14,6 +14,7 @@ import type { Auth } from './auth/auth.js';
 import type { Env } from './config/env.js';
 import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
+import { AuditModule } from './modules/audit/index.js';
 import { ComptesModule } from './modules/comptes/index.js';
 import { PersonnesModule } from './modules/personnes/index.js';
 import { RolesModule } from './modules/roles/index.js';
@@ -62,6 +63,7 @@ export class AppModule {
       global: true,
       imports: [
         AccessModule.forRoot(options.accessResolver),
+        AuditModule,
         ComptesModule,
         PersonnesModule,
         RolesModule,

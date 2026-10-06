@@ -178,6 +178,8 @@ const personnes = [
     ville: null,
     dateNaissance: null,
     lieuNaissance: null,
+    matricule: '000000',
+    ine: null,
     compteEtat: 'actif',
     roles: ['Administrateur d’organisation'],
     version: '2026-10-01T00:00:00.000Z',
@@ -422,6 +424,7 @@ createServer(async (request, response) => {
       permissions: active
         ? [
             'apparence:gerer',
+            'audit:lire',
             'apprenants:inviter',
             'comptes:desactiver',
             'personnel:inviter',
@@ -547,6 +550,37 @@ createServer(async (request, response) => {
       return json(200, { etat: 'invite', expireLe: '2030-01-01T00:00:00.000Z' });
     response.writeHead(204);
     return response.end();
+  }
+
+  // Journal d'audit (E-01-08) : deux événements fixes.
+  if (path === '/api/audit') {
+    if (!user) return json(401, { message: 'Session absente' });
+    const action = url.searchParams.get('action') ?? '';
+    const evenements = [
+      {
+        id: '01a10000-0000-7000-8000-0000000000d2',
+        survenuLe: '2026-10-05T10:15:00.000Z',
+        auteur: { id: USERS.camille.id, nom: 'Camille Fictive' },
+        adresseIp: '203.0.113.7',
+        action: 'personne.modifier',
+        objetType: 'personne',
+        objetId: personnes[0].id,
+        avant: { telephone: null },
+        apres: { telephone: '06 00 00 00 01' },
+      },
+      {
+        id: '01a10000-0000-7000-8000-0000000000d1',
+        survenuLe: '2026-10-04T08:00:00.000Z',
+        auteur: { id: USERS.camille.id, nom: 'Camille Fictive' },
+        adresseIp: '203.0.113.7',
+        action: 'role.attribuer',
+        objetType: 'personne',
+        objetId: personnes[0].id,
+        avant: null,
+        apres: { role: 'Scolarité' },
+      },
+    ].filter((e) => e.action.startsWith(action));
+    return json(200, { evenements, suivant: null });
   }
 
   // Actions en masse et export (E-01-04).

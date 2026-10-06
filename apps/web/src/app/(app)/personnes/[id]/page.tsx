@@ -1,10 +1,12 @@
 import {
+  JournalAudit,
   ListeAttributions,
   ListeRoles,
   OrganisationDetail,
   PersonneDetail,
 } from '@scolaly/contracts';
 import { Badge, Card } from '@scolaly/ui';
+import { ListeEvenements } from '@/components/journal/liste-evenements';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -34,11 +36,16 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
       </Card>
     );
   }
-  const [{ data: attributions }, { data: roles }, { data: organisation }] = await Promise.all([
-    apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
-    apiGet('/api/roles', ListeRoles),
-    apiGet('/api/organisation', OrganisationDetail),
-  ]);
+  const [{ data: attributions }, { data: roles }, { data: organisation }, { data: historique }] =
+    await Promise.all([
+      apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
+      apiGet('/api/roles', ListeRoles),
+      apiGet('/api/organisation', OrganisationDetail),
+      // E-01-05 : historique de la fiche, pour qui peut lire le journal d'audit.
+      permissions.includes('audit:lire')
+        ? apiGet(`/api/audit?objet=${id}&parPage=20`, JournalAudit)
+        : Promise.resolve({ data: null }),
+    ]);
   const nom = `${personne.prenom} ${personne.nomUsage ?? personne.nom}`;
   const initiales = `${personne.prenom[0] ?? ''}${(personne.nomUsage ?? personne.nom)[0] ?? ''}`;
 
@@ -94,6 +101,12 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
           desactiver: permissions.includes('comptes:desactiver'),
         }}
       />
+      {historique ? (
+        <Card className="flex max-w-3xl flex-col gap-3">
+          <h2 className="text-lg font-semibold">{fr.journal.historique}</h2>
+          <ListeEvenements evenements={historique.evenements} />
+        </Card>
+      ) : null}
     </>
   );
 }
