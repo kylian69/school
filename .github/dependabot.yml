@@ -10,6 +10,18 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # Types de Node alignés sur la version d'exécution (.nvmrc) : majeure suivie avec Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
+      # TypeScript 7 : attend la prise en charge par typescript-eslint (TypeScript < 6.1 au 06/10/2026).
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # ESLint 10 : eslint-plugin-react (eslint-config-next) n'est pas compatible au 06/10/2026.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: '@eslint/js'
+        update-types: [version-update:semver-major]
     groups:
       dependances-mineures:
         update-types: [minor, patch]
