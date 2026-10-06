@@ -29,6 +29,7 @@ import {
 import { accesSelonEtat, verifierSousDomaine, verifierTransition } from '@scolaly/domain';
 import { modulesParFormule, valueAt } from '@scolaly/referentials';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { InvitationsService } from '../comptes/index.js';
 import { PLATFORM_DATABASE } from './tokens.js';
 
 export interface Auteur {
@@ -55,7 +56,10 @@ const modulesDeLaFormule = (formule: string) =>
 /** Clients de la plateforme (module 19, RG-19-01 à RG-19-04). Toujours avec le rôle plateforme. */
 @Injectable()
 export class ClientsService {
-  constructor(@Inject(PLATFORM_DATABASE) private readonly db: Database) {}
+  constructor(
+    @Inject(PLATFORM_DATABASE) private readonly db: Database,
+    private readonly invitations: InvitationsService,
+  ) {}
 
   async lister(filtre: FiltreClients) {
     const ecoles = sql<number>`(
@@ -111,7 +115,7 @@ export class ClientsService {
     }
     const modules = modulesDeLaFormule(entree.formule);
 
-    const clientId = await this.db.transaction(async (tx) => {
+    const cree = await this.db.transaction(async (tx) => {
       const groupeId = entree.type === 'groupe' ? newId() : null;
       if (groupeId)
         await tx
@@ -177,9 +181,18 @@ export class ClientsService {
         adresseIp: auteur.adresseIp,
         apres: { ...entree, organisations: organisations.map((o) => o.id) },
       });
-      return id;
+      return { id, organisations: organisations.map((o) => o.id) };
     });
-    return this.fiche(clientId);
+    // RG-19-01 : l'administrateur reçoit son invitation dans chaque école du client (fiche, rôle
+    // d'administrateur et lien d'activation), par le service des comptes de l'école.
+    for (const organisationId of cree.organisations) {
+      await this.invitations.inviterAdministrateurInitial(
+        organisationId,
+        entree.administrateur,
+        auteur.userId,
+      );
+    }
+    return this.fiche(cree.id);
   }
 
   async fiche(id: string, tx: Database | Transaction = this.db): Promise<ClientFiche> {

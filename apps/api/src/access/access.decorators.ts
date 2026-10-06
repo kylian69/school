@@ -10,7 +10,7 @@ export const ACCESS_RULE = 'scolaly:access-rule';
 export type AccessRule =
   | { kind: 'public' }
   | { kind: 'authenticated' }
-  | { kind: 'permission'; permission: Permission; scope: Scope }
+  | { kind: 'permission'; permissions: readonly Permission[]; scope: Scope }
   | { kind: 'plateforme'; roles: readonly RolePlateforme[] };
 
 /** Route ouverte sans session (santé, pages publiques). À justifier en revue. */
@@ -24,8 +24,16 @@ export const Authenticated = () =>
  * Route qui exige une permission dans l'organisation active de la session. Le traitement
  * s'exécute alors dans une transaction limitée à cette organisation (RLS).
  */
-export const RequirePermission = (permission: Permission, scope: Scope = 'organisation') =>
-  SetMetadata(ACCESS_RULE, { kind: 'permission', permission, scope } satisfies AccessRule);
+export const RequirePermission = (
+  permission: Permission | readonly Permission[],
+  scope: Scope = 'organisation',
+) =>
+  SetMetadata(ACCESS_RULE, {
+    kind: 'permission',
+    // Plusieurs permissions : l'une d'elles suffit.
+    permissions: typeof permission === 'string' ? [permission] : permission,
+    scope,
+  } satisfies AccessRule);
 
 /**
  * Route de la console de la plateforme (module 19), réservée aux membres de l'équipe Scolaly

@@ -5,3 +5,4 @@ export const AUTH = Symbol('AUTH');
 export const ENV = Symbol('ENV');
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
 export const UPLOADS = Symbol('UPLOADS');
+export const EMAILS = Symbol('EMAILS');

@@ -32,7 +32,15 @@ export async function seedDemoDroits(
 
     const [fiche] = await owner
       .insert(personne)
-      .values({ organisationId, nom: compte.name, prenom: 'Démo', email: compte.email, userId })
+      .values({
+        organisationId,
+        nom: compte.name,
+        prenom: 'Démo',
+        email: compte.email,
+        userId,
+        compteEtat: 'actif',
+        conditionsAccepteesLe: new Date('2026-09-01T08:00:00Z'),
+      })
       .returning({ id: personne.id });
     const [leRole] = await owner
       .select({ id: role.id })

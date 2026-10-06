@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { QUEUES } from '@scolaly/contracts';
+import { Queue } from 'bullmq';
 import { inject } from 'vitest';
 import { createApp, type CreateAppOptions } from '../src/app.js';
 import type { Env } from '../src/config/env.js';
@@ -30,11 +32,30 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
   };
 }
 
+/** Préfixe des files BullMQ de ce processus de test (emails envoyés par l'API). */
+export const TEST_QUEUE_PREFIX = `test-api-${process.pid}-${Date.now()}`;
+
+/** Emails mis en file par l'API (le worker ne tourne pas pendant ces tests). */
+export async function emailsEnFile(): Promise<{ to: string; subject: string; text: string }[]> {
+  const queue = new Queue(QUEUES.emails, {
+    connection: { url: inject('valkeyUrl') },
+    prefix: TEST_QUEUE_PREFIX,
+  });
+  try {
+    const jobs = await queue.getJobs(['waiting', 'delayed', 'prioritized']);
+    return jobs
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map((job) => job.data as { to: string; subject: string; text: string });
+  } finally {
+    await queue.close();
+  }
+}
+
 export async function startApp(
   overrides: Partial<Env> = {},
   options: CreateAppOptions = {},
 ): Promise<NestFastifyApplication> {
-  const app = await createApp(testEnv(overrides), options);
+  const app = await createApp(testEnv(overrides), { queuePrefix: TEST_QUEUE_PREFIX, ...options });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;

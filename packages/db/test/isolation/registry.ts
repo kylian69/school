@@ -3,6 +3,7 @@ import { newId } from '../../src/ids.js';
 import {
   anneeScolaire,
   attribution,
+  invitation,
   role,
   rolePermission,
   etablissement,
@@ -101,6 +102,18 @@ export const sampleRows: Record<string, ScopedTableSample> = {
     insert: async (db, organisationId) => {
       const roleId = await insertRole(db, organisationId);
       await db.insert(rolePermission).values({ organisationId, roleId, permission: 'audit:lire' });
+    },
+  },
+  invitation: {
+    insert: async (db, organisationId) => {
+      const personneId = await insertPersonne(db, organisationId);
+      await db.insert(invitation).values({
+        organisationId,
+        personneId,
+        jetonEmpreinte: newId(),
+        email: 'camille@exemple.test',
+        expireLe: new Date(Date.now() + 86_400_000),
+      });
     },
   },
   attribution: {

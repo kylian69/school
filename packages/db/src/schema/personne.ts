@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { authUser } from './auth.js';
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
@@ -8,6 +8,8 @@ import { organisationConstraints, organisationScoped } from './organisation.js';
  * Personne (module 01, section 6). Les autres attributs (naissance, matricule, INE, photo…)
  * arrivent avec l'incrément I1.4, chacun justifié par sa story (minimisation, RGPD).
  */
+export const compteEtat = pgEnum('compte_etat', ['cree', 'invite', 'actif', 'desactive']);
+
 export const personne = pgTable(
   'personne',
   {
@@ -21,6 +23,10 @@ export const personne = pgTable(
      * écoles d'un groupe). Null tant que la personne n'a pas activé son compte.
      */
     userId: uuid().references(() => authUser.id),
+    /** Cycle de vie du compte dans cette école (RG-01-08). */
+    compteEtat: compteEtat().notNull().default('cree'),
+    /** Acceptation des conditions d'utilisation à l'activation (parcours d'activation). */
+    conditionsAccepteesLe: timestamp({ withTimezone: true }),
     ...trackingColumns(),
   },
   (t) => [

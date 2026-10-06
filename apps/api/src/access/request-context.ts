@@ -5,6 +5,8 @@ import type { Access } from './access-resolver.js';
 interface RequestState {
   access: Access;
   tx: Transaction;
+  /** Actions à lancer une fois la transaction validée (emails, notifications). */
+  apresValidation: (() => Promise<void>)[];
 }
 
 const storage = new AsyncLocalStorage<RequestState>();
@@ -23,6 +25,10 @@ export const RequestContext = {
   },
   tx(): Transaction {
     return current().tx;
+  },
+  /** Programme une action après la validation de la transaction (jamais si elle échoue). */
+  apresValidation(action: () => Promise<void>): void {
+    current().apresValidation.push(action);
   },
 };
 

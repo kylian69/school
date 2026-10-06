@@ -10,6 +10,7 @@ import { AppModule } from './app.module.js';
 import { ClamdScanner, DisabledScanner } from './shared/storage/antivirus.js';
 import { ObjectStorage } from './shared/storage/object-storage.js';
 import { UploadService } from './shared/storage/uploads.js';
+import { EmailsQueue } from './shared/emails.js';
 import { createValkey } from './shared/valkey.js';
 
 /** Champs jamais écrits dans les journaux (plan de développement, section 6). */
@@ -29,6 +30,8 @@ export interface CreateAppOptions {
   accessResolver?: Provider;
   /** Modules supplémentaires (tests). */
   extraModules?: Type[];
+  /** Préfixe des files BullMQ (isolement des tests). */
+  queuePrefix?: string;
 }
 
 export async function createApp(
@@ -44,6 +47,7 @@ export async function createApp(
       ? new DisabledScanner()
       : new ClamdScanner(env.CLAMAV_HOST, env.CLAMAV_PORT);
   const uploads = new UploadService(storage, scanner);
+  const emails = new EmailsQueue(env.VALKEY_URL, options.queuePrefix);
   const platformDatabase =
     env.SCOLALY_MODE === 'saas' && env.PLATFORM_DATABASE_URL
       ? createDatabase(env.PLATFORM_DATABASE_URL, { max: 4 })
@@ -66,6 +70,7 @@ export async function createApp(
         auth,
         storage,
         uploads,
+        emails,
         ...(platformDatabase ? { platformDatabase } : {}),
       },
       {

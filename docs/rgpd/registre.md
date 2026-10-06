@@ -4,13 +4,14 @@
 > **Rôles** : l'école (organisation cliente) est **responsable de traitement** ; Scolaly agit comme **sous-traitant** en SaaS (RGPD-01). En auto-hébergement, l'école héberge et traite elle-même ; Scolaly n'accède pas aux données.
 > **Bases légales** : elles relèvent du responsable de traitement. Les propositions ci-dessous sont **à confirmer par chaque établissement** et par un juriste ou un DPO (question ouverte du module 00, à trancher avant J7).
 
-Dernière mise à jour : incrément I1.1 (console de la plateforme).
+Dernière mise à jour : incrément I1.2 (comptes et droits).
 
 ## Traitements en place
 
 | N° | Traitement | Finalité | Personnes concernées | Données | Conservation | Destinataires |
 | --- | --- | --- | --- | --- | --- | --- |
 | T1 | Comptes et authentification (module 01) | Permettre l'accès sécurisé à l'espace Scolaly | Personnel, intervenants, apprenants, tuteurs disposant d'un compte | Nom, email, mot de passe **haché (Argon2id)**, état de vérification de l'email ; jetons de fournisseurs externes chiffrés (connexion unique, V2) | Durée du compte ; durée après désactivation **à définir** (table datée des durées, après relecture juridique) | Personnes habilitées de l'école ; support Scolaly uniquement sur autorisation datée (RG-19-09, P1) |
+| T1b | Invitations et activation des comptes (RG-01-08) | Inviter une personne à activer son compte, à usage unique | Personnes invitées | Email, dates d'envoi, d'expiration (J+14), de relance et d'activation, **empreinte** du lien (jamais le lien lui-même) ; date d'acceptation des conditions d'utilisation | Durée du compte ; invitations expirées : **à définir** | Personnes habilitées à inviter dans l'école |
 | T2 | Sessions | Maintenir la connexion, limiter les abus, permettre la révocation (RG-01-13) | Titulaires d'un compte | Identifiant de session, adresse IP, navigateur (agent utilisateur), dates de création et d'expiration, école active | Jusqu'à expiration ou révocation ; purge des sessions expirées **à définir** | Titulaire du compte (« Mes appareils », P1) |
 | T3 | Fiche personne (module 01, attributs minimaux) | Identifier chaque personne dans l'école (RG-01-06) | Apprenants, personnel, intervenants | Nom, nom d'usage, prénom, email | Dossier pédagogique : 5 ans après la sortie, puis anonymisation (valeur par défaut **à valider**, table `durees-conservation`) | Personnes habilitées selon leur rôle et leur périmètre (RLS et permissions) |
 | T4 | Journal d'audit (RG-01-22) | Tracer les actions sensibles (qui, quoi, quand, valeurs avant et après) | Auteurs des actions ; personnes concernées par les objets modifiés | Identifiant de l'auteur, adresse IP, action, objet, valeurs avant et après (**jamais de donnée sensible en clair**) | **À définir** ; ajout seul, partitions mensuelles purgées par partition entière à l'échéance | Administrateurs de l'école ; personne ne peut le modifier |
