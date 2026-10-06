@@ -2,8 +2,13 @@ import type { SecondaryStorage } from 'better-auth';
 import { PREFIXE_SESSIONS } from '@scolaly/contracts';
 import { Redis } from 'ioredis';
 
+/**
+ * Client Valkey de l'API. Une commande prend quelques millisecondes : au-delà d'une seconde, elle
+ * échoue, et l'émargement passe aussitôt en mode dégradé au lieu d'attendre les nouvelles
+ * tentatives pendant une coupure.
+ */
 export function createValkey(url: string): Redis {
-  return new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
+  return new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3, commandTimeout: 1000 });
 }
 
 /**
