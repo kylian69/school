@@ -8,7 +8,8 @@ import { fr } from '@/i18n/fr';
 export interface NavigationEntry {
   label: string;
   href: string;
-  module: string;
+  /** Module requis ; null pour une entrée toujours présente. */
+  module: string | null;
   /** Tracé SVG de l'icône (24 × 24), repris des maquettes. */
   icon: string;
 }
@@ -17,7 +18,7 @@ export const NAVIGATION: readonly NavigationEntry[] = [
   {
     label: fr.coquille.entrees.tableauDeBord,
     href: '/',
-    module: 'socle',
+    module: null,
     icon: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z',
   },
 ];

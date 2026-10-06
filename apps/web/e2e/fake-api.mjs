@@ -20,6 +20,24 @@ const USERS = {
     role: 'super_administrateur',
   },
 };
+// Écoles de chaque compte (RG-00-26) : Camille a une fiche dans les deux écoles du groupe.
+const ECOLES = {
+  camille: [
+    {
+      id: '01a10000-0000-7000-8000-0000000000e1',
+      nom: 'École de gestion de Lumerac',
+      nomAffichage: 'EGL',
+      acces: 'complet',
+    },
+    {
+      id: '01a10000-0000-7000-8000-0000000000e2',
+      nom: 'Institut numérique de Lumerac',
+      nomAffichage: 'INL',
+      acces: 'complet',
+    },
+  ],
+};
+const ecoleActive = new Map();
 const ESSENTIEL = [
   'cahier-de-texte',
   'emargement',
@@ -114,6 +132,25 @@ createServer(async (request, response) => {
   }
   if (path === '/api/auth/sign-out' && request.method === 'POST') {
     return json(200, { success: true }, { 'set-cookie': `${COOKIE}=; Path=/; Max-Age=0` });
+  }
+
+  if (path.startsWith('/api/session/')) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const ecoles = ECOLES[jeton] ?? [];
+    if (path === '/api/session/ecole' && request.method === 'POST') {
+      const { organisationId } = await readBody(request);
+      if (!ecoles.some((e) => e.id === organisationId))
+        return json(403, { message: 'Pas de fiche' });
+      ecoleActive.set(jeton, organisationId);
+    }
+    const active = ecoles.find((e) => e.id === (ecoleActive.get(jeton) ?? ecoles[0]?.id)) ?? null;
+    return json(200, {
+      ecoleActive: active,
+      ecoles,
+      permissions: active ? ['organisation:lire'] : [],
+      modules: active ? ['socle'] : [],
+      doubleAuthentificationExigee: false,
+    });
   }
 
   if (path.startsWith('/api/plateforme')) {

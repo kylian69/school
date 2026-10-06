@@ -1,10 +1,21 @@
 import type { Permission } from '@scolaly/contracts';
 
 /** Droits d'une personne dans une organisation, pour la requête en cours. */
+export interface Perimetre {
+  type: 'organisation' | 'etablissement' | 'formation' | 'promotion' | 'soi';
+  id: string | null;
+}
+
 export interface Access {
   userId: string;
   organisationId: string;
+  /** Fiche de la personne dans l'école (RG-00-26). */
+  personneId: string;
   permissions: ReadonlySet<Permission>;
+  /** Périmètres sur lesquels chaque permission s'exerce (filtrage par les services). */
+  perimetres: ReadonlyMap<Permission, readonly Perimetre[]>;
+  /** RG-00-13 : un rôle en cours exige la double authentification. */
+  doubleAuthentificationExigee: boolean;
   /** Modules actifs de l'école (RG-19-04). */
   modules: ReadonlySet<string>;
   /** Accès de l'école selon l'état de son client (RG-19-02). */

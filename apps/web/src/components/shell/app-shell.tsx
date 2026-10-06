@@ -5,7 +5,9 @@ import { Menu } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { fr } from '@/i18n/fr';
 import type { SessionUser } from '@/lib/session';
+import type { ContexteSession } from '@scolaly/contracts';
 import { CommandPalette } from './command-palette';
+import { EcoleSelector } from './ecole-selector';
 import { NavLinks } from './nav-links';
 import { UserMenu } from './user-menu';
 
@@ -16,9 +18,12 @@ import { UserMenu } from './user-menu';
 export function AppShell({
   user,
   consoleAccessible = false,
+  contexte = null,
   children,
 }: {
   user: SessionUser;
+  /** École active, écoles du compte et modules (null si indisponible). */
+  contexte?: ContexteSession | null;
   /** Membre de l'équipe Scolaly : lien vers la console de la plateforme. */
   consoleAccessible?: boolean;
   children: ReactNode;
@@ -28,9 +33,14 @@ export function AppShell({
     <div className="flex h-full flex-col gap-[18px] px-3.5 py-5">
       <Logo className="px-2 pt-1" />
       <CommandPalette />
-      <NavLinks consoleAccessible={consoleAccessible} {...(onNavigate ? { onNavigate } : {})} />
+      {contexte ? <EcoleSelector contexte={contexte} /> : null}
+      <NavLinks
+        consoleAccessible={consoleAccessible}
+        modules={contexte?.modules ?? []}
+        {...(onNavigate ? { onNavigate } : {})}
+      />
       <div className="grow" />
-      <UserMenu user={user} />
+      <UserMenu user={user} ecole={contexte?.ecoleActive?.nom} />
     </div>
   );
 

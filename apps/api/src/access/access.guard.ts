@@ -22,6 +22,9 @@ import { PLATEFORME_MEMBRES, type PlateformeMembres } from './plateforme-membres
 export type ScolalyRequest = FastifyRequest & {
   access?: Access;
   userId?: string;
+  /** Session Better Auth de la requête (jeton, école active). */
+  sessionToken?: string;
+  activeOrganisationId?: string | null;
   rolePlateforme?: RolePlateforme;
 };
 
@@ -63,6 +66,8 @@ export class AccessGuard implements CanActivate {
       );
     }
     request.userId = session.user.id;
+    request.sessionToken = session.session.token;
+    request.activeOrganisationId = session.session.activeOrganisationId ?? null;
     if (rule.kind === 'authenticated') return true;
 
     if (rule.kind === 'plateforme') {

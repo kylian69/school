@@ -3,6 +3,7 @@ import {
   authSession,
   authUser,
   authVerification,
+  ecolesDuCompte,
   newId,
   type Database,
 } from '@scolaly/db';
@@ -45,6 +46,18 @@ export function createAuth(env: Env, db: Database, valkey: Redis) {
       },
     }),
     user: { modelName: 'auth_user' },
+    databaseHooks: {
+      session: {
+        create: {
+          // RG-01-29 : à la connexion, l'école active est la première école du compte ; la
+          // personne en change ensuite avec le sélecteur, sans se reconnecter.
+          before: async (session) => {
+            const [premiere] = await ecolesDuCompte(db, session.userId);
+            return { data: { ...session, activeOrganisationId: premiere?.organisationId ?? null } };
+          },
+        },
+      },
+    },
     session: {
       modelName: 'auth_session',
       storeSessionInDatabase: true,

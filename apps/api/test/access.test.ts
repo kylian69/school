@@ -95,7 +95,12 @@ class TestAccessResolver implements AccessResolver {
         ? {
             userId,
             organisationId: grant.organisationId,
+            personneId: userId,
             permissions: new Set(grant.permissions),
+            perimetres: new Map(
+              grant.permissions.map((p) => [p, [{ type: 'organisation', id: null }]]),
+            ),
+            doubleAuthentificationExigee: false,
             modules: new Set(grant.modules ?? ['socle']),
             acces: grant.acces ?? 'complet',
           }

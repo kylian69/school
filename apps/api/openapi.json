@@ -180,6 +180,58 @@
         }
       }
     },
+    "/api/session/contexte": {
+      "get": {
+        "operationId": "SessionController.contexte",
+        "summary": "Contexte de la session (école, droits, modules)",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContexteSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/session/ecole": {
+      "post": {
+        "operationId": "SessionController.choisirEcole",
+        "summary": "Changer d’école active",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoixEcole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContexteSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController.check",
@@ -224,6 +276,20 @@
         "required": [
           "etat",
           "motif"
+        ],
+        "additionalProperties": false
+      },
+      "ChoixEcole": {
+        "type": "object",
+        "properties": {
+          "organisationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "organisationId"
         ],
         "additionalProperties": false
       },
@@ -542,6 +608,118 @@
           "volumeApprenants",
           "dateFin",
           "ecoles"
+        ],
+        "additionalProperties": false
+      },
+      "ContexteSession": {
+        "type": "object",
+        "properties": {
+          "ecoleActive": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "nomAffichage": {
+                "type": "string"
+              },
+              "acces": {
+                "type": "string",
+                "enum": [
+                  "complet",
+                  "lecture_seule",
+                  "ferme"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "nomAffichage",
+              "acces"
+            ],
+            "additionalProperties": false
+          },
+          "ecoles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "nom": {
+                  "type": "string"
+                },
+                "nomAffichage": {
+                  "type": "string"
+                },
+                "acces": {
+                  "type": "string",
+                  "enum": [
+                    "complet",
+                    "lecture_seule",
+                    "ferme"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "nom",
+                "nomAffichage",
+                "acces"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "organisation:lire",
+                "organisation:modifier",
+                "calendrier:lire",
+                "calendrier:gerer",
+                "personnes:lire",
+                "apprenants:inviter",
+                "personnel:inviter",
+                "personnes:importer",
+                "personnes:exporter",
+                "personnes:voir-en-tant-que",
+                "comptes:desactiver",
+                "roles:attribuer",
+                "roles:gerer",
+                "audit:lire",
+                "apparence:gerer",
+                "corbeille:restaurer"
+              ]
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "doubleAuthentificationExigee": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ecoleActive",
+          "ecoles",
+          "permissions",
+          "modules",
+          "doubleAuthentificationExigee"
         ],
         "additionalProperties": false
       },
