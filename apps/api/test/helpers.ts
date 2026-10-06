@@ -21,6 +21,7 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
     PUBLIC_URL: 'http://localhost:3001',
     WEB_ORIGIN,
     BETTER_AUTH_SECRET: 'secret-de-test-uniquement-pas-pour-la-production',
+    ENCRYPTION_MASTER_KEY_V1: Buffer.alloc(32, 1).toString('base64'),
     S3_ENDPOINT: inject('s3Endpoint'),
     S3_REGION: inject('s3Region'),
     S3_BUCKET: 'scolaly-test',

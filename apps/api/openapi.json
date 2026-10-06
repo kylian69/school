@@ -643,6 +643,68 @@
         }
       }
     },
+    "/api/emargement/code": {
+      "post": {
+        "operationId": "ScanController.saisirCode",
+        "summary": "Émarger avec le code à 6 chiffres affiché avec le QR (session requise)",
+        "x-scolaly-access": {
+          "kind": "public"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeEmargement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatScan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/emargement/scan": {
+      "post": {
+        "operationId": "ScanController.scanner",
+        "summary": "Émarger en scannant le QR de la séance (session requise, sans requête SQL)",
+        "x-scolaly-access": {
+          "kind": "public"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanEmargement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatScan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/etablissements": {
       "post": {
         "operationId": "OrganisationController.creer",
@@ -1840,6 +1902,56 @@
         }
       }
     },
+    "/api/seances/{id}/appel": {
+      "get": {
+        "operationId": "AppelController.enDirect",
+        "summary": "Présents et attendus en direct",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppelEnDirect"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seances/{id}/appel/ouverture": {
+      "post": {
+        "operationId": "AppelController.ouvrir",
+        "summary": "Ouvrir l’appel : précharge la séance et donne de quoi calculer le QR",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OuvertureAppel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/session/contexte": {
       "get": {
         "operationId": "SessionController.contexte",
@@ -2312,6 +2424,63 @@
           "couleur",
           "palette",
           "logoUrl"
+        ],
+        "additionalProperties": false
+      },
+      "AppelEnDirect": {
+        "type": "object",
+        "properties": {
+          "presents": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "attendus": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "liste": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "personneId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "nom": {
+                  "type": "string"
+                },
+                "prenom": {
+                  "type": "string"
+                },
+                "scanneLe": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "rejoue": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "personneId",
+                "nom",
+                "prenom",
+                "scanneLe",
+                "rejoue"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "presents",
+          "attendus",
+          "liste"
         ],
         "additionalProperties": false
       },
@@ -2857,6 +3026,25 @@
         ],
         "additionalProperties": false
       },
+      "CodeEmargement": {
+        "type": "object",
+        "properties": {
+          "seanceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "seanceId",
+          "code"
+        ],
+        "additionalProperties": false
+      },
       "ContexteSession": {
         "type": "object",
         "properties": {
@@ -2946,7 +3134,8 @@
                 "roles:gerer",
                 "audit:lire",
                 "apparence:gerer",
-                "corbeille:restaurer"
+                "corbeille:restaurer",
+                "emargement:animer"
               ]
             }
           },
@@ -3942,7 +4131,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 16,
+            "maxItems": 17,
             "type": "array",
             "items": {
               "type": "string",
@@ -3962,7 +4151,8 @@
                 "roles:gerer",
                 "audit:lire",
                 "apparence:gerer",
-                "corbeille:restaurer"
+                "corbeille:restaurer",
+                "emargement:animer"
               ]
             }
           },
@@ -4120,7 +4310,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 16,
+            "maxItems": 17,
             "type": "array",
             "items": {
               "type": "string",
@@ -4140,7 +4330,8 @@
                 "roles:gerer",
                 "audit:lire",
                 "apparence:gerer",
-                "corbeille:restaurer"
+                "corbeille:restaurer",
+                "emargement:animer"
               ]
             }
           },
@@ -4488,6 +4679,53 @@
           "modeleMatricule",
           "exempleMatricule",
           "etablissements"
+        ],
+        "additionalProperties": false
+      },
+      "OuvertureAppel": {
+        "type": "object",
+        "properties": {
+          "seanceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "cle": {
+            "type": "string"
+          },
+          "periodeSecondes": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991
+          },
+          "maintenant": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "seanceId",
+          "libelle",
+          "debut",
+          "fin",
+          "cle",
+          "periodeSecondes",
+          "maintenant"
         ],
         "additionalProperties": false
       },
@@ -4891,6 +5129,43 @@
         ],
         "additionalProperties": false
       },
+      "ResultatScan": {
+        "type": "object",
+        "properties": {
+          "statut": {
+            "type": "string",
+            "enum": [
+              "present",
+              "retard",
+              "deja-emarge"
+            ]
+          },
+          "seance": {
+            "type": "string"
+          },
+          "scanneLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "retardMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "rejoue": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "statut",
+          "seance",
+          "scanneLe",
+          "retardMinutes",
+          "rejoue"
+        ],
+        "additionalProperties": false
+      },
       "RoleDetail": {
         "type": "object",
         "properties": {
@@ -4943,7 +5218,8 @@
                 "roles:gerer",
                 "audit:lire",
                 "apparence:gerer",
-                "corbeille:restaurer"
+                "corbeille:restaurer",
+                "emargement:animer"
               ]
             }
           },
@@ -5016,6 +5292,22 @@
           "dateFin",
           "type",
           "etablissementIds"
+        ],
+        "additionalProperties": false
+      },
+      "ScanEmargement": {
+        "type": "object",
+        "properties": {
+          "jeton": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "horsLigne": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "jeton"
         ],
         "additionalProperties": false
       },

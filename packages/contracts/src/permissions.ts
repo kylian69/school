@@ -23,6 +23,8 @@ export const PERMISSIONS = {
   'audit:lire': "Consulter le journal d'audit",
   'apparence:gerer': "Personnaliser l'apparence et les modèles",
   'corbeille:restaurer': 'Restaurer des éléments depuis la corbeille',
+  // Module 06 · Émargement
+  'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
