@@ -10,6 +10,7 @@ import {
   etablissement,
   fermeture,
   fermetureEtablissement,
+  importPersonnes,
   organisationModule,
   periode,
   personne,
@@ -123,6 +124,21 @@ export const sampleRows: Record<string, ScopedTableSample> = {
       await db
         .insert(fermetureEtablissement)
         .values({ organisationId, fermetureId, etablissementId });
+    },
+  },
+  import_personnes: {
+    insert: async (db, organisationId) => {
+      await db.insert(importPersonnes).values({
+        organisationId,
+        type: 'apprenants',
+        fichierCle: 'organisations/x/imports/y',
+        fichierNom: 'apprenants.csv',
+        fichierType: 'csv',
+        colonnes: ['Nom'],
+        correspondance: { Nom: 'nom' },
+        lignes: 1,
+        expireLe: new Date(Date.now() + 86_400_000),
+      });
     },
   },
   personne: {

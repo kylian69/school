@@ -2,7 +2,12 @@ import helmet from '@fastify/helmet';
 import type { Provider, Type } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { LOGO_TAILLE_MAX, TYPES_LOGO } from '@scolaly/contracts';
+import {
+  IMPORT_TAILLE_MAX,
+  LOGO_TAILLE_MAX,
+  TYPES_FICHIER_IMPORT,
+  TYPES_LOGO,
+} from '@scolaly/contracts';
 import { createDatabase } from '@scolaly/db';
 import { createAuth } from './auth/auth.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
@@ -93,16 +98,22 @@ export async function createApp(
   registerAuthRoutes(app.getHttpAdapter().getInstance(), auth, env.PUBLIC_URL);
   // Logo de l'école envoyé tel quel (US-01-14) ; la limite métier de 2 Mo est contrôlée par le
   // service, avec un message clair, sous cette limite technique.
-  app
-    .getHttpAdapter()
-    .getInstance()
-    .addContentTypeParser(
-      Object.keys(TYPES_LOGO),
-      { parseAs: 'buffer', bodyLimit: 4 * LOGO_TAILLE_MAX },
-      (_request, body, done) => {
-        done(null, body);
-      },
-    );
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.addContentTypeParser(
+    Object.keys(TYPES_LOGO),
+    { parseAs: 'buffer', bodyLimit: 4 * LOGO_TAILLE_MAX },
+    (_request, body, done) => {
+      done(null, body);
+    },
+  );
+  // Fichiers d'import (RG-01-17) : même principe, limite métier de 10 Mo contrôlée par le service.
+  fastify.addContentTypeParser(
+    Object.keys(TYPES_FICHIER_IMPORT),
+    { parseAs: 'buffer', bodyLimit: 2 * IMPORT_TAILLE_MAX },
+    (_request, body, done) => {
+      done(null, body);
+    },
+  );
   app.enableShutdownHooks();
   return app;
 }

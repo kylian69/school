@@ -48,11 +48,18 @@ export default async function PersonnesPage({
           <h1 className="text-[26px] font-[650] tracking-[-0.035em] md:text-[30px]">{t.titre}</h1>
           {data ? <p className="text-sm text-muted">{t.resume(data.total)}</p> : null}
         </div>
-        {peutCreer ? (
-          <Button asChild>
-            <Link href="/personnes/nouvelle">{t.nouvelle}</Link>
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {permissions.includes('personnes:importer') ? (
+            <Button variant="secondary" asChild>
+              <Link href="/personnes/import">{fr.imports.importer}</Link>
+            </Button>
+          ) : null}
+          {peutCreer ? (
+            <Button asChild>
+              <Link href="/personnes/nouvelle">{t.nouvelle}</Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <form

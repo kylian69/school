@@ -10,6 +10,13 @@ const SIGNATURES = {
   jpeg: { mime: 'image/jpeg', magic: [0xff, 0xd8, 0xff] },
   // Un SVG est du texte, sans signature : reconnu par son début, et son contenu analysé à part.
   svg: { mime: 'image/svg+xml', magic: null },
+  // Classeur Excel : une archive ZIP (son contenu est vérifié à la lecture).
+  xlsx: {
+    mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    magic: [0x50, 0x4b, 0x03, 0x04],
+  },
+  // Un CSV est du texte sans signature : accepté seulement là où la politique l'autorise.
+  csv: { mime: 'text/csv', magic: null },
 } as const;
 
 const DEBUT_SVG = /^\s*<(?:\?xml|svg[\s>]|!--|!DOCTYPE\s+svg)/i;
@@ -76,7 +83,10 @@ export class UploadService {
   ): Promise<StoredFile> {
     if (content.length === 0) throw new UploadRejectedError('vide');
     if (content.length > policy.maxBytes) throw new UploadRejectedError('trop-volumineux');
-    const type = detectType(content);
+    // Texte sans octet nul : un CSV, si la politique en accepte.
+    const type =
+      detectType(content) ??
+      (policy.types.includes('csv') && !content.subarray(0, 8192).includes(0) ? 'csv' : null);
     if (!type || !policy.types.includes(type)) {
       throw new UploadRejectedError('type-non-autorise', policy.types.join(', ').toUpperCase());
     }

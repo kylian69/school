@@ -187,6 +187,40 @@ const detailPersonne = (p) => ({ ...p, naissanceVisible: true });
 
 const annees = [];
 const choixDemarrage = new Map();
+const imports = new Map();
+const apercuImport = (i) => {
+  const champs = Object.values(i.correspondance);
+  const lignes = i.lignes.map((valeurs, rang) => {
+    const donnees = {};
+    i.colonnes.forEach((c, k) => {
+      if (i.correspondance[c] && valeurs[k]) donnees[i.correspondance[c]] = valeurs[k];
+    });
+    const erreurs =
+      donnees.email && !donnees.email.includes('@')
+        ? [{ champ: 'email', message: 'Adresse email invalide.' }]
+        : [];
+    return { numero: rang + 2, donnees, erreurs, avertissements: [] };
+  });
+  const enErreur = lignes.filter((l) => l.erreurs.length > 0).length;
+  return {
+    id: i.id,
+    type: i.type,
+    statut: 'en_preparation',
+    fichierNom: i.fichierNom,
+    colonnes: i.colonnes,
+    correspondance: i.correspondance,
+    champsManquants: ['nom', 'prenom', 'email'].filter((c) => !champs.includes(c)),
+    totaux: {
+      lignes: lignes.length,
+      valides: lignes.length - enErreur,
+      enErreur,
+      avecAvertissement: 0,
+      existantes: 0,
+    },
+    lignes,
+    expireLe: '2030-01-01T00:00:00.000Z',
+  };
+};
 const resumeAnnee = ({ fermetures: _fermetures, ...annee }) => annee;
 // Jours fériés simplifiés : le calcul réel est couvert par les tests du domaine et de l'API.
 const detailAnnee = (annee) => ({
@@ -390,6 +424,7 @@ createServer(async (request, response) => {
             'apprenants:inviter',
             'comptes:desactiver',
             'personnel:inviter',
+            'personnes:importer',
             'personnes:lire',
             'calendrier:gerer',
             'calendrier:lire',
@@ -404,6 +439,39 @@ createServer(async (request, response) => {
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
     });
+  }
+
+  // Assistant d'import (E-01-06) : analyse simplifiée, le contrôle réel est testé par l'API.
+  const importRoute = path.match(/^\/api\/imports(?:\/([^/]+))?(\/correspondance)?$/);
+  if (importRoute) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const [, id] = importRoute;
+    if (!id) {
+      const morceaux = [];
+      for await (const morceau of request) morceaux.push(morceau);
+      const [entete = '', ...lignes] = Buffer.concat(morceaux)
+        .toString('utf8')
+        .split(/\r?\n/)
+        .filter((l) => l.trim() !== '');
+      const colonnes = entete.split(';');
+      const connus = { nom: 'nom', prénom: 'prenom', email: 'email' };
+      const creee = {
+        id: randomUUID(),
+        type: url.searchParams.get('type'),
+        fichierNom: url.searchParams.get('fichier'),
+        colonnes,
+        lignes: lignes.map((l) => l.split(';')),
+        correspondance: Object.fromEntries(
+          colonnes.map((c) => [c, connus[c.toLowerCase()] ?? null]),
+        ),
+      };
+      imports.set(creee.id, creee);
+      return json(201, apercuImport(creee));
+    }
+    const enCours = imports.get(id);
+    if (!enCours) return json(404, { message: 'Import introuvable dans cette école.' });
+    if (request.method === 'PUT') enCours.correspondance = (await readBody(request)).correspondance;
+    return json(200, apercuImport(enCours));
   }
 
   // Rôles d'une personne et actions de compte (US-01-09).

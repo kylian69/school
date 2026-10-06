@@ -34,6 +34,7 @@
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
     "ioredis": "catalog:",
+    "read-excel-file": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "zod": "catalog:"
