@@ -67,7 +67,8 @@ function cellule(valeur: unknown): string {
   if (valeur === null || valeur === undefined) return '';
   if (valeur instanceof Date) return valeur.toISOString().slice(0, 10);
   if (typeof valeur === 'boolean') return valeur ? 'oui' : 'non';
-  return String(valeur as string | number);
+  if (typeof valeur === 'number' || typeof valeur === 'string') return String(valeur);
+  return '';
 }
 
 const message = (p: Probleme) => ({
