@@ -34,6 +34,11 @@ export const SECTIONS_PARAMETRES: readonly SectionParametres[] = [
     href: '/parametres/roles',
     permissions: ['roles:gerer', 'roles:attribuer'],
   },
+  {
+    label: fr.parametres.sections.journal,
+    href: '/parametres/journal',
+    permissions: ['audit:lire'],
+  },
 ];
 
 export const sectionsVisibles = (permissions: readonly string[]) =>
