@@ -14,6 +14,8 @@ RUN pnpm dlx turbo@2.11.7 prune @scolaly/web --docker --out-dir /pruned
 
 FROM base AS builder
 COPY --from=pruner /pruned/json/ .
+# Hook de résolution (non repris par turbo prune) : le lockfile en dépend.
+COPY .pnpmfile.cjs ./
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
 COPY --from=pruner /pruned/full/ .
 RUN pnpm turbo run build --filter=@scolaly/web

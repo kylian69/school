@@ -12,3 +12,6 @@ next-env.d.ts
 # Playwright
 test-results/
 playwright-report/
+
+# Configuration et secrets d'une installation Docker Compose
+infra/compose/.env
