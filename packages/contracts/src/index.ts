@@ -18,3 +18,4 @@ export * from './audit.js';
 export * from './corbeille.js';
 export * from './emargement-jeton.js';
 export * from './emargement.js';
+export * from './referentiel.js';

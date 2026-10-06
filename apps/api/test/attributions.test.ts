@@ -161,6 +161,7 @@ describe('US-01-09 rôles et périmètres d’une personne', () => {
       [{ perimetreType: 'etablissement' }, 400],
       [{ perimetreType: 'organisation', perimetreId: campus }, 400],
       [{ perimetreType: 'formation', perimetreId: newId() }, 400],
+      [{ perimetreType: 'promotion', perimetreId: newId() }, 400],
       [{ perimetreType: 'etablissement', perimetreId: campusEtranger }, 400],
       [{ perimetreType: 'organisation', debut: '2026-10-01', fin: '2026-09-01' }, 400],
     ] as const;

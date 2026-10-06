@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildDemoDataset, DEMO_EMAIL_DOMAIN, seedDemoDataset } from '../src/demo/index.js';
 import { withOrganisation } from '../src/organisation-context.js';
-import { etablissement, personne } from '../src/schema/index.js';
+import { etablissement, formation, maquetteModule, personne } from '../src/schema/index.js';
 import { openApp, openOwner } from './fixtures.js';
 
 describe('Jeu de démonstration (plan, section 5)', () => {
@@ -52,9 +52,21 @@ describe('Jeu de démonstration (plan, section 5)', () => {
       withOrganisation(app.db, organisationId, async (tx) => ({
         personnes: (await tx.select({ n: sql<number>`count(*)::int` }).from(personne))[0]?.n,
         etablissements: (await tx.select().from(etablissement)).length,
+        formations: (await tx.select().from(formation)).length,
+        modules: (await tx.select().from(maquetteModule)).length,
       }));
-    expect(await compter(premiere.id)).toEqual({ personnes: 120, etablissements: 2 });
-    expect(await compter(seconde.id)).toEqual({ personnes: 120, etablissements: 1 });
+    expect(await compter(premiere.id)).toEqual({
+      personnes: 120,
+      etablissements: 2,
+      formations: 2,
+      modules: 13,
+    });
+    expect(await compter(seconde.id)).toEqual({
+      personnes: 120,
+      etablissements: 1,
+      formations: 1,
+      modules: 4,
+    });
     const lignes = await owner.db
       .select()
       .from(personne)

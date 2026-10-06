@@ -887,6 +887,161 @@
         }
       }
     },
+    "/api/formations": {
+      "get": {
+        "operationId": "FormationsController.lister",
+        "summary": "Formations de l’école, dans le périmètre de la personne",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:lire",
+            "referentiel:gerer",
+            "referentiel:publier"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeFormations"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "FormationsController.creer",
+        "summary": "Créer une formation et sa première version de maquette",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "etablissement"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelleFormation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/formations/{id}": {
+      "get": {
+        "operationId": "FormationsController.lire",
+        "summary": "Une formation et ses versions de maquette",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:lire",
+            "referentiel:gerer",
+            "referentiel:publier"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "FormationsController.modifier",
+        "summary": "Modifier une formation (archivage compris)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationFormation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/formations/{id}/duplication": {
+      "post": {
+        "operationId": "FormationsController.dupliquer",
+        "summary": "Dupliquer une formation et sa dernière version de maquette (RG-02-20)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "etablissement"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicationFormation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/imports": {
       "post": {
         "operationId": "ImportsController.creer",
@@ -1102,6 +1257,552 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultatActivation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}": {
+      "get": {
+        "operationId": "MaquettesController.lire",
+        "summary": "Arbre, règles, totaux et avertissements d’une version",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:lire",
+            "referentiel:gerer",
+            "referentiel:publier"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/archivage": {
+      "post": {
+        "operationId": "MaquettesController.archiver",
+        "summary": "Archiver une version de maquette",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/blocs": {
+      "post": {
+        "operationId": "MaquettesController.creerBloc",
+        "summary": "Ajouter un bloc de compétences",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieBloc"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ElementCree"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/blocs/{id}": {
+      "patch": {
+        "operationId": "MaquettesController.modifierBloc",
+        "summary": "Modifier ou déplacer un bloc",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationBloc"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "MaquettesController.supprimerBloc",
+        "summary": "Supprimer un bloc (ses UE sont détachées)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/competences": {
+      "post": {
+        "operationId": "MaquettesController.creerCompetence",
+        "summary": "Ajouter une compétence à un bloc (RG-02-21)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieCompetence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ElementCree"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/competences/{id}": {
+      "patch": {
+        "operationId": "MaquettesController.modifierCompetence",
+        "summary": "Modifier une compétence, ses critères ou ses modules (RG-02-23)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationCompetence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "MaquettesController.supprimerCompetence",
+        "summary": "Supprimer une compétence",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/modules": {
+      "post": {
+        "operationId": "MaquettesController.creerModule",
+        "summary": "Ajouter un module",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieModule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ElementCree"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/modules/{id}": {
+      "patch": {
+        "operationId": "MaquettesController.modifierModule",
+        "summary": "Modifier ou déplacer un module",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationModule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "MaquettesController.supprimerModule",
+        "summary": "Supprimer un module",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/nouvelle-version": {
+      "post": {
+        "operationId": "MaquettesController.nouvelleVersion",
+        "summary": "Créer une nouvelle version en brouillon à partir de celle-ci (RG-02-04)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/publication": {
+      "post": {
+        "operationId": "MaquettesController.publier",
+        "summary": "Publier une version de maquette (RG-02-04)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:publier"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/regles": {
+      "put": {
+        "operationId": "MaquettesController.definirRegles",
+        "summary": "Règles de validation, mode d’évaluation et règles particulières de la version",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieReglesVersion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/simulation": {
+      "post": {
+        "operationId": "MaquettesController.simuler",
+        "summary": "Simuler les résultats avec des notes fictives (RG-02-10), sans rien enregistrer",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:lire",
+            "referentiel:gerer",
+            "referentiel:publier"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieSimulation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatSimulation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/ues": {
+      "post": {
+        "operationId": "MaquettesController.creerUe",
+        "summary": "Ajouter une UE",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieUe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ElementCree"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/maquettes/{version}/ues/{id}": {
+      "patch": {
+        "operationId": "MaquettesController.modifierUe",
+        "summary": "Modifier ou déplacer une UE",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationUe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "MaquettesController.supprimerUe",
+        "summary": "Supprimer une UE et ses modules",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maquette"
                 }
               }
             }
@@ -1838,6 +2539,190 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MembrePlateforme"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referentiel/echelle": {
+      "get": {
+        "operationId": "BibliothequeController.echelle",
+        "summary": "Échelle de maîtrise de l’école (RG-02-22)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:lire",
+            "referentiel:gerer",
+            "referentiel:publier",
+            "referentiel:parametrer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchelleMaitrise"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "BibliothequeController.definirEchelle",
+        "summary": "Remplacer l’échelle de maîtrise de l’école",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:parametrer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieEchelle"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchelleMaitrise"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referentiel/regles": {
+      "get": {
+        "operationId": "BibliothequeController.regles",
+        "summary": "Bibliothèque des règles particulières de l’école (RG-02-26)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:lire",
+            "referentiel:gerer",
+            "referentiel:publier",
+            "referentiel:parametrer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeReglesBibliotheque"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "BibliothequeController.creerRegle",
+        "summary": "Ajouter une règle particulière à la bibliothèque",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:parametrer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieRegleBibliotheque"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegleBibliotheque"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referentiel/regles/{id}": {
+      "put": {
+        "operationId": "BibliothequeController.modifierRegle",
+        "summary": "Modifier une règle de la bibliothèque (sans effet sur les versions déjà paramétrées)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:parametrer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieRegleBibliotheque"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegleBibliotheque"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "BibliothequeController.supprimerRegle",
+        "summary": "Retirer une règle de la bibliothèque",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:parametrer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
                 }
               }
             }
@@ -2685,6 +3570,96 @@
         ],
         "additionalProperties": false
       },
+      "AvertissementMaquette": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "semestre-ects"
+                ]
+              },
+              "annee": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "semestre": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "ects": {
+                "type": "number"
+              },
+              "attendu": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "annee",
+              "semestre",
+              "ects",
+              "attendu"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ue-sans-module"
+                ]
+              },
+              "ueId": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "ueId",
+              "code"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "code-en-double"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "bloc",
+                  "ue",
+                  "module"
+                ]
+              },
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "niveau",
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
       "BilanImportPhotos": {
         "type": "object",
         "properties": {
@@ -2723,6 +3698,34 @@
           "associees",
           "sansCorrespondance",
           "rejetes"
+        ],
+        "additionalProperties": false
+      },
+      "BlocMaquette": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string"
+          },
+          "intitule": {
+            "type": "string"
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "intitule",
+          "ordre"
         ],
         "additionalProperties": false
       },
@@ -3177,6 +4180,56 @@
         ],
         "additionalProperties": false
       },
+      "Competence": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "blocId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string"
+          },
+          "intitule": {
+            "type": "string"
+          },
+          "criteres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "moduleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "blocId",
+          "code",
+          "intitule",
+          "criteres",
+          "moduleIds",
+          "ordre"
+        ],
+        "additionalProperties": false
+      },
       "ContexteSession": {
         "type": "object",
         "properties": {
@@ -3267,6 +4320,10 @@
                 "audit:lire",
                 "apparence:gerer",
                 "corbeille:restaurer",
+                "referentiel:lire",
+                "referentiel:gerer",
+                "referentiel:publier",
+                "referentiel:parametrer",
                 "emargement:animer"
               ]
             }
@@ -3438,6 +4495,39 @@
         ],
         "additionalProperties": false
       },
+      "DuplicationFormation": {
+        "type": "object",
+        "properties": {
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "intitule"
+        ],
+        "additionalProperties": false
+      },
+      "EchelleMaitrise": {
+        "type": "object",
+        "properties": {
+          "niveaux": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NiveauMaitrise"
+            }
+          },
+          "parDefaut": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "niveaux",
+          "parDefaut"
+        ],
+        "additionalProperties": false
+      },
       "ElementCorbeille": {
         "type": "object",
         "properties": {
@@ -3486,6 +4576,24 @@
           "supprimePar",
           "effacementLe",
           "lies"
+        ],
+        "additionalProperties": false
+      },
+      "ElementCree": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "maquette": {
+            "$ref": "#/components/schemas/Maquette"
+          }
+        },
+        "required": [
+          "id",
+          "maquette"
         ],
         "additionalProperties": false
       },
@@ -3743,6 +4851,98 @@
         ],
         "additionalProperties": false
       },
+      "Formation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "intitule": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "bts",
+              "bachelor",
+              "master",
+              "titre_rncp",
+              "cqp",
+              "autre"
+            ]
+          },
+          "niveau": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "codeRncp": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dureeAnnees": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "initial",
+                "apprentissage",
+                "professionnalisation",
+                "formation_continue"
+              ]
+            }
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archivee"
+            ]
+          },
+          "etablissementIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionResume"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          },
+          "publiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "intitule",
+          "type",
+          "niveau",
+          "codeRncp",
+          "dureeAnnees",
+          "modes",
+          "statut",
+          "etablissementIds",
+          "versions",
+          "modifiable",
+          "publiable"
+        ],
+        "additionalProperties": false
+      },
       "HealthResponse": {
         "type": "object",
         "properties": {
@@ -3902,6 +5102,25 @@
         ],
         "additionalProperties": false
       },
+      "ListeFormations": {
+        "type": "object",
+        "properties": {
+          "formations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formation"
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "formations",
+          "creation"
+        ],
+        "additionalProperties": false
+      },
       "ListePersonnes": {
         "type": "object",
         "properties": {
@@ -3935,6 +5154,21 @@
         ],
         "additionalProperties": false
       },
+      "ListeReglesBibliotheque": {
+        "type": "object",
+        "properties": {
+          "regles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegleBibliotheque"
+            }
+          }
+        },
+        "required": [
+          "regles"
+        ],
+        "additionalProperties": false
+      },
       "ListeRoles": {
         "type": "object",
         "properties": {
@@ -3947,6 +5181,121 @@
         },
         "required": [
           "roles"
+        ],
+        "additionalProperties": false
+      },
+      "Maquette": {
+        "type": "object",
+        "properties": {
+          "formation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "intitule": {
+                "type": "string"
+              },
+              "dureeAnnees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "intitule",
+              "dureeAnnees"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionResume"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionResume"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          },
+          "publiable": {
+            "type": "boolean"
+          },
+          "regles": {
+            "$ref": "#/components/schemas/ReglesValidation"
+          },
+          "reglesParticulieres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegleActivee"
+            }
+          },
+          "reglement": {
+            "type": "object",
+            "properties": {
+              "disponible": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "disponible"
+            ],
+            "additionalProperties": false
+          },
+          "blocs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlocMaquette"
+            }
+          },
+          "ues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UeMaquette"
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModuleMaquette"
+            }
+          },
+          "competences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Competence"
+            }
+          },
+          "totaux": {
+            "$ref": "#/components/schemas/TotauxMaquette"
+          },
+          "avertissements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvertissementMaquette"
+            }
+          }
+        },
+        "required": [
+          "formation",
+          "version",
+          "versions",
+          "modifiable",
+          "publiable",
+          "regles",
+          "reglesParticulieres",
+          "reglement",
+          "blocs",
+          "ues",
+          "modules",
+          "competences",
+          "totaux",
+          "avertissements"
         ],
         "additionalProperties": false
       },
@@ -4042,6 +5391,71 @@
           "couleur": {
             "nullable": true,
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationBloc": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationCompetence": {
+        "type": "object",
+        "properties": {
+          "blocId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "criteres": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "moduleIds": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
           }
         },
         "additionalProperties": false
@@ -4142,6 +5556,147 @@
                 ]
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationFormation": {
+        "type": "object",
+        "properties": {
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "bts",
+              "bachelor",
+              "master",
+              "titre_rncp",
+              "cqp",
+              "autre"
+            ]
+          },
+          "niveau": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 8
+          },
+          "codeRncp": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^((RNCP|RS)\\d{1,6})?$"
+          },
+          "dureeAnnees": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "modes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "initial",
+                "apprentissage",
+                "professionnalisation",
+                "formation_continue"
+              ]
+            }
+          },
+          "etablissementIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archivee"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationModule": {
+        "type": "object",
+        "properties": {
+          "ueId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "coefficient": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "td": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "tp": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "projet": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "elearning": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
           }
         },
         "additionalProperties": false
@@ -4263,7 +5818,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 17,
+            "maxItems": 21,
             "type": "array",
             "items": {
               "type": "string",
@@ -4284,6 +5839,10 @@
                 "audit:lire",
                 "apparence:gerer",
                 "corbeille:restaurer",
+                "referentiel:lire",
+                "referentiel:gerer",
+                "referentiel:publier",
+                "referentiel:parametrer",
                 "emargement:animer"
               ]
             }
@@ -4292,6 +5851,172 @@
             "type": "boolean"
           }
         },
+        "additionalProperties": false
+      },
+      "ModificationUe": {
+        "type": "object",
+        "properties": {
+          "blocId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "annee": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "semestre": {
+            "nullable": true,
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "ects": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "coefficient": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "option": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModuleMaquette": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "ueId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string"
+          },
+          "intitule": {
+            "type": "string"
+          },
+          "coefficient": {
+            "type": "number"
+          },
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "type": "number"
+              },
+              "td": {
+                "type": "number"
+              },
+              "tp": {
+                "type": "number"
+              },
+              "projet": {
+                "type": "number"
+              },
+              "elearning": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "ueId",
+          "code",
+          "intitule",
+          "coefficient",
+          "heures",
+          "ordre"
+        ],
+        "additionalProperties": false
+      },
+      "NiveauMaitrise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "couleur": {
+            "type": "string"
+          },
+          "valeur": {
+            "nullable": true,
+            "type": "number"
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "valide": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "couleur",
+          "valeur",
+          "ordre",
+          "valide"
+        ],
         "additionalProperties": false
       },
       "NouveauClient": {
@@ -4442,7 +6167,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 17,
+            "maxItems": 21,
             "type": "array",
             "items": {
               "type": "string",
@@ -4463,6 +6188,10 @@
                 "audit:lire",
                 "apparence:gerer",
                 "corbeille:restaurer",
+                "referentiel:lire",
+                "referentiel:gerer",
+                "referentiel:publier",
+                "referentiel:parametrer",
                 "emargement:animer"
               ]
             }
@@ -4685,6 +6414,74 @@
         "required": [
           "roleId",
           "perimetreType"
+        ],
+        "additionalProperties": false
+      },
+      "NouvelleFormation": {
+        "type": "object",
+        "properties": {
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "bts",
+              "bachelor",
+              "master",
+              "titre_rncp",
+              "cqp",
+              "autre"
+            ]
+          },
+          "niveau": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 8
+          },
+          "codeRncp": {
+            "nullable": true,
+            "type": "string",
+            "pattern": "^((RNCP|RS)\\d{1,6})?$"
+          },
+          "dureeAnnees": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "modes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "initial",
+                "apprentissage",
+                "professionnalisation",
+                "formation_continue"
+              ]
+            }
+          },
+          "etablissementIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "intitule",
+          "type",
+          "niveau",
+          "dureeAnnees",
+          "modes",
+          "etablissementIds"
         ],
         "additionalProperties": false
       },
@@ -5205,6 +7002,527 @@
         ],
         "additionalProperties": false
       },
+      "RegleActivee": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "regleId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "regle": {
+            "$ref": "#/components/schemas/RegleParticuliere"
+          }
+        },
+        "required": [
+          "id",
+          "regleId",
+          "libelle",
+          "regle"
+        ],
+        "additionalProperties": false
+      },
+      "RegleBibliotheque": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "regle": {
+            "$ref": "#/components/schemas/RegleParticuliere"
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "regle"
+        ],
+        "additionalProperties": false
+      },
+      "RegleParticuliere": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "bonus"
+                ]
+              },
+              "valeur": {
+                "type": "number",
+                "minimum": -20,
+                "maximum": 100
+              },
+              "unite": {
+                "type": "string",
+                "enum": [
+                  "points",
+                  "pourcentage"
+                ]
+              },
+              "cible": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "niveau": {
+                        "type": "string",
+                        "enum": [
+                          "generale"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "niveau"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "niveau": {
+                        "type": "string",
+                        "enum": [
+                          "ue"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "niveau",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "niveau": {
+                        "type": "string",
+                        "enum": [
+                          "module"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "niveau",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "plafond": {
+                "nullable": true,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 20
+              },
+              "automatique": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "valeur",
+              "unite",
+              "cible",
+              "plafond",
+              "automatique"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ue_bonus"
+                ]
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "niveau": {
+                    "type": "string",
+                    "enum": [
+                      "ue",
+                      "module"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "niveau",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "seuil": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 20
+              },
+              "diviseur": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 100
+              },
+              "cible": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "niveau": {
+                        "type": "string",
+                        "enum": [
+                          "generale"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "niveau"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "niveau": {
+                        "type": "string",
+                        "enum": [
+                          "ue"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "niveau",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "niveau": {
+                        "type": "string",
+                        "enum": [
+                          "module"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "niveau",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "source",
+              "seuil",
+              "diviseur",
+              "cible"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "points_jury"
+                ]
+              },
+              "maximum": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 5
+              },
+              "seuils": {
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 20
+                }
+              }
+            },
+            "required": [
+              "type",
+              "maximum",
+              "seuils"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "plafond"
+                ]
+              },
+              "typeEvaluation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "sens": {
+                "type": "string",
+                "enum": [
+                  "plafond",
+                  "plancher"
+                ]
+              },
+              "valeur": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 20
+              }
+            },
+            "required": [
+              "type",
+              "typeEvaluation",
+              "sens",
+              "valeur"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ponderation"
+                ]
+              },
+              "poids": {
+                "minItems": 1,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "typeEvaluation": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "poids": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  },
+                  "required": [
+                    "typeEvaluation",
+                    "poids"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "poids"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "penalite_absence"
+                ]
+              },
+              "typeAbsence": {
+                "type": "string",
+                "enum": [
+                  "injustifiee",
+                  "justifiee"
+                ]
+              },
+              "note": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 20
+              }
+            },
+            "required": [
+              "type",
+              "typeAbsence",
+              "note"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ReglesValidation": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "lmd",
+              "blocs",
+              "sans_compensation"
+            ]
+          },
+          "seuil": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "noteEliminatoire": {
+            "nullable": true,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "compensationModules": {
+            "type": "boolean"
+          },
+          "compensationSemestres": {
+            "type": "boolean"
+          },
+          "arrondi": {
+            "type": "object",
+            "properties": {
+              "decimales": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "methode": {
+                "type": "string",
+                "enum": [
+                  "plus_proche",
+                  "inferieur",
+                  "superieur"
+                ]
+              }
+            },
+            "required": [
+              "decimales",
+              "methode"
+            ],
+            "additionalProperties": false
+          },
+          "mentions": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "libelle": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "seuil": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 20
+                }
+              },
+              "required": [
+                "libelle",
+                "seuil"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "modeEvaluation": {
+            "type": "string",
+            "enum": [
+              "notes",
+              "competences",
+              "les_deux"
+            ]
+          },
+          "validationBlocs": {
+            "type": "string",
+            "enum": [
+              "notes",
+              "competences",
+              "les_deux"
+            ]
+          },
+          "regleNiveau": {
+            "type": "string",
+            "enum": [
+              "derniere",
+              "meilleur",
+              "frequent"
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "seuil",
+          "noteEliminatoire",
+          "compensationModules",
+          "compensationSemestres",
+          "arrondi",
+          "mentions",
+          "modeEvaluation",
+          "validationBlocs",
+          "regleNiveau"
+        ],
+        "additionalProperties": false
+      },
       "ResultatActions": {
         "type": "object",
         "properties": {
@@ -5298,6 +7616,257 @@
         ],
         "additionalProperties": false
       },
+      "ResultatSimulation": {
+        "type": "object",
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "moyenne": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "eliminatoire": {
+                  "type": "boolean"
+                },
+                "bonus": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "moyenne",
+                "eliminatoire",
+                "bonus"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "moyenne": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "acquise": {
+                  "nullable": true,
+                  "type": "boolean"
+                },
+                "par": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "moyenne",
+                    "compensation"
+                  ]
+                },
+                "ects": {
+                  "type": "number"
+                },
+                "eliminatoire": {
+                  "type": "boolean"
+                },
+                "bonus": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "moyenne",
+                "acquise",
+                "par",
+                "ects",
+                "eliminatoire",
+                "bonus"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "periodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cle": {
+                  "type": "string"
+                },
+                "semestre": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "moyenne": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "validee": {
+                  "nullable": true,
+                  "type": "boolean"
+                },
+                "par": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "moyenne",
+                    "compensation"
+                  ]
+                }
+              },
+              "required": [
+                "cle",
+                "semestre",
+                "moyenne",
+                "validee",
+                "par"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "blocs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "moyenne": {
+                  "nullable": true,
+                  "type": "number"
+                },
+                "valideParNotes": {
+                  "nullable": true,
+                  "type": "boolean"
+                },
+                "competences": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "valide": {
+                      "type": "boolean"
+                    },
+                    "manquantes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "valide",
+                    "manquantes"
+                  ],
+                  "additionalProperties": false
+                },
+                "valide": {
+                  "nullable": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "moyenne",
+                "valideParNotes",
+                "competences",
+                "valide"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "moyenneGenerale": {
+            "nullable": true,
+            "type": "number"
+          },
+          "admis": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "mention": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ects": {
+            "type": "number"
+          },
+          "explications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "regleId": {
+                  "type": "string"
+                },
+                "libelle": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "ponderation",
+                    "plafond",
+                    "penalite_absence",
+                    "ue_bonus",
+                    "bonus",
+                    "points_jury"
+                  ]
+                },
+                "cible": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "avant": {
+                  "type": "number"
+                },
+                "apres": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "regleId",
+                "libelle",
+                "type",
+                "cible",
+                "avant",
+                "apres"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "anomalies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "modules",
+          "ues",
+          "periodes",
+          "blocs",
+          "moyenneGenerale",
+          "admis",
+          "mention",
+          "ects",
+          "explications",
+          "anomalies"
+        ],
+        "additionalProperties": false
+      },
       "RoleDetail": {
         "type": "object",
         "properties": {
@@ -5351,6 +7920,10 @@
                 "audit:lire",
                 "apparence:gerer",
                 "corbeille:restaurer",
+                "referentiel:lire",
+                "referentiel:gerer",
+                "referentiel:publier",
+                "referentiel:parametrer",
                 "emargement:animer"
               ]
             }
@@ -5378,6 +7951,118 @@
           "personnes",
           "parDefaut",
           "verrouille"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieBloc": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "code",
+          "intitule"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieCompetence": {
+        "type": "object",
+        "properties": {
+          "blocId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "criteres": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "moduleIds": {
+            "default": [],
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "blocId",
+          "code",
+          "intitule",
+          "criteres",
+          "moduleIds"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieEchelle": {
+        "type": "object",
+        "properties": {
+          "niveaux": {
+            "minItems": 2,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "libelle": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "couleur": {
+                  "type": "string",
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "valeur": {
+                  "nullable": true,
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "valide": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "libelle",
+                "couleur",
+                "valeur",
+                "valide"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "niveaux"
         ],
         "additionalProperties": false
       },
@@ -5424,6 +8109,410 @@
           "dateFin",
           "type",
           "etablissementIds"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieModule": {
+        "type": "object",
+        "properties": {
+          "ueId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "coefficient": {
+            "default": 1,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "td": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "tp": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "projet": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "elearning": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "ueId",
+          "code",
+          "intitule",
+          "coefficient",
+          "heures"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieRegleBibliotheque": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "regle": {
+            "$ref": "#/components/schemas/RegleParticuliere"
+          }
+        },
+        "required": [
+          "libelle",
+          "regle"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieReglesVersion": {
+        "type": "object",
+        "properties": {
+          "regles": {
+            "$ref": "#/components/schemas/ReglesValidation"
+          },
+          "reglesParticulieres": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "regleId": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "regle": {
+                  "$ref": "#/components/schemas/RegleParticuliere"
+                }
+              },
+              "required": [
+                "regleId",
+                "libelle",
+                "regle"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "regles",
+          "reglesParticulieres"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieSimulation": {
+        "type": "object",
+        "properties": {
+          "annee": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "option": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          },
+          "evaluations": {
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "type": {
+                  "default": "examen",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "coefficient": {
+                  "default": 1,
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "note": {
+                  "nullable": true,
+                  "type": "number",
+                  "minimum": 0
+                },
+                "sur": {
+                  "default": 20,
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMinimum": true,
+                  "maximum": 1000
+                },
+                "absence": {
+                  "default": null,
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "injustifiee",
+                    "justifiee"
+                  ]
+                }
+              },
+              "required": [
+                "moduleId",
+                "type",
+                "coefficient",
+                "note",
+                "sur",
+                "absence"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "bonusAccordes": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "pointsJury": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "regleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "cible": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "niveau": {
+                          "type": "string",
+                          "enum": [
+                            "generale"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "niveau"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "niveau": {
+                          "type": "string",
+                          "enum": [
+                            "ue"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "niveau",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "niveau": {
+                          "type": "string",
+                          "enum": [
+                            "module"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "niveau",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "points": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "motif": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              },
+              "required": [
+                "regleId",
+                "cible",
+                "points",
+                "motif"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "niveauxCompetences": {
+            "default": {},
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "annee",
+          "option",
+          "evaluations",
+          "bonusAccordes",
+          "pointsJury",
+          "niveauxCompetences"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieUe": {
+        "type": "object",
+        "properties": {
+          "blocId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "intitule": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "annee": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "semestre": {
+            "default": 1,
+            "nullable": true,
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "ects": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "coefficient": {
+            "default": 1,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "option": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "blocId",
+          "code",
+          "intitule",
+          "annee",
+          "semestre",
+          "ects",
+          "coefficient",
+          "option"
         ],
         "additionalProperties": false
       },
@@ -5482,6 +8571,263 @@
         ],
         "additionalProperties": false
       },
+      "TotauxMaquette": {
+        "type": "object",
+        "properties": {
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "type": "number"
+              },
+              "td": {
+                "type": "number"
+              },
+              "tp": {
+                "type": "number"
+              },
+              "projet": {
+                "type": "number"
+              },
+              "elearning": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          },
+          "heuresTotal": {
+            "type": "number"
+          },
+          "ects": {
+            "type": "number"
+          },
+          "periodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "annee": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "semestre": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "ects": {
+                  "type": "number"
+                },
+                "heures": {
+                  "type": "object",
+                  "properties": {
+                    "cm": {
+                      "type": "number"
+                    },
+                    "td": {
+                      "type": "number"
+                    },
+                    "tp": {
+                      "type": "number"
+                    },
+                    "projet": {
+                      "type": "number"
+                    },
+                    "elearning": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cm",
+                    "td",
+                    "tp",
+                    "projet",
+                    "elearning"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "annee",
+                "semestre",
+                "ects",
+                "heures"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "annees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "annee": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "ects": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "annee",
+                "ects"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ues": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "heures": {
+                  "type": "object",
+                  "properties": {
+                    "cm": {
+                      "type": "number"
+                    },
+                    "td": {
+                      "type": "number"
+                    },
+                    "tp": {
+                      "type": "number"
+                    },
+                    "projet": {
+                      "type": "number"
+                    },
+                    "elearning": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cm",
+                    "td",
+                    "tp",
+                    "projet",
+                    "elearning"
+                  ],
+                  "additionalProperties": false
+                },
+                "heuresTotal": {
+                  "type": "number"
+                },
+                "modules": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "heures",
+                "heuresTotal",
+                "modules"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "blocs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "ects": {
+                  "type": "number"
+                },
+                "heuresTotal": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "ects",
+                "heuresTotal"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "heures",
+          "heuresTotal",
+          "ects",
+          "periodes",
+          "annees",
+          "ues",
+          "blocs"
+        ],
+        "additionalProperties": false
+      },
+      "UeMaquette": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "blocId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string"
+          },
+          "intitule": {
+            "type": "string"
+          },
+          "annee": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "semestre": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ects": {
+            "type": "number"
+          },
+          "coefficient": {
+            "type": "number"
+          },
+          "option": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ordre": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "blocId",
+          "code",
+          "intitule",
+          "annee",
+          "semestre",
+          "ects",
+          "coefficient",
+          "option",
+          "ordre"
+        ],
+        "additionalProperties": false
+      },
       "ValidationImport": {
         "type": "object",
         "properties": {
@@ -5505,6 +8851,46 @@
         "required": [
           "mode",
           "existants"
+        ],
+        "additionalProperties": false
+      },
+      "VersionResume": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "brouillon",
+              "publiee",
+              "archivee"
+            ]
+          },
+          "publieeLe": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "utilisee": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "numero",
+          "statut",
+          "publieeLe",
+          "utilisee"
         ],
         "additionalProperties": false
       }

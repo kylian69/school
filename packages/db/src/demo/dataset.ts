@@ -13,6 +13,7 @@ import type {
   personne,
 } from '../schema/index.js';
 import { SeededRandom } from './random.js';
+import { buildDemoReferentiel, type DemoReferentiel } from './referentiel.js';
 
 /**
  * Jeu de démonstration (plan, section 5) : entièrement fictif. Aucune enseigne, école, personne
@@ -111,6 +112,8 @@ export interface DemoDataset {
   modules: InferInsertModel<typeof organisationModule>[];
   /** Compte de démonstration de la console de la plateforme (SaaS). */
   superAdministrateur: { email: string; name: string };
+  /** Formations et maquettes (I3.1). */
+  referentiel: DemoReferentiel;
 }
 
 /** Modules de la formule Pro, repris de packages/referentials (sans dépendance du paquet db). */
@@ -232,6 +235,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
     fermetures: [],
     personnes: [],
     comptes: [],
+    referentiel: buildDemoReferentiel([], []),
   };
 
   ECOLES.forEach((ecole, index) => {
@@ -344,5 +348,12 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
     }
   });
 
+  const organisations = dataset.organisations.flatMap((o) => o.id ?? []);
+  dataset.referentiel = buildDemoReferentiel(
+    organisations,
+    organisations.map((o) =>
+      dataset.etablissements.filter((e) => e.organisationId === o).flatMap((e) => e.id ?? []),
+    ),
+  );
   return dataset;
 }

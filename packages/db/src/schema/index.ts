@@ -8,3 +8,4 @@ export * from './structure.js';
 export * from './platform.js';
 export * from './imports.js';
 export * from './emargement.js';
+export * from './referentiel.js';

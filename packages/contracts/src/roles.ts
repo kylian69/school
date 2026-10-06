@@ -43,6 +43,10 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'apparence:gerer',
       'corbeille:restaurer',
       'emargement:animer',
+      'referentiel:lire',
+      'referentiel:gerer',
+      'referentiel:publier',
+      'referentiel:parametrer',
     ],
   },
   {
@@ -58,6 +62,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'personnes:lire',
       'personnes:exporter',
       'audit:lire',
+      'referentiel:lire',
     ],
   },
   {
@@ -73,6 +78,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'personnel:inviter',
       'personnes:exporter',
       'emargement:animer',
+      'referentiel:lire',
+      'referentiel:gerer',
+      'referentiel:publier',
     ],
   },
   {
@@ -92,6 +100,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'comptes:desactiver',
       'corbeille:restaurer',
       'emargement:animer',
+      'referentiel:lire',
     ],
   },
   {
