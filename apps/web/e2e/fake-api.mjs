@@ -584,6 +584,21 @@ createServer(async (request, response) => {
     response.writeHead(200, { 'content-type': p.photoType ?? 'image/png' });
     return response.end(p.photoContenu);
   }
+  // Import par archive : la vraie API décompresse ; ici, un bilan fixe pour toute archive ZIP.
+  if (path === '/api/photos/import' && request.method === 'POST') {
+    const archive = await lireCorps(request);
+    if (archive.subarray(0, 2).toString() !== 'PK') {
+      return json(400, {
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: ['photo : Cette archive est illisible. Créez-la de nouveau au format ZIP.'],
+      });
+    }
+    return json(200, {
+      associees: 2,
+      sansCorrespondance: ['INCONNU-42.jpg'],
+      rejetes: [{ fichier: 'abimee.jpg', motif: 'Seuls les formats JPEG et PNG sont acceptés.' }],
+    });
+  }
   if (path === '/api/moi/photo') {
     if (!user) return json(401, { message: 'Session absente' });
     if (request.method === 'PUT') {

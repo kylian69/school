@@ -7,7 +7,11 @@ import { ImportsController } from './imports.controller.js';
 import { ImportsService } from './imports.service.js';
 import { PersonnesController } from './personnes.controller.js';
 import { PersonnesService } from './personnes.service.js';
-import { MaPhotoController, PhotosController } from './photos.controller.js';
+import {
+  ImportPhotosController,
+  MaPhotoController,
+  PhotosController,
+} from './photos.controller.js';
 import { PhotosService } from './photos.service.js';
 import { ValidationImportService } from './validation-import.service.js';
 
@@ -18,6 +22,7 @@ import { ValidationImportService } from './validation-import.service.js';
     PersonnesController,
     PhotosController,
     MaPhotoController,
+    ImportPhotosController,
     AttributionsController,
     ImportsController,
   ],

@@ -717,6 +717,27 @@ export const fr = {
     enregistree: 'Photo enregistrée.',
     deposee: 'Photo envoyée : la scolarité va la valider.',
     erreur: 'L’envoi de la photo a échoué. Réessayez.',
+    import: {
+      titre: 'Importer des photos',
+      lien: 'Importer des photos',
+      aide: 'Rassemblez les photos dans une archive ZIP : chaque fichier porte le matricule de la personne (par exemple 2026-0042.jpg). Les photos sont recadrées et validées d’office ; elles remplacent les photos en place.',
+      aideFormat: 'Archive ZIP de 200 Mo au plus ; photos JPEG ou PNG de 5 Mo au plus.',
+      deposer: 'Choisir l’archive ZIP',
+      envoi: 'Import en cours…',
+      erreur: 'L’import de l’archive a échoué. Réessayez.',
+      bilan: 'Bilan de l’import',
+      associees: (n: number) =>
+        n === 0
+          ? 'Aucune photo associée.'
+          : n === 1
+            ? '1 photo associée à sa fiche.'
+            : `${n} photos associées à leur fiche.`,
+      sansCorrespondance: (n: number) =>
+        `${n} fichier${n > 1 ? 's' : ''} sans matricule correspondant dans l’école`,
+      rejetes: (n: number) => `${n} fichier${n > 1 ? 's' : ''} refusé${n > 1 ? 's' : ''}`,
+      conseil:
+        'Vérifiez le nom de ces fichiers (le matricule, sans espace), puis importez-les dans une nouvelle archive.',
+    },
   },
   securite: {
     titre: 'Sécurité de mon compte',

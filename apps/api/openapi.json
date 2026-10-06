@@ -1518,6 +1518,32 @@
         }
       }
     },
+    "/api/photos/import": {
+      "post": {
+        "operationId": "ImportPhotosController.importer",
+        "summary": "Importer une archive ZIP de photos nommées par matricule (200 Mo au plus)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BilanImportPhotos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/plateforme/clients": {
       "get": {
         "operationId": "ClientsController.lister",
@@ -2355,6 +2381,47 @@
           "debut",
           "fin",
           "statut"
+        ],
+        "additionalProperties": false
+      },
+      "BilanImportPhotos": {
+        "type": "object",
+        "properties": {
+          "associees": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sansCorrespondance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rejetes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fichier": {
+                  "type": "string"
+                },
+                "motif": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "fichier",
+                "motif"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "associees",
+          "sansCorrespondance",
+          "rejetes"
         ],
         "additionalProperties": false
       },

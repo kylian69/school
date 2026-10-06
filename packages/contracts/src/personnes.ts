@@ -206,3 +206,22 @@ export const ExportDiffere = z
   .object({ total: z.int(), message: z.string() })
   .meta({ id: 'ExportDiffere' });
 export type ExportDiffere = z.infer<typeof ExportDiffere>;
+
+/** Taille maximale d'une archive de photos : environ 500 photos d'appareil courant. */
+/** Nombre de photos par archive (une promotion entière, avec de la marge). */
+export const ARCHIVE_PHOTOS_NOMBRE_MAX = 2000;
+/** Types envoyés par les navigateurs pour une archive ZIP (Windows : x-zip-compressed). */
+export const TYPES_ARCHIVE_PHOTOS = ['application/zip', 'application/x-zip-compressed'];
+export const ARCHIVE_PHOTOS_TAILLE_MAX = 200 * 1024 * 1024;
+
+/** Bilan d'un import de photos par archive ZIP nommée par matricule (US-01-20). */
+export const BilanImportPhotos = z
+  .object({
+    associees: z.int().min(0),
+    /** Fichiers dont le nom ne correspond à aucun matricule de l'école. */
+    sansCorrespondance: z.array(z.string()),
+    /** Fichiers refusés (format, taille, image illisible), avec le motif. */
+    rejetes: z.array(z.object({ fichier: z.string(), motif: z.string() })),
+  })
+  .meta({ id: 'BilanImportPhotos' });
+export type BilanImportPhotos = z.infer<typeof BilanImportPhotos>;

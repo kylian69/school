@@ -53,6 +53,11 @@ export default async function PersonnesPage({
           {data ? <p className="text-sm text-muted">{t.resume(data.total)}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
+          {peutCreer ? (
+            <Button variant="secondary" asChild>
+              <Link href="/personnes/photos">{fr.photo.import.lien}</Link>
+            </Button>
+          ) : null}
           {permissions.includes('personnes:importer') ? (
             <Button variant="secondary" asChild>
               <Link href="/personnes/import">{fr.imports.importer}</Link>

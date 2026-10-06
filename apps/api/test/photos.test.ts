@@ -1,5 +1,10 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ROLES_PAR_DEFAUT, type PersonneDetail, type PhotoPersonne } from '@scolaly/contracts';
+import {
+  ROLES_PAR_DEFAUT,
+  type BilanImportPhotos,
+  type PersonneDetail,
+  type PhotoPersonne,
+} from '@scolaly/contracts';
 import {
   attribution,
   createDatabase,
@@ -10,6 +15,7 @@ import {
   role,
 } from '@scolaly/db';
 import { and, eq } from 'drizzle-orm';
+import { zipSync } from 'fflate';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
@@ -195,5 +201,71 @@ describe('US-01-20 photos des apprenants', () => {
       (await requete('GET', `/api/personnes/${eleveId}/photo?attente=1`, direction)).statusCode,
     ).toBe(403);
     expect((await requete('GET', `/api/personnes/${eleveId}/photo`, eleve)).statusCode).toBe(403);
+  });
+});
+
+describe('US-01-20 import des photos par archive ZIP', () => {
+  it('associe chaque photo à la fiche de son matricule et signale les fichiers sans correspondance', async () => {
+    const matricules = ['ZIP-0001', 'ZIP-0002', 'ZIP-0003'];
+    const ids: string[] = [];
+    for (const matricule of matricules) {
+      const [ligne] = await owner.db
+        .insert(personne)
+        .values({
+          organisationId: ecole,
+          nom: 'Archive',
+          prenom: 'Lou',
+          email: `${matricule.toLowerCase()}@exemple.test`,
+          matricule,
+        })
+        .returning();
+      ids.push(ligne?.id ?? '');
+    }
+    const archive = zipSync({
+      'promo/ZIP-0001.jpg': new Uint8Array(await image(640, 480, 'jpeg')),
+      'promo/ZIP-0002.PNG': new Uint8Array(await image(300, 300, 'png')),
+      'ZIP-0003.jpg': new Uint8Array(Buffer.from('pas une image')),
+      'INCONNU-42.jpg': new Uint8Array(await image(100, 100, 'jpeg')),
+      'promo/lisez-moi.txt': new Uint8Array(Buffer.from('ignoré')),
+      '__MACOSX/promo/._ZIP-0001.jpg': new Uint8Array([0, 1, 2]),
+    });
+    const reponse = await app.inject({
+      method: 'POST',
+      url: '/api/photos/import',
+      headers: { cookie: admin, origin: WEB_ORIGIN, 'content-type': 'application/zip' },
+      payload: Buffer.from(archive),
+    });
+    expect(reponse.statusCode).toBe(200);
+    const bilan = reponse.json<BilanImportPhotos>();
+    expect(bilan.associees).toBe(2);
+    expect(bilan.sansCorrespondance).toEqual(['INCONNU-42.jpg']);
+    expect(bilan.rejetes).toEqual([
+      { fichier: 'ZIP-0003.jpg', motif: expect.stringMatching(/JPEG et PNG/) as string },
+    ]);
+    for (const id of ids.slice(0, 2)) {
+      const { photo } = await fiche(id);
+      expect(photo?.statut).toBe('validee');
+      const servie = await requete('GET', photo?.url ?? '');
+      expect(await sharp(servie.rawPayload).metadata()).toMatchObject({ width: 512, height: 512 });
+    }
+    expect((await fiche(ids[2] ?? '')).photo?.url).toBeNull();
+  });
+
+  it('refuse une archive illisible, et l’import aux personnes sans le droit', async () => {
+    const illisible = await app.inject({
+      method: 'POST',
+      url: '/api/photos/import',
+      headers: { cookie: admin, origin: WEB_ORIGIN, 'content-type': 'application/zip' },
+      payload: Buffer.from('ceci n’est pas une archive'),
+    });
+    expect(illisible.statusCode).toBe(400);
+    expect(illisible.json<{ details: string[] }>().details[0]).toMatch(/illisible/);
+    const interdit = await app.inject({
+      method: 'POST',
+      url: '/api/photos/import',
+      headers: { cookie: eleve, origin: WEB_ORIGIN, 'content-type': 'application/zip' },
+      payload: Buffer.from(zipSync({})),
+    });
+    expect(interdit.statusCode).toBe(403);
   });
 });

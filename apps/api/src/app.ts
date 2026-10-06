@@ -3,8 +3,10 @@ import type { Provider, Type } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
+  ARCHIVE_PHOTOS_TAILLE_MAX,
   IMPORT_TAILLE_MAX,
   LOGO_TAILLE_MAX,
+  TYPES_ARCHIVE_PHOTOS,
   TYPES_FICHIER_IMPORT,
   TYPES_LOGO,
 } from '@scolaly/contracts';
@@ -120,6 +122,14 @@ export async function createApp(
   fastify.addContentTypeParser(
     Object.keys(TYPES_FICHIER_IMPORT),
     { parseAs: 'buffer', bodyLimit: 2 * IMPORT_TAILLE_MAX },
+    (_request, body, done) => {
+      done(null, body);
+    },
+  );
+  // Archive ZIP de photos (US-01-20 : 200 Mo contrôlés par le service).
+  fastify.addContentTypeParser(
+    TYPES_ARCHIVE_PHOTOS,
+    { parseAs: 'buffer', bodyLimit: ARCHIVE_PHOTOS_TAILLE_MAX + 1024 * 1024 },
     (_request, body, done) => {
       done(null, body);
     },
