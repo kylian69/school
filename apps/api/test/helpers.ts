@@ -37,7 +37,9 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
 export const TEST_QUEUE_PREFIX = `test-api-${process.pid}-${Date.now()}`;
 
 /** Emails mis en file par l'API (le worker ne tourne pas pendant ces tests). */
-export async function emailsEnFile(): Promise<{ to: string; subject: string; text: string }[]> {
+export async function emailsEnFile(): Promise<
+  { to: string; subject: string; text: string; html?: string }[]
+> {
   const queue = new Queue(QUEUES.emails, {
     connection: { url: inject('valkeyUrl') },
     prefix: TEST_QUEUE_PREFIX,
@@ -46,7 +48,7 @@ export async function emailsEnFile(): Promise<{ to: string; subject: string; tex
     const jobs = await queue.getJobs(['waiting', 'delayed', 'prioritized']);
     return jobs
       .sort((a, b) => a.timestamp - b.timestamp)
-      .map((job) => job.data as { to: string; subject: string; text: string });
+      .map((job) => job.data as { to: string; subject: string; text: string; html?: string });
   } finally {
     await queue.close();
   }

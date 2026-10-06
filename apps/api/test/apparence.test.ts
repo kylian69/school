@@ -14,7 +14,7 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
 import { AUTH } from '../src/shared/tokens.js';
-import { signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
+import { emailsEnFile, signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
 
 const PASSWORD = 'phrase de passe des tests de l apparence';
 const owner = createDatabase(inject('migratorUrl'), { max: 2 });
@@ -187,6 +187,28 @@ describe('E-01-09 apparence', () => {
     // Un fichier qui n'est pas ce qu'il prétend être est refusé sur sa signature.
     const deguise = await deposer(Buffer.from('pas une image'), 'image/png');
     expect(deguise.statusCode).toBe(400);
+  });
+
+  it('US-01-14 envoie les invitations aux couleurs et au logo de l’école', async () => {
+    const [invitee] = await owner.db
+      .insert(personne)
+      .values({
+        organisationId: ecole,
+        nom: 'Fictive',
+        prenom: 'Léa',
+        email: 'lea.apparence@exemple.test',
+      })
+      .returning();
+    const reponse = await app.inject({
+      method: 'POST',
+      url: `/api/comptes/${invitee?.id ?? ''}/invitation`,
+      headers: { cookie: admin, origin: WEB_ORIGIN },
+    });
+    expect(reponse.statusCode).toBe(200);
+    const email = (await emailsEnFile()).find((e) => e.to === 'lea.apparence@exemple.test');
+    expect(email?.html).toContain('background:#0B6B66');
+    expect(email?.html).toContain(`http://localhost:3001/api/ecoles/${ecole}/logo?v=`);
+    expect(email?.html).toContain('>EDA</td>');
   });
 
   it('retire le logo, et réserve l’apparence à qui en a la permission', async () => {

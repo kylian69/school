@@ -1,4 +1,4 @@
-import { emailInvitation, type EmailJob } from '@scolaly/contracts';
+import { cheminLogo, emailInvitation, type EmailJob } from '@scolaly/contracts';
 import {
   invitation,
   invitationsARelancer,
@@ -30,7 +30,14 @@ export async function relancerInvitations(
   for (const [organisationId, ids] of parEcole) {
     const emails = await withOrganisation(db, organisationId, async (tx) => {
       const lignes = await tx
-        .select({ invitation, prenom: personne.prenom, ecole: organisation.nom })
+        .select({
+          invitation,
+          prenom: personne.prenom,
+          ecole: organisation.nom,
+          nomAffichage: organisation.nomAffichage,
+          couleur: organisation.couleurPrincipale,
+          logoEmpreinte: organisation.logoEmpreinte,
+        })
         .from(invitation)
         .innerJoin(personne, eq(personne.id, invitation.personneId))
         .innerJoin(organisation, eq(organisation.id, invitation.organisationId))
@@ -53,6 +60,13 @@ export async function relancerInvitations(
             lien: new URL(`/activation/${jeton}`, publicUrl).toString(),
             expireLe: ligne.invitation.expireLe,
             relance,
+            marque: {
+              nom: ligne.nomAffichage,
+              couleur: ligne.couleur,
+              logoUrl: ligne.logoEmpreinte
+                ? new URL(cheminLogo(organisationId, ligne.logoEmpreinte), publicUrl).toString()
+                : null,
+            },
           }),
         );
       }
