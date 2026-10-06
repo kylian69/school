@@ -70,6 +70,17 @@ export const ApercuImport = z
     /** Lignes en erreur ou avec avertissement d'abord, puis un échantillon des autres. */
     lignes: z.array(LigneApercu),
     expireLe: z.iso.datetime({ offset: true }),
+    /** Bilan d'un import validé (RG-01-20) ; null en préparation. */
+    bilan: z
+      .object({
+        crees: z.int(),
+        modifies: z.int(),
+        rejetes: z.int(),
+        valideLe: z.iso.datetime({ offset: true }),
+        /** Annulable : moins de 24 h et aucune fiche utilisée depuis. */
+        annulable: z.boolean(),
+      })
+      .nullable(),
   })
   .meta({ id: 'ApercuImport' });
 export type ApercuImport = z.infer<typeof ApercuImport>;
@@ -83,3 +94,13 @@ export const ModificationCorrespondance = z
   .object({ correspondance: z.record(z.string(), champ.nullable()) })
   .meta({ id: 'ModificationCorrespondance' });
 export type ModificationCorrespondance = z.infer<typeof ModificationCorrespondance>;
+
+/** Étape 4 : tout ou rien, ou seulement les lignes valides (RG-01-19). */
+export const ValidationImport = z
+  .object({
+    mode: z.enum(['tout', 'valides']).default('tout'),
+    /** Lignes dont l'email désigne une fiche existante : la mettre à jour, ou ignorer la ligne. */
+    existants: z.enum(['mettre-a-jour', 'ignorer']).default('ignorer'),
+  })
+  .meta({ id: 'ValidationImport' });
+export type ValidationImport = z.infer<typeof ValidationImport>;

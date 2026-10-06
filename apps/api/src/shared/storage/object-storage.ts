@@ -1,5 +1,6 @@
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
@@ -63,6 +64,11 @@ export class ObjectStorage {
     const reponse = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
     if (!reponse.Body) throw new Error(`Objet vide : ${key}`);
     return Buffer.from(await reponse.Body.transformToByteArray());
+  }
+
+  /** Suppression d'un objet devenu inutile (fichier d'import traité ou expiré). */
+  async delete(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
   /** Lien de téléchargement signé, valable quelques minutes, qui force le téléchargement. */

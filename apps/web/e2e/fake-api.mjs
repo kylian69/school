@@ -205,7 +205,7 @@ const apercuImport = (i) => {
   return {
     id: i.id,
     type: i.type,
-    statut: 'en_preparation',
+    statut: i.statut ?? 'en_preparation',
     fichierNom: i.fichierNom,
     colonnes: i.colonnes,
     correspondance: i.correspondance,
@@ -219,6 +219,7 @@ const apercuImport = (i) => {
     },
     lignes,
     expireLe: '2030-01-01T00:00:00.000Z',
+    bilan: i.bilan ?? null,
   };
 };
 const resumeAnnee = ({ fermetures: _fermetures, ...annee }) => annee;
@@ -442,7 +443,9 @@ createServer(async (request, response) => {
   }
 
   // Assistant d'import (E-01-06) : analyse simplifiée, le contrôle réel est testé par l'API.
-  const importRoute = path.match(/^\/api\/imports(?:\/([^/]+))?(\/correspondance)?$/);
+  const importRoute = path.match(
+    /^\/api\/imports(?:\/([^/]+))?(\/correspondance|\/validation|\/annulation)?$/,
+  );
   if (importRoute) {
     if (!user) return json(401, { message: 'Session absente' });
     const [, id] = importRoute;
@@ -471,6 +474,21 @@ createServer(async (request, response) => {
     const enCours = imports.get(id);
     if (!enCours) return json(404, { message: 'Import introuvable dans cette école.' });
     if (request.method === 'PUT') enCours.correspondance = (await readBody(request)).correspondance;
+    if (importRoute[2] === '/validation') {
+      const { mode } = await readBody(request);
+      const apercu = apercuImport(enCours);
+      if (mode === 'tout' && apercu.totaux.enErreur > 0)
+        return json(400, { message: 'Le fichier contient des lignes en erreur.', details: [] });
+      enCours.statut = 'valide';
+      enCours.bilan = {
+        crees: apercu.totaux.valides,
+        modifies: 0,
+        rejetes: apercu.totaux.enErreur,
+        valideLe: new Date().toISOString(),
+        annulable: true,
+      };
+    }
+    if (importRoute[2] === '/annulation') enCours.statut = 'annule';
     return json(200, apercuImport(enCours));
   }
 

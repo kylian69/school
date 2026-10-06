@@ -197,3 +197,85 @@ describe('E-01-06 assistant d’import', () => {
     expect((await deposer('Nom\nA', 'text/csv', direction)).statusCode).toBe(403);
   });
 });
+
+describe('E-01-06 validation, rapport et annulation', () => {
+  const POST = (url: string, payload?: unknown) =>
+    app.inject({
+      method: 'POST',
+      url,
+      headers: { cookie: admin, origin: WEB_ORIGIN },
+      ...(payload ? { payload } : {}),
+    });
+  const fichier = (suffixe: string) =>
+    [
+      'Nom;Prénom;Email;Téléphone',
+      `Benali;Inès;ines.${suffixe}@exemple.test;`,
+      `Morel;Léo;leo.${suffixe}@exemple.test;`,
+      'Roux;Noa;pas-un-email;',
+      'Fictif;Noa;admin.imports@exemple.test;06 11 22 33 44',
+    ].join('\n');
+  const fiche = async (email: string) =>
+    (await owner.db.select().from(personne).where(eq(personne.email, email)))[0];
+
+  it('RG-01-19 refuse un import en erreur en « tout ou rien », accepte les seules lignes valides', async () => {
+    const apercu = (await deposer(fichier('a'))).json<ApercuImport>();
+    const toutOuRien = await POST(`/api/imports/${apercu.id}/validation`, { mode: 'tout' });
+    expect(toutOuRien.statusCode).toBe(400);
+    expect(toutOuRien.json<{ message: string }>().message).toMatch(/lignes en erreur/);
+
+    const valide = await POST(`/api/imports/${apercu.id}/validation`, {
+      mode: 'valides',
+      existants: 'ignorer',
+    });
+    expect(valide.statusCode).toBe(200);
+    expect(valide.json<ApercuImport>()).toMatchObject({
+      statut: 'valide',
+      bilan: { crees: 2, modifies: 0, rejetes: 2, annulable: true },
+    });
+    const ines = await fiche('ines.a@exemple.test');
+    expect(ines?.matricule).toMatch(/^\d{6}$/);
+    const [roleDonne] = await owner.db
+      .select({ code: role.code, perimetre: attribution.perimetreType })
+      .from(attribution)
+      .innerJoin(role, eq(role.id, attribution.roleId))
+      .where(eq(attribution.personneId, ines?.id ?? ''));
+    expect(roleDonne).toEqual({ code: 'apprenant', perimetre: 'soi' });
+
+    const rapport = await app.inject({
+      method: 'GET',
+      url: `/api/imports/${apercu.id}/rapport`,
+      headers: { cookie: admin },
+    });
+    expect(rapport.headers['content-type']).toContain('text/csv');
+    expect(rapport.body).toContain('"4";"email";"Adresse email invalide."');
+    expect(rapport.body).toContain('"5";"email";"Une fiche porte déjà cet email : ligne ignorée."');
+    expect((await POST(`/api/imports/${apercu.id}/validation`, {})).statusCode).toBe(409);
+
+    // RG-01-20 : annulation dans les 24 h, les fiches créées disparaissent.
+    const annule = await POST(`/api/imports/${apercu.id}/annulation`);
+    expect(annule.json<ApercuImport>().statut).toBe('annule');
+    expect((await fiche('ines.a@exemple.test'))?.deletedAt).not.toBeNull();
+  });
+
+  it('RG-01-20 met à jour une fiche existante, puis rétablit ses valeurs à l’annulation', async () => {
+    const apercu = (await deposer(fichier('b'))).json<ApercuImport>();
+    const valide = await POST(`/api/imports/${apercu.id}/validation`, {
+      mode: 'valides',
+      existants: 'mettre-a-jour',
+    });
+    expect(valide.json<ApercuImport>().bilan).toMatchObject({ crees: 2, modifies: 1 });
+    expect((await fiche('admin.imports@exemple.test'))?.telephone).toBe('06 11 22 33 44');
+    await POST(`/api/imports/${apercu.id}/annulation`);
+    expect((await fiche('admin.imports@exemple.test'))?.telephone).toBeNull();
+  });
+
+  it('RG-01-20 refuse d’annuler un import dont une fiche a déjà servi', async () => {
+    const apercu = (await deposer(fichier('c'))).json<ApercuImport>();
+    await POST(`/api/imports/${apercu.id}/validation`, { mode: 'valides' });
+    const leo = await fiche('leo.c@exemple.test');
+    expect((await POST(`/api/comptes/${leo?.id ?? ''}/invitation`)).statusCode).toBe(200);
+    const refus = await POST(`/api/imports/${apercu.id}/annulation`);
+    expect(refus.statusCode).toBe(409);
+    expect(refus.json<{ message: string }>().message).toMatch(/déjà servi/);
+  });
+});
