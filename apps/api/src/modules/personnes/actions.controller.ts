@@ -48,16 +48,23 @@ export class ActionsController {
       recherche,
       request.ip,
     );
+    // RG-01-21 : l'export n'est remis qu'une fois sa trace validée en base.
     if ('contenu' in resultat) {
-      await reply
-        .header('content-type', 'text/csv; charset=utf-8')
-        .header('content-disposition', 'attachment; filename="personnes.csv"')
-        .send(resultat.contenu);
+      const { contenu } = resultat;
+      RequestContext.apresValidation(async () => {
+        await reply
+          .header('content-type', 'text/csv; charset=utf-8')
+          .header('content-disposition', 'attachment; filename="personnes.csv"')
+          .send(contenu);
+      });
       return;
     }
-    await reply.status(202).send({
+    const differe = {
       total: resultat.total,
       message: `L’export de ${String(resultat.total)} personnes vous est envoyé par email, avec un lien valable 24 heures.`,
-    } satisfies ExportDiffere);
+    } satisfies ExportDiffere;
+    RequestContext.apresValidation(async () => {
+      await reply.status(202).send(differe);
+    });
   }
 }
