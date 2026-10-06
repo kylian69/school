@@ -159,3 +159,35 @@ export const SeanceProche = z
   })
   .meta({ id: 'SeanceProche' });
 export type SeanceProche = z.infer<typeof SeanceProche>;
+
+/** Préfixe des sessions de Better Auth dans Valkey (stockage secondaire de l'API). */
+export const PREFIXE_SESSIONS = 'auth:';
+
+/** Session lue en base, au format que Better Auth garde en cache : { session, user }. */
+export interface SessionEnBase {
+  session: { token: string; expiresAt: Date } & Record<string, unknown>;
+  user: Record<string, unknown>;
+}
+
+/**
+ * Remise en cache de sessions lues en base (RG-00-17) : après un redémarrage de Valkey, Better Auth
+ * relit les sessions en base sans les remettre en cache ; sans cela, chaque scan referait une
+ * requête SQL. N'écrit que les sessions absentes du cache (NX), jusqu'à leur expiration.
+ */
+export function commandesSessions(sessions: readonly SessionEnBase[], maintenant = Date.now()) {
+  return sessions.flatMap(({ session, user }) => {
+    const ttl = Math.floor((session.expiresAt.getTime() - maintenant) / 1000);
+    return ttl > 0
+      ? [
+          [
+            'set',
+            PREFIXE_SESSIONS + session.token,
+            JSON.stringify({ session, user }),
+            'EX',
+            String(ttl),
+            'NX',
+          ],
+        ]
+      : [];
+  });
+}

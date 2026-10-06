@@ -1,4 +1,5 @@
 import type { SecondaryStorage } from 'better-auth';
+import { PREFIXE_SESSIONS } from '@scolaly/contracts';
 import { Redis } from 'ioredis';
 
 export function createValkey(url: string): Redis {
@@ -11,7 +12,7 @@ export function createValkey(url: string): Redis {
  * dégradé de l'émargement) ; la suppression et les compteurs restent stricts : une révocation ou
  * une limitation ne sont jamais ignorées en silence.
  */
-export function valkeySecondaryStorage(valkey: Redis, prefix = 'auth:'): SecondaryStorage {
+export function valkeySecondaryStorage(valkey: Redis, prefix = PREFIXE_SESSIONS): SecondaryStorage {
   // Connexion coupée : on n'attend pas les nouvelles tentatives du client, on lit la base.
   const coupe = () => ['reconnecting', 'close', 'end'].includes(valkey.status);
   return {

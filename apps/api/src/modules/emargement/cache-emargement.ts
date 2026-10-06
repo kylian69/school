@@ -71,6 +71,11 @@ export class CacheEmargement implements Magasin {
     );
   }
 
+  /** Remet en cache des sessions lues en base (format de Better Auth). */
+  async rechaufferSessions(commandes: string[][]) {
+    if (commandes.length > 0) await surValkey(() => this.valkey.multi(commandes).exec());
+  }
+
   async seance(seanceId: string): Promise<SeanceEnCache | null> {
     return lireSeanceEnCache(
       await surValkey(() => this.valkey.hgetall(CLES_EMARGEMENT.seance(seanceId))),

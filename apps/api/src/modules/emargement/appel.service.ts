@@ -2,14 +2,21 @@ import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nest
 import {
   JETON_PERIODE_SECONDES,
   type AppelEnDirect,
+  commandesSessions,
   type OuvertureAppel,
 } from '@scolaly/contracts';
-import { presence, seanceEtAttendus, type Transaction } from '@scolaly/db';
+import {
+  presence,
+  seanceEtAttendus,
+  sessionsDesComptes,
+  type Database,
+  type Transaction,
+} from '@scolaly/db';
 import { eq } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
-import { ENV, VALKEY } from '../../shared/tokens.js';
+import { DATABASE, ENV, VALKEY } from '../../shared/tokens.js';
 import { CacheEmargement, CacheIndisponible, cleDeSeance } from './cache-emargement.js';
 
 /** Ouverture de l'appel et liste en direct, pour l'intervenant (US-06-01, US-06-03). */
@@ -18,7 +25,11 @@ export class AppelService {
   private readonly cache: CacheEmargement;
   private readonly cleMaitresse: Buffer;
 
-  constructor(@Inject(VALKEY) valkey: Redis, @Inject(ENV) env: Env) {
+  constructor(
+    @Inject(VALKEY) valkey: Redis,
+    @Inject(ENV) env: Env,
+    @Inject(DATABASE) private readonly db: Database,
+  ) {
     this.cache = new CacheEmargement(valkey);
     this.cleMaitresse = Buffer.from(env.ENCRYPTION_MASTER_KEY_V1, 'base64');
   }
@@ -52,6 +63,13 @@ export class AppelService {
         },
         new Map(attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : []))),
       )
+      .catch((erreur: unknown) => {
+        if (!(erreur instanceof CacheIndisponible)) throw erreur;
+      });
+    // Sessions des attendus remises en cache : le scan ne doit pas les relire en base.
+    const comptes = attendus.flatMap((a) => (a.userId ? [a.userId] : []));
+    await this.cache
+      .rechaufferSessions(commandesSessions(await sessionsDesComptes(this.db, comptes)))
       .catch((erreur: unknown) => {
         if (!(erreur instanceof CacheIndisponible)) throw erreur;
       });

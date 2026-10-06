@@ -1,7 +1,8 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import type { Database } from './client.js';
 import { withOrganisation, type Transaction } from './organisation-context.js';
 import { presence, seance, seanceAttendu } from './schema/emargement.js';
+import { authSession, authUser } from './schema/auth.js';
 import { personne } from './schema/personne.js';
 
 /** Présence lue dans le flux de l'émargement. */
@@ -159,4 +160,22 @@ export async function attenduDeSeance(
       ),
     );
   return trouve?.personneId ?? null;
+}
+
+/** Sessions en cours des comptes donnés, avec leur utilisateur (remise en cache, RG-00-17). */
+export async function sessionsDesComptes(db: Database, userIds: readonly string[]) {
+  const sessions: {
+    session: typeof authSession.$inferSelect;
+    user: typeof authUser.$inferSelect;
+  }[] = [];
+  for (let debut = 0; debut < userIds.length; debut += 5000) {
+    const lot = userIds.slice(debut, debut + 5000);
+    const lignes = await db
+      .select({ session: authSession, user: authUser })
+      .from(authSession)
+      .innerJoin(authUser, eq(authUser.id, authSession.userId))
+      .where(and(inArray(authSession.userId, lot), gt(authSession.expiresAt, new Date())));
+    sessions.push(...lignes);
+  }
+  return sessions;
 }
