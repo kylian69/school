@@ -72,6 +72,10 @@ export const CLES_EMARGEMENT = {
   /** Présences (hash) : fiche → scan en JSON, écrit une seule fois (RG-00-18). */
   presences: (seanceId: string) => `emargement:presences:${seanceId}`,
   /** Flux lu par le worker, qui écrit les présences par lots dans PostgreSQL. */
+  /** Liste des attendus en cours de chargement, basculée d'un coup (RENAME) une fois complète. */
+  attendusEnChargement: (seanceId: string) => `emargement:attendus-chargement:${seanceId}`,
+  /** Marqueur : séance préchargée récemment (une fois toutes les 5 minutes au plus). */
+  prechargee: (seanceId: string) => `emargement:prechargee:${seanceId}`,
   flux: 'emargement:flux',
   groupeFlux: 'persistance',
 } as const;
@@ -98,9 +102,14 @@ export interface SeanceEnCache {
 /** Les clés du cache vivent jusqu'à une heure après la fin de la séance (secondes Unix). */
 export const expirationCache = (finMs: number) => Math.ceil(finMs / 1000) + 3600;
 
+/** Taille des paquets écrits dans Valkey : entre deux paquets, les scans passent. */
+export const PAQUET_CACHE = 1000;
+
 /**
  * Commandes Valkey du préchargement, partagées par l'API (ouverture de l'appel) et le worker
- * (préchargement planifié) : la séance et ses attendus (compte → fiche), remplacés en bloc.
+ * (préchargement planifié), à envoyer en pipeline et non en transaction : les attendus (compte →
+ * fiche) sont écrits par paquets dans une clé de chargement, puis basculés d'un coup (RENAME). Valkey
+ * reste disponible pour les scans pendant le chargement, et aucun scan ne voit une liste partielle.
  */
 export function commandesPrechargement(
   seanceId: string,
@@ -108,8 +117,19 @@ export function commandesPrechargement(
   attendus: ReadonlyMap<string, string>,
 ): string[][] {
   const fin = String(expirationCache(seance.fin));
-  const commandes = [
-    ['del', CLES_EMARGEMENT.attendus(seanceId)],
+  const enChargement = CLES_EMARGEMENT.attendusEnChargement(seanceId);
+  const paires = [...attendus].flat();
+  const commandes = [['del', enChargement]];
+  for (let debut = 0; debut < paires.length; debut += 2 * PAQUET_CACHE) {
+    commandes.push(['hset', enChargement, ...paires.slice(debut, debut + 2 * PAQUET_CACHE)]);
+  }
+  commandes.push(
+    paires.length > 0
+      ? ['rename', enChargement, CLES_EMARGEMENT.attendus(seanceId)]
+      : ['del', CLES_EMARGEMENT.attendus(seanceId)],
+  );
+  if (paires.length > 0) commandes.push(['expireat', CLES_EMARGEMENT.attendus(seanceId), fin]);
+  commandes.push(
     [
       'hset',
       CLES_EMARGEMENT.seance(seanceId),
@@ -125,13 +145,7 @@ export function commandesPrechargement(
       seance.distanciel ? '1' : '0',
     ],
     ['expireat', CLES_EMARGEMENT.seance(seanceId), fin],
-  ];
-  if (attendus.size > 0) {
-    commandes.push(
-      ['hset', CLES_EMARGEMENT.attendus(seanceId), ...[...attendus].flat()],
-      ['expireat', CLES_EMARGEMENT.attendus(seanceId), fin],
-    );
-  }
+  );
   return commandes;
 }
 
