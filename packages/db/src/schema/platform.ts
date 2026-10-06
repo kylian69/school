@@ -14,7 +14,26 @@ export const AUTH_TABLES: readonly string[] = [
   'auth_verification',
 ];
 
-export const PLATFORM_TABLES: readonly string[] = [...PLATFORM_READONLY_TABLES, ...AUTH_TABLES];
+/** Tables privées de la console (ADR 0004) : aucun droit pour le rôle applicatif. */
+export const PLATFORM_PRIVATE_TABLES: readonly string[] = [
+  'client',
+  'contrat',
+  'client_etat_evenement',
+  'plateforme_membre',
+  'plateforme_audit',
+];
+
+export const PLATFORM_TABLES: readonly string[] = [
+  ...PLATFORM_READONLY_TABLES,
+  ...AUTH_TABLES,
+  ...PLATFORM_PRIVATE_TABLES,
+];
+
+/** Tables d'école auxquelles le rôle plateforme a accès (ADR 0004) ; aucune autre. */
+export const PLATFORM_ROLE_SCHOOL_TABLES: readonly string[] = [
+  'organisation',
+  'organisation_module',
+];
 
 /** `organisation` est cloisonnée par son propre identifiant. */
 export const SELF_SCOPED_TABLES: readonly string[] = ['organisation'];

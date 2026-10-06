@@ -2,3 +2,4 @@
 export * from './permissions.js';
 export * from './socle/health.js';
 export * from './jobs.js';
+export * from './modules.js';

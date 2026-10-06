@@ -65,20 +65,24 @@ describe('SEC-03 isolation entre organisations, table par table', async () => {
       expect(new Set(seen)).toEqual(new Set([orgA]));
     });
 
-    const appendOnly = sampleRows[table]?.appendOnly === true;
+    const appAccess = sampleRows[table]?.appAccess ?? 'full';
+    const appendOnly = appAccess !== 'full';
 
-    it.runIf(appendOnly)('est en ajout seul : ni modification ni suppression', async () => {
-      await expectPgError(
-        withOrganisation(app.db, orgA, (tx) =>
-          tx.execute(sql`update ${t} set organisation_id = organisation_id`),
-        ),
-        /permission denied/,
-      );
-      await expectPgError(
-        withOrganisation(app.db, orgA, (tx) => tx.execute(sql`delete from ${t}`)),
-        /permission denied/,
-      );
-    });
+    it.runIf(appendOnly)(
+      `n'accorde ni modification ni suppression (accès ${appAccess})`,
+      async () => {
+        await expectPgError(
+          withOrganisation(app.db, orgA, (tx) =>
+            tx.execute(sql`update ${t} set organisation_id = organisation_id`),
+          ),
+          /permission denied/,
+        );
+        await expectPgError(
+          withOrganisation(app.db, orgA, (tx) => tx.execute(sql`delete from ${t}`)),
+          /permission denied/,
+        );
+      },
+    );
 
     it.skipIf(appendOnly)("ne modifie aucune ligne d'une autre organisation", async () => {
       const updated = await withOrganisation(app.db, orgA, (tx) =>
@@ -109,7 +113,7 @@ describe('SEC-03 isolation entre organisations, table par table', async () => {
       if (!sample) return;
       await expectPgError(
         withOrganisation(app.db, orgA, (tx) => sample.insert(tx as unknown as Database, orgB)),
-        /row-level security/,
+        appAccess === 'read-only' ? /permission denied/ : /row-level security/,
       );
     });
   });

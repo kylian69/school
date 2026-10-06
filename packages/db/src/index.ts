@@ -11,6 +11,6 @@ export {
 } from './journal.js';
 export { MIGRATIONS_FOLDER, runMigrations } from './migrate.js';
 export { withOrganisation, type Transaction } from './organisation-context.js';
-export { APP_ROLE, MIGRATOR_ROLE } from './roles.js';
+export { APP_ROLE, MIGRATOR_ROLE, PLATFORM_ROLE } from './roles.js';
 export * from './schema/index.js';
 export { auditEvenement, outboxEvenement } from './schema/journal.js';

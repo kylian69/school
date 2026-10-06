@@ -1,6 +1,12 @@
 import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
-import { anneeScolaire, etablissement, periode, personne } from '../../src/schema/index.js';
+import {
+  anneeScolaire,
+  etablissement,
+  organisationModule,
+  periode,
+  personne,
+} from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
 /**
@@ -12,8 +18,11 @@ export type SampleRowFactory = (db: Database, organisationId: string) => Promise
 
 export interface ScopedTableSample {
   insert: SampleRowFactory;
-  /** Table en ajout seul : le rôle applicatif n'a ni UPDATE ni DELETE. */
-  appendOnly?: boolean;
+  /**
+   * Droits du rôle applicatif : complets (par défaut), ajout seul (ni UPDATE ni DELETE) ou
+   * lecture seule (la table est gérée par la console de la plateforme, ADR 0004).
+   */
+  appAccess?: 'full' | 'append-only' | 'read-only';
 }
 
 async function insertAnnee(db: Database, organisationId: string): Promise<string> {
@@ -63,7 +72,7 @@ export const sampleRows: Record<string, ScopedTableSample> = {
     },
   },
   audit_evenement: {
-    appendOnly: true,
+    appAccess: 'append-only',
     insert: async (db, organisationId) => {
       await db.insert(auditEvenement).values({
         organisationId,
@@ -72,8 +81,16 @@ export const sampleRows: Record<string, ScopedTableSample> = {
       });
     },
   },
+  organisation_module: {
+    appAccess: 'read-only',
+    insert: async (db, organisationId) => {
+      await db
+        .insert(organisationModule)
+        .values({ organisationId, module: 'notes', actif: true, origine: 'formule' });
+    },
+  },
   outbox_evenement: {
-    appendOnly: true,
+    appAccess: 'append-only',
     insert: async (db, organisationId) => {
       await db
         .insert(outboxEvenement)

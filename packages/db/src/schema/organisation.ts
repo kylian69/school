@@ -1,4 +1,6 @@
-import { char, pgTable, text, unique, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { char, pgPolicy, pgTable, text, unique, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { platformRole } from '../roles.js';
 import { isolationPolicy, primaryId, trackingColumns } from './columns.js';
 
 /**
@@ -22,7 +24,17 @@ export const organisation = pgTable(
     siren: char({ length: 9 }),
     ...trackingColumns(),
   },
-  () => [isolationPolicy('organisation', 'id')],
+  () => [
+    isolationPolicy('organisation', 'id'),
+    // Console de la plateforme (ADR 0004) : toutes les organisations, cette table seulement.
+    pgPolicy('organisation_plateforme', {
+      as: 'permissive',
+      for: 'all',
+      to: platformRole,
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
+  ],
 ).enableRLS();
 
 /** Colonnes d'une table métier cloisonnée par organisation (RG-00-01). */
