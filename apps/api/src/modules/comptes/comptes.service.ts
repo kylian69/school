@@ -1,18 +1,16 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { ROLE_ADMINISTRATEUR } from '@scolaly/contracts';
 import {
-  attribution,
+  administrateursActifs,
   authTwoFactor,
   authUser,
   enregistrerAudit,
   fichesDuCompte,
   personne,
-  role,
   type Database,
   type Transaction,
 } from '@scolaly/db';
 import { verifierChangementAdministrateur } from '@scolaly/domain';
-import { and, eq, gt, isNull, lte, ne, or, sql } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { RequestContext } from '../../access/request-context.js';
 import type { Auth } from '../../auth/auth.js';
@@ -139,23 +137,7 @@ export class ComptesService {
   }
 
   /** Fiches actives qui ont une attribution d'administrateur en cours (RG-01-12). */
-  private async administrateursActifs(tx: Transaction): Promise<string[]> {
-    const date = aujourdhui();
-    const lignes = await tx
-      .selectDistinct({ id: personne.id })
-      .from(attribution)
-      .innerJoin(personne, eq(personne.id, attribution.personneId))
-      .innerJoin(role, eq(role.id, attribution.roleId))
-      .where(
-        and(
-          eq(role.code, ROLE_ADMINISTRATEUR),
-          isNull(attribution.deletedAt),
-          isNull(personne.deletedAt),
-          ne(personne.compteEtat, 'desactive'),
-          lte(attribution.debut, date),
-          or(isNull(attribution.fin), gt(attribution.fin, sql`${date}::date`)),
-        ),
-      );
-    return lignes.map((l) => l.id);
+  private administrateursActifs(tx: Transaction): Promise<string[]> {
+    return administrateursActifs(tx, aujourdhui());
   }
 }

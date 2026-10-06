@@ -114,3 +114,37 @@ export const DoublonPersonne = z.object({
   motifs: z.array(z.enum(['email', 'identite'])),
 });
 export type DoublonPersonne = z.infer<typeof DoublonPersonne>;
+
+/** Rôle d'une personne, avec son périmètre et sa période (US-01-09 ; RG-01-14). */
+export const AttributionPersonne = z
+  .object({
+    id: z.uuid(),
+    roleId: z.uuid(),
+    roleLibelle: z.string(),
+    perimetreType: z.enum(['organisation', 'etablissement', 'formation', 'promotion', 'soi']),
+    perimetreId: z.uuid().nullable(),
+    /** Nom de l'établissement, de la formation ou de la promotion ; null sinon. */
+    perimetreLibelle: z.string().nullable(),
+    debut: jour,
+    fin: jour.nullable(),
+    statut: z.enum(['en-cours', 'a-venir', 'terminee']),
+  })
+  .meta({ id: 'AttributionPersonne' });
+export type AttributionPersonne = z.infer<typeof AttributionPersonne>;
+
+export const ListeAttributions = z
+  .object({ attributions: z.array(AttributionPersonne) })
+  .meta({ id: 'ListeAttributions' });
+export type ListeAttributions = z.infer<typeof ListeAttributions>;
+
+export const NouvelleAttribution = z
+  .object({
+    roleId: z.uuid(),
+    perimetreType: z.enum(['organisation', 'etablissement', 'formation', 'promotion', 'soi']),
+    perimetreId: z.uuid().nullable().optional(),
+    /** Début : aujourd'hui par défaut. */
+    debut: jour.optional(),
+    fin: jour.nullable().optional(),
+  })
+  .meta({ id: 'NouvelleAttribution' });
+export type NouvelleAttribution = z.infer<typeof NouvelleAttribution>;

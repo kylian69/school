@@ -1,4 +1,4 @@
-import { and, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, gt, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import type { Database } from './client.js';
 import type { Transaction } from './organisation-context.js';
 import { attribution, personne, role, rolePermission } from './schema/index.js';
@@ -116,4 +116,27 @@ export async function invitationsARelancer(
     organisationId: r.organisation_id,
     invitationId: r.invitation_id,
   }));
+}
+
+/**
+ * Administrateurs actifs de l'organisation de la transaction (RG-01-12) : rôle d'administrateur
+ * en cours à la date, fiche non supprimée et compte non désactivé.
+ */
+export async function administrateursActifs(tx: Transaction, date: string): Promise<string[]> {
+  const lignes = await tx
+    .selectDistinct({ id: personne.id })
+    .from(attribution)
+    .innerJoin(personne, eq(personne.id, attribution.personneId))
+    .innerJoin(role, eq(role.id, attribution.roleId))
+    .where(
+      and(
+        eq(role.code, 'administrateur'),
+        isNull(attribution.deletedAt),
+        isNull(personne.deletedAt),
+        ne(personne.compteEtat, 'desactive'),
+        lte(attribution.debut, date),
+        or(isNull(attribution.fin), gt(attribution.fin, sql`${date}::date`)),
+      ),
+    );
+  return lignes.map((l) => l.id);
 }

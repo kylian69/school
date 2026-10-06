@@ -386,6 +386,7 @@ createServer(async (request, response) => {
         ? [
             'apparence:gerer',
             'apprenants:inviter',
+            'comptes:desactiver',
             'personnel:inviter',
             'personnes:lire',
             'calendrier:gerer',
@@ -401,6 +402,62 @@ createServer(async (request, response) => {
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
     });
+  }
+
+  // Rôles d'une personne et actions de compte (US-01-09).
+  const attributionsRoute = path.match(/^\/api\/personnes\/([^/]+)\/attributions$/);
+  if (attributionsRoute) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const fiche = personnes.find((p) => p.id === attributionsRoute[1]);
+    if (!fiche) return json(404, { message: 'Personne introuvable dans cette école.' });
+    fiche.attributions ??= [];
+    if (request.method === 'POST') {
+      const body = await readBody(request);
+      const leRole = roles.find((r) => r.id === body.roleId);
+      const etab = ecole.etablissements.find((e) => e.id === body.perimetreId);
+      const creee = {
+        id: randomUUID(),
+        roleId: body.roleId,
+        roleLibelle: leRole?.libelle ?? 'Rôle',
+        perimetreType: body.perimetreType,
+        perimetreId: body.perimetreId ?? null,
+        perimetreLibelle: etab?.nom ?? null,
+        debut: body.debut ?? new Date().toISOString().slice(0, 10),
+        fin: body.fin ?? null,
+        statut: 'en-cours',
+      };
+      fiche.attributions.push(creee);
+      fiche.roles = [...new Set([...fiche.roles, creee.roleLibelle])];
+      return json(201, creee);
+    }
+    return json(200, { attributions: fiche.attributions });
+  }
+  const retraitRoute = path.match(/^\/api\/attributions\/([^/]+)\/retrait$/);
+  if (retraitRoute) {
+    for (const fiche of personnes) {
+      const a = (fiche.attributions ?? []).find((x) => x.id === retraitRoute[1]);
+      if (a) {
+        a.statut = 'terminee';
+        a.fin = new Date().toISOString().slice(0, 10);
+        fiche.roles = fiche.roles.filter((r) => r !== a.roleLibelle);
+      }
+    }
+    response.writeHead(204);
+    return response.end();
+  }
+  const compteRoute = path.match(
+    /^\/api\/comptes\/([^/]+)\/(invitation|desactivation|reactivation)$/,
+  );
+  if (compteRoute) {
+    const fiche = personnes.find((p) => p.id === compteRoute[1]);
+    if (!fiche) return json(404, { message: 'Personne introuvable dans cette école.' });
+    fiche.compteEtat = { invitation: 'invite', desactivation: 'desactive', reactivation: 'actif' }[
+      compteRoute[2]
+    ];
+    if (compteRoute[2] === 'invitation')
+      return json(200, { etat: 'invite', expireLe: '2030-01-01T00:00:00.000Z' });
+    response.writeHead(204);
+    return response.end();
   }
 
   const personneRoute = path.match(/^\/api\/personnes(?:\/([^/]+))?$/);

@@ -1,4 +1,9 @@
-import { PersonneDetail } from '@scolaly/contracts';
+import {
+  ListeAttributions,
+  ListeRoles,
+  OrganisationDetail,
+  PersonneDetail,
+} from '@scolaly/contracts';
 import { Badge, Card } from '@scolaly/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -7,6 +12,7 @@ import { fr } from '@/i18n/fr';
 import { apiGet } from '@/lib/api';
 import { getContexte } from '@/lib/contexte';
 import { FicheIdentite } from './fiche-identite';
+import { RolesCompte } from './roles-compte';
 
 const t = fr.personnes;
 const TONS = { cree: 'neutral', invite: 'warn', actif: 'ok', desactive: 'bad' } as const;
@@ -28,6 +34,11 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
       </Card>
     );
   }
+  const [{ data: attributions }, { data: roles }, { data: organisation }] = await Promise.all([
+    apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
+    apiGet('/api/roles', ListeRoles),
+    apiGet('/api/organisation', OrganisationDetail),
+  ]);
   const nom = `${personne.prenom} ${personne.nomUsage ?? personne.nom}`;
   const initiales = `${personne.prenom[0] ?? ''}${(personne.nomUsage ?? personne.nom)[0] ?? ''}`;
 
@@ -70,6 +81,18 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
         modifiable={
           permissions.includes('apprenants:inviter') || permissions.includes('personnel:inviter')
         }
+      />
+      <RolesCompte
+        personne={personne}
+        attributions={attributions?.attributions ?? []}
+        roles={roles?.roles ?? []}
+        etablissements={(organisation?.etablissements ?? []).filter((e) => e.statut === 'actif')}
+        droits={{
+          attribuer: permissions.includes('roles:attribuer'),
+          inviter:
+            permissions.includes('apprenants:inviter') || permissions.includes('personnel:inviter'),
+          desactiver: permissions.includes('comptes:desactiver'),
+        }}
       />
     </>
   );
