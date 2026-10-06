@@ -11,7 +11,9 @@ export {
 } from './droits.js';
 export { purgerCorbeille, type BilanPurge } from './corbeille.js';
 export {
+  enregistrerPresenceDirecte,
   enregistrerPresences,
+  organisationDeSeance,
   seanceEtAttendus,
   seancesAPrecharger,
   type PresenceAEcrire,

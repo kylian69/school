@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -21,9 +22,16 @@ import { fromNodeHeaders } from 'better-auth/node';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Auth } from '../../auth/auth.js';
 import type { Env } from '../../config/env.js';
-import { AUTH, ENV, VALKEY } from '../../shared/tokens.js';
+import { AUTH, DATABASE, ENV, VALKEY } from '../../shared/tokens.js';
+import type { Database } from '@scolaly/db';
 import type { Redis } from 'ioredis';
-import { CacheEmargement, cleDeSeance } from './cache-emargement.js';
+import {
+  CacheEmargement,
+  CacheIndisponible,
+  cleDeSeance,
+  type Magasin,
+} from './cache-emargement.js';
+import { MagasinDegrade } from './magasin-degrade.js';
 
 const pasOuvert = () =>
   new ConflictException(
@@ -33,20 +41,49 @@ const pasOuvert = () =>
 /**
  * Chemin rapide du scan (architecture, section 5 ; RG-00-16 à RG-00-18) : session, séance,
  * attendus et présences sont lus dans Valkey ; la clé de la séance est recalculée en mémoire.
- * Aucune requête SQL : la présence part dans un flux que le worker écrit par lots.
+ * Aucune requête SQL : la présence part dans un flux que le worker écrit par lots. Sans Valkey,
+ * le mode dégradé écrit directement en base.
  */
 @Injectable()
 export class ScanService {
   private readonly cache: CacheEmargement;
   private readonly cleMaitresse: Buffer;
+  private readonly logger = new Logger('Emargement');
 
   constructor(
     @Inject(AUTH) private readonly auth: Auth,
+    @Inject(DATABASE) private readonly db: Database,
     @Inject(VALKEY) valkey: Redis,
     @Inject(ENV) env: Env,
   ) {
     this.cache = new CacheEmargement(valkey);
     this.cleMaitresse = Buffer.from(env.ENCRYPTION_MASTER_KEY_V1, 'base64');
+  }
+
+  scanner(headers: IncomingHttpHeaders, corps: ScanEmargement): Promise<ResultatScan> {
+    return this.avecBascule((magasin) => this.scannerAvec(magasin, headers, corps));
+  }
+
+  saisirCode(headers: IncomingHttpHeaders, corps: CodeEmargement): Promise<ResultatScan> {
+    return this.avecBascule((magasin) => this.saisirCodeAvec(magasin, headers, corps));
+  }
+
+  /**
+   * Mode dégradé (architecture, section 5) : si Valkey ne répond pas, le scan passe par
+   * PostgreSQL, plus lentement mais sans interruption, et une alerte est journalisée.
+   */
+  private async avecBascule(travail: (magasin: Magasin) => Promise<ResultatScan>) {
+    if (this.cache.disponible()) {
+      try {
+        return await travail(this.cache);
+      } catch (erreur) {
+        if (!(erreur instanceof CacheIndisponible)) throw erreur;
+      }
+    }
+    this.logger.error(
+      'Émargement en mode dégradé : Valkey indisponible, écriture directe en base.',
+    );
+    return travail(new MagasinDegrade(this.db));
   }
 
   /** Session lue dans Valkey, sans la prolonger (une prolongation écrirait en base). */
@@ -63,11 +100,15 @@ export class ScanService {
     return session.user.id;
   }
 
-  async scanner(headers: IncomingHttpHeaders, corps: ScanEmargement): Promise<ResultatScan> {
+  private async scannerAvec(
+    magasin: Magasin,
+    headers: IncomingHttpHeaders,
+    corps: ScanEmargement,
+  ): Promise<ResultatScan> {
     const lu = lireJeton(corps.jeton);
     if (!lu) throw new BadRequestException('Ce QR code n’est pas un QR d’émargement Scolaly.');
     const [seance, userId] = await Promise.all([
-      this.cache.seance(lu.seanceId),
+      magasin.seance(lu.seanceId),
       this.utilisateur(headers),
     ]);
     if (!seance) throw pasOuvert();
@@ -89,12 +130,24 @@ export class ScanService {
     const instant = verification.rejoue
       ? verification.fenetre * JETON_PERIODE_SECONDES * 1000
       : maintenant;
-    return this.enregistrer(lu.seanceId, seance, userId, instant, 'qr', verification.rejoue);
+    return this.enregistrer(
+      magasin,
+      lu.seanceId,
+      seance,
+      userId,
+      instant,
+      'qr',
+      verification.rejoue,
+    );
   }
 
-  async saisirCode(headers: IncomingHttpHeaders, corps: CodeEmargement): Promise<ResultatScan> {
+  private async saisirCodeAvec(
+    magasin: Magasin,
+    headers: IncomingHttpHeaders,
+    corps: CodeEmargement,
+  ): Promise<ResultatScan> {
     const [seance, userId] = await Promise.all([
-      this.cache.seance(corps.seanceId),
+      magasin.seance(corps.seanceId),
       this.utilisateur(headers),
     ]);
     if (!seance) throw pasOuvert();
@@ -110,10 +163,11 @@ export class ScanService {
         'Ce code n’est pas le bon : saisissez celui affiché maintenant.',
       );
     }
-    return this.enregistrer(corps.seanceId, seance, userId, maintenant, 'code', false);
+    return this.enregistrer(magasin, corps.seanceId, seance, userId, maintenant, 'code', false);
   }
 
   private async enregistrer(
+    magasin: Magasin,
     seanceId: string,
     seance: SeanceEnCache,
     userId: string,
@@ -121,7 +175,7 @@ export class ScanService {
     mode: 'qr' | 'code',
     rejoue: boolean,
   ): Promise<ResultatScan> {
-    const personneId = await this.cache.attendu(seanceId, userId);
+    const personneId = await magasin.attendu(seanceId, userId);
     if (!personneId) {
       throw new ForbiddenException(
         "Vous n'êtes pas attendu à cette séance. Signalez-vous à l'intervenant.",
@@ -136,7 +190,7 @@ export class ScanService {
       );
     }
     const scanneLe = new Date(instant).toISOString();
-    const existante = await this.cache.enregistrer(
+    const existante = await magasin.enregistrer(
       { organisationId: seance.organisationId, seanceId, personneId, scanneLe, mode, rejoue },
       seance.fin,
     );

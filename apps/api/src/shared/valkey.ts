@@ -5,14 +5,29 @@ export function createValkey(url: string): Redis {
   return new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
 }
 
-/** Stockage secondaire de Better Auth (sessions en cache, compteurs de limitation de débit). */
+/**
+ * Stockage secondaire de Better Auth (sessions en cache, compteurs de limitation de débit).
+ * Si Valkey ne répond pas, la lecture et l'écriture d'une session se rabattent sur la base (mode
+ * dégradé de l'émargement) ; la suppression et les compteurs restent stricts : une révocation ou
+ * une limitation ne sont jamais ignorées en silence.
+ */
 export function valkeySecondaryStorage(valkey: Redis, prefix = 'auth:'): SecondaryStorage {
   return {
-    get: (key) => valkey.get(prefix + key),
+    get: async (key) => {
+      try {
+        return await valkey.get(prefix + key);
+      } catch {
+        return null;
+      }
+    },
     getAndDelete: (key) => valkey.getdel(prefix + key),
     set: async (key, value, ttl) => {
-      if (ttl) await valkey.set(prefix + key, value, 'EX', ttl);
-      else await valkey.set(prefix + key, value);
+      try {
+        if (ttl) await valkey.set(prefix + key, value, 'EX', ttl);
+        else await valkey.set(prefix + key, value);
+      } catch {
+        // Session gardée en base seulement : relue de là tant que Valkey ne répond pas.
+      }
     },
     delete: async (key) => {
       await valkey.del(prefix + key);

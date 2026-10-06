@@ -95,3 +95,41 @@ export async function enregistrerPresences(
   }
   return ajoutees;
 }
+
+/** École d'une séance, toutes écoles confondues (mode dégradé de l'émargement). */
+export async function organisationDeSeance(db: Database, seanceId: string): Promise<string | null> {
+  const resultat = await db.execute<{ organisation_id: string | null }>(
+    sql`select seance_organisation(${seanceId}::uuid) as organisation_id`,
+  );
+  return resultat.rows[0]?.organisation_id ?? null;
+}
+
+/**
+ * Écrit une présence directement en base (mode dégradé) : renvoie la présence déjà enregistrée
+ * si l'apprenant avait émargé, sinon rien.
+ */
+export async function enregistrerPresenceDirecte(
+  tx: Transaction,
+  p: PresenceAEcrire,
+): Promise<{ scanneLe: Date; rejoue: boolean } | null> {
+  const [ajoutee] = await tx
+    .insert(presence)
+    .values({
+      organisationId: p.organisationId,
+      seanceId: p.seanceId,
+      personneId: p.personneId,
+      scanneLe: new Date(p.scanneLe),
+      mode: p.mode,
+      rejoue: p.rejoue,
+    })
+    .onConflictDoNothing({
+      target: [presence.organisationId, presence.seanceId, presence.personneId],
+    })
+    .returning({ id: presence.id });
+  if (ajoutee) return null;
+  const [existante] = await tx
+    .select({ scanneLe: presence.scanneLe, rejoue: presence.rejoue })
+    .from(presence)
+    .where(and(eq(presence.seanceId, p.seanceId), eq(presence.personneId, p.personneId)));
+  return existante ?? null;
+}
