@@ -57,6 +57,32 @@ test.describe('E-01-04 et E-01-05 Personnes', () => {
     await expect(page.getByText('2 personnes')).toBeVisible();
   });
 
+  test('US-01-06 invite en masse depuis la liste et exporte la sélection filtrée', async ({
+    page,
+  }) => {
+    const suffixe = Math.random().toString(36).slice(2, 7);
+    await page.goto('/personnes/nouvelle');
+    await page.getByLabel('Prénom').fill('Lou');
+    await page.getByLabel('Nom de naissance').fill(`Masse${suffixe}`);
+    await page.getByLabel('Email').fill(`lou.${suffixe}@exemple.test`);
+    await page.getByRole('button', { name: 'Créer la fiche' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Lou Masse${suffixe}`);
+
+    await page.goto(`/personnes?q=Masse${suffixe}`);
+    await page.getByRole('checkbox', { name: `Sélectionner Masse${suffixe} Lou` }).check();
+    await expect(page.getByText('1 sélectionnée')).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole('button', { name: 'Inviter ou relancer' }).click();
+    await expect(page.getByText('1 action réussie.')).toBeVisible();
+    await expect(page.getByRole('row').filter({ hasText: `Masse${suffixe}` })).toContainText(
+      'Invité',
+    );
+
+    const telechargement = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Exporter' }).click();
+    expect((await telechargement).suggestedFilename()).toBe('personnes.csv');
+  });
+
   test('US-01-09 attribue un rôle sur un établissement, le retire, puis invite la personne', async ({
     page,
   }) => {

@@ -163,6 +163,18 @@ export const fr = {
       string,
       string
     >,
+    selection: {
+      tout: 'Sélectionner toute la page',
+      ligne: (nom: string) => `Sélectionner ${nom}`,
+      resume: (n: number) => `${n} sélectionnée${n > 1 ? 's' : ''}`,
+      inviter: 'Inviter ou relancer',
+      desactiver: 'Désactiver',
+      reactiver: 'Réactiver',
+      reussies: (n: number) => `${n} action${n > 1 ? 's' : ''} réussie${n > 1 ? 's' : ''}.`,
+      echecs: 'Non traitées :',
+    },
+    exporter: 'Exporter',
+    exportEnCours: 'Export…',
     pagination: 'Pages de la liste',
     precedente: 'Page précédente',
     suivante: 'Page suivante',

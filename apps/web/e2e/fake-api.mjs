@@ -425,6 +425,7 @@ createServer(async (request, response) => {
             'apprenants:inviter',
             'comptes:desactiver',
             'personnel:inviter',
+            'personnes:exporter',
             'personnes:importer',
             'personnes:lire',
             'calendrier:gerer',
@@ -546,6 +547,29 @@ createServer(async (request, response) => {
       return json(200, { etat: 'invite', expireLe: '2030-01-01T00:00:00.000Z' });
     response.writeHead(204);
     return response.end();
+  }
+
+  // Actions en masse et export (E-01-04).
+  if (path === '/api/personnes/actions' && request.method === 'POST') {
+    const { action, personneIds } = await readBody(request);
+    const echecs = [];
+    for (const id of personneIds) {
+      const p = personnes.find((x) => x.id === id);
+      if (!p) continue;
+      if (action === 'inviter' && p.compteEtat === 'actif') {
+        echecs.push({ personneId: id, nom: `${p.prenom} ${p.nom}`, message: 'Compte déjà actif.' });
+        continue;
+      }
+      p.compteEtat = { inviter: 'invite', desactiver: 'desactive', reactiver: 'actif' }[action];
+    }
+    return json(200, { reussies: personneIds.length - echecs.length, echecs });
+  }
+  if (path === '/api/personnes/export') {
+    response.writeHead(200, {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': 'attachment; filename="personnes.csv"',
+    });
+    return response.end('"Nom";"Prénom"\r\n"Fictive";"Camille"\r\n');
   }
 
   const personneRoute = path.match(/^\/api\/personnes(?:\/([^/]+))?$/);

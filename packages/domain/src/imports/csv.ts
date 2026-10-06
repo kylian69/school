@@ -60,3 +60,20 @@ export function lireCsv(texte: string): TableauLu {
   const [colonnes = [], ...donnees] = pleines;
   return { colonnes: colonnes.map((c) => c.trim()), lignes: donnees };
 }
+
+/**
+ * Écriture d'un CSV ouvert par Excel (RG-01-21) : point-virgule, guillemets, fins de ligne Windows
+ * et indicateur d'ordre des octets pour l'UTF-8. Une cellule qui commence par =, +, - ou @ est
+ * précédée d'une apostrophe : le tableur ne l'exécutera pas comme une formule.
+ */
+export function ecrireCsv(
+  colonnes: readonly string[],
+  lignes: readonly (readonly string[])[],
+): string {
+  const cellule = (valeur: string) => {
+    const sure = /^[=+\-@\t\r]/.test(valeur) ? `'${valeur}` : valeur;
+    return `"${sure.replaceAll('"', '""')}"`;
+  };
+  const texte = [colonnes, ...lignes].map((l) => l.map(cellule).join(';')).join('\r\n');
+  return `${String.fromCharCode(0xfeff)}${texte}\r\n`;
+}
