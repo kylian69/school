@@ -5,10 +5,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { emailPhotoRefusee, type DecisionPhoto, type PhotoPersonne } from '@scolaly/contracts';
+import {
+  ARCHIVE_PHOTOS_NOMBRE_MAX,
+  ARCHIVE_PHOTOS_TAILLE_MAX,
+  emailPhotoRefusee,
+  type BilanImportPhotos,
+  type DecisionPhoto,
+  type PhotoPersonne,
+} from '@scolaly/contracts';
 import { enregistrerAudit, organisation, personne, type Transaction } from '@scolaly/db';
-import { cadrageCarre, PHOTO_COTE, PHOTO_TAILLE_MAX, verifierDecisionPhoto } from '@scolaly/domain';
-import { eq } from 'drizzle-orm';
+import {
+  cadrageCarre,
+  matriculeDuFichier,
+  PHOTO_COTE,
+  PHOTO_TAILLE_MAX,
+  verifierDecisionPhoto,
+} from '@scolaly/domain';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { unzipSync } from 'fflate';
 import sharp from 'sharp';
 import type { Access } from '../../access/access-resolver.js';
 import { RequestContext } from '../../access/request-context.js';
@@ -29,6 +43,12 @@ const invalide = (message: string) =>
     message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
     details: [`photo : ${message}`],
   });
+
+/** Décompresse une seule entrée de l'archive. */
+const extraire = (archive: Uint8Array, nom: string): Buffer => {
+  const octets = unzipSync(archive, { filter: (entree) => entree.name === nom })[nom];
+  return Buffer.from(octets ?? new Uint8Array());
+};
 
 /** Dernier segment de la clé de stockage : version de l'adresse de la photo (cache). */
 const version = (cle: string) => cle.slice(cle.lastIndexOf('/') + 1, cle.lastIndexOf('/') + 17);
@@ -212,6 +232,104 @@ export class PhotosService {
     for (const cle of cles) {
       if (cle) RequestContext.apresValidation(() => this.storage.delete(cle));
     }
+  }
+
+  /**
+   * Import d'une archive ZIP dont chaque fichier porte le matricule de la personne (US-01-20) :
+   * les photos sont associées aux bonnes fiches, validées d'office ; les fichiers sans
+   * correspondance et les images refusées sont signalés. Les entrées trop lourdes ne sont même pas
+   * décompressées (protection contre les archives piégées).
+   */
+  async importerArchive(
+    tx: Transaction,
+    access: Access,
+    contenu: Buffer | undefined,
+    adresseIp: string,
+  ): Promise<BilanImportPhotos> {
+    if (!Buffer.isBuffer(contenu) || contenu.length === 0) {
+      throw invalide('Déposez une archive ZIP de photos nommées par matricule.');
+    }
+    if (contenu.length > ARCHIVE_PHOTOS_TAILLE_MAX) {
+      throw invalide('L’archive dépasse 200 Mo : découpez-la en plusieurs archives.');
+    }
+    const bilan: BilanImportPhotos = { associees: 0, sansCorrespondance: [], rejetes: [] };
+    const archive = new Uint8Array(contenu);
+    // Premier passage : inventaire seul, rien n'est décompressé.
+    const noms: string[] = [];
+    try {
+      unzipSync(archive, {
+        filter: (entree) => {
+          if (entree.name.endsWith('/') || matriculeDuFichier(entree.name) === null) return false;
+          if (entree.originalSize > PHOTO_TAILLE_MAX) {
+            bilan.rejetes.push({ fichier: entree.name, motif: 'La photo dépasse 5 Mo.' });
+          } else {
+            noms.push(entree.name);
+          }
+          return false;
+        },
+      });
+    } catch {
+      throw invalide('Cette archive est illisible. Créez-la de nouveau au format ZIP.');
+    }
+    if (noms.length > ARCHIVE_PHOTOS_NOMBRE_MAX) {
+      throw invalide(
+        `L’archive contient plus de ${ARCHIVE_PHOTOS_NOMBRE_MAX} photos : découpez-la en plusieurs archives.`,
+      );
+    }
+    const matricules = noms.flatMap((nom) => matriculeDuFichier(nom) ?? []);
+    const fiches =
+      matricules.length === 0
+        ? []
+        : await tx
+            .select()
+            .from(personne)
+            .where(and(inArray(personne.matricule, matricules), isNull(personne.deletedAt)));
+    const parMatricule = new Map(fiches.map((f) => [f.matricule, f]));
+    for (const nom of noms) {
+      const fiche = parMatricule.get(matriculeDuFichier(nom));
+      if (!fiche) {
+        bilan.sansCorrespondance.push(nom);
+        continue;
+      }
+      try {
+        const cle = await this.stocker(
+          access.organisationId,
+          // Une photo à la fois en mémoire, même pour une archive de plusieurs centaines.
+          await this.traiter(extraire(archive, nom)),
+        );
+        await tx
+          .update(personne)
+          .set({
+            photoCle: cle,
+            photoAttenteCle: null,
+            photoStatut: 'validee',
+            photoMotif: null,
+            updatedBy: access.userId,
+          })
+          .where(eq(personne.id, fiche.id));
+        this.supprimerApres([fiche.photoCle, fiche.photoAttenteCle]);
+        bilan.associees++;
+      } catch (erreur) {
+        if (!(erreur instanceof BadRequestException)) throw erreur;
+        const details = (erreur.getResponse() as { details?: string[] }).details ?? [];
+        bilan.rejetes.push({
+          fichier: nom,
+          motif: details[0]?.slice(details[0].indexOf(' : ') + 3) ?? erreur.message,
+        });
+      }
+    }
+    await enregistrerAudit(tx, {
+      action: 'photo.importer',
+      objetType: 'personne',
+      auteurId: access.userId,
+      adresseIp,
+      apres: {
+        associees: bilan.associees,
+        sansCorrespondance: bilan.sansCorrespondance.length,
+        rejetes: bilan.rejetes.length,
+      },
+    });
+    return bilan;
   }
 
   /** Contenu de la photo validée, ou de celle en attente. */

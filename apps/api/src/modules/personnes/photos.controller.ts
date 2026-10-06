@@ -13,7 +13,12 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { DecisionPhoto, PersonneDetail, PhotoPersonne } from '@scolaly/contracts';
+import {
+  BilanImportPhotos,
+  DecisionPhoto,
+  PersonneDetail,
+  PhotoPersonne,
+} from '@scolaly/contracts';
 import { personne, withOrganisation, type Database, type Transaction } from '@scolaly/db';
 import { eq } from 'drizzle-orm';
 import type { FastifyReply } from 'fastify';
@@ -207,5 +212,27 @@ export class MaPhotoController {
       this.photos.image(fiche, attente === '1'),
     );
     await envoyerImage(reply, image);
+  }
+}
+
+/** Import des photos par archive ZIP, chaque fichier nommé par matricule (US-01-20). */
+@Controller('api/photos/import')
+export class ImportPhotosController {
+  constructor(private readonly photos: PhotosService) {}
+
+  @Post()
+  @HttpCode(200)
+  @RequirePermission(['apprenants:inviter', 'personnel:inviter'])
+  @ApiContract({
+    summary: 'Importer une archive ZIP de photos nommées par matricule (200 Mo au plus)',
+    response: BilanImportPhotos,
+  })
+  importer(@Req() request: ScolalyRequest) {
+    return this.photos.importerArchive(
+      RequestContext.tx(),
+      RequestContext.access(),
+      request.body as Buffer | undefined,
+      request.ip,
+    );
   }
 }
