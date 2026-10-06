@@ -30,6 +30,16 @@ test.describe('Page de connexion', () => {
     }
   });
 
+  test('US-01-08 propose un lien de connexion par email, sans révéler si le compte existe', async ({
+    page,
+  }) => {
+    await page.getByRole('button', { name: 'Recevoir un lien de connexion par email' }).click();
+    await page.getByLabel('Adresse email').fill('inconnu@exemple.test');
+    await page.getByRole('button', { name: 'Envoyer le lien' }).click();
+    await expect(page.getByRole('status')).toHaveText(/Si un compte existe pour cette adresse/);
+    await expectNoAccessibilityViolations(page);
+  });
+
   test('affiche une erreur compréhensible si la connexion échoue', async ({ page }) => {
     await page.route('**/api/auth/sign-in/email', (route) =>
       route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),

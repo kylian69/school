@@ -4,13 +4,18 @@ import {
   authUser,
   authVerification,
   ecolesDuCompte,
+  fichesDuCompte,
   newId,
   type Database,
 } from '@scolaly/db';
+import { emailLienMagique } from '@scolaly/contracts';
 import { betterAuth } from 'better-auth';
+import { magicLink } from 'better-auth/plugins';
+import { eq } from 'drizzle-orm';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import type { Redis } from 'ioredis';
 import type { Env } from '../config/env.js';
+import type { EmailsQueue } from '../shared/emails.js';
 import { valkeySecondaryStorage } from '../shared/valkey.js';
 import { hashPassword, verifyPassword } from './password.js';
 
@@ -27,7 +32,7 @@ export const MIN_PASSWORD_LENGTH = 12;
  * un cookie HttpOnly, Secure et SameSite=Lax ; mots de passe Argon2id ; limitation de débit dans
  * Valkey. Les comptes sont créés sur invitation (RG-01-08) : l'inscription libre est fermée.
  */
-export function createAuth(env: Env, db: Database, valkey: Redis) {
+export function createAuth(env: Env, db: Database, valkey: Redis, emails?: EmailsQueue) {
   const production = env.NODE_ENV === 'production';
   return betterAuth({
     appName: 'Scolaly',
@@ -52,6 +57,9 @@ export function createAuth(env: Env, db: Database, valkey: Redis) {
           // RG-01-29 : à la connexion, l'école active est la première école du compte ; la
           // personne en change ensuite avec le sélecteur, sans se reconnecter.
           before: async (session) => {
+            // RG-01-09 : un compte désactivé dans toutes ses écoles ne peut plus se connecter.
+            const fiches = await fichesDuCompte(db, session.userId);
+            if (fiches.actives === 0 && fiches.desactivees > 0) return false;
             const [premiere] = await ecolesDuCompte(db, session.userId);
             return { data: { ...session, activeOrganisationId: premiere?.organisationId ?? null } };
           },
@@ -90,6 +98,26 @@ export function createAuth(env: Env, db: Database, valkey: Redis) {
       database: { generateId: () => newId() },
     },
     logger: { level: production ? 'error' : 'warn' },
+    plugins: [
+      // US-01-08, RG-01-10 : lien magique valable 15 minutes, à usage unique, stocké haché ;
+      // envoyé seulement à un compte existant, avec la même réponse dans tous les cas.
+      magicLink({
+        expiresIn: 15 * 60,
+        disableSignUp: true,
+        storeToken: 'hashed',
+        sendMagicLink: async ({ email, url }) => {
+          if (!emails) return;
+          const [compte] = await db
+            .select({ id: authUser.id })
+            .from(authUser)
+            .where(eq(authUser.email, email.toLowerCase()));
+          if (!compte) return;
+          const fiches = await fichesDuCompte(db, compte.id);
+          if (fiches.actives === 0 && fiches.desactivees > 0) return;
+          await emails.envoyer(emailLienMagique({ to: email, lien: url }));
+        },
+      }),
+    ],
   });
 }
 

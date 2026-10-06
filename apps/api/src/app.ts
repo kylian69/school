@@ -40,7 +40,6 @@ export async function createApp(
 ): Promise<NestFastifyApplication> {
   const database = createDatabase(env.DATABASE_URL);
   const valkey = createValkey(env.VALKEY_URL);
-  const auth = createAuth(env, database.db, valkey);
   const storage = ObjectStorage.fromEnv(env);
   const scanner =
     env.ANTIVIRUS_DISABLED || !env.CLAMAV_HOST
@@ -48,6 +47,7 @@ export async function createApp(
       : new ClamdScanner(env.CLAMAV_HOST, env.CLAMAV_PORT);
   const uploads = new UploadService(storage, scanner);
   const emails = new EmailsQueue(env.VALKEY_URL, options.queuePrefix);
+  const auth = createAuth(env, database.db, valkey, emails);
   const platformDatabase =
     env.SCOLALY_MODE === 'saas' && env.PLATFORM_DATABASE_URL
       ? createDatabase(env.PLATFORM_DATABASE_URL, { max: 4 })

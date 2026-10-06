@@ -164,6 +164,15 @@ export const fr = {
     motDePasse: 'Mot de passe',
     valider: 'Se connecter',
     enCours: 'Connexion…',
+    lienMagique: {
+      proposer: 'Recevoir un lien de connexion par email',
+      titre: 'Connexion par lien',
+      envoyer: 'Envoyer le lien',
+      enCours: 'Envoi…',
+      envoye:
+        'Si un compte existe pour cette adresse, un lien de connexion vient d’être envoyé. Il est valable 15 minutes.',
+      retour: 'Se connecter avec un mot de passe',
+    },
     erreurs: {
       identifiants:
         'Email ou mot de passe incorrect. Vérifiez votre saisie ; en cas d’oubli, contactez votre établissement.',

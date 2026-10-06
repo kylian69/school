@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  emailInvitation,
   ROLE_ADMINISTRATEUR,
   type ActivationCompte,
   type InvitationPublique,
@@ -14,6 +15,8 @@ import {
   attribution,
   enregistrerAudit,
   invitation,
+  lireJeton,
+  nouveauJeton,
   organisation,
   personne,
   role,
@@ -28,10 +31,6 @@ import type { Env } from '../../config/env.js';
 import { aujourdhui } from '../../shared/dates.js';
 import type { EmailsQueue } from '../../shared/emails.js';
 import { AUTH, DATABASE, EMAILS, ENV } from '../../shared/tokens.js';
-import { lireJeton, nouveauJeton } from './jeton.js';
-
-const formatDate = (date: Date) =>
-  new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short' }).format(date);
 
 const MESSAGES_ETAT = {
   expiree: 'Ce lien d’invitation a expiré. Demandez à votre établissement de vous le renvoyer.',
@@ -115,20 +114,15 @@ export class InvitationsService {
     return {
       expireLe,
       envoyer: () =>
-        this.emails.envoyer({
-          to: fiche.email,
-          subject: `Activez votre compte Scolaly · ${ecole?.nom ?? 'votre école'}`,
-          text: [
-            `Bonjour ${fiche.prenom},`,
-            '',
-            `${ecole?.nom ?? 'Votre école'} vous invite à utiliser Scolaly : emploi du temps, émargement, notes et documents.`,
-            '',
-            `Activez votre compte avant le ${formatDate(expireLe)} :`,
+        this.emails.envoyer(
+          emailInvitation({
+            to: fiche.email,
+            prenom: fiche.prenom,
+            ecole: ecole?.nom ?? 'Votre école',
             lien,
-            '',
-            'Ce lien est personnel et ne sert qu’une fois. Si vous n’attendiez pas cet email, ignorez-le.',
-          ].join('\n'),
-        }),
+            expireLe,
+          }),
+        ),
     };
   }
 

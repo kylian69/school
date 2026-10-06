@@ -4,9 +4,11 @@ import type { Queue } from 'bullmq';
 import { Worker, type ConnectionOptions } from 'bullmq';
 import type { Logger } from 'pino';
 import type { Mailer } from './mailer.js';
+import { relancerInvitations } from './relances.js';
 
 export const MAINTENANCE_JOBS = {
   partitionsAudit: 'partitions-audit',
+  relancesInvitations: 'relances-invitations',
 } as const;
 
 /** Tâches planifiées (architecture section 6). Idempotent : à appeler à chaque démarrage. */
@@ -17,6 +19,15 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
     { pattern: '15 2 * * *', tz: 'UTC' },
     { name: MAINTENANCE_JOBS.partitionsAudit, opts: { removeOnComplete: 30, removeOnFail: 100 } },
   );
+  // Chaque jour à 9 h (Paris) : relances des invitations non activées (RG-01-08).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.relancesInvitations,
+    { pattern: '0 9 * * *', tz: 'Europe/Paris' },
+    {
+      name: MAINTENANCE_JOBS.relancesInvitations,
+      opts: { removeOnComplete: 30, removeOnFail: 100 },
+    },
+  );
 }
 
 export function startWorkers(options: {
@@ -26,6 +37,8 @@ export function startWorkers(options: {
   logger: Logger;
   /** Préfixe des clés BullMQ (isolement des tests). */
   prefix?: string;
+  /** Adresse publique, pour les liens des relances. */
+  publicUrl: string;
 }): Worker[] {
   const { connection, db, mailer, logger } = options;
   const common = { connection, ...(options.prefix ? { prefix: options.prefix } : {}) };
@@ -33,7 +46,9 @@ export function startWorkers(options: {
     QUEUES.maintenance,
     async (job) => {
       if (job.name === MAINTENANCE_JOBS.partitionsAudit) await creerPartitionsAudit(db, 3);
-      else throw new Error(`Tâche de maintenance inconnue : ${job.name}`);
+      else if (job.name === MAINTENANCE_JOBS.relancesInvitations) {
+        await relancerInvitations(db, (email) => mailer.send(email), options.publicUrl);
+      } else throw new Error(`Tâche de maintenance inconnue : ${job.name}`);
     },
     common,
   );

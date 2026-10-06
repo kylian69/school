@@ -509,6 +509,9 @@ importers:
       '@scolaly/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@scolaly/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       bullmq:
         specifier: 'catalog:'
         version: 6.3.11(ioredis@6.0.0(supports-color@7.2.0))(pg@8.23.1)

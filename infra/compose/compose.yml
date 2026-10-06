@@ -133,6 +133,7 @@ services:
       <<: *app-env
       SMTP_URL: ${SMTP_URL}
       MAIL_FROM: ${MAIL_FROM}
+      PUBLIC_URL: https://${SCOLALY_DOMAIN}
     depends_on:
       api: { condition: service_healthy }
 

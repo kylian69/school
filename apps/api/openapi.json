@@ -5,6 +5,35 @@
     "version": "0.0.0"
   },
   "paths": {
+    "/api/comptes/{personneId}/desactivation": {
+      "post": {
+        "operationId": "ComptesController.desactiver",
+        "summary": "Désactiver un compte (historique conservé)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "comptes:desactiver"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/comptes/{personneId}/invitation": {
       "post": {
         "operationId": "ComptesController.inviter",
@@ -24,6 +53,35 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvitationEnvoyee"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comptes/{personneId}/reactivation": {
+      "post": {
+        "operationId": "ComptesController.reactiver",
+        "summary": "Réactiver un compte",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "comptes:desactiver"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
                 }
               }
             }

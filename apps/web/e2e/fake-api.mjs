@@ -130,6 +130,8 @@ createServer(async (request, response) => {
     }
     return json(401, { code: 'INVALID_EMAIL_OR_PASSWORD' });
   }
+  if (path === '/api/auth/sign-in/magic-link' && request.method === 'POST')
+    return json(200, { status: true });
   if (path === '/api/auth/sign-out' && request.method === 'POST') {
     return json(200, { success: true }, { 'set-cookie': `${COOKIE}=; Path=/; Max-Age=0` });
   }
