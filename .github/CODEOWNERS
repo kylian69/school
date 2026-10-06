@@ -1,0 +1,12 @@
+# Revue renforcée (plan de développement, section 4) : fichiers sensibles.
+# Politiques RLS, migrations, authentification, permissions, chiffrement,
+# référentiels réglementaires et chemin de l'émargement.
+
+/packages/db/                         @kylian69
+/packages/referentials/               @kylian69
+/apps/api/src/**/auth/                @kylian69
+/apps/api/src/**/permissions/         @kylian69
+/apps/api/src/**/crypto/              @kylian69
+/apps/api/src/modules/emargement/     @kylian69
+/.github/                             @kylian69
+/infra/                               @kylian69

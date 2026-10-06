@@ -14,9 +14,11 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && turbo run lint typecheck test"
+    "check": "pnpm format:check && turbo run build lint typecheck test && pnpm deps:check",
+    "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs"
   },
   "devDependencies": {
+    "dependency-cruiser": "catalog:",
     "prettier": "catalog:",
     "turbo": "catalog:"
   }
