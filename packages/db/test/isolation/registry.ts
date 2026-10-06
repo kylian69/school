@@ -14,6 +14,9 @@ import {
   organisationModule,
   periode,
   personne,
+  presence,
+  seance,
+  seanceAttendu,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -41,6 +44,18 @@ async function insertPersonne(db: Database, organisationId: string): Promise<str
     nom: 'Fictif',
     prenom: 'Camille',
     email: `camille.${id}@exemple.test`,
+  });
+  return id;
+}
+
+async function insertSeance(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(seance).values({
+    id,
+    organisationId,
+    libelle: 'Séance fictive',
+    debut: new Date('2026-10-05T08:00:00Z'),
+    fin: new Date('2026-10-05T10:00:00Z'),
   });
   return id;
 }
@@ -92,6 +107,31 @@ export const sampleRows: Record<string, ScopedTableSample> = {
       await db
         .insert(demarrageEtape)
         .values({ organisationId, etape: 'apparence', choix: 'sautee' });
+    },
+  },
+  seance: {
+    insert: async (db, organisationId) => {
+      await insertSeance(db, organisationId);
+    },
+  },
+  seance_attendu: {
+    insert: async (db, organisationId) => {
+      await db.insert(seanceAttendu).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        personneId: await insertPersonne(db, organisationId),
+      });
+    },
+  },
+  presence: {
+    insert: async (db, organisationId) => {
+      await db.insert(presence).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        personneId: await insertPersonne(db, organisationId),
+        scanneLe: new Date('2026-10-05T08:01:00Z'),
+        mode: 'qr',
+      });
     },
   },
   fermeture: {
