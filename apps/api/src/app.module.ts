@@ -1,8 +1,18 @@
-import { Inject, Module, type DynamicModule, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  Inject,
+  Module,
+  type DynamicModule,
+  type OnApplicationShutdown,
+  type Provider,
+  type Type,
+} from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import type { DatabaseHandle } from '@scolaly/db';
 import type { Redis } from 'ioredis';
+import { AccessModule } from './access/access.module.js';
 import type { Auth } from './auth/auth.js';
 import type { Env } from './config/env.js';
+import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
 import { AUTH, DATABASE, ENV, VALKEY } from './shared/tokens.js';
 
@@ -26,10 +36,14 @@ class ResourcesLifecycle implements OnApplicationShutdown {
 
 @Module({})
 export class AppModule {
-  static forRoot(resources: AppResources): DynamicModule {
+  static forRoot(
+    resources: AppResources,
+    options: { accessResolver?: Provider; extraModules?: Type[] } = {},
+  ): DynamicModule {
     return {
       module: AppModule,
       global: true,
+      imports: [AccessModule.forRoot(options.accessResolver), ...(options.extraModules ?? [])],
       controllers: [HealthController],
       providers: [
         { provide: RESOURCES, useValue: resources },
@@ -38,6 +52,7 @@ export class AppModule {
         { provide: VALKEY, useValue: resources.valkey },
         { provide: AUTH, useValue: resources.auth },
         ResourcesLifecycle,
+        { provide: APP_INTERCEPTOR, useClass: ContractValidationInterceptor },
       ],
       exports: [ENV, DATABASE, VALKEY, AUTH],
     };

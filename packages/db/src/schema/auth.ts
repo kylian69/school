@@ -31,6 +31,8 @@ export const authSession = pgTable(
     expiresAt: timestamp({ withTimezone: true }).notNull(),
     ipAddress: text(),
     userAgent: text(),
+    /** École choisie pour cette session (RG-01-29), vérifiée à chaque requête par l'API. */
+    activeOrganisationId: uuid(),
     ...timestamps(),
   },
   (t) => [index('auth_session_user_id_idx').on(t.userId)],

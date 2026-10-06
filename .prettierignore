@@ -4,3 +4,5 @@ docs/
 dist/
 coverage/
 *.md
+apps/api/openapi.json
+packages/db/migrations/meta/
