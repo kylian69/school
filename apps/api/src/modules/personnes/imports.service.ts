@@ -8,7 +8,7 @@ import {
   type ModificationCorrespondance,
   type NouvelImport,
 } from '@scolaly/contracts';
-import { importPersonnes, personne, type Transaction } from '@scolaly/db';
+import { attribution, importPersonnes, invitation, personne, type Transaction } from '@scolaly/db';
 import {
   analyserLignes,
   CHAMPS_OBLIGATOIRES,
@@ -18,8 +18,9 @@ import {
   type Probleme,
   type ProblemeLigne,
   type TableauLu,
+  verifierAnnulation,
 } from '@scolaly/domain';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, lt, ne, notInArray } from 'drizzle-orm';
 import { readSheet } from 'read-excel-file/node';
 import type { Access } from '../../access/access-resolver.js';
 import { ObjectStorage } from '../../shared/storage/object-storage.js';
@@ -71,6 +72,25 @@ function cellule(valeur: unknown): string {
   return '';
 }
 
+/** Ce qu'un import validé a créé ou modifié, pour pouvoir l'annuler (RG-01-20). */
+export interface ResultatImport {
+  crees: string[];
+  modifies: { id: string; avant: Record<string, unknown> }[];
+  attributions: string[];
+}
+
+interface RapportImport {
+  lignes: { numero: number; motifs: { champ: string; message: string }[] }[];
+}
+
+/** Libellé d'un motif de rejet (codes du domaine, ou « fiche-existante »). */
+export const libelleMotif = (code: string) =>
+  code === 'fiche-existante'
+    ? 'Une fiche porte déjà cet email : ligne ignorée.'
+    : code in MESSAGES
+      ? MESSAGES[code as ProblemeLigne]
+      : code;
+
 const message = (p: Probleme) => ({
   champ: p.champ,
   message: MESSAGES[p.code],
@@ -104,6 +124,7 @@ export class ImportsService {
         'Le fichier dépasse 10 Mo (environ 20 000 lignes). Découpez-le en plusieurs fichiers.',
       );
     }
+    await this.purgerAbandonnes(tx);
     let stocke;
     try {
       stocke = await this.uploads.store(access.organisationId, 'imports', contenu, {
@@ -196,6 +217,55 @@ export class ImportsService {
     };
   }
 
+  /** Fiches créées par l'import qui ont servi depuis (compte, invitation, autre rôle). */
+  async fichesUtilisees(tx: Transaction, resultat: ResultatImport): Promise<number> {
+    if (resultat.crees.length === 0) return 0;
+    const [{ comptes } = { comptes: 0 }] = await tx
+      .select({ comptes: count() })
+      .from(personne)
+      .where(and(inArray(personne.id, resultat.crees), ne(personne.compteEtat, 'cree')));
+    const [{ invitations } = { invitations: 0 }] = await tx
+      .select({ invitations: count() })
+      .from(invitation)
+      .where(inArray(invitation.personneId, resultat.crees));
+    const [{ roles } = { roles: 0 }] = await tx
+      .select({ roles: count() })
+      .from(attribution)
+      .where(
+        and(
+          inArray(attribution.personneId, resultat.crees),
+          resultat.attributions.length > 0
+            ? notInArray(attribution.id, resultat.attributions)
+            : undefined,
+        ),
+      );
+    return comptes + invitations + roles;
+  }
+
+  /**
+   * Imports abandonnés depuis plus de 24 h : leur fichier est supprimé (section 7). Une purge
+   * planifiée par le worker complétera ce nettoyage, fait ici à chaque nouveau dépôt.
+   */
+  private async purgerAbandonnes(tx: Transaction) {
+    const abandonnes = await tx
+      .select({ id: importPersonnes.id, cle: importPersonnes.fichierCle })
+      .from(importPersonnes)
+      .where(
+        and(
+          eq(importPersonnes.statut, 'en_preparation'),
+          isNull(importPersonnes.deletedAt),
+          lt(importPersonnes.expireLe, new Date()),
+        ),
+      );
+    for (const { id, cle } of abandonnes) {
+      await this.storage.delete(cle);
+      await tx
+        .update(importPersonnes)
+        .set({ deletedAt: new Date() })
+        .where(eq(importPersonnes.id, id));
+    }
+  }
+
   async charger(tx: Transaction, id: string): Promise<LigneImport> {
     const [ligne] = await tx
       .select()
@@ -247,6 +317,7 @@ export class ImportsService {
     ligne: LigneImport,
     dejaLu?: TableauLu,
   ): Promise<ApercuImport> {
+    if (ligne.statut !== 'en_preparation') return this.bilan(tx, ligne);
     const tableau = dejaLu ?? (await this.tableau(ligne));
     const correspondance = ligne.correspondance as Correspondance;
     const analyse = analyserLignes(
@@ -282,6 +353,55 @@ export class ImportsService {
       },
       lignes: [...aRevoir.slice(0, APERCU_PROBLEMES_MAX), ...autres.slice(0, APERCU_VALIDES_MAX)],
       expireLe: ligne.expireLe.toISOString(),
+      bilan: null,
+    };
+  }
+
+  /** Import validé ou annulé : bilan et lignes rejetées, sans relire le fichier (supprimé). */
+  private async bilan(tx: Transaction, ligne: LigneImport): Promise<ApercuImport> {
+    const rapport = (ligne.rapport ?? { lignes: [] }) as RapportImport;
+    const resultat = (ligne.resultat ?? {
+      crees: [],
+      modifies: [],
+      attributions: [],
+    }) as ResultatImport;
+    const crees = ligne.crees ?? 0;
+    const modifies = ligne.modifies ?? 0;
+    const rejetes = ligne.rejetes ?? 0;
+    const valideLe = ligne.valideLe ?? ligne.createdAt;
+    const annulable =
+      ligne.statut === 'valide' &&
+      verifierAnnulation({
+        valideLe,
+        maintenant: new Date(),
+        fichesUtilisees: await this.fichesUtilisees(tx, resultat),
+      }).ok;
+    return {
+      id: ligne.id,
+      type: ligne.type,
+      statut: ligne.statut,
+      fichierNom: ligne.fichierNom,
+      colonnes: ligne.colonnes,
+      correspondance: ligne.correspondance as Correspondance,
+      champsManquants: [],
+      totaux: {
+        lignes: ligne.lignes,
+        valides: crees + modifies,
+        enErreur: rejetes,
+        avecAvertissement: 0,
+        existantes: modifies,
+      },
+      lignes: rapport.lignes.map((l) => ({
+        numero: l.numero,
+        donnees: {},
+        erreurs: l.motifs.map((m) => ({
+          champ: m.champ as ChampImport,
+          message: libelleMotif(m.message),
+        })),
+        avertissements: [],
+      })),
+      expireLe: ligne.expireLe.toISOString(),
+      bilan: { crees, modifies, rejetes, valideLe: valideLe.toISOString(), annulable },
     };
   }
 }

@@ -299,6 +299,26 @@ export const fr = {
     rienEcrit: 'Rien n’est écrit tant que l’import n’est pas validé.',
     reprise: (date: string) =>
       `Fichier et correspondance conservés jusqu’au ${date} pour reprendre.`,
+    validation: 'Validation',
+    modeTout: 'Tout ou rien : n’importer que si aucune ligne n’est en erreur',
+    modeValides:
+      'Importer seulement les lignes valides (un rapport des lignes rejetées sera disponible)',
+    existantsIgnorer: 'Ignorer les lignes dont l’email désigne une fiche existante',
+    existantsMettreAJour: 'Mettre à jour ces fiches avec les valeurs du fichier',
+    mode: 'Lignes à importer',
+    existants: 'Fiches existantes',
+    valider: 'Valider l’import',
+    validation_enCours: 'Import en cours…',
+    bilanTitre: 'Import terminé',
+    bilan: (crees: number, modifies: number, rejetes: number) =>
+      `${crees} fiche${crees > 1 ? 's' : ''} créée${crees > 1 ? 's' : ''} · ${modifies} mise${modifies > 1 ? 's' : ''} à jour · ${rejetes} ligne${rejetes > 1 ? 's' : ''} rejetée${rejetes > 1 ? 's' : ''}`,
+    rapport: 'Télécharger le rapport des lignes rejetées',
+    annuler: 'Annuler l’import',
+    aideAnnuler:
+      'Annulable pendant 24 h tant qu’aucune fiche créée n’a servi : les fiches créées sont supprimées et les fiches mises à jour retrouvent leurs valeurs.',
+    annule:
+      'Import annulé : les fiches créées ont été supprimées et les fiches mises à jour rétablies.',
+    voirPersonnes: 'Voir les personnes',
     introuvable: 'Cet import n’existe pas ou a expiré.',
     echec: 'L’analyse a échoué. Réessayez.',
   },

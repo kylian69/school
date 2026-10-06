@@ -771,6 +771,31 @@
         }
       }
     },
+    "/api/imports/{id}/annulation": {
+      "post": {
+        "operationId": "ImportsController.annuler",
+        "summary": "Annuler un import dans les 24 h, s’il n’a pas servi (RG-01-20)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:importer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApercuImport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/imports/{id}/correspondance": {
       "put": {
         "operationId": "ImportsController.modifierCorrespondance",
@@ -788,6 +813,66 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ModificationCorrespondance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApercuImport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/imports/{id}/rapport": {
+      "get": {
+        "operationId": "ImportsController.rapport",
+        "summary": "Rapport CSV des lignes rejetées (RG-01-19)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:importer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/imports/{id}/validation": {
+      "post": {
+        "operationId": "ImportsController.valider",
+        "summary": "Valider l’import : tout ou rien, ou les seules lignes valides (RG-01-19)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:importer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationImport"
               }
             }
           }
@@ -1750,6 +1835,43 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "bilan": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "crees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "modifies": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "rejetes": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "valideLe": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "annulable": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "crees",
+              "modifies",
+              "rejetes",
+              "valideLe",
+              "annulable"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -1762,7 +1884,8 @@
           "champsManquants",
           "totaux",
           "lignes",
-          "expireLe"
+          "expireLe",
+          "bilan"
         ],
         "additionalProperties": false
       },
@@ -4188,6 +4311,32 @@
           "dateFin",
           "type",
           "etablissementIds"
+        ],
+        "additionalProperties": false
+      },
+      "ValidationImport": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "default": "tout",
+            "type": "string",
+            "enum": [
+              "tout",
+              "valides"
+            ]
+          },
+          "existants": {
+            "default": "ignorer",
+            "type": "string",
+            "enum": [
+              "mettre-a-jour",
+              "ignorer"
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "existants"
         ],
         "additionalProperties": false
       }

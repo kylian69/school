@@ -7,6 +7,7 @@ import { apiGet } from '@/lib/api';
 import { getContexte } from '@/lib/contexte';
 import { EtapesImport } from '../etapes-import';
 import { CorrespondanceImport } from './correspondance-import';
+import { ValidationImport } from './validation-import';
 
 export const metadata: Metadata = { title: fr.imports.titre };
 
@@ -25,9 +26,16 @@ export default async function ImportEnCoursPage({ params }: { params: Promise<{ 
         </h1>
         {apercu ? <p className="text-sm text-muted">{apercu.fichierNom}</p> : null}
       </div>
-      <EtapesImport courante={apercu && apercu.champsManquants.length === 0 ? 3 : 2} />
+      <EtapesImport
+        courante={
+          apercu?.statut !== 'en_preparation' && apercu ? 4 : apercu?.champsManquants.length ? 2 : 3
+        }
+      />
       {apercu ? (
-        <CorrespondanceImport apercu={apercu} />
+        <>
+          {apercu.statut === 'en_preparation' ? <CorrespondanceImport apercu={apercu} /> : null}
+          <ValidationImport apercu={apercu} />
+        </>
       ) : (
         <Card>
           <p role="alert" className="text-sm">

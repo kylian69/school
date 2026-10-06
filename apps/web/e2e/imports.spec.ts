@@ -38,5 +38,24 @@ test.describe('E-01-06 Assistant d’import', () => {
       .selectOption({ label: 'Ne pas importer' });
     await page.getByRole('button', { name: 'Appliquer la correspondance' }).click();
     await expect(page.getByText('Colonnes obligatoires à associer : Email.')).toBeVisible();
+
+    // Étape 4 : tout ou rien refusé, puis seules les lignes valides, et annulation.
+    await page
+      .getByRole('combobox', { name: 'Champ pour la colonne « Email »' })
+      .selectOption({ label: 'Email' });
+    await page.getByRole('button', { name: 'Appliquer la correspondance' }).click();
+    await page.getByRole('button', { name: 'Valider l’import' }).click();
+    await expect(page.getByText('Le fichier contient des lignes en erreur.')).toBeVisible();
+    await page.getByLabel(/Importer seulement les lignes valides/).check();
+    await page.getByRole('button', { name: 'Valider l’import' }).click();
+    await expect(page.getByRole('status')).toHaveText(
+      '1 fiche créée · 0 mise à jour · 1 ligne rejetée',
+    );
+    await expect(
+      page.getByRole('link', { name: 'Télécharger le rapport des lignes rejetées' }),
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole('button', { name: 'Annuler l’import' }).click();
+    await expect(page.getByText(/Import annulé/)).toBeVisible();
   });
 });
