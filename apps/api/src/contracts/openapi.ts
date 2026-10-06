@@ -15,7 +15,9 @@ const COMPONENT_URI = (id: string) => `#/components/schemas/${id}`;
 /** Schéma d'une route : référence vers `components` s'il porte un identifiant, sinon en ligne. */
 const jsonSchema = (schema: z.ZodType) => {
   const id = z.globalRegistry.get(schema)?.id;
-  return id ? { $ref: COMPONENT_URI(id) } : z.toJSONSchema(schema, { target: 'openapi-3.0' });
+  return id
+    ? { $ref: COMPONENT_URI(id) }
+    : z.toJSONSchema(schema, { target: 'openapi-3.0', io: 'input' });
 };
 
 /** Schémas réutilisables de packages/contracts (ceux qui portent `.meta({ id })`). */

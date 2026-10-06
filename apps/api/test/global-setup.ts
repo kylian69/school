@@ -12,6 +12,7 @@ export default async function setup(project: TestProject) {
 
   project.provide('appUrl', database.appUrl);
   project.provide('migratorUrl', database.migratorUrl);
+  project.provide('platformUrl', database.platformUrl);
   project.provide('valkeyUrl', valkeyUrl);
   project.provide('s3Endpoint', process.env.TEST_S3_ENDPOINT ?? 'http://localhost:59000');
   project.provide('s3AccessKey', process.env.TEST_S3_ACCESS_KEY ?? 'GK0000000000000000000000d1');
@@ -28,6 +29,7 @@ declare module 'vitest' {
   export interface ProvidedContext {
     appUrl: string;
     migratorUrl: string;
+    platformUrl: string;
     valkeyUrl: string;
     s3Endpoint: string;
     s3AccessKey: string;

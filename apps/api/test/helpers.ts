@@ -9,6 +9,8 @@ export const WEB_ORIGIN = 'http://localhost:3000';
 export function testEnv(overrides: Partial<Env> = {}): Env {
   return {
     NODE_ENV: 'test',
+    SCOLALY_MODE: 'saas',
+    PLATFORM_DATABASE_URL: inject('platformUrl'),
     PORT: 0,
     LOG_LEVEL: 'info',
     DATABASE_URL: inject('appUrl'),

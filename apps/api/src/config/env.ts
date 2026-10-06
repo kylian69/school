@@ -4,6 +4,10 @@ import { z } from 'zod';
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    /** SaaS multi-écoles (console de la plateforme montée) ou auto-hébergement (architecture § 1). */
+    SCOLALY_MODE: z.enum(['saas', 'auto_heberge']).default('auto_heberge'),
+    /** Rôle de la console de la plateforme (ADR 0004), connexion directe ; obligatoire en SaaS. */
+    PLATFORM_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
     PORT: z.coerce.number().int().positive().default(3001),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     /** Connexion avec le rôle scolaly_app (via PgBouncer en production). */
@@ -33,6 +37,10 @@ const EnvSchema = z
   .refine((env) => env.ANTIVIRUS_DISABLED || env.CLAMAV_HOST, {
     path: ['CLAMAV_HOST'],
     message: 'obligatoire, sauf si ANTIVIRUS_DISABLED=true',
+  })
+  .refine((env) => env.SCOLALY_MODE !== 'saas' || env.PLATFORM_DATABASE_URL, {
+    path: ['PLATFORM_DATABASE_URL'],
+    message: 'obligatoire en mode SaaS (console de la plateforme)',
   });
 
 export type Env = z.infer<typeof EnvSchema>;

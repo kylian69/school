@@ -18,7 +18,9 @@
     "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
     "dev:up": "sh infra/compose/dev-up.sh",
     "dev:down": "docker compose -f infra/compose/compose.dev.yml down",
-    "demo:seed": "pnpm --filter @scolaly/api build && pnpm --filter @scolaly/api demo:seed"
+    "demo:seed": "pnpm --filter @scolaly/api build && pnpm --filter @scolaly/api demo:seed",
+    "dev:reset": "docker compose -f infra/compose/compose.dev.yml down -v && sh infra/compose/dev-up.sh",
+    "plateforme:super-admin": "pnpm --filter @scolaly/api build && pnpm --filter @scolaly/api plateforme:super-admin"
   },
   "devDependencies": {
     "dependency-cruiser": "catalog:",

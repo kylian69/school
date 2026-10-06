@@ -57,10 +57,12 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | `pnpm install` | Installe les dépendances du monorepo |
 | `pnpm build` | Construit tous les paquets et applications (Turborepo, avec cache) |
 | `pnpm dev:up` / `pnpm dev:down` | Démarre (et prépare la base) ou arrête les services de développement |
+| `pnpm dev:reset` | Recrée les services de développement à neuf (données effacées) |
 | `pnpm dev` | Lance les applications en mode développement |
 | `SCOLALY_DOMAIN=… sh infra/compose/install.sh` | Installation à neuf (Docker Compose, Caddy, secrets générés) ; `update.sh` pour mettre à jour, `demo-seed.sh` pour la démonstration |
 | `pnpm --filter @scolaly/web e2e:installation` | Test de fumée contre une installation (`INSTALLATION_URL`, `DEMO_PASSWORD`) |
-| `pnpm demo:seed` | Charge le jeu de démonstration fictif et ses comptes (mot de passe : `DEMO_PASSWORD`) |
+| `pnpm demo:seed` | Charge le jeu de démonstration fictif et ses comptes (mot de passe : `DEMO_PASSWORD`) ; en SaaS, aussi le super-administrateur de la console |
+| `pnpm plateforme:super-admin` | Crée un super-administrateur de la console (`SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_NOM`, `SUPER_ADMIN_PASSWORD`) |
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Lint, typage strict, tests Vitest |
 | `pnpm format` / `pnpm format:check` | Formatage Prettier |
 | `pnpm check` | Tout ce que vérifie la CI avant une PR |

@@ -1,6 +1,7 @@
 import { createDatabase } from '@scolaly/db';
 import { buildDemoDataset, seedDemoDataset } from '@scolaly/db/demo';
 import { createPasswordAccount, type Auth } from '../auth/auth.js';
+import { creerSuperAdministrateur } from '../modules/plateforme/index.js';
 
 export interface DemoSeedResult {
   donneesEcrites: boolean;
@@ -15,6 +16,8 @@ export async function seedDemo(options: {
   auth: Auth;
   migratorUrl: string;
   password: string;
+  /** En mode SaaS : crée aussi le super-administrateur de démonstration de la console. */
+  platformUrl?: string;
 }): Promise<DemoSeedResult> {
   const dataset = buildDemoDataset();
   const owner = createDatabase(options.migratorUrl, { max: 2 });
@@ -35,6 +38,15 @@ export async function seedDemo(options: {
       password: options.password,
     });
     comptesCrees.push(compte.email);
+  }
+  if (options.platformUrl) {
+    const { cree } = await creerSuperAdministrateur({
+      auth: options.auth,
+      platformUrl: options.platformUrl,
+      ...dataset.superAdministrateur,
+      password: options.password,
+    });
+    if (cree) comptesCrees.push(dataset.superAdministrateur.email);
   }
   return { donneesEcrites, comptesCrees };
 }

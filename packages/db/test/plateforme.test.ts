@@ -113,3 +113,36 @@ describe('Ce que voit une école', () => {
     );
   });
 });
+
+describe('RG-19-02 accès de l’école tenu par la console', () => {
+  it('une école ne peut ni rouvrir son accès ni changer de groupe, mais modifie son nom', async () => {
+    const { organisationId } = await creerClient();
+    await plateforme.db
+      .update(organisation)
+      .set({ acces: 'lecture_seule' })
+      .where(eq(organisation.id, organisationId));
+    await expectPgError(
+      withOrganisation(app.db, organisationId, (tx) =>
+        tx
+          .update(organisation)
+          .set({ acces: 'complet' })
+          .where(eq(organisation.id, organisationId)),
+      ),
+      /permission denied/,
+    );
+    await expectPgError(
+      withOrganisation(app.db, organisationId, (tx) =>
+        tx.update(organisation).set({ groupeId: null }).where(eq(organisation.id, organisationId)),
+      ),
+      /permission denied/,
+    );
+    const [renommee] = await withOrganisation(app.db, organisationId, (tx) =>
+      tx
+        .update(organisation)
+        .set({ nomAffichage: 'Nouveau nom' })
+        .where(eq(organisation.id, organisationId))
+        .returning({ acces: organisation.acces }),
+    );
+    expect(renommee?.acces).toBe('lecture_seule');
+  });
+});

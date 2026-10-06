@@ -7,6 +7,9 @@ export const OPENAPI_VERSION = '0.0.0';
 /** Configuration factice : la génération n'ouvre aucune connexion. */
 export const OPENAPI_GENERATION_ENV: Env = {
   NODE_ENV: 'test',
+  // Mode SaaS : les routes de la console de la plateforme figurent dans le document.
+  SCOLALY_MODE: 'saas',
+  PLATFORM_DATABASE_URL: 'postgres://generation:generation@localhost:1/generation',
   PORT: 0,
   LOG_LEVEL: 'error',
   DATABASE_URL: 'postgres://generation:generation@localhost:1/generation',

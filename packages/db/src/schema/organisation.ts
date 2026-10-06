@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { char, pgPolicy, pgTable, text, unique, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import {
+  char,
+  pgEnum,
+  pgPolicy,
+  pgTable,
+  text,
+  unique,
+  uuid,
+  type AnyPgColumn,
+} from 'drizzle-orm/pg-core';
 import { platformRole } from '../roles.js';
 import { isolationPolicy, primaryId, trackingColumns } from './columns.js';
 
@@ -13,6 +22,16 @@ export const groupe = pgTable('groupe', {
   ...trackingColumns(),
 });
 
+/**
+ * Accès d'une école, tenu par la console selon l'état de son client (RG-19-02) : complet,
+ * lecture seule (client suspendu) ou fermé (client résilié).
+ */
+export const organisationAcces = pgEnum('organisation_acces', [
+  'complet',
+  'lecture_seule',
+  'ferme',
+]);
+
 /** Organisation (une école) : sa propre ligne est la seule visible pour la session. */
 export const organisation = pgTable(
   'organisation',
@@ -22,6 +41,7 @@ export const organisation = pgTable(
     nom: text().notNull(),
     nomAffichage: text().notNull(),
     siren: char({ length: 9 }),
+    acces: organisationAcces().notNull().default('complet'),
     ...trackingColumns(),
   },
   () => [

@@ -1,6 +1,10 @@
 import type { InferInsertModel } from 'drizzle-orm';
 import type {
   anneeScolaire,
+  client,
+  clientEtatEvenement,
+  contrat,
+  organisationModule,
   etablissement,
   groupe,
   organisation,
@@ -98,7 +102,31 @@ export interface DemoDataset {
   periodes: InferInsertModel<typeof periode>[];
   personnes: InferInsertModel<typeof personne>[];
   comptes: DemoAccount[];
+  /** Le groupe est un client de la plateforme (formule Pro), avec ses modules (RG-19-04). */
+  client: InferInsertModel<typeof client>;
+  contrat: InferInsertModel<typeof contrat>;
+  etatsClient: InferInsertModel<typeof clientEtatEvenement>[];
+  modules: InferInsertModel<typeof organisationModule>[];
+  /** Compte de démonstration de la console de la plateforme (SaaS). */
+  superAdministrateur: { email: string; name: string };
 }
+
+/** Modules de la formule Pro, repris de packages/referentials (sans dépendance du paquet db). */
+export const DEMO_MODULES_FORMULE = [
+  'socle',
+  'referentiel',
+  'alternance',
+  'emplois-du-temps',
+  'cahier-de-texte',
+  'emargement',
+  'notes',
+  'portails',
+  'crm',
+  'contrats',
+  'livret',
+  'facturation',
+  'qualite',
+] as const;
 
 const ECOLES = [
   {
@@ -136,8 +164,39 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
   const personnesParEcole = options.personnesParEcole ?? 120;
   const id = () => random.uuid(CREATED_AT);
 
+  const groupeId = id();
+  const clientId = id();
   const dataset: DemoDataset = {
-    groupe: { id: id(), nom: 'Groupe Lumerac Formation', createdAt: CREATED_AT },
+    groupe: { id: groupeId, nom: 'Groupe Lumerac Formation', createdAt: CREATED_AT },
+    client: {
+      id: clientId,
+      groupeId,
+      raisonSociale: 'Groupe Lumerac Formation SAS',
+      sousDomaine: 'lumerac',
+      administrateurNom: 'Administration EGL',
+      administrateurEmail: `administrateur@egl.${DEMO_EMAIL_DOMAIN}`,
+      contactFacturationNom: 'Service comptable Lumerac',
+      contactFacturationEmail: `comptabilite@${DEMO_EMAIL_DOMAIN}`,
+      createdAt: CREATED_AT,
+    },
+    contrat: {
+      id: id(),
+      clientId,
+      formule: 'pro',
+      volumeApprenants: 2000,
+      dateDebut: '2026-09-01',
+      dateFin: '2029-08-31',
+      referenceDevis: 'DEVIS-DEMO-0001',
+      createdAt: CREATED_AT,
+    },
+    etatsClient: [
+      { id: id(), clientId, etat: 'actif', motif: 'Jeu de démonstration', survenuLe: CREATED_AT },
+    ],
+    modules: [],
+    superAdministrateur: {
+      email: `super-administrateur@plateforme.${DEMO_EMAIL_DOMAIN}`,
+      name: 'Équipe Scolaly',
+    },
     organisations: [],
     etablissements: [],
     annees: [],
@@ -155,6 +214,16 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       nomAffichage: ecole.nomAffichage,
       createdAt: CREATED_AT,
     });
+    for (const module of DEMO_MODULES_FORMULE) {
+      dataset.modules.push({
+        id: id(),
+        organisationId,
+        module,
+        actif: true,
+        origine: 'formule',
+        createdAt: CREATED_AT,
+      });
+    }
     for (const campus of ecole.campus) {
       dataset.etablissements.push({
         id: id(),
