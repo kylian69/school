@@ -135,6 +135,16 @@ const detailEcole = () => ({
 const uaiInvalide = (uai) => uai && !/^\d{7}[A-Z]$/.test(uai.replace(/\s+/g, '').toUpperCase());
 const nul = (v) => (v === '' ? null : v);
 
+const annees = [];
+const resumeAnnee = ({ fermetures: _fermetures, ...annee }) => annee;
+// Jours fériés simplifiés : le calcul réel est couvert par les tests du domaine et de l'API.
+const detailAnnee = (annee) => ({
+  ...annee,
+  feries: [
+    { code: 'toussaint', libelle: 'Toussaint', date: `${annee.dateDebut.slice(0, 4)}-11-01` },
+  ],
+});
+
 function creerFiche(entree) {
   const id = randomUUID();
   const fiche = {
@@ -324,12 +334,79 @@ createServer(async (request, response) => {
       ecoleActive: active,
       ecoles,
       permissions: active
-        ? ['organisation:lire', 'organisation:modifier', 'roles:attribuer', 'roles:gerer']
+        ? [
+            'calendrier:gerer',
+            'calendrier:lire',
+            'organisation:lire',
+            'organisation:modifier',
+            'roles:attribuer',
+            'roles:gerer',
+          ]
         : [],
       modules: active ? ['socle'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
     });
+  }
+
+  // Calendrier (E-01-03) : chaque année est créée par le test qui l'utilise.
+  const anneeRoute = path.match(/^\/api\/annees(?:\/([^/]+))?(\/fermetures)?$/);
+  const fermetureRoute = path.match(/^\/api\/fermetures\/([^/]+)$/);
+  if (anneeRoute || fermetureRoute) {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (fermetureRoute) {
+      const annee = annees.find((a) => a.fermetures.some((f) => f.id === fermetureRoute[1]));
+      if (!annee) return json(404, { message: 'Fermeture introuvable dans cette école.' });
+      const rang = annee.fermetures.findIndex((f) => f.id === fermetureRoute[1]);
+      if (request.method === 'DELETE') {
+        annee.fermetures.splice(rang, 1);
+        response.writeHead(204);
+        return response.end();
+      }
+      annee.fermetures[rang] = { id: fermetureRoute[1], ...(await readBody(request)) };
+      return json(200, annee.fermetures[rang]);
+    }
+    const [, id, fermetures] = anneeRoute;
+    if (!id && request.method === 'GET') return json(200, { annees: annees.map(resumeAnnee) });
+    if (!id) {
+      const body = await readBody(request);
+      const annee = {
+        id: randomUUID(),
+        libelle: body.libelle,
+        dateDebut: body.dateDebut,
+        dateFin: body.dateFin,
+        statut: 'preparation',
+        periodes: body.periodes.map((p, i) => ({ id: randomUUID(), ordre: i + 1, ...p })),
+        fermetures: [],
+      };
+      annees.push(annee);
+      return json(201, detailAnnee(annee));
+    }
+    const annee = annees.find((a) => a.id === id);
+    if (!annee) return json(404, { message: 'Année scolaire introuvable dans cette école.' });
+    if (fermetures) {
+      const body = await readBody(request);
+      if (body.dateDebut < annee.dateDebut || body.dateFin > annee.dateFin)
+        return json(400, {
+          message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+          details: ['corps : Une fermeture doit rester dans l’année scolaire.'],
+        });
+      const fermeture = { id: randomUUID(), etablissementIds: [], ...body };
+      annee.fermetures.push(fermeture);
+      return json(201, fermeture);
+    }
+    if (request.method === 'PATCH') {
+      const { periodes, ...reste } = await readBody(request);
+      Object.assign(annee, reste);
+      if (periodes)
+        annee.periodes = periodes.map((p, i) => ({ id: p.id ?? randomUUID(), ordre: i + 1, ...p }));
+    }
+    if (request.method === 'DELETE') {
+      annees.splice(annees.indexOf(annee), 1);
+      response.writeHead(204);
+      return response.end();
+    }
+    return json(200, detailAnnee(annee));
   }
 
   if (path === '/api/organisation') {

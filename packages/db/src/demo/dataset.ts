@@ -6,6 +6,7 @@ import type {
   contrat,
   organisationModule,
   etablissement,
+  fermeture,
   groupe,
   organisation,
   periode,
@@ -100,6 +101,7 @@ export interface DemoDataset {
   etablissements: InferInsertModel<typeof etablissement>[];
   annees: InferInsertModel<typeof anneeScolaire>[];
   periodes: InferInsertModel<typeof periode>[];
+  fermetures: InferInsertModel<typeof fermeture>[];
   personnes: InferInsertModel<typeof personne>[];
   comptes: DemoAccount[];
   /** Le groupe est un client de la plateforme (formule Pro), avec ses modules (RG-19-04). */
@@ -126,6 +128,14 @@ export const DEMO_MODULES_FORMULE = [
   'livret',
   'facturation',
   'qualite',
+] as const;
+
+/** Vacances de l'année de démonstration, choisies pour l'exemple. */
+const VACANCES = [
+  ['Vacances de la Toussaint', '2026-10-24', '2026-11-01'],
+  ['Vacances de Noël', '2026-12-19', '2027-01-03'],
+  ['Vacances d’hiver', '2027-02-20', '2027-02-28'],
+  ['Vacances de printemps', '2027-04-17', '2027-04-25'],
 ] as const;
 
 const ECOLES = [
@@ -218,6 +228,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
     etablissements: [],
     annees: [],
     periodes: [],
+    fermetures: [],
     personnes: [],
     comptes: [],
   };
@@ -284,6 +295,19 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
         createdAt: CREATED_AT,
       },
     );
+
+    for (const [libelle, dateDebut, dateFin] of VACANCES) {
+      dataset.fermetures.push({
+        id: id(),
+        organisationId,
+        anneeScolaireId: anneeId,
+        libelle,
+        dateDebut,
+        dateFin,
+        type: 'vacances',
+        createdAt: CREATED_AT,
+      });
+    }
 
     const domaine = `${ecole.nomAffichage.toLowerCase()}.${DEMO_EMAIL_DOMAIN}`;
     const emails = new Set<string>();

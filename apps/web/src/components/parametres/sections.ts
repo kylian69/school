@@ -15,6 +15,11 @@ export const SECTIONS_PARAMETRES: readonly SectionParametres[] = [
     permissions: ['organisation:lire', 'organisation:modifier'],
   },
   {
+    label: fr.parametres.sections.calendrier,
+    href: '/parametres/calendrier',
+    permissions: ['calendrier:lire', 'calendrier:gerer'],
+  },
+  {
     label: fr.parametres.sections.roles,
     href: '/parametres/roles',
     permissions: ['roles:gerer', 'roles:attribuer'],
