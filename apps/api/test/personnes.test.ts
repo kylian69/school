@@ -125,6 +125,8 @@ describe('E-01-04 et E-01-05 personnes', () => {
     expect(reponse.statusCode).toBe(201);
     ines = reponse.json<PersonneDetail>();
     expect(ines).toMatchObject({ ...INES, compteEtat: 'cree', naissanceVisible: true, roles: [] });
+    // RG-01-06 : premier matricule du modèle par défaut (numéro séquentiel).
+    expect(ines.matricule).toBe('000001');
     const [trace] = await owner.db
       .select()
       .from(auditEvenement)
@@ -154,6 +156,43 @@ describe('E-01-04 et E-01-05 personnes', () => {
       ignorerDoublons: true,
     });
     expect(confirmee.statusCode).toBe(201);
+  });
+
+  it('RG-01-06 contrôle l’INE, unique dans l’école ; un matricule importé n’est jamais repris', async () => {
+    const invalide = await requete('POST', '/api/personnes', admin, {
+      ...INES,
+      email: 'ine.invalide@exemple.test',
+      dateNaissance: null,
+      ine: '12345',
+    });
+    expect(invalide.statusCode).toBe(400);
+    const avecIne = await requete('POST', '/api/personnes', admin, {
+      nom: 'Morin',
+      prenom: 'Léo',
+      email: 'leo.morin@exemple.test',
+      ine: '0912 345 678k',
+      matricule: 'IMPORT-1',
+    });
+    expect(avecIne.json<PersonneDetail>()).toMatchObject({
+      ine: '0912345678K',
+      matricule: 'IMPORT-1',
+    });
+    const memeIne = await requete('POST', '/api/personnes', admin, {
+      nom: 'Autre',
+      prenom: 'Léo',
+      email: 'autre.leo@exemple.test',
+      ine: '0912345678K',
+      ignorerDoublons: true,
+    });
+    expect(memeIne.statusCode).toBe(409);
+    expect(memeIne.json<{ doublons: DoublonPersonne[] }>().doublons[0]?.motifs).toEqual(['ine']);
+    const memeMatricule = await requete('POST', '/api/personnes', admin, {
+      nom: 'Autre',
+      prenom: 'Léa',
+      email: 'autre.lea@exemple.test',
+      matricule: 'IMPORT-1',
+    });
+    expect(memeMatricule.statusCode).toBe(400);
   });
 
   it('refuse une date de naissance improbable', async () => {
@@ -201,12 +240,13 @@ describe('E-01-04 et E-01-05 personnes', () => {
 
   it('liste, cherche et filtre les personnes, avec leurs rôles, page par page', async () => {
     const tout = (await requete('GET', '/api/personnes')).json<ListePersonnes>();
-    expect(tout.total).toBe(5);
+    expect(tout.total).toBe(6);
     expect(tout.personnes.map((p) => p.nom)).toEqual([
       'Admin',
       'Benali',
       'Benali',
       'Direction',
+      'Morin',
       'Zola',
     ]);
     expect(tout.personnes[0]?.roles).toEqual(['Administrateur d’organisation']);
@@ -214,7 +254,7 @@ describe('E-01-04 et E-01-05 personnes', () => {
     const cherche = (await requete('GET', '/api/personnes?q=morel')).json<ListePersonnes>();
     expect(cherche.personnes.map((p) => p.id)).toEqual([ines.id]);
     const crees = (await requete('GET', '/api/personnes?etat=cree')).json<ListePersonnes>();
-    expect(crees.total).toBe(2);
+    expect(crees.total).toBe(3);
     const [roleIntervenant] = await owner.db
       .select()
       .from(role)
@@ -224,7 +264,7 @@ describe('E-01-04 et E-01-05 personnes', () => {
     ).json<ListePersonnes>();
     expect(parRole.personnes.map((p) => p.id)).toEqual([intervenantId]);
     const page2 = (await requete('GET', '/api/personnes?parPage=2&page=2')).json<ListePersonnes>();
-    expect(page2).toMatchObject({ total: 5, page: 2, parPage: 2 });
+    expect(page2).toMatchObject({ total: 6, page: 2, parPage: 2 });
     expect(page2.personnes.map((p) => p.nom)).toEqual(['Benali', 'Direction']);
   });
 

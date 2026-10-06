@@ -27,6 +27,15 @@ describe('RG-01-07 recherche des doublons', () => {
     expect(motifsDoublon(ines, ines)).toEqual(['email', 'identite']);
   });
 
+  it('repère un même INE', () => {
+    const autre = { ...ines, email: 'autre@exemple.test', dateNaissance: null };
+    expect(
+      motifsDoublon({ ...autre, ine: '0912345678K' }, { ...ines, ine: '0912345678K' }),
+    ).toEqual(['ine']);
+    expect(motifsDoublon({ ...autre, ine: '0912345678K' }, { ...ines, ine: null })).toEqual([]);
+    expect(motifsDoublon({ ...autre, ine: null }, { ...ines, ine: null })).toEqual([]);
+  });
+
   it('ne compare pas l’identité sans date de naissance, ni avec une autre date', () => {
     const autre = { ...ines, email: 'autre@exemple.test' };
     expect(motifsDoublon({ ...autre, dateNaissance: null }, ines)).toEqual([]);

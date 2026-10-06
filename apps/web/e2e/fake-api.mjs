@@ -102,6 +102,8 @@ const ecole = {
   nom: 'École de gestion de Lumerac',
   nomAffichage: 'EGL',
   siren: null,
+  modeleMatricule: '{NUM:6}',
+  exempleMatricule: '000001',
   etablissements: [
     {
       id: '01a10000-0000-7000-8000-0000000000b1',
@@ -505,6 +507,7 @@ createServer(async (request, response) => {
         id: randomUUID(),
         ...body,
         compteEtat: 'cree',
+        matricule: String(personnes.length).padStart(6, '0'),
         roles: [],
         version: new Date().toISOString(),
       };

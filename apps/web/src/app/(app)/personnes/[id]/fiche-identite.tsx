@@ -49,6 +49,8 @@ export function FicheIdentite({
   }
 
   const lignes: [string, string | null][] = [
+    [t.champs.matricule, personne.matricule],
+    [t.champs.ine, personne.ine],
     [t.champs.civilite, personne.civilite ? (t.civilites[personne.civilite] ?? null) : null],
     [t.champs.prenom, personne.prenom],
     [t.champs.nom, personne.nom],

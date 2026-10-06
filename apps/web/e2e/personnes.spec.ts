@@ -34,6 +34,8 @@ test.describe('E-01-04 et E-01-05 Personnes', () => {
     await expectNoAccessibilityViolations(page);
     await page.getByRole('button', { name: 'Créer la fiche' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Inès ${nom}`);
+    // RG-01-06 : un matricule est attribué à la création.
+    await expect(page.getByRole('definition').filter({ hasText: /^\d{6}$/ })).toBeVisible();
 
     // Même nom, même date : la fiche existante est proposée avant toute création.
     await page.goto('/personnes/nouvelle');

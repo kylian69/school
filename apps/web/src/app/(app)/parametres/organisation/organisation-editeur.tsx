@@ -257,6 +257,15 @@ function FicheOrganisation({
             inputMode="numeric"
             maxLength={20}
           />
+          <Champ
+            nom="modeleMatricule"
+            label={t.modeleMatricule}
+            erreurs={erreurs}
+            aide={t.aideMatricule(organisation.exempleMatricule)}
+            defaultValue={organisation.modeleMatricule}
+            maxLength={30}
+            className="font-mono"
+          />
         </fieldset>
         <p role="alert" aria-live="polite" className="text-sm text-bad empty:hidden">
           {erreurs.message}

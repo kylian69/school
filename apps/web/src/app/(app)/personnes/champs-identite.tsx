@@ -100,6 +100,14 @@ export function ChampsIdentite({
         </>
       ) : null}
       <Champ
+        nom="ine"
+        label={t.champs.ine}
+        erreurs={erreurs}
+        defaultValue={valeurs?.ine ?? ''}
+        maxLength={20}
+        autoComplete="off"
+      />
+      <Champ
         nom="adresseLigne1"
         label={t.champs.adresseLigne1}
         erreurs={erreurs}
@@ -146,6 +154,7 @@ export function lireIdentite(form: HTMLFormElement, naissanceVisible: boolean) {
     adresseLigne1: valeur('adresseLigne1'),
     codePostal: valeur('codePostal'),
     ville: valeur('ville'),
+    ine: valeur('ine'),
     ...(naissanceVisible
       ? { dateNaissance: valeur('dateNaissance'), lieuNaissance: valeur('lieuNaissance') }
       : {}),

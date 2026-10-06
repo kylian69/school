@@ -1,14 +1,15 @@
 /**
  * Doublons de personnes (RG-01-06, RG-01-07) : avant toute création, on cherche une fiche de même
- * email, ou de même nom, prénom et date de naissance, et on propose la fiche existante.
+ * email, de même INE, ou de même nom, prénom et date de naissance, et on propose la fiche existante.
  */
-export type MotifDoublon = 'email' | 'identite';
+export type MotifDoublon = 'email' | 'ine' | 'identite';
 
 export interface IdentiteComparee {
   nom: string;
   prenom: string;
   email: string;
   dateNaissance: string | null;
+  ine?: string | null;
 }
 
 /** Forme comparable d'un nom : minuscules, sans accents, tirets et espaces réduits. */
@@ -29,6 +30,7 @@ export function motifsDoublon(
   if (candidat.email.trim().toLowerCase() === existant.email.trim().toLowerCase()) {
     motifs.push('email');
   }
+  if (candidat.ine && candidat.ine === existant.ine) motifs.push('ine');
   if (
     candidat.dateNaissance !== null &&
     candidat.dateNaissance === existant.dateNaissance &&

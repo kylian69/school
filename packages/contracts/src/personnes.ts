@@ -59,6 +59,9 @@ export const PersonneDetail = z
     dateNaissance: jour.nullable(),
     lieuNaissance: z.string().nullable(),
     naissanceVisible: z.boolean(),
+    /** RG-01-06 : attribué à la création, jamais réattribué. */
+    matricule: z.string().nullable(),
+    ine: z.string().nullable(),
     compteEtat: z.enum(ETATS_COMPTE),
     roles: z.array(z.string()),
     /** Version de la fiche : une modification concurrente est refusée (module 01, section 7). */
@@ -79,6 +82,8 @@ const champsIdentite = {
   ville: facultatif(120),
   dateNaissance: jour.nullable(),
   lieuNaissance: facultatif(120),
+  /** INE saisi avec ou sans espaces : l'API le normalise et le contrôle. */
+  ine: facultatif(20),
 };
 
 export const NouvellePersonne = z
@@ -92,6 +97,9 @@ export const NouvellePersonne = z
     ville: champsIdentite.ville.optional(),
     dateNaissance: champsIdentite.dateNaissance.optional(),
     lieuNaissance: champsIdentite.lieuNaissance.optional(),
+    ine: champsIdentite.ine.optional(),
+    /** Matricule repris d'un autre logiciel (import) ; sinon généré selon le modèle de l'école. */
+    matricule: z.string().trim().min(1).max(30).optional(),
     /** RG-01-07 : créer malgré une fiche de même identité, après l'avoir vérifiée. */
     ignorerDoublons: z.boolean().optional(),
   })
@@ -111,7 +119,7 @@ export const DoublonPersonne = z.object({
   nom: z.string(),
   prenom: z.string(),
   email: z.string(),
-  motifs: z.array(z.enum(['email', 'identite'])),
+  motifs: z.array(z.enum(['email', 'ine', 'identite'])),
 });
 export type DoublonPersonne = z.infer<typeof DoublonPersonne>;
 
