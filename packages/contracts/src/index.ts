@@ -11,3 +11,4 @@ export * from './gestion-roles.js';
 export * from './structure.js';
 export * from './calendrier.js';
 export * from './apparence.js';
+export * from './demarrage.js';

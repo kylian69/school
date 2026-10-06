@@ -6,6 +6,7 @@ import {
   invitation,
   role,
   rolePermission,
+  demarrageEtape,
   etablissement,
   fermeture,
   fermetureEtablissement,
@@ -83,6 +84,13 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         dateFin: '2027-01-31',
         ordre: 1,
       });
+    },
+  },
+  demarrage_etape: {
+    insert: async (db, organisationId) => {
+      await db
+        .insert(demarrageEtape)
+        .values({ organisationId, etape: 'apparence', choix: 'sautee' });
     },
   },
   fermeture: {
