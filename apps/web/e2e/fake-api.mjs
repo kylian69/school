@@ -161,6 +161,28 @@ const detailApparence = () => ({
   logoUrl: apparence.logo ? `/api/ecoles/${ecole.id}/logo?v=${apparence.logo.version}` : null,
 });
 
+// Personnes (E-01-04, E-01-05) : chaque test crée les fiches qu'il modifie.
+const personnes = [
+  {
+    id: '01a10000-0000-7000-8000-0000000000c1',
+    civilite: null,
+    nom: 'Fictive',
+    nomUsage: null,
+    prenom: 'Camille',
+    email: 'camille@exemple.test',
+    telephone: null,
+    adresseLigne1: null,
+    codePostal: null,
+    ville: null,
+    dateNaissance: null,
+    lieuNaissance: null,
+    compteEtat: 'actif',
+    roles: ['Administrateur d’organisation'],
+    version: '2026-10-01T00:00:00.000Z',
+  },
+];
+const detailPersonne = (p) => ({ ...p, naissanceVisible: true });
+
 const annees = [];
 const choixDemarrage = new Map();
 const resumeAnnee = ({ fermetures: _fermetures, ...annee }) => annee;
@@ -363,6 +385,9 @@ createServer(async (request, response) => {
       permissions: active
         ? [
             'apparence:gerer',
+            'apprenants:inviter',
+            'personnel:inviter',
+            'personnes:lire',
             'calendrier:gerer',
             'calendrier:lire',
             'organisation:lire',
@@ -376,6 +401,71 @@ createServer(async (request, response) => {
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
     });
+  }
+
+  const personneRoute = path.match(/^\/api\/personnes(?:\/([^/]+))?$/);
+  if (personneRoute) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const [, id] = personneRoute;
+    if (!id && request.method === 'GET') {
+      const q = (url.searchParams.get('q') ?? '').toLowerCase();
+      const etat = url.searchParams.get('etat');
+      const trouvees = personnes
+        .filter(
+          (p) =>
+            (!q || `${p.nom} ${p.prenom} ${p.email}`.toLowerCase().includes(q)) &&
+            (!etat || p.compteEtat === etat),
+        )
+        .sort((a, b) => a.nom.localeCompare(b.nom));
+      return json(200, { personnes: trouvees, total: trouvees.length, page: 1, parPage: 50 });
+    }
+    if (!id) {
+      const { ignorerDoublons, ...body } = await readBody(request);
+      const doublons = personnes
+        .filter(
+          (p) =>
+            p.email.toLowerCase() === body.email.toLowerCase() ||
+            (body.dateNaissance &&
+              p.dateNaissance === body.dateNaissance &&
+              p.nom.toLowerCase() === body.nom.toLowerCase()),
+        )
+        .map((p) => ({
+          id: p.id,
+          nom: p.nom,
+          prenom: p.prenom,
+          email: p.email,
+          motifs: [p.email.toLowerCase() === body.email.toLowerCase() ? 'email' : 'identite'],
+        }));
+      if (
+        doublons.length > 0 &&
+        (!ignorerDoublons || doublons.some((d) => d.motifs[0] === 'email'))
+      )
+        return json(409, {
+          message: 'Une fiche de même nom, prénom et date de naissance existe déjà.',
+          doublons,
+        });
+      const creee = {
+        id: randomUUID(),
+        ...body,
+        compteEtat: 'cree',
+        roles: [],
+        version: new Date().toISOString(),
+      };
+      personnes.push(creee);
+      return json(201, detailPersonne(creee));
+    }
+    const fiche = personnes.find((p) => p.id === id);
+    if (!fiche) return json(404, { message: 'Personne introuvable dans cette école.' });
+    if (request.method === 'PATCH') {
+      const { version, ...body } = await readBody(request);
+      if (version !== fiche.version)
+        return json(409, {
+          message: 'Cette fiche vient d’être modifiée par quelqu’un d’autre.',
+          actuelle: detailPersonne(fiche),
+        });
+      Object.assign(fiche, body, { version: new Date().toISOString() });
+    }
+    return json(200, detailPersonne(fiche));
   }
 
   // Liste de démarrage (E-01-01) : constats tirés de l'état de la fausse API.

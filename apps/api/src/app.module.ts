@@ -15,6 +15,7 @@ import type { Env } from './config/env.js';
 import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
 import { ComptesModule } from './modules/comptes/index.js';
+import { PersonnesModule } from './modules/personnes/index.js';
 import { RolesModule } from './modules/roles/index.js';
 import { StructureModule } from './modules/structure/index.js';
 import { SessionController } from './modules/session/index.js';
@@ -62,6 +63,7 @@ export class AppModule {
       imports: [
         AccessModule.forRoot(options.accessResolver),
         ComptesModule,
+        PersonnesModule,
         RolesModule,
         StructureModule,
         ...(resources.platformDatabase

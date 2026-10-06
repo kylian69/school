@@ -12,3 +12,4 @@ export * from './calendrier/duplication.js';
 export * from './apparence/couleurs.js';
 export * from './apparence/logo.js';
 export * from './demarrage/etapes.js';
+export * from './personnes/doublons.js';
