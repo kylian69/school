@@ -1047,6 +1047,67 @@
         }
       }
     },
+    "/api/moi/photo": {
+      "get": {
+        "operationId": "MaPhotoController.lire",
+        "summary": "Ma photo et l’état de sa validation",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoPersonne"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "MaPhotoController.deposer",
+        "summary": "Déposer ma photo (JPEG ou PNG, 5 Mo au plus), à valider par la scolarité",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoPersonne"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/photo/image": {
+      "get": {
+        "operationId": "MaPhotoController.image",
+        "summary": "Ma photo (JPEG) ; ?attente=1 pour celle que j’ai déposée",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organisation": {
       "get": {
         "operationId": "OrganisationController.lire",
@@ -1303,6 +1364,91 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AttributionPersonne"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personnes/{id}/photo": {
+      "put": {
+        "operationId": "PhotosController.deposer",
+        "summary": "Déposer la photo d’une personne (corps image/jpeg ou image/png, 5 Mo au plus)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonneDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "PhotosController.image",
+        "summary": "Photo de la personne (JPEG 512 × 512) ; ?attente=1 pour celle à valider",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "personnes:lire"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/personnes/{id}/photo/decision": {
+      "post": {
+        "operationId": "PhotosController.decider",
+        "summary": "Valider ou refuser (avec un motif) la photo déposée par la personne",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "apprenants:inviter",
+            "personnel:inviter"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionPhoto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonneDetail"
                 }
               }
             }
@@ -2781,6 +2927,26 @@
         },
         "required": [
           "elements"
+        ],
+        "additionalProperties": false
+      },
+      "DecisionPhoto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "valider",
+              "refuser"
+            ]
+          },
+          "motif": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "decision"
         ],
         "additionalProperties": false
       },
@@ -4406,6 +4572,14 @@
             "nullable": true,
             "type": "string"
           },
+          "photo": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoPersonne"
+              }
+            ]
+          },
           "compteEtat": {
             "type": "string",
             "enum": [
@@ -4441,6 +4615,7 @@
           "naissanceVisible",
           "matricule",
           "ine",
+          "photo",
           "compteEtat",
           "roles",
           "version"
@@ -4492,6 +4667,39 @@
           "email",
           "compteEtat",
           "roles"
+        ],
+        "additionalProperties": false
+      },
+      "PhotoPersonne": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "nullable": true,
+            "type": "string"
+          },
+          "attenteUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "en_attente",
+              "validee",
+              "refusee"
+            ]
+          },
+          "motif": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "attenteUrl",
+          "statut",
+          "motif"
         ],
         "additionalProperties": false
       },

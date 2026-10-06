@@ -15,13 +15,15 @@ import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 
 /**
- * Personne (module 01, section 6). La photo arrive avec sa story
- * (minimisation, RGPD). La date et le lieu de naissance ne sont montrés qu'à la scolarité et à
- * l'administration (module 01, section 9).
+ * Personne (module 01, section 6), chaque attribut justifié par sa story (minimisation, RGPD).
+ * La date et le lieu de naissance ne sont montrés qu'à la scolarité et à l'administration
+ * (module 01, section 9).
  */
 export const compteEtat = pgEnum('compte_etat', ['cree', 'invite', 'actif', 'desactive']);
 
 export const civilite = pgEnum('civilite', ['madame', 'monsieur']);
+
+export const photoStatut = pgEnum('photo_statut', ['en_attente', 'validee', 'refusee']);
 
 export const personne = pgTable(
   'personne',
@@ -39,6 +41,14 @@ export const personne = pgTable(
     matricule: text(),
     /** Identifiant national élève ou étudiant (11 caractères). */
     ine: char({ length: 11 }),
+    /**
+     * Photo (RG-01-26, RG-01-27) : la photo validée, celle qui attend la validation de la
+     * scolarité, et le statut et le motif de la dernière photo déposée par la personne.
+     */
+    photoCle: text(),
+    photoAttenteCle: text(),
+    photoStatut: photoStatut(),
+    photoMotif: text(),
     telephone: text(),
     adresseLigne1: text(),
     codePostal: text(),

@@ -33,10 +33,12 @@
     "bullmq": "catalog:",
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
+    "fflate": "catalog:",
     "ioredis": "catalog:",
     "read-excel-file": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
+    "sharp": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

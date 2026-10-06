@@ -185,7 +185,23 @@ const personnes = [
     version: '2026-10-01T00:00:00.000Z',
   },
 ];
-const detailPersonne = (p) => ({ ...p, naissanceVisible: true });
+const detailPersonne = (p) => ({
+  ...p,
+  naissanceVisible: true,
+  photo: {
+    url: p.photoContenu ? `/api/personnes/${p.id}/photo?v=${p.photoVersion}` : null,
+    attenteUrl: null,
+    statut: p.photoContenu ? 'validee' : null,
+    motif: null,
+  },
+});
+// Ma photo (US-01-20) : celle de Camille, déposée par elle-même et en attente de validation.
+const maPhoto = { contenu: null, statut: null };
+const lireCorps = async (request) => {
+  const morceaux = [];
+  for await (const morceau of request) morceaux.push(morceau);
+  return Buffer.concat(morceaux);
+};
 
 const annees = [];
 const choixDemarrage = new Map();
@@ -552,6 +568,34 @@ createServer(async (request, response) => {
       return json(200, { etat: 'invite', expireLe: '2030-01-01T00:00:00.000Z' });
     response.writeHead(204);
     return response.end();
+  }
+
+  // Photos (US-01-20) : le recadrage réel est testé par l'API.
+  const photoRoute = path.match(/^\/api\/personnes\/([^/]+)\/photo$/);
+  if (photoRoute) {
+    const p = personnes.find((x) => x.id === photoRoute[1]);
+    if (!p) return json(404, { message: 'Personne introuvable dans cette école.' });
+    if (request.method === 'PUT') {
+      p.photoContenu = await lireCorps(request);
+      p.photoType = request.headers['content-type'];
+      p.photoVersion = randomUUID().slice(0, 8);
+      return json(200, detailPersonne(p));
+    }
+    response.writeHead(200, { 'content-type': p.photoType ?? 'image/png' });
+    return response.end(p.photoContenu);
+  }
+  if (path === '/api/moi/photo') {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (request.method === 'PUT') {
+      maPhoto.contenu = await lireCorps(request);
+      maPhoto.statut = 'en_attente';
+    }
+    return json(200, {
+      url: null,
+      attenteUrl: maPhoto.contenu ? '/api/moi/photo/image?attente=1' : null,
+      statut: maPhoto.statut,
+      motif: null,
+    });
   }
 
   // Corbeille (E-01-10) : fiches supprimées par les tests.

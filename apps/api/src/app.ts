@@ -9,6 +9,7 @@ import {
   TYPES_LOGO,
 } from '@scolaly/contracts';
 import { createDatabase } from '@scolaly/db';
+import { PHOTO_TAILLE_MAX } from '@scolaly/domain';
 import { createAuth } from './auth/auth.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
 import type { Env } from './config/env.js';
@@ -102,6 +103,15 @@ export async function createApp(
   fastify.addContentTypeParser(
     Object.keys(TYPES_LOGO),
     { parseAs: 'buffer', bodyLimit: 4 * LOGO_TAILLE_MAX },
+    (_request, body, done) => {
+      done(null, body);
+    },
+  );
+  // Photo JPEG d'une personne (RG-01-26 : 5 Mo contrôlés par le service) ; le PNG passe par le
+  // lecteur du logo ci-dessus.
+  fastify.addContentTypeParser(
+    'image/jpeg',
+    { parseAs: 'buffer', bodyLimit: 2 * PHOTO_TAILLE_MAX },
     (_request, body, done) => {
       done(null, body);
     },
