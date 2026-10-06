@@ -34,13 +34,11 @@ beforeAll(async () => {
     fiches.push(id);
     const userId = prenom === 'Max' ? null : newId();
     if (userId) {
-      await owner.db
-        .insert(authUser)
-        .values({
-          id: userId,
-          name: prenom,
-          email: `${prenom.toLowerCase()}.${userId}@exemple.test`,
-        });
+      await owner.db.insert(authUser).values({
+        id: userId,
+        name: prenom,
+        email: `${prenom.toLowerCase()}.${userId}@exemple.test`,
+      });
     }
     await owner.db.insert(personne).values({
       id,
