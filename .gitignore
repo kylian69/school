@@ -15,3 +15,6 @@ playwright-report/
 
 # Configuration et secrets d'une installation Docker Compose
 infra/compose/.env
+
+# Données de la preuve de charge (sessions fictives, journaux) : jamais dans le dépôt
+infra/charge/.donnees/
