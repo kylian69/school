@@ -297,14 +297,17 @@ export class ImportsService {
     type: NouvelImport['type'],
     colonnes: readonly string[],
   ): Promise<Correspondance> {
-    const [precedent] = await tx
+    // Dernière correspondance ajustée, parmi les imports récents qui ont les mêmes colonnes.
+    const recents = await tx
       .select({ correspondance: importPersonnes.correspondance })
       .from(importPersonnes)
       .where(eq(importPersonnes.type, type))
-      .orderBy(desc(importPersonnes.createdAt))
-      .limit(1);
-    const memorisee = precedent?.correspondance;
-    if (memorisee && colonnes.every((c) => Object.hasOwn(memorisee, c))) {
+      .orderBy(desc(importPersonnes.updatedAt))
+      .limit(20);
+    const memorisee = recents.find(({ correspondance }) =>
+      colonnes.every((c) => Object.hasOwn(correspondance, c)),
+    )?.correspondance;
+    if (memorisee) {
       return Object.fromEntries(
         colonnes.map((c) => [c, (memorisee[c] ?? null) as ChampImport | null]),
       );
