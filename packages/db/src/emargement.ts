@@ -1,0 +1,97 @@
+import { and, eq, isNull, sql } from 'drizzle-orm';
+import type { Database } from './client.js';
+import { withOrganisation, type Transaction } from './organisation-context.js';
+import { presence, seance, seanceAttendu } from './schema/emargement.js';
+import { personne } from './schema/personne.js';
+
+/** Présence lue dans le flux de l'émargement. */
+export interface PresenceAEcrire {
+  organisationId: string;
+  seanceId: string;
+  personneId: string;
+  scanneLe: string;
+  mode: 'qr' | 'code' | 'manuel';
+  rejoue: boolean;
+}
+
+/** Séances qui commencent dans l'intervalle, toutes écoles confondues (préchargement, RG-00-17). */
+export async function seancesAPrecharger(
+  db: Database,
+  de: Date,
+  a: Date,
+): Promise<{ organisationId: string; seanceId: string }[]> {
+  const resultat = await db.execute<{ organisation_id: string; id: string }>(
+    sql`select organisation_id, id from seances_a_precharger(${de.toISOString()}::timestamptz, ${a.toISOString()}::timestamptz)`,
+  );
+  return resultat.rows.map((r) => ({ organisationId: r.organisation_id, seanceId: r.id }));
+}
+
+/** La séance et ses apprenants attendus (avec leur compte), dans le contexte de son école. */
+export async function seanceEtAttendus(tx: Transaction, seanceId: string) {
+  const [ligne] = await tx
+    .select()
+    .from(seance)
+    .where(and(eq(seance.id, seanceId), isNull(seance.deletedAt)));
+  if (!ligne) return null;
+  const attendus = await tx
+    .select({
+      personneId: personne.id,
+      userId: personne.userId,
+      nom: personne.nom,
+      prenom: personne.prenom,
+    })
+    .from(seanceAttendu)
+    .innerJoin(
+      personne,
+      and(
+        eq(personne.organisationId, seanceAttendu.organisationId),
+        eq(personne.id, seanceAttendu.personneId),
+      ),
+    )
+    .where(
+      and(
+        eq(seanceAttendu.seanceId, seanceId),
+        isNull(seanceAttendu.deletedAt),
+        isNull(personne.deletedAt),
+      ),
+    )
+    .orderBy(personne.nom, personne.prenom);
+  return { seance: ligne, attendus };
+}
+
+/**
+ * Écrit un lot de présences venues du flux (RG-00-18), une requête par école, en ignorant celles
+ * déjà écrites : le lot peut être rejoué sans doublon. Renvoie le nombre de lignes ajoutées.
+ */
+export async function enregistrerPresences(
+  db: Database,
+  presences: readonly PresenceAEcrire[],
+): Promise<number> {
+  const parEcole = new Map<string, PresenceAEcrire[]>();
+  for (const p of presences) {
+    parEcole.set(p.organisationId, [...(parEcole.get(p.organisationId) ?? []), p]);
+  }
+  let ajoutees = 0;
+  for (const [organisationId, lot] of parEcole) {
+    ajoutees += await withOrganisation(db, organisationId, async (tx) => {
+      const lignes = await tx
+        .insert(presence)
+        .values(
+          lot.map((p) => ({
+            organisationId,
+            seanceId: p.seanceId,
+            personneId: p.personneId,
+            scanneLe: new Date(p.scanneLe),
+            mode: p.mode,
+            rejoue: p.rejoue,
+          })),
+        )
+        .onConflictDoNothing({
+          target: [presence.organisationId, presence.seanceId, presence.personneId],
+        })
+        .returning({ id: presence.id });
+      return lignes.length;
+    });
+  }
+  return ajoutees;
+}

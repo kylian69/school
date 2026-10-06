@@ -1,18 +1,13 @@
 import { hkdfSync } from 'node:crypto';
-import { CLES_EMARGEMENT, type PresenceEnCache } from '@scolaly/contracts';
+import {
+  CLES_EMARGEMENT,
+  commandesPrechargement,
+  expirationCache,
+  lireSeanceEnCache,
+  type PresenceEnCache,
+  type SeanceEnCache,
+} from '@scolaly/contracts';
 import type { Redis } from 'ioredis';
-
-/** Séance telle que préchargée dans Valkey (RG-00-17). */
-export interface SeanceEnCache {
-  organisationId: string;
-  libelle: string;
-  debut: number;
-  fin: number;
-  distanciel: boolean;
-}
-
-/** Les clés du cache vivent jusqu'à une heure après la fin de la séance. */
-const expiration = (finMs: number) => Math.ceil(finMs / 1000) + 3600;
 
 /**
  * Écriture unique de la présence et ajout au flux, en une seule opération atomique : une présence
@@ -37,37 +32,12 @@ export function cleDeSeance(cleMaitresse: Buffer, organisationId: string, seance
 export class CacheEmargement {
   constructor(private readonly valkey: Redis) {}
 
-  async precharger(seanceId: string, seance: SeanceEnCache, attendus: Map<string, string>) {
-    const fin = expiration(seance.fin);
-    const multi = this.valkey
-      .multi()
-      .del(CLES_EMARGEMENT.attendus(seanceId))
-      .hset(CLES_EMARGEMENT.seance(seanceId), {
-        organisationId: seance.organisationId,
-        libelle: seance.libelle,
-        debut: String(seance.debut),
-        fin: String(seance.fin),
-        distanciel: seance.distanciel ? '1' : '0',
-      })
-      .expireat(CLES_EMARGEMENT.seance(seanceId), fin);
-    if (attendus.size > 0) {
-      multi
-        .hset(CLES_EMARGEMENT.attendus(seanceId), Object.fromEntries(attendus))
-        .expireat(CLES_EMARGEMENT.attendus(seanceId), fin);
-    }
-    await multi.exec();
+  async precharger(seanceId: string, seance: SeanceEnCache, attendus: ReadonlyMap<string, string>) {
+    await this.valkey.multi(commandesPrechargement(seanceId, seance, attendus)).exec();
   }
 
   async seance(seanceId: string): Promise<SeanceEnCache | null> {
-    const valeurs = await this.valkey.hgetall(CLES_EMARGEMENT.seance(seanceId));
-    if (!valeurs.organisationId) return null;
-    return {
-      organisationId: valeurs.organisationId,
-      libelle: valeurs.libelle ?? '',
-      debut: Number(valeurs.debut),
-      fin: Number(valeurs.fin),
-      distanciel: valeurs.distanciel === '1',
-    };
+    return lireSeanceEnCache(await this.valkey.hgetall(CLES_EMARGEMENT.seance(seanceId)));
   }
 
   attendu(seanceId: string, userId: string): Promise<string | null> {
@@ -83,7 +53,7 @@ export class CacheEmargement {
       CLES_EMARGEMENT.flux,
       presence.personneId,
       JSON.stringify(presence),
-      String(expiration(finMs)),
+      String(expirationCache(finMs)),
     )) as string | null;
     return existante ? (JSON.parse(existante) as PresenceEnCache) : null;
   }
