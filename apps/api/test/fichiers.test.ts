@@ -126,7 +126,7 @@ describe('Dépôt de fichiers et liens signés (stockage S3)', () => {
   const policy = { maxBytes: 1024, types: ['pdf', 'png'] } as const;
   const pdf = Buffer.from('%PDF-1.7\nContenu fictif\n%%EOF');
   const s3 = new S3Client({
-    region: 'us-east-1',
+    region: inject('s3Region'),
     endpoint: inject('s3Endpoint'),
     forcePathStyle: true,
     credentials: { accessKeyId: inject('s3AccessKey'), secretAccessKey: inject('s3SecretKey') },

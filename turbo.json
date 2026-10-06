@@ -23,7 +23,8 @@
         "TEST_MAILPIT_API",
         "TEST_S3_ENDPOINT",
         "TEST_S3_ACCESS_KEY",
-        "TEST_S3_SECRET_KEY"
+        "TEST_S3_SECRET_KEY",
+        "TEST_S3_REGION"
       ]
     },
     "dev": {

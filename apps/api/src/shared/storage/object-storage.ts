@@ -11,7 +11,10 @@ import type { Env } from '../../config/env.js';
 /** Durée de validité par défaut d'un lien de téléchargement signé (architecture section 4). */
 export const SIGNED_URL_TTL_SECONDS = 300;
 
-/** Stockage des fichiers dans un service compatible S3. Les clés sont préfixées par organisation. */
+/**
+ * Stockage des fichiers dans un service compatible S3 (Garage, Ceph…). Les clés sont préfixées
+ * par organisation.
+ */
 export class ObjectStorage {
   constructor(
     private readonly client: S3Client,
