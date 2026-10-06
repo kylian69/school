@@ -61,6 +61,8 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | `pnpm format` / `pnpm format:check` | Formatage Prettier |
 | `pnpm check` | Tout ce que vérifie la CI avant une PR |
 | `pnpm --filter @scolaly/api test` | Tests d'un seul paquet |
+| `pnpm deps:check` | Règles de dépendance entre modules (dependency-cruiser) |
+| `docker build -f infra/docker/node-app.Dockerfile --build-arg APP=api .` | Image de l'API (`APP=worker` pour le worker ; `infra/docker/web.Dockerfile` pour l'interface) |
 
 Les versions partagées sont figées dans le `catalog` de `pnpm-workspace.yaml`. Les configurations communes (TypeScript, ESLint, Vitest) sont dans `packages/config`.
 
