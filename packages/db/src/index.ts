@@ -37,3 +37,4 @@ export { initialiserRolesParDefaut, type DefinitionRole } from './roles-par-defa
 export { APP_ROLE, MIGRATOR_ROLE, PLATFORM_ROLE } from './roles.js';
 export * from './schema/index.js';
 export { auditEvenement, outboxEvenement } from './schema/journal.js';
+export { inscrireManquants, promotionTechnique } from './scolarite.js';

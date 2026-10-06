@@ -38,6 +38,7 @@ import {
   affectation,
   affectationGroupe,
   salle,
+  seancePublic,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -348,6 +349,15 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         groupeId: await insertGroupe(db, organisationId),
         inscriptionId: await insertInscription(db, organisationId),
         debut: '2026-09-01',
+      });
+    },
+  },
+  seance_public: {
+    insert: async (db, organisationId) => {
+      await db.insert(seancePublic).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        promotionId: await insertPromotion(db, organisationId),
       });
     },
   },

@@ -12,7 +12,16 @@ import type {
   PersonneDetail,
   RecherchePersonnes,
 } from '@scolaly/contracts';
-import { attribution, enregistrerAudit, personne, role, type Transaction } from '@scolaly/db';
+import {
+  affectation,
+  attribution,
+  enregistrerAudit,
+  inscription,
+  personne,
+  promotion,
+  role,
+  type Transaction,
+} from '@scolaly/db';
 import {
   controlerIne,
   dateNaissancePlausible,
@@ -37,6 +46,7 @@ import {
   sql,
   type SQL,
 } from 'drizzle-orm';
+import { QueryBuilder } from 'drizzle-orm/pg-core';
 import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
 import { attribuerMatricule } from '../../shared/matricule.js';
@@ -103,21 +113,52 @@ const ETATS_COMPTE_LIBELLES = {
 
 const motif = (texte: string) => `%${texte.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
+/** Sous-requêtes du périmètre, exécutées dans la requête principale (donc sous RLS). */
+const requetes = new QueryBuilder();
+
 /** Fiches des personnes de l'école (E-01-04, E-01-05 ; RG-01-06, RG-01-07). */
 @Injectable()
 export class PersonnesService {
   constructor(private readonly photos: PhotosService) {}
 
   /**
-   * Périmètre de lecture (RG-00-10) : toute l'école avec un périmètre « organisation ». Les
-   * périmètres établissement, formation et promotion s'appuieront sur les inscriptions (I3.2) ;
-   * d'ici là, ils ne donnent accès qu'à sa propre fiche.
+   * Périmètre de lecture (RG-00-10) : toute l'école avec un périmètre « organisation ». Avec un
+   * périmètre établissement, formation ou promotion : les apprenants inscrits aux promotions
+   * couvertes (historique compris) et les intervenants qui y sont affectés, plus sa propre fiche.
    */
   private perimetre(access: Access): SQL | undefined {
     const perimetres = access.perimetres.get('personnes:lire') ?? [];
-    return perimetres.some((p) => p.type === 'organisation')
-      ? undefined
-      : eq(personne.id, access.personneId);
+    if (perimetres.some((p) => p.type === 'organisation')) return undefined;
+    const ids = (type: string) =>
+      perimetres.filter((p) => p.type === type).flatMap((p) => (p.id ? [p.id] : []));
+    const promotions = [
+      ids('etablissement').length > 0
+        ? inArray(promotion.etablissementId, ids('etablissement'))
+        : undefined,
+      ids('formation').length > 0 ? inArray(promotion.formationId, ids('formation')) : undefined,
+      ids('promotion').length > 0 ? inArray(promotion.id, ids('promotion')) : undefined,
+    ].filter((c): c is SQL => c !== undefined);
+    if (promotions.length === 0) return eq(personne.id, access.personneId);
+    const couvertes = and(isNull(promotion.deletedAt), or(...promotions));
+    return or(
+      eq(personne.id, access.personneId),
+      inArray(
+        personne.id,
+        requetes
+          .select({ id: inscription.personneId })
+          .from(inscription)
+          .innerJoin(promotion, eq(promotion.id, inscription.promotionId))
+          .where(and(isNull(inscription.deletedAt), couvertes)),
+      ),
+      inArray(
+        personne.id,
+        requetes
+          .select({ id: affectation.personneId })
+          .from(affectation)
+          .innerJoin(promotion, eq(promotion.id, affectation.promotionId))
+          .where(and(isNull(affectation.deletedAt), couvertes)),
+      ),
+    );
   }
 
   /** Filtre de la liste : périmètre, recherche, état du compte, rôle en cours. */

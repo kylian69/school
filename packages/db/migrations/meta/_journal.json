@@ -239,6 +239,20 @@
       "when": 1791325363044,
       "tag": "0033_salles_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791326234446,
+      "tag": "0034_seance_public",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791326235974,
+      "tag": "0035_seance_attendu_calcule",
+      "breakpoints": true
     }
   ]
 }

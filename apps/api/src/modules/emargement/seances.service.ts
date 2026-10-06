@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { SeanceProche } from '@scolaly/contracts';
-import { personne, seance, seanceAttendu, type Transaction } from '@scolaly/db';
+import { personne, seance, seanceAttenduCalcule, type Transaction } from '@scolaly/db';
 import { and, asc, eq, gt, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 
@@ -30,11 +30,10 @@ export class SeancesService {
         ),
       )
       .leftJoin(
-        seanceAttendu,
+        seanceAttenduCalcule,
         and(
-          eq(seanceAttendu.organisationId, seance.organisationId),
-          eq(seanceAttendu.seanceId, seance.id),
-          isNull(seanceAttendu.deletedAt),
+          eq(seanceAttenduCalcule.organisationId, seance.organisationId),
+          eq(seanceAttenduCalcule.seanceId, seance.id),
         ),
       )
       .where(
@@ -66,6 +65,6 @@ export class SeancesService {
 
   /** Pour l'apprenant : les séances où il est attendu. */
   aEmarger(tx: Transaction, access: Access) {
-    return this.proches(tx, eq(seanceAttendu.personneId, access.personneId));
+    return this.proches(tx, eq(seanceAttenduCalcule.personneId, access.personneId));
   }
 }

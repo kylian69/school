@@ -619,3 +619,26 @@ describe('E-02-06 salles, affectations, E-02-07 et E-02-08', () => {
     expect((await requete('GET', `/api/promotions/${promo.id}`, cookie)).statusCode).toBe(403);
   });
 });
+
+describe('RG-00-10 périmètre de lecture des personnes par les inscriptions', () => {
+  it('la scolarité d’un établissement voit les inscrits de ses promotions, pas ceux d’ailleurs', async () => {
+    const locale = await compte('scolarite', { type: 'etablissement', id: campusA });
+    const moi = derniereFiche;
+    const liste = (await requete('GET', '/api/personnes?parPage=100', locale)).json<{
+      personnes: { id: string }[];
+    }>();
+    const ids = liste.personnes.map((p) => p.id);
+    expect(ids).toEqual(expect.arrayContaining([moi, ...apprenants]));
+    expect((await requete('GET', `/api/personnes/${apprenants[0] ?? ''}`, locale)).statusCode).toBe(
+      200,
+    );
+    const ailleurs = await compte('scolarite', { type: 'etablissement', id: campusB });
+    const autre = (await requete('GET', '/api/personnes?parPage=100', ailleurs)).json<{
+      personnes: { id: string }[];
+    }>();
+    expect(autre.personnes.map((p) => p.id)).toEqual([derniereFiche]);
+    expect(
+      (await requete('GET', `/api/personnes/${apprenants[0] ?? ''}`, ailleurs)).statusCode,
+    ).toBe(404);
+  });
+});
