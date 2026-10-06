@@ -20,7 +20,10 @@
         "TEST_ADMIN_DATABASE_URL",
         "TEST_VALKEY_URL",
         "TEST_SMTP_URL",
-        "TEST_MAILPIT_API"
+        "TEST_MAILPIT_API",
+        "TEST_S3_ENDPOINT",
+        "TEST_S3_ACCESS_KEY",
+        "TEST_S3_SECRET_KEY"
       ]
     },
     "dev": {

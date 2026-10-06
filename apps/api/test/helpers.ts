@@ -16,6 +16,14 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
     PUBLIC_URL: 'http://localhost:3001',
     WEB_ORIGIN,
     BETTER_AUTH_SECRET: 'secret-de-test-uniquement-pas-pour-la-production',
+    S3_ENDPOINT: inject('s3Endpoint'),
+    S3_REGION: 'us-east-1',
+    S3_BUCKET: 'scolaly-test',
+    S3_ACCESS_KEY_ID: inject('s3AccessKey'),
+    S3_SECRET_ACCESS_KEY: inject('s3SecretKey'),
+    S3_FORCE_PATH_STYLE: true,
+    CLAMAV_PORT: 3310,
+    ANTIVIRUS_DISABLED: true,
     ...overrides,
   };
 }

@@ -14,13 +14,17 @@ import type { Auth } from './auth/auth.js';
 import type { Env } from './config/env.js';
 import { ContractValidationInterceptor } from './contracts/contract-validation.interceptor.js';
 import { HealthController } from './health/health.controller.js';
-import { AUTH, DATABASE, ENV, VALKEY } from './shared/tokens.js';
+import type { ObjectStorage } from './shared/storage/object-storage.js';
+import type { UploadService } from './shared/storage/uploads.js';
+import { AUTH, DATABASE, ENV, OBJECT_STORAGE, UPLOADS, VALKEY } from './shared/tokens.js';
 
 export interface AppResources {
   env: Env;
   database: DatabaseHandle;
   valkey: Redis;
   auth: Auth;
+  storage: ObjectStorage;
+  uploads: UploadService;
 }
 
 const RESOURCES = Symbol('RESOURCES');
@@ -31,6 +35,7 @@ class ResourcesLifecycle implements OnApplicationShutdown {
   async onApplicationShutdown(): Promise<void> {
     await this.resources.database.close();
     this.resources.valkey.disconnect();
+    this.resources.storage.destroy();
   }
 }
 
@@ -51,10 +56,12 @@ export class AppModule {
         { provide: DATABASE, useValue: resources.database.db },
         { provide: VALKEY, useValue: resources.valkey },
         { provide: AUTH, useValue: resources.auth },
+        { provide: OBJECT_STORAGE, useValue: resources.storage },
+        { provide: UPLOADS, useValue: resources.uploads },
         ResourcesLifecycle,
         { provide: APP_INTERCEPTOR, useClass: ContractValidationInterceptor },
       ],
-      exports: [ENV, DATABASE, VALKEY, AUTH],
+      exports: [ENV, DATABASE, VALKEY, AUTH, OBJECT_STORAGE, UPLOADS],
     };
   }
 }

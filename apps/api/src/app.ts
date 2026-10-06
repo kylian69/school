@@ -7,6 +7,9 @@ import { createAuth } from './auth/auth.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
 import type { Env } from './config/env.js';
 import { AppModule } from './app.module.js';
+import { ClamdScanner, DisabledScanner } from './shared/storage/antivirus.js';
+import { ObjectStorage } from './shared/storage/object-storage.js';
+import { UploadService } from './shared/storage/uploads.js';
 import { createValkey } from './shared/valkey.js';
 
 /** Champs jamais écrits dans les journaux (plan de développement, section 6). */
@@ -35,6 +38,12 @@ export async function createApp(
   const database = createDatabase(env.DATABASE_URL);
   const valkey = createValkey(env.VALKEY_URL);
   const auth = createAuth(env, database.db, valkey);
+  const storage = ObjectStorage.fromEnv(env);
+  const scanner =
+    env.ANTIVIRUS_DISABLED || !env.CLAMAV_HOST
+      ? new DisabledScanner()
+      : new ClamdScanner(env.CLAMAV_HOST, env.CLAMAV_PORT);
+  const uploads = new UploadService(storage, scanner);
 
   const adapter = new FastifyAdapter({
     trustProxy: true,
@@ -46,7 +55,7 @@ export async function createApp(
   });
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forRoot(
-      { env, database, valkey, auth },
+      { env, database, valkey, auth, storage, uploads },
       {
         ...(options.accessResolver ? { accessResolver: options.accessResolver } : {}),
         ...(options.extraModules ? { extraModules: options.extraModules } : {}),
