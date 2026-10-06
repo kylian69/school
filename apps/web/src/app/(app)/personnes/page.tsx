@@ -1,16 +1,15 @@
 import { ETATS_COMPTE, ListePersonnes, ListeRoles } from '@scolaly/contracts';
-import { Badge, Button, Card, Input, Label } from '@scolaly/ui';
+import { Button, Card, Input, Label } from '@scolaly/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fr } from '@/i18n/fr';
 import { apiGet } from '@/lib/api';
 import { getContexte } from '@/lib/contexte';
+import { TableauPersonnes } from './tableau-personnes';
 
 const t = fr.personnes;
 export const metadata: Metadata = { title: t.titre };
-
-const TONS = { cree: 'neutral', invite: 'warn', actif: 'ok', desactive: 'bad' } as const;
 
 /** E-01-04 · Personnes : tableau filtrable, pagination côté serveur. */
 export default async function PersonnesPage({
@@ -34,6 +33,11 @@ export default async function PersonnesPage({
   ]);
   const peutCreer =
     permissions.includes('apprenants:inviter') || permissions.includes('personnel:inviter');
+  const filtresExport = new URLSearchParams({
+    ...(q ? { q } : {}),
+    ...(role ? { role } : {}),
+    ...(etat ? { etat } : {}),
+  });
   const pages = data ? Math.max(1, Math.ceil(data.total / data.parPage)) : 1;
   const lien = (cible: number) => {
     const suivant = new URLSearchParams(params);
@@ -112,46 +116,15 @@ export default async function PersonnesPage({
       </form>
 
       {data ? (
-        <Card className="overflow-x-auto p-0">
-          {data.personnes.length === 0 ? (
-            <p className="p-5 text-sm text-muted">{t.aucune}</p>
-          ) : (
-            <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="border-b border-line text-xs text-muted">
-                <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    {t.colonnes.nom}
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    {t.colonnes.email}
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    {t.colonnes.roles}
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    {t.colonnes.compte}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {data.personnes.map((p) => (
-                  <tr key={p.id}>
-                    <td className="px-4 py-3">
-                      <Link href={`/personnes/${p.id}`} className="font-semibold hover:underline">
-                        {p.nomUsage ?? p.nom} {p.prenom}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-muted">{p.email}</td>
-                    <td className="px-4 py-3">{p.roles.join(', ') || '—'}</td>
-                    <td className="px-4 py-3">
-                      <Badge tone={TONS[p.compteEtat]}>{t.etats[p.compteEtat]}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Card>
+        <TableauPersonnes
+          personnes={data.personnes}
+          filtres={filtresExport.toString()}
+          droits={{
+            inviter: peutCreer,
+            desactiver: permissions.includes('comptes:desactiver'),
+            exporter: permissions.includes('personnes:exporter'),
+          }}
+        />
       ) : (
         <Card>
           <p role="alert" className="text-sm">

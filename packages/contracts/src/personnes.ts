@@ -156,3 +156,27 @@ export const NouvelleAttribution = z
   })
   .meta({ id: 'NouvelleAttribution' });
 export type NouvelleAttribution = z.infer<typeof NouvelleAttribution>;
+
+/** Actions en masse depuis la liste (E-01-04 ; US-01-06, US-01-12). */
+export const ActionsPersonnes = z
+  .object({
+    action: z.enum(['inviter', 'desactiver', 'reactiver']),
+    personneIds: z.array(z.uuid()).min(1).max(500),
+  })
+  .meta({ id: 'ActionsPersonnes' });
+export type ActionsPersonnes = z.infer<typeof ActionsPersonnes>;
+
+export const ResultatActions = z
+  .object({
+    reussies: z.int().min(0),
+    /** Personnes pour lesquelles l'action n'a pas abouti, avec la raison. */
+    echecs: z.array(z.object({ personneId: z.uuid(), nom: z.string(), message: z.string() })),
+  })
+  .meta({ id: 'ResultatActions' });
+export type ResultatActions = z.infer<typeof ResultatActions>;
+
+/** Export de plus de 100 personnes : envoyé par email (RG-01-21). */
+export const ExportDiffere = z
+  .object({ total: z.int(), message: z.string() })
+  .meta({ id: 'ExportDiffere' });
+export type ExportDiffere = z.infer<typeof ExportDiffere>;

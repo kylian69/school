@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lireCsv } from './csv.js';
+import { ecrireCsv, lireCsv } from './csv.js';
 import {
   analyserLignes,
   interpreterDate,
@@ -147,5 +147,26 @@ describe('US-01-05 contrôle ligne par ligne', () => {
       { ...VIDE, ines: new Set(['0912345678K']) },
     );
     expect(courte?.erreurs.map((e) => e.code)).toEqual(['obligatoire', 'ine-existant']);
+  });
+});
+
+describe('RG-01-21 écriture des exports CSV', () => {
+  it('échappe les guillemets, neutralise les formules et se relit à l’identique', () => {
+    const texte = ecrireCsv(
+      ['Nom', 'Note'],
+      [
+        ['Benali "Inès"', '=SOMME(A1:A2)'],
+        ['Morel', '-12'],
+      ],
+    );
+    expect(texte.charCodeAt(0)).toBe(0xfeff);
+    expect(texte).toContain('"Benali ""Inès""";"\'=SOMME(A1:A2)"');
+    expect(lireCsv(texte)).toEqual({
+      colonnes: ['Nom', 'Note'],
+      lignes: [
+        ['Benali "Inès"', "'=SOMME(A1:A2)"],
+        ['Morel', "'-12"],
+      ],
+    });
   });
 });

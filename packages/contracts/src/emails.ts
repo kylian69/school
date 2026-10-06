@@ -108,3 +108,26 @@ export function emailLienMagique(options: { to: string; lien: string }): EmailJo
     }),
   };
 }
+
+/** Lien vers un export de personnes préparé (RG-01-21 : valable 24 h). */
+export function emailExportPret(options: {
+  to: string;
+  ecole: string;
+  lien: string;
+  total: number;
+}): EmailJob {
+  const presentation = `Votre export de ${String(options.total)} personnes de ${options.ecole} est prêt. Le lien est valable 24 heures :`;
+  const mention =
+    'Ce fichier contient des données personnelles : ne le transférez qu’aux personnes habilitées.';
+  return {
+    to: options.to,
+    subject: `Votre export est prêt · ${options.ecole}`,
+    text: ['Bonjour,', '', presentation, options.lien, '', mention].join('\n'),
+    html: miseEnPageEmail({
+      marque: null,
+      paragraphes: ['Bonjour,', presentation],
+      bouton: { libelle: 'Télécharger l’export', lien: options.lien },
+      mention,
+    }),
+  };
+}

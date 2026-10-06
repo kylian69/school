@@ -16,6 +16,7 @@ import { attribution, enregistrerAudit, personne, role, type Transaction } from 
 import {
   controlerIne,
   dateNaissancePlausible,
+  ecrireCsv,
   motifsDoublon,
   normaliserIdentifiant,
 } from '@scolaly/domain';
@@ -88,6 +89,16 @@ const attributionEnCours = (date: string) =>
     or(isNull(attribution.fin), gt(attribution.fin, date)),
   );
 
+/** Export limité à la taille d'une école (module 01, section 9 : 20 000 personnes). */
+const EXPORT_MAX = 20_000;
+
+const ETATS_COMPTE_LIBELLES = {
+  cree: 'Créé',
+  invite: 'Invité',
+  actif: 'Actif',
+  desactive: 'Désactivé',
+} as const;
+
 const motif = (texte: string) => `%${texte.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /** Fiches des personnes de l'école (E-01-04, E-01-05 ; RG-01-06, RG-01-07). */
@@ -105,11 +116,12 @@ export class PersonnesService {
       : eq(personne.id, access.personneId);
   }
 
-  async lister(
+  /** Filtre de la liste : périmètre, recherche, état du compte, rôle en cours. */
+  private filtre(
     tx: Transaction,
     access: Access,
-    recherche: RecherchePersonnes,
-  ): Promise<ListePersonnes> {
+    recherche: Pick<RecherchePersonnes, 'q' | 'etat' | 'role'>,
+  ): SQL | undefined {
     const date = aujourdhui();
     const conditions: (SQL | undefined)[] = [isNull(personne.deletedAt), this.perimetre(access)];
     if (recherche.q) {
@@ -140,7 +152,15 @@ export class PersonnesService {
         ),
       );
     }
-    const filtre = and(...conditions);
+    return and(...conditions);
+  }
+
+  async lister(
+    tx: Transaction,
+    access: Access,
+    recherche: RecherchePersonnes,
+  ): Promise<ListePersonnes> {
+    const filtre = this.filtre(tx, access, recherche);
     const [{ total } = { total: 0 }] = await tx
       .select({ total: count() })
       .from(personne)
@@ -170,6 +190,66 @@ export class PersonnesService {
       page: recherche.page,
       parPage: recherche.parPage,
     };
+  }
+
+  /**
+   * RG-01-21 : export des personnes du périmètre, selon les filtres de la liste. La date et le
+   * lieu de naissance n'y figurent que pour la scolarité et l'administration.
+   */
+  async exporter(
+    tx: Transaction,
+    access: Access,
+    recherche: Pick<RecherchePersonnes, 'q' | 'etat' | 'role'>,
+  ): Promise<{ total: number; contenu: string }> {
+    const lignes = await tx
+      .select()
+      .from(personne)
+      .where(this.filtre(tx, access, recherche))
+      .orderBy(asc(sql`lower(${personne.nom})`), asc(sql`lower(${personne.prenom})`))
+      .limit(EXPORT_MAX);
+    const roles = await this.rolesDe(
+      tx,
+      lignes.map((l) => l.id),
+    );
+    const naissance = voitNaissance(access);
+    const colonnes = [
+      'Matricule',
+      'Civilité',
+      'Nom',
+      'Nom d’usage',
+      'Prénom',
+      'Email',
+      'Téléphone',
+      'Adresse',
+      'Code postal',
+      'Ville',
+      ...(naissance ? ['Date de naissance', 'Lieu de naissance'] : []),
+      'INE',
+      'Compte',
+      'Rôles',
+    ];
+    const valeurs = lignes.map((p) => [
+      p.matricule ?? '',
+      p.civilite === 'madame' ? 'Madame' : p.civilite === 'monsieur' ? 'Monsieur' : '',
+      p.nom,
+      p.nomUsage ?? '',
+      p.prenom,
+      p.email,
+      p.telephone ?? '',
+      p.adresseLigne1 ?? '',
+      p.codePostal ?? '',
+      p.ville ?? '',
+      ...(naissance
+        ? [
+            p.dateNaissance ? p.dateNaissance.split('-').reverse().join('/') : '',
+            p.lieuNaissance ?? '',
+          ]
+        : []),
+      p.ine ?? '',
+      ETATS_COMPTE_LIBELLES[p.compteEtat],
+      (roles.get(p.id) ?? []).join(', '),
+    ]);
+    return { total: lignes.length, contenu: ecrireCsv(colonnes, valeurs) };
   }
 
   async lire(tx: Transaction, access: Access, id: string): Promise<PersonneDetail> {
