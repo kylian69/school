@@ -16,7 +16,7 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "passThroughEnv": ["TEST_ADMIN_DATABASE_URL"]
+      "passThroughEnv": ["TEST_ADMIN_DATABASE_URL", "TEST_VALKEY_URL"]
     },
     "dev": {
       "dependsOn": ["^build"],
