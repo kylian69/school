@@ -23,4 +23,6 @@ export default tseslint.config(
       'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
+  // Fichiers JavaScript (configurations, service worker) : pas d'informations de type.
+  { files: ['**/*.js', '**/*.mjs', '**/*.cjs'], ...tseslint.configs.disableTypeChecked },
 );
