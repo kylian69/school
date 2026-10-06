@@ -4,7 +4,7 @@
 > **Rôles** : l'école (organisation cliente) est **responsable de traitement** ; Scolaly agit comme **sous-traitant** en SaaS (RGPD-01). En auto-hébergement, l'école héberge et traite elle-même ; Scolaly n'accède pas aux données.
 > **Bases légales** : elles relèvent du responsable de traitement. Les propositions ci-dessous sont **à confirmer par chaque établissement** et par un juriste ou un DPO (question ouverte du module 00, à trancher avant J7).
 
-Dernière mise à jour : version 2026.10.1 (phase P0, socle technique).
+Dernière mise à jour : incrément I1.1 (console de la plateforme).
 
 ## Traitements en place
 
@@ -16,9 +16,13 @@ Dernière mise à jour : version 2026.10.1 (phase P0, socle technique).
 | T4 | Journal d'audit (RG-01-22) | Tracer les actions sensibles (qui, quoi, quand, valeurs avant et après) | Auteurs des actions ; personnes concernées par les objets modifiés | Identifiant de l'auteur, adresse IP, action, objet, valeurs avant et après (**jamais de donnée sensible en clair**) | **À définir** ; ajout seul, partitions mensuelles purgées par partition entière à l'échéance | Administrateurs de l'école ; personne ne peut le modifier |
 | T5 | Envoi d'emails transactionnels | Invitations, relances et notifications | Destinataires des messages | Adresse email, objet et contenu du message | Non conservés par Scolaly après envoi (journal technique sans contenu) | Fournisseur d'envoi de l'établissement ou de Scolaly (**à choisir, situé dans l'UE**, RGPD-06) |
 | T6 | Fichiers déposés (socle) | Stocker les pièces utiles (photos, justificatifs, documents) | Personnes qui déposent ou sont concernées par les pièces | Contenu du fichier, type, taille, empreinte SHA-256 | Selon le type de pièce (photo : suppression à la sortie, RG-01-27) | Personnes habilitées, par lien signé de 5 minutes |
+| T8 | Clients de la plateforme (module 19, SaaS) — **Scolaly responsable de traitement** | Gérer les contrats, l'ouverture et le cycle de vie des espaces clients | Contacts des écoles clientes (facturation, administrateur à inviter) | Raison sociale, SIREN, nom et email des contacts, formule, volume, dates, historique des états avec motifs | Durée du contrat, puis **à définir** (obligations comptables et commerciales) | Équipe Scolaly (super-administrateurs ; support en lecture) |
+| T9 | Membres et audit de la console (module 19) — **Scolaly responsable de traitement** | Contrôler l'accès à la console et tracer chaque action | Membres de l'équipe Scolaly | Compte, rôle ; actions avec auteur, adresse IP, valeurs avant et après | Audit : **3 ans** (module 19, table `durees-conservation`) | Super-administrateurs |
 | T7 | Journaux techniques | Exploitation, sécurité, diagnostic | Utilisateurs de la plateforme | Méthode et chemin des requêtes, statut, durée, adresse IP ; **sans mot de passe, cookie, jeton ni contenu d'email** (masqués et testés) | **À définir** (exploitation, section 7) | Exploitants de la plateforme |
 
 ## Mesures de sécurité communes
+
+- Console de la plateforme : rôle de base de données dédié, **sans aucun accès aux données des écoles** (ADR 0004) ; l'accès du support aux données d'une école passera par une autorisation datée de l'école (RG-19-09).
 
 - Cloisonnement par organisation dans la base (RLS), vérifié table par table par un test automatique ; contrôle des permissions à chaque route.
 - Chiffrement en transit (HTTPS, HSTS) ; chiffrement par champ des données sensibles avec une clé par organisation (ADR 0002).

@@ -131,3 +131,8 @@ export const ExceptionModule = z
   .object({ module: z.enum(MODULE_CODES), actif: z.boolean() })
   .meta({ id: 'ExceptionModule' });
 export type ExceptionModule = z.infer<typeof ExceptionModule>;
+
+export const MembrePlateforme = z
+  .object({ role: z.enum(ROLES_PLATEFORME) })
+  .meta({ id: 'MembrePlateforme' });
+export type MembrePlateforme = z.infer<typeof MembrePlateforme>;

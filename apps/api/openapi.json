@@ -155,6 +155,31 @@
         }
       }
     },
+    "/api/plateforme/moi": {
+      "get": {
+        "operationId": "MoiController.moi",
+        "summary": "Mon rôle dans la console",
+        "x-scolaly-access": {
+          "kind": "plateforme",
+          "roles": [
+            "super_administrateur",
+            "support"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembrePlateforme"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController.check",
@@ -583,6 +608,22 @@
         },
         "required": [
           "clients"
+        ],
+        "additionalProperties": false
+      },
+      "MembrePlateforme": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "super_administrateur",
+              "support"
+            ]
+          }
+        },
+        "required": [
+          "role"
         ],
         "additionalProperties": false
       },
