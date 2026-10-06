@@ -17,6 +17,7 @@ export {
   organisationDeSeance,
   seanceEtAttendus,
   seancesAPrecharger,
+  sessionsDesComptes,
   type PresenceAEcrire,
 } from './emargement.js';
 export { isUuid, newId } from './ids.js';

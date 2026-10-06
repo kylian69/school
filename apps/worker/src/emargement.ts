@@ -1,8 +1,14 @@
-import { CLES_EMARGEMENT, commandesPrechargement, type PresenceEnCache } from '@scolaly/contracts';
+import {
+  CLES_EMARGEMENT,
+  commandesPrechargement,
+  commandesSessions,
+  type PresenceEnCache,
+} from '@scolaly/contracts';
 import {
   enregistrerPresences,
   seanceEtAttendus,
   seancesAPrecharger,
+  sessionsDesComptes,
   withOrganisation,
   type Database,
 } from '@scolaly/db';
@@ -18,8 +24,9 @@ type ReponseLecture = [string, EntreesFlux][] | [string, EntreesFlux] | null;
 
 /**
  * Précharge dans Valkey les séances qui commencent dans les 15 prochaines minutes (RG-00-17 :
- * au plus tard 5 minutes avant ; l'appel s'ouvre 10 minutes avant, RG-06-01). Idempotent : la
- * liste des attendus est rafraîchie, les présences déjà enregistrées ne bougent pas.
+ * au plus tard 5 minutes avant ; l'appel s'ouvre 10 minutes avant, RG-06-01), avec les sessions
+ * de leurs attendus. Idempotent : la liste des attendus est rafraîchie, les présences déjà
+ * enregistrées ne bougent pas.
  */
 export async function prechargerSeances(db: Database, valkey: Redis, maintenant = new Date()) {
   const seances = await seancesAPrecharger(
@@ -28,6 +35,9 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
     new Date(maintenant.getTime() + 15 * 60_000),
   );
   for (const { organisationId, seanceId } of seances) {
+    // Une séance n'est rechargée qu'une fois toutes les 5 minutes : le cache reste léger au pic.
+    const premiere = await valkey.set(CLES_EMARGEMENT.prechargee(seanceId), '1', 'EX', 300, 'NX');
+    if (premiere === null) continue;
     const trouve = await withOrganisation(db, organisationId, (tx) =>
       seanceEtAttendus(tx, seanceId),
     );
@@ -36,7 +46,7 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
       trouve.attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : [])),
     );
     await valkey
-      .multi(
+      .pipeline(
         commandesPrechargement(
           seanceId,
           {
@@ -50,6 +60,9 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
         ),
       )
       .exec();
+    // Sessions des attendus remises en cache (après un redémarrage de Valkey, par exemple).
+    const sessions = await sessionsDesComptes(db, [...attendus.keys()]);
+    if (sessions.length > 0) await valkey.pipeline(commandesSessions(sessions)).exec();
   }
   return seances.length;
 }

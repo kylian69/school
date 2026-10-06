@@ -67,8 +67,13 @@ export class CacheEmargement implements Magasin {
 
   async precharger(seanceId: string, seance: SeanceEnCache, attendus: ReadonlyMap<string, string>) {
     await surValkey(() =>
-      this.valkey.multi(commandesPrechargement(seanceId, seance, attendus)).exec(),
+      this.valkey.pipeline(commandesPrechargement(seanceId, seance, attendus)).exec(),
     );
+  }
+
+  /** Remet en cache des sessions lues en base (format de Better Auth). */
+  async rechaufferSessions(commandes: string[][]) {
+    if (commandes.length > 0) await surValkey(() => this.valkey.pipeline(commandes).exec());
   }
 
   async seance(seanceId: string): Promise<SeanceEnCache | null> {

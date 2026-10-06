@@ -1,5 +1,11 @@
-import { CLES_EMARGEMENT, lireSeanceEnCache, type PresenceEnCache } from '@scolaly/contracts';
 import {
+  CLES_EMARGEMENT,
+  lireSeanceEnCache,
+  PREFIXE_SESSIONS,
+  type PresenceEnCache,
+} from '@scolaly/contracts';
+import {
+  authSession,
   authUser,
   createDatabase,
   newId,
@@ -23,6 +29,7 @@ const logger = createLogger('silent');
 const ecole = newId();
 const seanceId = newId();
 const fiches: string[] = [];
+const jetonLou = `jeton-lou-${newId()}`;
 
 beforeAll(async () => {
   await valkey.flushdb();
@@ -39,6 +46,13 @@ beforeAll(async () => {
         name: prenom,
         email: `${prenom.toLowerCase()}.${userId}@exemple.test`,
       });
+      if (prenom === 'Lou') {
+        await owner.db.insert(authSession).values({
+          userId,
+          token: jetonLou,
+          expiresAt: new Date(Date.now() + 86_400_000),
+        });
+      }
     }
     await owner.db.insert(personne).values({
       id,
@@ -94,6 +108,9 @@ describe('RG-00-17 préchargement des séances', () => {
     const attendus = await valkey.hvals(CLES_EMARGEMENT.attendus(seanceId));
     expect(attendus.sort()).toEqual(fiches.slice(0, 2).sort());
     expect(await valkey.ttl(CLES_EMARGEMENT.seance(seanceId))).toBeGreaterThan(3600);
+    // Session de Lou remise en cache, au format de Better Auth.
+    const enCacheLou = await valkey.get(PREFIXE_SESSIONS + jetonLou);
+    expect(JSON.parse(enCacheLou ?? '{}')).toMatchObject({ session: { token: jetonLou } });
   });
 });
 

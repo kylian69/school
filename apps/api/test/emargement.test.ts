@@ -1,6 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
   CLES_EMARGEMENT,
+  PREFIXE_SESSIONS,
   codeDeFenetre,
   fenetreDe,
   genererJeton,
@@ -187,6 +188,31 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
     const flux = await valkey.xrange(CLES_EMARGEMENT.flux, '-', '+');
     const miennes = flux.filter(([, champs]) => champs[1]?.includes(seanceId));
     expect(miennes).toHaveLength(1);
+  });
+
+  it('RG-00-17 remet en cache à l’ouverture une session sortie du cache : le scan reste sans SQL', async () => {
+    const valkey = app.get<Redis>(VALKEY);
+    const jetonSession =
+      decodeURIComponent(lea.split('session_token=')[1]?.split(';')[0] ?? '').split('.')[0] ?? '';
+    await valkey.del(PREFIXE_SESSIONS + jetonSession);
+    const { ouverture } = await ouvrir();
+    expect(await valkey.exists(PREFIXE_SESSIONS + jetonSession)).toBe(1);
+    const pool = (app.get<Database>(DATABASE) as unknown as { $client: Pool }).$client;
+    let requetes = 0;
+    const query = pool.query.bind(pool);
+    pool.query = (...args: unknown[]) => {
+      requetes++;
+      return query(...args);
+    };
+    try {
+      const reponse = await appeler('POST', '/api/emargement/scan', lea, {
+        jeton: await jetonDe(ouverture),
+      });
+      expect(reponse.statusCode).toBe(200);
+    } finally {
+      pool.query = query;
+    }
+    expect(requetes).toBe(0);
   });
 
   it('RG-06-05 accepte le code à 6 chiffres et refuse un mauvais code', async () => {
