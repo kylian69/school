@@ -12,8 +12,11 @@ export function createValkey(url: string): Redis {
  * une limitation ne sont jamais ignorées en silence.
  */
 export function valkeySecondaryStorage(valkey: Redis, prefix = 'auth:'): SecondaryStorage {
+  // Connexion coupée : on n'attend pas les nouvelles tentatives du client, on lit la base.
+  const coupe = () => ['reconnecting', 'close', 'end'].includes(valkey.status);
   return {
     get: async (key) => {
+      if (coupe()) return null;
       try {
         return await valkey.get(prefix + key);
       } catch {
@@ -22,6 +25,7 @@ export function valkeySecondaryStorage(valkey: Redis, prefix = 'auth:'): Seconda
     },
     getAndDelete: (key) => valkey.getdel(prefix + key),
     set: async (key, value, ttl) => {
+      if (coupe()) return;
       try {
         if (ttl) await valkey.set(prefix + key, value, 'EX', ttl);
         else await valkey.set(prefix + key, value);

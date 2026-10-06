@@ -133,3 +133,30 @@ export async function enregistrerPresenceDirecte(
     .where(and(eq(presence.seanceId, p.seanceId), eq(presence.personneId, p.personneId)));
   return existante ?? null;
 }
+
+/** Fiche attendue à la séance pour ce compte (mode dégradé : une ligne, pas toute la liste). */
+export async function attenduDeSeance(
+  tx: Transaction,
+  seanceId: string,
+  userId: string,
+): Promise<string | null> {
+  const [trouve] = await tx
+    .select({ personneId: personne.id })
+    .from(seanceAttendu)
+    .innerJoin(
+      personne,
+      and(
+        eq(personne.organisationId, seanceAttendu.organisationId),
+        eq(personne.id, seanceAttendu.personneId),
+      ),
+    )
+    .where(
+      and(
+        eq(seanceAttendu.seanceId, seanceId),
+        eq(personne.userId, userId),
+        isNull(seanceAttendu.deletedAt),
+        isNull(personne.deletedAt),
+      ),
+    );
+  return trouve?.personneId ?? null;
+}
