@@ -7,7 +7,7 @@ catalog:
   '@aws-sdk/client-s3': 3.1146.0
   '@aws-sdk/s3-request-presigner': 3.1146.0
   '@axe-core/playwright': 4.13.0
-  '@eslint/js': 9.39.5
+  '@eslint/js': 10.0.1
   '@fastify/helmet': 13.1.1
   '@myriaddreamin/typst-ts-node-compiler': 0.7.0
   '@nestjs/common': 12.1.2
