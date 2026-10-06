@@ -16,6 +16,7 @@ import { attribution, enregistrerAudit, personne, role, type Transaction } from 
 import {
   controlerIne,
   dateNaissancePlausible,
+  verifierSuppressionPersonne,
   ecrireCsv,
   motifsDoublon,
   normaliserIdentifiant,
@@ -376,6 +377,34 @@ export class PersonnesService {
       apres: this.trace(apres),
     });
     return this.detail(tx, access, apres);
+  }
+
+  /**
+   * Suppression d'une fiche (US-01-16) : elle part à la corbeille avec ses rôles, supprimés au
+   * même instant pour être restaurés avec elle (RG-01-23). Une fiche dont le compte a été activé
+   * se désactive plutôt (module 01, section 7).
+   */
+  async supprimer(tx: Transaction, access: Access, id: string, adresseIp: string): Promise<void> {
+    const fiche = await this.charger(tx, access, id);
+    if (!verifierSuppressionPersonne(fiche.compteEtat).ok) {
+      throw new ConflictException(
+        'Cette personne a activé son compte : sa fiche porte un historique. Désactivez son compte plutôt que de supprimer la fiche.',
+      );
+    }
+    const suppression = { deletedAt: new Date(), updatedBy: access.userId };
+    await tx
+      .update(attribution)
+      .set(suppression)
+      .where(and(eq(attribution.personneId, id), isNull(attribution.deletedAt)));
+    await tx.update(personne).set(suppression).where(eq(personne.id, id));
+    await enregistrerAudit(tx, {
+      action: 'personne.supprimer',
+      objetType: 'personne',
+      objetId: id,
+      auteurId: access.userId,
+      adresseIp,
+      avant: this.trace(fiche),
+    });
   }
 
   /** RG-01-07 : fiches de même email, ou de même nom, prénom et date de naissance. */

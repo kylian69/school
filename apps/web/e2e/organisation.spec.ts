@@ -23,6 +23,7 @@ test.describe('E-01-02 Organisation et établissements', () => {
       'Apparence',
       'Rôles et permissions',
       'Journal d’audit',
+      'Corbeille',
     ]);
     await sections.getByRole('link', { name: 'Organisation' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(

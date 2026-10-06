@@ -15,3 +15,4 @@ export * from './demarrage.js';
 export * from './personnes.js';
 export * from './imports.js';
 export * from './audit.js';
+export * from './corbeille.js';

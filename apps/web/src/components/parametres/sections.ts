@@ -39,6 +39,11 @@ export const SECTIONS_PARAMETRES: readonly SectionParametres[] = [
     href: '/parametres/journal',
     permissions: ['audit:lire'],
   },
+  {
+    label: fr.parametres.sections.corbeille,
+    href: '/parametres/corbeille',
+    permissions: ['corbeille:restaurer'],
+  },
 ];
 
 export const sectionsVisibles = (permissions: readonly string[]) =>

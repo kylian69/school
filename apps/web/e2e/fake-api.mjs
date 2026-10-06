@@ -190,6 +190,7 @@ const detailPersonne = (p) => ({ ...p, naissanceVisible: true });
 const annees = [];
 const choixDemarrage = new Map();
 const imports = new Map();
+const corbeille = [];
 const apercuImport = (i) => {
   const champs = Object.values(i.correspondance);
   const lignes = i.lignes.map((valeurs, rang) => {
@@ -427,6 +428,7 @@ createServer(async (request, response) => {
             'audit:lire',
             'apprenants:inviter',
             'comptes:desactiver',
+            'corbeille:restaurer',
             'personnel:inviter',
             'personnes:exporter',
             'personnes:importer',
@@ -552,6 +554,31 @@ createServer(async (request, response) => {
     return response.end();
   }
 
+  // Corbeille (E-01-10) : fiches supprimées par les tests.
+  if (path === '/api/corbeille') {
+    if (!user) return json(401, { message: 'Session absente' });
+    return json(200, {
+      elements: corbeille.map((p) => ({
+        type: 'personne',
+        id: p.id,
+        libelle: `${p.prenom} ${p.nom}`,
+        supprimeLe: p.supprimeLe,
+        supprimePar: 'Camille Fictive',
+        effacementLe: new Date(Date.parse(p.supprimeLe) + 30 * 86_400_000).toISOString(),
+        lies: 0,
+      })),
+    });
+  }
+  const restauration = path.match(/^\/api\/corbeille\/personne\/([^/]+)\/restauration$/);
+  if (restauration) {
+    const rang = corbeille.findIndex((p) => p.id === restauration[1]);
+    if (rang < 0) return json(404, { message: 'Élément introuvable dans la corbeille.' });
+    const [element] = corbeille.splice(rang, 1);
+    personnes.push(Object.fromEntries(Object.entries(element).filter(([k]) => k !== 'supprimeLe')));
+    response.writeHead(204);
+    return response.end();
+  }
+
   // Journal d'audit (E-01-08) : deux événements fixes.
   if (path === '/api/audit') {
     if (!user) return json(401, { message: 'Session absente' });
@@ -660,6 +687,12 @@ createServer(async (request, response) => {
     }
     const fiche = personnes.find((p) => p.id === id);
     if (!fiche) return json(404, { message: 'Personne introuvable dans cette école.' });
+    if (request.method === 'DELETE') {
+      personnes.splice(personnes.indexOf(fiche), 1);
+      corbeille.push({ ...fiche, supprimeLe: new Date().toISOString() });
+      response.writeHead(204);
+      return response.end();
+    }
     if (request.method === 'PATCH') {
       const { version, ...body } = await readBody(request);
       if (version !== fiche.version)

@@ -240,6 +240,10 @@ export const fr = {
       desactive: 'Compte désactivé : ses données et son historique restent consultables.',
       reactive: 'Compte réactivé.',
       reinitialiser: 'Réinitialiser la double authentification',
+      supprimer: 'Supprimer la fiche',
+      confirmerSuppression: (nom: string) =>
+        `Supprimer la fiche de ${nom} ? Elle reste 30 jours dans la corbeille, avec ses rôles, avant d’être effacée.`,
+      supprimee: 'Fiche supprimée : elle est dans la corbeille pendant 30 jours.',
       reinitialise:
         'Double authentification réinitialisée : la personne la remettra en place à sa prochaine connexion.',
     },
@@ -399,6 +403,27 @@ export const fr = {
     } as Record<string, string>,
     indisponible: 'Le journal n’a pas pu être chargé. Rechargez la page.',
   },
+  corbeille: {
+    titre: 'Corbeille',
+    filAriane: 'Paramètres',
+    aide: 'Un élément supprimé reste ici 30 jours, puis il est effacé définitivement. Sa restauration remet aussi ce qui a été supprimé avec lui.',
+    vide: 'La corbeille est vide.',
+    types: {
+      personne: 'Fiche',
+      annee: 'Année scolaire',
+      fermeture: 'Fermeture',
+      role: 'Rôle',
+    } as Record<string, string>,
+    supprime: (date: string, auteur: string | null) =>
+      `Supprimé le ${date}${auteur ? ` par ${auteur}` : ''}`,
+    effacement: (date: string) => `Effacement définitif le ${date}`,
+    lies: (n: number) => `${n} élément${n > 1 ? 's' : ''} lié${n > 1 ? 's' : ''}`,
+    restaurer: 'Restaurer',
+    restaurerElement: (libelle: string) => `Restaurer « ${libelle} »`,
+    restaure: (libelle: string) => `« ${libelle} » est restauré.`,
+    indisponible: 'La corbeille n’a pas pu être chargée. Rechargez la page.',
+    erreur: 'La restauration a échoué. Réessayez.',
+  },
   parametres: {
     titre: 'Paramètres',
     navigation: 'Sections des paramètres',
@@ -409,6 +434,7 @@ export const fr = {
       apparence: 'Apparence',
       roles: 'Rôles et permissions',
       journal: 'Journal d’audit',
+      corbeille: 'Corbeille',
     },
   },
   demarrage: {
