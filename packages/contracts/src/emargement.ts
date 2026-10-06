@@ -146,3 +146,16 @@ export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCach
     distanciel: valeurs.distanciel === '1',
   };
 }
+
+/** Séance proche (en cours, à venir dans les 12 heures, ou finie depuis moins d'une heure). */
+export const SeanceProche = z
+  .object({
+    id: z.uuid(),
+    libelle: z.string(),
+    debut: z.iso.datetime(),
+    fin: z.iso.datetime(),
+    distanciel: z.boolean(),
+    intervenant: z.string().nullable(),
+  })
+  .meta({ id: 'SeanceProche' });
+export type SeanceProche = z.infer<typeof SeanceProche>;

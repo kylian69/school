@@ -8,6 +8,7 @@ import {
   type AppelEnDirect,
   type OuvertureAppel,
   type ResultatScan,
+  type SeanceProche,
 } from '@scolaly/contracts';
 import {
   attribution,
@@ -222,5 +223,20 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
     expect(direct.liste.every((l) => l.scanneLe !== null)).toBe(true);
     expect((await ouvrir(seanceId, autreIntervenant)).statut).toBe(403);
     expect((await ouvrir(seanceId, lea)).statut).toBe(403);
+  });
+
+  it('liste les séances à animer de l’intervenant et celles à émarger de l’apprenant', async () => {
+    const aAnimer = (await appeler('GET', '/api/seances', intervenant)).json<SeanceProche[]>();
+    expect(aAnimer.map((s) => s.id).sort()).toEqual([seanceId, autreSeanceId].sort());
+    expect(aAnimer[0]?.intervenant).toBe('ines Fictif');
+    expect((await appeler('GET', '/api/seances', autreIntervenant)).json<SeanceProche[]>()).toEqual(
+      [],
+    );
+    const aEmarger = (await appeler('GET', '/api/moi/seances', lea)).json<SeanceProche[]>();
+    expect(aEmarger.map((s) => s.id)).toEqual([seanceId]);
+    expect((await appeler('GET', '/api/moi/seances', horsListe)).json<SeanceProche[]>()).toEqual(
+      [],
+    );
+    expect((await appeler('GET', '/api/seances', lea)).statusCode).toBe(403);
   });
 });

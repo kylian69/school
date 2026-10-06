@@ -15,3 +15,9 @@ export function formatDateHeure(iso: string, timeZone = 'Europe/Paris'): string 
 }
 
 export const formatNombre = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
+
+/** Heure au format HH:MM, dans le fuseau de l'établissement. */
+export const formatHeure = (iso: string, timeZone = 'Europe/Paris') =>
+  new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone }).format(
+    new Date(iso),
+  );
