@@ -58,6 +58,7 @@ Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
 | `pnpm build` | Construit tous les paquets et applications (Turborepo, avec cache) |
 | `pnpm dev:up` / `pnpm dev:down` | Démarre (et prépare la base) ou arrête les services de développement |
 | `pnpm dev` | Lance les applications en mode développement |
+| `pnpm demo:seed` | Charge le jeu de démonstration fictif et ses comptes (mot de passe : `DEMO_PASSWORD`) |
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Lint, typage strict, tests Vitest |
 | `pnpm format` / `pnpm format:check` | Formatage Prettier |
 | `pnpm check` | Tout ce que vérifie la CI avant une PR |

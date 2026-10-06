@@ -17,7 +17,8 @@
     "check": "pnpm format:check && turbo run build lint typecheck test && pnpm deps:check",
     "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
     "dev:up": "sh infra/compose/dev-up.sh",
-    "dev:down": "docker compose -f infra/compose/compose.dev.yml down"
+    "dev:down": "docker compose -f infra/compose/compose.dev.yml down",
+    "demo:seed": "pnpm --filter @scolaly/api build && pnpm --filter @scolaly/api demo:seed"
   },
   "devDependencies": {
     "dependency-cruiser": "catalog:",

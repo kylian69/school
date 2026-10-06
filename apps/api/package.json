@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "openapi": "node dist/cli/openapi.js"
+    "openapi": "node dist/cli/openapi.js",
+    "demo:seed": "node --env-file-if-exists=../../.env dist/cli/seed-demo.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",

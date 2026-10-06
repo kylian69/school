@@ -12,6 +12,10 @@
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
+    },
+    "./demo": {
+      "types": "./dist/demo/index.d.ts",
+      "default": "./dist/demo/index.js"
     }
   },
   "files": [
