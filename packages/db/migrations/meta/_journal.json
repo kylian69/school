@@ -176,6 +176,13 @@
       "when": 1791292819708,
       "tag": "0024_emargement",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791293011198,
+      "tag": "0025_emargement_permission",
+      "breakpoints": true
     }
   ]
 }
