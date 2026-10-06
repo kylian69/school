@@ -118,6 +118,126 @@
         }
       }
     },
+    "/api/etablissements": {
+      "post": {
+        "operationId": "OrganisationController.creer",
+        "summary": "Créer un établissement",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelEtablissement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Etablissement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/etablissements/{id}": {
+      "patch": {
+        "operationId": "OrganisationController.modifierEtablissement",
+        "summary": "Modifier un établissement",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationEtablissement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Etablissement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/etablissements/{id}/archivage": {
+      "post": {
+        "operationId": "OrganisationController.archiver",
+        "summary": "Archiver un établissement (RG-01-01)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Etablissement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/etablissements/{id}/reactivation": {
+      "post": {
+        "operationId": "OrganisationController.reactiver",
+        "summary": "Réactiver un établissement archivé",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Etablissement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/invitations/{jeton}": {
       "get": {
         "operationId": "InvitationsController.consulter",
@@ -163,6 +283,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultatActivation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organisation": {
+      "get": {
+        "operationId": "OrganisationController.lire",
+        "summary": "Organisation et établissements de l’école",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:lire"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "OrganisationController.modifier",
+        "summary": "Modifier le nom, le nom affiché ou le SIREN de l’école",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationOrganisation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationDetail"
                 }
               }
             }
@@ -1034,6 +1212,94 @@
         ],
         "additionalProperties": false
       },
+      "Etablissement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "adresseLigne1": {
+            "nullable": true,
+            "type": "string"
+          },
+          "adresseLigne2": {
+            "nullable": true,
+            "type": "string"
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string"
+          },
+          "uai": {
+            "nullable": true,
+            "type": "string"
+          },
+          "siret": {
+            "nullable": true,
+            "type": "string"
+          },
+          "nda": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fuseauHoraire": {
+            "type": "string"
+          },
+          "telephone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "email": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "actif",
+              "archive"
+            ]
+          },
+          "manquantes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "adresse",
+                "uai",
+                "siret",
+                "nda"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nom",
+          "adresseLigne1",
+          "adresseLigne2",
+          "codePostal",
+          "ville",
+          "uai",
+          "siret",
+          "nda",
+          "fuseauHoraire",
+          "telephone",
+          "email",
+          "statut",
+          "manquantes"
+        ],
+        "additionalProperties": false
+      },
       "ExceptionModule": {
         "type": "object",
         "properties": {
@@ -1186,6 +1452,96 @@
         "required": [
           "role"
         ],
+        "additionalProperties": false
+      },
+      "ModificationEtablissement": {
+        "type": "object",
+        "properties": {
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "adresseLigne1": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "adresseLigne2": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "codePostal": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z -]{3,10}$"
+          },
+          "ville": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "fuseauHoraire": {
+            "type": "string"
+          },
+          "uai": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "siret": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "nda": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "telephone": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 30
+          },
+          "email": {
+            "nullable": true,
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationOrganisation": {
+        "type": "object",
+        "properties": {
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "nomAffichage": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "siren": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          }
+        },
         "additionalProperties": false
       },
       "ModificationRole": {
@@ -1410,6 +1766,117 @@
         },
         "required": [
           "libelle"
+        ],
+        "additionalProperties": false
+      },
+      "NouvelEtablissement": {
+        "type": "object",
+        "properties": {
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "adresseLigne1": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "adresseLigne2": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "codePostal": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z -]{3,10}$"
+          },
+          "ville": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "fuseauHoraire": {
+            "default": "Europe/Paris",
+            "type": "string"
+          },
+          "uai": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "siret": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "nda": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 20
+          },
+          "telephone": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 30
+          },
+          "email": {
+            "nullable": true,
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "nom",
+          "adresseLigne1",
+          "codePostal",
+          "ville",
+          "fuseauHoraire"
+        ],
+        "additionalProperties": false
+      },
+      "OrganisationDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "nomAffichage": {
+            "type": "string"
+          },
+          "siren": {
+            "nullable": true,
+            "type": "string"
+          },
+          "etablissements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Etablissement"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nom",
+          "nomAffichage",
+          "siren",
+          "etablissements"
         ],
         "additionalProperties": false
       },

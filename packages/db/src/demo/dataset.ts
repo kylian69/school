@@ -133,14 +133,31 @@ const ECOLES = [
     nom: 'École de gestion de Lumerac',
     nomAffichage: 'EGL',
     campus: [
-      { nom: 'Campus Centre', codePostal: '99100', ville: 'Lumerac' },
-      { nom: 'Campus des Tanneries', codePostal: '99100', ville: 'Lumerac' },
+      {
+        nom: 'Campus Centre',
+        adresse: '1 place du Beffroi',
+        codePostal: '99100',
+        ville: 'Lumerac',
+      },
+      {
+        nom: 'Campus des Tanneries',
+        adresse: '24 quai des Tanneurs',
+        codePostal: '99100',
+        ville: 'Lumerac',
+      },
     ],
   },
   {
     nom: 'Institut numérique de Lumerac',
     nomAffichage: 'INL',
-    campus: [{ nom: 'Campus des Ateliers', codePostal: '99200', ville: 'Lumerac-sur-Orne' }],
+    campus: [
+      {
+        nom: 'Campus des Ateliers',
+        adresse: '7 rue des Forges',
+        codePostal: '99200',
+        ville: 'Lumerac-sur-Orne',
+      },
+    ],
   },
 ] as const;
 
@@ -229,6 +246,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
         id: id(),
         organisationId,
         nom: campus.nom,
+        adresseLigne1: campus.adresse,
         codePostal: campus.codePostal,
         ville: campus.ville,
         createdAt: CREATED_AT,

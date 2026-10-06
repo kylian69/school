@@ -10,6 +10,7 @@ import { Badge, Button, Card, cn, Dialog, DialogContent, Input, Label } from '@s
 import { useRouter } from 'next/navigation';
 import { useId, useState, type SyntheticEvent } from 'react';
 import { fr } from '@/i18n/fr';
+import { envoyer as envoyerRequete } from '@/lib/requete';
 
 const t = fr.roles;
 
@@ -20,23 +21,8 @@ const GROUPES = PERMISSION_CODES.reduce<Map<string, Permission[]>>((groupes, per
   return groupes;
 }, new Map());
 
-async function envoyer(url: string, method: 'POST' | 'PATCH' | 'DELETE', corps?: unknown) {
-  try {
-    const response = await fetch(url, {
-      method,
-      headers: corps ? { 'content-type': 'application/json' } : {},
-      ...(corps ? { body: JSON.stringify(corps) } : {}),
-    });
-    const body = (await response.json().catch(() => null)) as { message?: unknown } | null;
-    if (response.ok) return { ok: true as const, body };
-    return {
-      ok: false as const,
-      erreur: typeof body?.message === 'string' ? body.message : t.erreur,
-    };
-  } catch {
-    return { ok: false as const, erreur: fr.connexion.erreurs.reseau };
-  }
-}
+const envoyer = (url: string, method: 'POST' | 'PATCH' | 'DELETE', corps?: unknown) =>
+  envoyerRequete(url, method, corps, t.erreur);
 
 const memes = (a: readonly string[], b: ReadonlySet<string>) =>
   a.length === b.size && a.every((p) => b.has(p));

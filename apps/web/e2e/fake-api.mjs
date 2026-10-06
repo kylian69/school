@@ -96,6 +96,45 @@ const roles = [
   },
 ];
 
+// Organisation et établissements (E-01-02).
+const ecole = {
+  id: '01a10000-0000-7000-8000-0000000000e1',
+  nom: 'École de gestion de Lumerac',
+  nomAffichage: 'EGL',
+  siren: null,
+  etablissements: [
+    {
+      id: '01a10000-0000-7000-8000-0000000000b1',
+      nom: 'Campus des Tilleuls',
+      adresseLigne1: '12 allée des Tilleuls',
+      adresseLigne2: null,
+      codePostal: '69000',
+      ville: 'Lumerac',
+      uai: null,
+      siret: null,
+      nda: null,
+      fuseauHoraire: 'Europe/Paris',
+      telephone: null,
+      email: null,
+      statut: 'actif',
+    },
+  ],
+};
+const manquantes = (e) =>
+  [
+    !e.adresseLigne1 || !e.codePostal || !e.ville ? 'adresse' : null,
+    e.uai ? null : 'uai',
+    e.siret ? null : 'siret',
+    e.nda ? null : 'nda',
+  ].filter(Boolean);
+const detailEcole = () => ({
+  ...ecole,
+  etablissements: ecole.etablissements.map((e) => ({ ...e, manquantes: manquantes(e) })),
+});
+// Contrôle simplifié de l'UAI (le vrai contrôle est couvert par les tests du domaine et de l'API).
+const uaiInvalide = (uai) => uai && !/^\d{7}[A-Z]$/.test(uai.replace(/\s+/g, '').toUpperCase());
+const nul = (v) => (v === '' ? null : v);
+
 function creerFiche(entree) {
   const id = randomUUID();
   const fiche = {
@@ -284,11 +323,60 @@ createServer(async (request, response) => {
     return json(200, {
       ecoleActive: active,
       ecoles,
-      permissions: active ? ['organisation:lire', 'roles:gerer', 'roles:attribuer'] : [],
+      permissions: active
+        ? ['organisation:lire', 'organisation:modifier', 'roles:attribuer', 'roles:gerer']
+        : [],
       modules: active ? ['socle'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
     });
+  }
+
+  if (path === '/api/organisation') {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (request.method === 'PATCH') Object.assign(ecole, await readBody(request));
+    return json(200, detailEcole());
+  }
+  const etablissementRoute = path.match(
+    /^\/api\/etablissements(?:\/([^/]+))?(\/archivage|\/reactivation)?$/,
+  );
+  if (etablissementRoute) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const [, id, action] = etablissementRoute;
+    if (!id) {
+      const body = await readBody(request);
+      const cree = {
+        id: randomUUID(),
+        adresseLigne2: null,
+        uai: null,
+        siret: null,
+        nda: null,
+        telephone: null,
+        email: null,
+        statut: 'actif',
+        ...body,
+      };
+      ecole.etablissements.push(cree);
+      return json(201, { ...cree, manquantes: manquantes(cree) });
+    }
+    const cible = ecole.etablissements.find((e) => e.id === id);
+    if (!cible) return json(404, { message: 'Établissement introuvable dans cette école.' });
+    if (action === '/archivage') {
+      if (ecole.etablissements.filter((e) => e.statut === 'actif').length < 2)
+        return json(409, { message: 'Votre école doit garder au moins un établissement actif.' });
+      cible.statut = 'archive';
+    } else if (action === '/reactivation') cible.statut = 'actif';
+    else {
+      const body = await readBody(request);
+      if (uaiInvalide(body.uai))
+        return json(400, {
+          message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+          details: ['uai : L’UAI compte 7 chiffres suivis d’une lettre, par exemple 0691234A.'],
+        });
+      for (const [cle, valeur] of Object.entries(body)) cible[cle] = nul(valeur);
+      if (cible.uai) cible.uai = cible.uai.toUpperCase();
+    }
+    return json(200, { ...cible, manquantes: manquantes(cible) });
   }
 
   if (path === '/api/roles' || path.startsWith('/api/roles/')) {

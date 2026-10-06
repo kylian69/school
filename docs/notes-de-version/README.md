@@ -5,3 +5,4 @@ Une note par version publiée, en français, numérotée `AAAA.MM.N` (plan de d�
 | Version | Date | Contenu |
 | --- | --- | --- |
 | [2026.10.1](2026.10.1.md) | 10/2026 | Fondations (phase P0) |
+| [2026.10.2](2026.10.2.md) | en préparation | Socle et plateforme (phase P1) |

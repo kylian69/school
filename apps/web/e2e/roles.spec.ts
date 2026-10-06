@@ -7,13 +7,17 @@ test.describe('E-01-07 Rôles et permissions', () => {
     await seConnecter(page);
   });
 
-  test('accessible depuis « Paramètres », sans violation d’accessibilité', async ({
+  test('accessible depuis « Paramètres », puis « Rôles et permissions », sans violation d’accessibilité', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile-360', 'Navigation latérale propre au bureau');
     await page
       .getByRole('navigation', { name: 'Navigation principale' })
       .getByRole('link', { name: 'Paramètres' })
+      .click();
+    await page
+      .getByRole('navigation', { name: 'Sections des paramètres' })
+      .getByRole('link', { name: 'Rôles et permissions' })
       .click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Rôles et permissions');
     await expectNoAccessibilityViolations(page);
