@@ -17,6 +17,7 @@ import {
   ListeAnnees,
   ModificationAnnee,
   NouvelleAnnee,
+  PropositionDuplication,
   SaisieFermeture,
 } from '@scolaly/contracts';
 import { z } from 'zod';
@@ -46,6 +47,16 @@ export class CalendrierController {
   })
   lire(@Param('id', ParseUUIDPipe) id: string) {
     return this.calendrier.lire(RequestContext.tx(), id);
+  }
+
+  @Get('annees/:id/duplication')
+  @RequirePermission('calendrier:gerer')
+  @ApiContract({
+    summary: 'Proposer l’année suivante (périodes et fermetures décalées d’un an)',
+    response: PropositionDuplication,
+  })
+  proposerDuplication(@Param('id', ParseUUIDPipe) id: string) {
+    return this.calendrier.proposerDuplication(RequestContext.tx(), id);
   }
 
   @Post('annees')

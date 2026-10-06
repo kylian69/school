@@ -150,6 +150,31 @@
         }
       }
     },
+    "/api/annees/{id}/duplication": {
+      "get": {
+        "operationId": "CalendrierController.proposerDuplication",
+        "summary": "Proposer l’année suivante (périodes et fermetures décalées d’un an)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "calendrier:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropositionDuplication"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/annees/{id}/fermetures": {
       "post": {
         "operationId": "CalendrierController.ajouterFermeture",
@@ -2392,6 +2417,18 @@
               ],
               "additionalProperties": false
             }
+          },
+          "fermetures": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaisieFermeture"
+            }
+          },
+          "dupliqueDe": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
         "required": [
@@ -2469,6 +2506,71 @@
           "dateDebut",
           "dateFin",
           "ordre"
+        ],
+        "additionalProperties": false
+      },
+      "PropositionDuplication": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string"
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "periodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "libelle": {
+                  "type": "string"
+                },
+                "dateDebut": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "dateFin": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                }
+              },
+              "required": [
+                "libelle",
+                "dateDebut",
+                "dateFin"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "fermetures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaisieFermeture"
+            }
+          },
+          "dupliqueDe": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "libelle",
+          "dateDebut",
+          "dateFin",
+          "periodes",
+          "fermetures",
+          "dupliqueDe"
         ],
         "additionalProperties": false
       },

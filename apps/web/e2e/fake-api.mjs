@@ -350,7 +350,7 @@ createServer(async (request, response) => {
   }
 
   // Calendrier (E-01-03) : chaque année est créée par le test qui l'utilise.
-  const anneeRoute = path.match(/^\/api\/annees(?:\/([^/]+))?(\/fermetures)?$/);
+  const anneeRoute = path.match(/^\/api\/annees(?:\/([^/]+))?(\/fermetures|\/duplication)?$/);
   const fermetureRoute = path.match(/^\/api\/fermetures\/([^/]+)$/);
   if (anneeRoute || fermetureRoute) {
     if (!user) return json(401, { message: 'Session absente' });
@@ -366,7 +366,7 @@ createServer(async (request, response) => {
       annee.fermetures[rang] = { id: fermetureRoute[1], ...(await readBody(request)) };
       return json(200, annee.fermetures[rang]);
     }
-    const [, id, fermetures] = anneeRoute;
+    const [, id, sousRoute] = anneeRoute;
     if (!id && request.method === 'GET') return json(200, { annees: annees.map(resumeAnnee) });
     if (!id) {
       const body = await readBody(request);
@@ -377,14 +377,29 @@ createServer(async (request, response) => {
         dateFin: body.dateFin,
         statut: 'preparation',
         periodes: body.periodes.map((p, i) => ({ id: randomUUID(), ordre: i + 1, ...p })),
-        fermetures: [],
+        fermetures: (body.fermetures ?? []).map((f) => ({ id: randomUUID(), ...f })),
       };
       annees.push(annee);
       return json(201, detailAnnee(annee));
     }
     const annee = annees.find((a) => a.id === id);
     if (!annee) return json(404, { message: 'Année scolaire introuvable dans cette école.' });
-    if (fermetures) {
+    if (sousRoute === '/duplication') {
+      const suivante = (jour) => `${Number(jour.slice(0, 4)) + 1}${jour.slice(4)}`;
+      const decaler = ({ id: _id, ordre: _ordre, ...e }) => ({
+        ...e,
+        dateDebut: suivante(e.dateDebut),
+        dateFin: suivante(e.dateFin),
+      });
+      return json(200, {
+        ...decaler({ dateDebut: annee.dateDebut, dateFin: annee.dateFin }),
+        libelle: annee.libelle.replace(/\b(19|20)\d{2}\b/g, (m) => String(Number(m) + 1)),
+        periodes: annee.periodes.map(decaler),
+        fermetures: annee.fermetures.map(decaler),
+        dupliqueDe: annee.id,
+      });
+    }
+    if (sousRoute === '/fermetures') {
       const body = await readBody(request);
       if (body.dateDebut < annee.dateDebut || body.dateFin > annee.dateFin)
         return json(400, {

@@ -61,6 +61,17 @@ const PeriodeSaisie = z.object({
   dateFin: jour,
 });
 
+export const SaisieFermeture = z
+  .object({
+    libelle,
+    dateDebut: jour,
+    dateFin: jour,
+    type: z.enum(TYPES_FERMETURE),
+    etablissementIds: z.array(z.uuid()).max(100).default([]),
+  })
+  .meta({ id: 'SaisieFermeture' });
+export type SaisieFermeture = z.infer<typeof SaisieFermeture>;
+
 export const NouvelleAnnee = z
   .object({
     libelle,
@@ -70,6 +81,10 @@ export const NouvelleAnnee = z
       .array(PeriodeSaisie.omit({ id: true }))
       .min(1)
       .max(12),
+    /** Fermetures de l'année, reprises par exemple d'une duplication (RG-01-05). */
+    fermetures: z.array(SaisieFermeture).max(100).optional(),
+    /** Année dupliquée : tracée dans le journal d'audit. */
+    dupliqueDe: z.uuid().optional(),
   })
   .meta({ id: 'NouvelleAnnee' });
 export type NouvelleAnnee = z.infer<typeof NouvelleAnnee>;
@@ -86,13 +101,15 @@ export const ModificationAnnee = z
   .meta({ id: 'ModificationAnnee' });
 export type ModificationAnnee = z.infer<typeof ModificationAnnee>;
 
-export const SaisieFermeture = z
+/** Année suivante proposée par duplication, à vérifier avant validation (US-01-04, RG-01-05). */
+export const PropositionDuplication = z
   .object({
-    libelle,
+    libelle: z.string(),
     dateDebut: jour,
     dateFin: jour,
-    type: z.enum(TYPES_FERMETURE),
-    etablissementIds: z.array(z.uuid()).max(100).default([]),
+    periodes: z.array(z.object({ libelle: z.string(), dateDebut: jour, dateFin: jour })),
+    fermetures: z.array(SaisieFermeture),
+    dupliqueDe: z.uuid(),
   })
-  .meta({ id: 'SaisieFermeture' });
-export type SaisieFermeture = z.infer<typeof SaisieFermeture>;
+  .meta({ id: 'PropositionDuplication' });
+export type PropositionDuplication = z.infer<typeof PropositionDuplication>;

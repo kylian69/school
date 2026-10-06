@@ -4,6 +4,7 @@ import {
   type CalendrierAnnee,
   type Fermeture,
   type ListeAnnees,
+  type PropositionDuplication,
 } from '@scolaly/contracts';
 import {
   anneeScolaire,
@@ -287,5 +288,47 @@ describe('E-01-03 calendrier de l’année', () => {
     expect(
       (await requete('POST', `/api/annees/${anneeEtrangere}/fermetures`, admin, INTRUS)).statusCode,
     ).toBe(404);
+  });
+});
+
+describe('US-01-04 duplication de l’année', () => {
+  it('RG-01-05 propose l’année suivante décalée d’un an, puis la crée après vérification', async () => {
+    const [source] = (await requete('GET', '/api/annees', admin)).json<ListeAnnees>().annees;
+    const reponse = await requete('GET', `/api/annees/${source?.id}/duplication`, admin);
+    expect(reponse.statusCode).toBe(200);
+    const proposition = reponse.json<PropositionDuplication>();
+    expect(proposition).toMatchObject({
+      libelle: '2027-2028',
+      dateDebut: '2027-09-01',
+      dateFin: '2028-08-31',
+      periodes: [{ libelle: 'T1', dateDebut: '2027-09-01', dateFin: '2027-12-20' }, {}, {}],
+      fermetures: [{ libelle: 'Vacances de la Toussaint', dateDebut: '2027-10-24' }],
+      dupliqueDe: source?.id,
+    });
+
+    const creee = await requete('POST', '/api/annees', admin, proposition);
+    expect(creee.statusCode).toBe(201);
+    const annee = creee.json<CalendrierAnnee>();
+    expect(annee).toMatchObject({ statut: 'preparation', periodes: [{}, {}, {}] });
+    expect(annee.fermetures.map((f) => f.dateFin)).toEqual(['2027-11-01']);
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(and(eq(auditEvenement.objetId, annee.id), eq(auditEvenement.action, 'annee.creer')));
+    expect(trace?.apres).toMatchObject({ dupliqueDe: source?.id });
+  });
+
+  it('refuse une fermeture reprise hors de la nouvelle année, et la duplication sans droit', async () => {
+    const [source] = (await requete('GET', '/api/annees', admin)).json<ListeAnnees>().annees;
+    const refus = await requete('POST', '/api/annees', admin, {
+      ...ANNEE,
+      libelle: 'Avec fermeture hors année',
+      fermetures: [{ ...INTRUS, dateDebut: '2025-12-24', dateFin: '2025-12-24' }],
+    });
+    expect(refus.statusCode).toBe(400);
+    expect(refus.json<{ details: string[] }>().details[0]).toMatch(/^fermetures\.0 : /);
+    expect(
+      (await requete('GET', `/api/annees/${source?.id}/duplication`, scolarite)).statusCode,
+    ).toBe(403);
   });
 });

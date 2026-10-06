@@ -7,7 +7,7 @@ test.describe('E-01-03 Calendrier de l’année', () => {
     await seConnecter(page);
   });
 
-  test('US-01-03 crée une année et ses semestres, ajoute les vacances et la démarre', async ({
+  test('US-01-03 et US-01-04 crée une année, ajoute les vacances, la démarre puis la duplique', async ({
     page,
   }) => {
     const libelle = `2031-2032 ${Math.random().toString(36).slice(2, 7)}`;
@@ -50,5 +50,22 @@ test.describe('E-01-03 Calendrier de l’année', () => {
 
     await page.getByRole('button', { name: 'Démarrer l’année' }).click();
     await expect(page.getByText('En cours', { exact: true })).toBeVisible();
+
+    // US-01-04 : l'année suivante reprend périodes et fermetures, décalées d'un an.
+    const libelleSuivant = libelle.replace('2031-2032', '2032-2033');
+    await page.getByRole('button', { name: 'Dupliquer pour l’année suivante' }).click();
+    const suivante = page.getByRole('dialog', { name: 'Année suivante' });
+    await expect(suivante.getByLabel('Libellé de l’année')).toHaveValue(libelleSuivant);
+    await expect(suivante.getByLabel('Début', { exact: true })).toHaveValue('2032-09-01');
+    await expect(suivante.getByRole('group', { name: 'Période 2' }).getByLabel(/^Fin/)).toHaveValue(
+      '2033-07-10',
+    );
+    await expect(
+      suivante.getByText('Vacances de Noël · du 19/12/2032 au 03/01/2033'),
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await suivante.getByRole('button', { name: 'Enregistrer' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: libelleSuivant })).toBeVisible();
+    await expect(page.getByText('Vacances · du 19/12/2032 au 03/01/2033')).toBeVisible();
   });
 });

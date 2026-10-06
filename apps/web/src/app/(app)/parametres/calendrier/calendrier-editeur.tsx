@@ -6,6 +6,7 @@ import {
   type CalendrierAnnee,
   type Etablissement,
   type Fermeture,
+  type PropositionDuplication,
 } from '@scolaly/contracts';
 import { Badge, Button, Card, cn, Dialog, DialogContent, Input, Label } from '@scolaly/ui';
 import Link from 'next/link';
@@ -45,7 +46,21 @@ export function CalendrierEditeur({
   modifiable: boolean;
 }) {
   const router = useRouter();
-  const [edition, setEdition] = useState<'nouvelle' | 'annee' | null>(null);
+  const [edition, setEdition] = useState<'nouvelle' | 'annee' | 'duplication' | null>(null);
+  const [proposition, setProposition] = useState<PropositionDuplication | null>(null);
+
+  async function dupliquer() {
+    if (!annee) return;
+    try {
+      const reponse = await fetch(`/api/annees/${annee.id}/duplication`);
+      if (!reponse.ok) throw new Error(String(reponse.status));
+      setProposition((await reponse.json()) as PropositionDuplication);
+      setErreur(null);
+      setEdition('duplication');
+    } catch {
+      setErreur(t.erreurDuplication);
+    }
+  }
   const [fermeture, setFermeture] = useState<Fermeture | 'nouvelle' | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -128,49 +143,56 @@ export function CalendrierEditeur({
                   <Badge tone={TONS[annee.statut]}>{t.statuts[annee.statut]}</Badge>
                 </div>
               </div>
-              {modifiableAnnee ? (
+              {modifiable ? (
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setEdition('annee');
-                    }}
-                  >
-                    {t.modifierAnnee}
+                  <Button variant="secondary" onClick={() => void dupliquer()}>
+                    {t.dupliquer}
                   </Button>
-                  {annee.statut === 'preparation' ? (
+                  {modifiableAnnee ? (
                     <>
                       <Button
                         variant="secondary"
-                        onClick={() =>
-                          void executer(`/api/annees/${annee.id}`, 'PATCH', {
-                            statut: 'en_cours',
-                          }).then((ok) => {
-                            if (ok) router.refresh();
-                          })
-                        }
-                      >
-                        {t.passerEnCours}
-                      </Button>
-                      <Button
-                        variant="ghost"
                         onClick={() => {
-                          setConfirmation({ type: 'suppression-annee' });
+                          setEdition('annee');
                         }}
                       >
-                        {t.supprimerAnnee}
+                        {t.modifierAnnee}
                       </Button>
+                      {annee.statut === 'preparation' ? (
+                        <>
+                          <Button
+                            variant="secondary"
+                            onClick={() =>
+                              void executer(`/api/annees/${annee.id}`, 'PATCH', {
+                                statut: 'en_cours',
+                              }).then((ok) => {
+                                if (ok) router.refresh();
+                              })
+                            }
+                          >
+                            {t.passerEnCours}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setConfirmation({ type: 'suppression-annee' });
+                            }}
+                          >
+                            {t.supprimerAnnee}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setConfirmation({ type: 'cloture' });
+                          }}
+                        >
+                          {t.cloturer}
+                        </Button>
+                      )}
                     </>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setConfirmation({ type: 'cloture' });
-                      }}
-                    >
-                      {t.cloturer}
-                    </Button>
-                  )}
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -282,6 +304,7 @@ export function CalendrierEditeur({
       <AnneeDialog
         mode={edition}
         annee={annee}
+        proposition={proposition}
         onFermer={() => {
           setEdition(null);
         }}
@@ -363,15 +386,20 @@ const cle = () => `p${String(++compteur)}`;
 function AnneeDialog({
   mode,
   annee,
+  proposition,
   onFermer,
   onEnregistre,
 }: {
-  mode: 'nouvelle' | 'annee' | null;
+  mode: 'nouvelle' | 'annee' | 'duplication' | null;
   annee: CalendrierAnnee | null;
+  /** Année suivante proposée par duplication (RG-01-05), à vérifier avant validation. */
+  proposition: PropositionDuplication | null;
   onFermer: () => void;
   onEnregistre: (id: string) => void;
 }) {
   const existante = mode === 'annee' ? annee : null;
+  const duplication = mode === 'duplication' ? proposition : null;
+  const base = existante ?? duplication;
   const [erreurs, setErreurs] = useState<Erreurs>(SANS_ERREUR);
   const [periodes, setPeriodes] = useState<PeriodeSaisie[]>([]);
   const [ouverte, setOuverte] = useState<typeof mode>(null);
@@ -383,10 +411,12 @@ function AnneeDialog({
     setPeriodes(
       existante
         ? existante.periodes.map((p) => ({ ...p, cle: p.id }))
-        : [
-            { cle: cle(), libelle: 'S1', dateDebut: '', dateFin: '' },
-            { cle: cle(), libelle: 'S2', dateDebut: '', dateFin: '' },
-          ],
+        : duplication
+          ? duplication.periodes.map((p) => ({ ...p, cle: cle() }))
+          : [
+              { cle: cle(), libelle: 'S1', dateDebut: '', dateFin: '' },
+              { cle: cle(), libelle: 'S2', dateDebut: '', dateFin: '' },
+            ],
     );
   }
 
@@ -407,6 +437,9 @@ function AnneeDialog({
         dateDebut,
         dateFin,
       })),
+      ...(duplication
+        ? { fermetures: duplication.fermetures, dupliqueDe: duplication.dupliqueDe }
+        : {}),
     };
     const resultat = existante
       ? await envoyer(`/api/annees/${existante.id}`, 'PATCH', corps, t.erreur)
@@ -426,15 +459,20 @@ function AnneeDialog({
       }}
     >
       <DialogContent
-        title={existante ? t.modifierAnnee : t.nouvelleAnnee}
+        title={existante ? t.modifierAnnee : duplication ? t.dupliquerTitre : t.nouvelleAnnee}
         className="top-[4vh] max-h-[92vh] max-w-2xl overflow-y-auto"
       >
-        <form className="flex flex-col gap-4 p-5" onSubmit={(event) => void onSubmit(event)}>
+        <form
+          key={mode ?? ''}
+          className="flex flex-col gap-4 p-5"
+          onSubmit={(event) => void onSubmit(event)}
+        >
+          {duplication ? <p className="text-sm text-muted">{t.aideDuplication}</p> : null}
           <Champ
             nom="libelle"
             label={t.champs.libelleAnnee}
             erreurs={erreurs}
-            defaultValue={existante?.libelle ?? ''}
+            defaultValue={base?.libelle ?? ''}
             placeholder="2026-2027"
             required
             maxLength={80}
@@ -445,7 +483,7 @@ function AnneeDialog({
               label={t.champs.dateDebut}
               erreurs={erreurs}
               type="date"
-              defaultValue={existante?.dateDebut ?? ''}
+              defaultValue={base?.dateDebut ?? ''}
               required
             />
             <Champ
@@ -453,7 +491,7 @@ function AnneeDialog({
               label={t.champs.dateFin}
               erreurs={erreurs}
               type="date"
-              defaultValue={existante?.dateFin ?? ''}
+              defaultValue={base?.dateFin ?? ''}
               required
             />
           </div>
@@ -481,6 +519,18 @@ function AnneeDialog({
               {t.ajouterPeriode}
             </Button>
           </fieldset>
+          {duplication && duplication.fermetures.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold">{t.fermeturesReprises}</h3>
+              <ul className="text-sm text-muted">
+                {duplication.fermetures.map((f) => (
+                  <li key={`${f.libelle}-${f.dateDebut}`}>
+                    {f.libelle} · {t.du(formatDate(f.dateDebut), formatDate(f.dateFin))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <MessageErreur erreurs={erreurs} champs={['libelle', 'dateDebut', 'dateFin']} />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={onFermer}>
