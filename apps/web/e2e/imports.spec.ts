@@ -14,7 +14,7 @@ test.describe('E-01-06 Assistant d’import', () => {
   }) => {
     await seConnecter(page);
     await page.goto('/personnes');
-    await page.getByRole('link', { name: 'Importer' }).click();
+    await page.getByRole('link', { name: 'Importer', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Importer des personnes');
     await expectNoAccessibilityViolations(page);
 
