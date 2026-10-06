@@ -5,10 +5,19 @@ import { LogOut, Monitor, Moon, Camera, ShieldCheck, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useSyncExternalStore } from 'react';
 import { fr } from '@/i18n/fr';
 import type { SessionUser } from '@/lib/session';
 
 const t = fr.coquille;
+/** Vrai dans le navigateur seulement : le serveur ne connaît pas le thème enregistré. */
+const sAbonner = () => () => undefined;
+const useDansLeNavigateur = () =>
+  useSyncExternalStore(
+    sAbonner,
+    () => true,
+    () => false,
+  );
 const THEMES = [
   { value: 'light', label: t.theme.clair, Icon: Sun },
   { value: 'dark', label: t.theme.sombre, Icon: Moon },
@@ -26,7 +35,9 @@ const initials = (name: string) =>
 /** Carte de la personne connectée : thème, sécurité du compte et déconnexion. */
 export function UserMenu({ user, ecole }: { user: SessionUser; ecole?: string | undefined }) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme: themeEnregistre, setTheme } = useTheme();
+  // Aucun thème coché au rendu serveur : évite l'écart d'hydratation avec le thème enregistré.
+  const theme = useDansLeNavigateur() ? themeEnregistre : undefined;
 
   async function signOut() {
     await fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => undefined);
