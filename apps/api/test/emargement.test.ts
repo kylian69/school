@@ -17,6 +17,7 @@ import {
   newId,
   organisation,
   personne,
+  presence,
   role,
   seance,
   seanceAttendu,
@@ -41,6 +42,7 @@ let app: NestFastifyApplication;
 const ecole = newId();
 const seanceId = newId();
 const autreSeanceId = newId();
+const seanceDegradeeId = newId();
 let intervenant: string;
 let autreIntervenant: string;
 let lea: string;
@@ -109,7 +111,7 @@ beforeAll(async () => {
   const noeId = await compte('noe.apprenant@exemple.test', 'apprenant');
   await compte('hugo.apprenant@exemple.test', 'apprenant');
   const debut = new Date(Date.now() - 60_000);
-  for (const id of [seanceId, autreSeanceId]) {
+  for (const id of [seanceId, autreSeanceId, seanceDegradeeId]) {
     await owner.db.insert(seance).values({
       id,
       organisationId: ecole,
@@ -122,6 +124,9 @@ beforeAll(async () => {
   for (const personneId of [leaId, noeId]) {
     await owner.db.insert(seanceAttendu).values({ organisationId: ecole, seanceId, personneId });
   }
+  await owner.db
+    .insert(seanceAttendu)
+    .values({ organisationId: ecole, seanceId: seanceDegradeeId, personneId: leaId });
   intervenant = await connexion('ines.intervenante@exemple.test');
   autreIntervenant = await connexion('igor.intervenant@exemple.test');
   lea = await connexion('lea.apprenante@exemple.test');
@@ -227,16 +232,45 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
 
   it('liste les séances à animer de l’intervenant et celles à émarger de l’apprenant', async () => {
     const aAnimer = (await appeler('GET', '/api/seances', intervenant)).json<SeanceProche[]>();
-    expect(aAnimer.map((s) => s.id).sort()).toEqual([seanceId, autreSeanceId].sort());
+    expect(aAnimer.map((s) => s.id).sort()).toEqual(
+      [seanceId, autreSeanceId, seanceDegradeeId].sort(),
+    );
     expect(aAnimer[0]?.intervenant).toBe('ines Fictif');
     expect((await appeler('GET', '/api/seances', autreIntervenant)).json<SeanceProche[]>()).toEqual(
       [],
     );
     const aEmarger = (await appeler('GET', '/api/moi/seances', lea)).json<SeanceProche[]>();
-    expect(aEmarger.map((s) => s.id)).toEqual([seanceId]);
+    expect(aEmarger.map((s) => s.id).sort()).toEqual([seanceId, seanceDegradeeId].sort());
     expect((await appeler('GET', '/api/moi/seances', horsListe)).json<SeanceProche[]>()).toEqual(
       [],
     );
     expect((await appeler('GET', '/api/seances', lea)).statusCode).toBe(403);
+  });
+});
+
+describe('Mode dégradé (architecture, section 5)', () => {
+  it('sans Valkey, ouvre l’appel et enregistre la présence directement en base, une seule fois', async () => {
+    const valkey = app.get<Redis>(VALKEY);
+    valkey.disconnect();
+    try {
+      const { statut, ouverture } = await ouvrir(seanceDegradeeId);
+      expect(statut).toBe(200);
+      const jeton = await jetonDe(ouverture);
+      const premier = await appeler('POST', '/api/emargement/scan', lea, { jeton });
+      expect(premier.json<ResultatScan>()).toMatchObject({ statut: 'present' });
+      const second = await appeler('POST', '/api/emargement/scan', lea, { jeton });
+      expect(second.json<ResultatScan>()).toMatchObject({ statut: 'deja-emarge' });
+      const lignes = await owner.db
+        .select()
+        .from(presence)
+        .where(eq(presence.seanceId, seanceDegradeeId));
+      expect(lignes).toHaveLength(1);
+      const direct = (
+        await appeler('GET', `/api/seances/${seanceDegradeeId}/appel`, intervenant)
+      ).json<AppelEnDirect>();
+      expect(direct.presents).toBe(1);
+    } finally {
+      await valkey.connect();
+    }
   });
 });

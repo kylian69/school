@@ -10,7 +10,7 @@ import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
 import { ENV, VALKEY } from '../../shared/tokens.js';
-import { CacheEmargement, cleDeSeance } from './cache-emargement.js';
+import { CacheEmargement, CacheIndisponible, cleDeSeance } from './cache-emargement.js';
 
 /** Ouverture de l'appel et liste en direct, pour l'intervenant (US-06-01, US-06-03). */
 @Injectable()
@@ -39,17 +39,22 @@ export class AppelService {
   /** Précharge la séance dans Valkey (RG-00-17) et donne à l'écran de quoi calculer le QR. */
   async ouvrir(tx: Transaction, access: Access, seanceId: string): Promise<OuvertureAppel> {
     const { seance: ligne, attendus } = await this.charger(tx, access, seanceId);
-    await this.cache.precharger(
-      seanceId,
-      {
-        organisationId: access.organisationId,
-        libelle: ligne.libelle,
-        debut: ligne.debut.getTime(),
-        fin: ligne.fin.getTime(),
-        distanciel: ligne.distanciel,
-      },
-      new Map(attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : []))),
-    );
+    // Sans Valkey, l'appel s'ouvre quand même : le scan passera en mode dégradé.
+    await this.cache
+      .precharger(
+        seanceId,
+        {
+          organisationId: access.organisationId,
+          libelle: ligne.libelle,
+          debut: ligne.debut.getTime(),
+          fin: ligne.fin.getTime(),
+          distanciel: ligne.distanciel,
+        },
+        new Map(attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : []))),
+      )
+      .catch((erreur: unknown) => {
+        if (!(erreur instanceof CacheIndisponible)) throw erreur;
+      });
     return {
       seanceId,
       libelle: ligne.libelle,
@@ -67,7 +72,10 @@ export class AppelService {
   async enDirect(tx: Transaction, access: Access, seanceId: string): Promise<AppelEnDirect> {
     const { attendus } = await this.charger(tx, access, seanceId);
     const [enCache, enBase] = await Promise.all([
-      this.cache.presences(seanceId),
+      this.cache.presences(seanceId).catch((erreur: unknown) => {
+        if (!(erreur instanceof CacheIndisponible)) throw erreur;
+        return [];
+      }),
       tx.select().from(presence).where(eq(presence.seanceId, seanceId)),
     ]);
     const scans = new Map<string, { scanneLe: string; rejoue: boolean }>();

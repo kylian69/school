@@ -29,37 +29,76 @@ export function cleDeSeance(cleMaitresse: Buffer, organisationId: string, seance
   );
 }
 
-export class CacheEmargement {
+/** Valkey ne répond pas : l'émargement bascule en mode dégradé. */
+export class CacheIndisponible extends Error {
+  override name = 'CacheIndisponible';
+}
+
+/** Où le scan lit la séance et l'attendu, et écrit la présence (cache, ou base en mode dégradé). */
+export interface Magasin {
+  seance(seanceId: string): Promise<SeanceEnCache | null>;
+  attendu(seanceId: string, userId: string): Promise<string | null>;
+  enregistrer(
+    presence: PresenceEnCache,
+    finMs: number,
+  ): Promise<{ scanneLe: string; rejoue: boolean } | null>;
+}
+
+/** Toute erreur de Valkey devient CacheIndisponible. */
+async function surValkey<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (erreur) {
+    throw new CacheIndisponible('Valkey indisponible', { cause: erreur });
+  }
+}
+
+export class CacheEmargement implements Magasin {
   constructor(private readonly valkey: Redis) {}
 
+  /**
+   * Connexion coupée : inutile d'attendre les nouvelles tentatives du client. Une connexion pas
+   * encore ouverte (connexion paresseuse, au démarrage) n'est pas une panne : elle s'ouvre à la
+   * première commande.
+   */
+  disponible() {
+    return !['reconnecting', 'close', 'end'].includes(this.valkey.status);
+  }
+
   async precharger(seanceId: string, seance: SeanceEnCache, attendus: ReadonlyMap<string, string>) {
-    await this.valkey.multi(commandesPrechargement(seanceId, seance, attendus)).exec();
+    await surValkey(() =>
+      this.valkey.multi(commandesPrechargement(seanceId, seance, attendus)).exec(),
+    );
   }
 
   async seance(seanceId: string): Promise<SeanceEnCache | null> {
-    return lireSeanceEnCache(await this.valkey.hgetall(CLES_EMARGEMENT.seance(seanceId)));
+    return lireSeanceEnCache(
+      await surValkey(() => this.valkey.hgetall(CLES_EMARGEMENT.seance(seanceId))),
+    );
   }
 
   attendu(seanceId: string, userId: string): Promise<string | null> {
-    return this.valkey.hget(CLES_EMARGEMENT.attendus(seanceId), userId);
+    return surValkey(() => this.valkey.hget(CLES_EMARGEMENT.attendus(seanceId), userId));
   }
 
   /** Renvoie la présence déjà enregistrée si l'apprenant avait émargé, sinon rien. */
   async enregistrer(presence: PresenceEnCache, finMs: number): Promise<PresenceEnCache | null> {
-    const existante = (await this.valkey.eval(
-      ENREGISTRER,
-      2,
-      CLES_EMARGEMENT.presences(presence.seanceId),
-      CLES_EMARGEMENT.flux,
-      presence.personneId,
-      JSON.stringify(presence),
-      String(expirationCache(finMs)),
+    const existante = (await surValkey(() =>
+      this.valkey.eval(
+        ENREGISTRER,
+        2,
+        CLES_EMARGEMENT.presences(presence.seanceId),
+        CLES_EMARGEMENT.flux,
+        presence.personneId,
+        JSON.stringify(presence),
+        String(expirationCache(finMs)),
+      ),
     )) as string | null;
     return existante ? (JSON.parse(existante) as PresenceEnCache) : null;
   }
 
   async presences(seanceId: string): Promise<PresenceEnCache[]> {
-    const valeurs = await this.valkey.hvals(CLES_EMARGEMENT.presences(seanceId));
+    const valeurs = await surValkey(() => this.valkey.hvals(CLES_EMARGEMENT.presences(seanceId)));
     return valeurs.map((v) => JSON.parse(v) as PresenceEnCache);
   }
 }

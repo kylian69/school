@@ -190,6 +190,13 @@
       "when": 1791293625467,
       "tag": "0026_emargement_prechargement",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791294745227,
+      "tag": "0027_emargement_mode_degrade",
+      "breakpoints": true
     }
   ]
 }
