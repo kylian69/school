@@ -197,6 +197,20 @@ const detailPersonne = (p) => ({
 });
 // Ma photo (US-01-20) : celle de Camille, déposée par elle-même et en attente de validation.
 const maPhoto = { contenu: null, statut: null };
+const SEANCE_ID = '0192f0a4-1b2c-7d3e-8f40-0000000000aa';
+let emargementLea = null;
+const seanceFictive = () => {
+  const debut = new Date(Date.now() - 60_000);
+  return {
+    id: SEANCE_ID,
+    libelle: 'Droit des affaires',
+    debut: debut.toISOString(),
+    fin: new Date(debut.getTime() + 3 * 3600_000).toISOString(),
+    distanciel: false,
+    intervenant: 'Sophie Arnaud',
+  };
+};
+
 const lireCorps = async (request) => {
   const morceaux = [];
   for await (const morceau of request) morceaux.push(morceau);
@@ -451,13 +465,14 @@ createServer(async (request, response) => {
             'personnes:lire',
             'calendrier:gerer',
             'calendrier:lire',
+            'emargement:animer',
             'organisation:lire',
             'organisation:modifier',
             'roles:attribuer',
             'roles:gerer',
           ]
         : [],
-      modules: active ? ['socle'] : [],
+      modules: active ? ['socle', 'emargement'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
@@ -597,6 +612,57 @@ createServer(async (request, response) => {
       associees: 2,
       sansCorrespondance: ['INCONNU-42.jpg'],
       rejetes: [{ fichier: 'abimee.jpg', motif: 'Seuls les formats JPEG et PNG sont acceptés.' }],
+    });
+  }
+  // Émargement : une séance fictive en cours, deux attendus ; le code 123456 est accepté.
+  if (path === '/api/seances' || path === '/api/moi/seances') {
+    return json(200, [seanceFictive()]);
+  }
+  if (path === `/api/seances/${SEANCE_ID}/appel/ouverture` && request.method === 'POST') {
+    const s = seanceFictive();
+    return json(200, {
+      seanceId: SEANCE_ID,
+      libelle: s.libelle,
+      debut: s.debut,
+      fin: s.fin,
+      cle: Buffer.alloc(32, 3).toString('base64url'),
+      periodeSecondes: 15,
+      maintenant: new Date().toISOString(),
+    });
+  }
+  if (path === `/api/seances/${SEANCE_ID}/appel`) {
+    const liste = [
+      {
+        personneId: '0192f0a4-1b2c-7d3e-8f40-000000000001',
+        nom: 'Martin',
+        prenom: 'Léa',
+        scanneLe: emargementLea,
+        rejoue: false,
+      },
+      {
+        personneId: '0192f0a4-1b2c-7d3e-8f40-000000000002',
+        nom: 'Petit',
+        prenom: 'Noé',
+        scanneLe: null,
+        rejoue: false,
+      },
+    ];
+    return json(200, { presents: liste.filter((l) => l.scanneLe).length, attendus: 2, liste });
+  }
+  if (path === '/api/emargement/code' && request.method === 'POST') {
+    const { code } = await readBody(request);
+    if (code !== '123456') {
+      return json(400, {
+        message: 'Ce code n’est pas le bon : saisissez celui affiché maintenant.',
+      });
+    }
+    emargementLea ??= new Date().toISOString();
+    return json(200, {
+      statut: 'present',
+      seance: seanceFictive().libelle,
+      scanneLe: emargementLea,
+      retardMinutes: 0,
+      rejoue: false,
     });
   }
   if (path === '/api/moi/photo') {

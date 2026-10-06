@@ -43,9 +43,12 @@ export class AuditController {
       recherche,
       request.ip,
     );
-    await reply
-      .header('content-type', 'text/csv; charset=utf-8')
-      .header('content-disposition', 'attachment; filename="journal-audit.csv"')
-      .send(contenu);
+    // L'export n'est remis qu'une fois sa trace validée en base.
+    RequestContext.apresValidation(async () => {
+      await reply
+        .header('content-type', 'text/csv; charset=utf-8')
+        .header('content-disposition', 'attachment; filename="journal-audit.csv"')
+        .send(contenu);
+    });
   }
 }

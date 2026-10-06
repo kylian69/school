@@ -42,6 +42,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'audit:lire',
       'apparence:gerer',
       'corbeille:restaurer',
+      'emargement:animer',
     ],
   },
   {
@@ -66,7 +67,13 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
     perimetre: 'formation',
     doubleAuthentificationRequise: false,
     phase: 'MVP',
-    permissions: ['calendrier:lire', 'personnes:lire', 'personnel:inviter', 'personnes:exporter'],
+    permissions: [
+      'calendrier:lire',
+      'personnes:lire',
+      'personnel:inviter',
+      'personnes:exporter',
+      'emargement:animer',
+    ],
   },
   {
     code: 'scolarite',
@@ -84,6 +91,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'personnes:voir-en-tant-que',
       'comptes:desactiver',
       'corbeille:restaurer',
+      'emargement:animer',
     ],
   },
   {
@@ -93,7 +101,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
     perimetre: 'soi',
     doubleAuthentificationRequise: false,
     phase: 'MVP',
-    permissions: [],
+    permissions: ['emargement:animer'],
   },
   {
     code: 'apprenant',

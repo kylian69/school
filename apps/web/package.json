@@ -17,6 +17,7 @@
     "@scolaly/contracts": "workspace:*",
     "@scolaly/ui": "workspace:*",
     "geist": "catalog:",
+    "jsqr": "catalog:",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-themes": "catalog:",

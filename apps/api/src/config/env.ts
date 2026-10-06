@@ -18,6 +18,10 @@ const EnvSchema = z
     /** Origine de l'interface web, seule autorisée à appeler l'authentification. */
     WEB_ORIGIN: z.url(),
     BETTER_AUTH_SECRET: z.string().min(32, 'au moins 32 caractères'),
+    /** Clé maîtresse (base64, 32 octets) : chiffrement par champ et clés des QR d'émargement. */
+    ENCRYPTION_MASTER_KEY_V1: z
+      .base64('attendue en base64')
+      .refine((v) => Buffer.from(v, 'base64').length === 32, '32 octets attendus'),
     /** Stockage compatible S3 (Garage en auto-hébergement, ADR 0003 ; passerelle S3 de Ceph en SaaS). */
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().default('garage'),

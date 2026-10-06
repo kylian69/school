@@ -17,6 +17,7 @@ export const OPENAPI_GENERATION_ENV: Env = {
   PUBLIC_URL: 'http://localhost:3001',
   WEB_ORIGIN: 'http://localhost:3000',
   BETTER_AUTH_SECRET: 'generation-openapi-sans-connexion-reelle',
+  ENCRYPTION_MASTER_KEY_V1: Buffer.alloc(32).toString('base64'),
   S3_REGION: 'garage',
   S3_BUCKET: 'generation',
   S3_ACCESS_KEY_ID: 'generation',

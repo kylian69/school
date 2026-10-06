@@ -7,3 +7,4 @@ export * from './plateforme.js';
 export * from './structure.js';
 export * from './platform.js';
 export * from './imports.js';
+export * from './emargement.js';

@@ -1,0 +1,7 @@
+# Recherche de secrets (gitleaks) : règles par défaut, plus les exclusions ci-dessous.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Données locales de la preuve de charge (sessions fictives de l'environnement de développement), commitées par erreur puis retirées : jamais analysées."
+paths = ['''^infra/charge/\.donnees/''']

@@ -118,6 +118,40 @@ jobs:
           path: apps/web/playwright-report
           retention-days: 7
 
+  charge-emargement:
+    # ADR 0001 : sur les PR, scénario k6 réduit qui vérifie 0 perte et 0 doublon, sans seuil de
+    # latence (les exécuteurs hébergés ne sont pas représentatifs) ; la mesure à 5 000 scans
+    # tourne sur la machine de référence.
+    name: Charge de l'émargement (scénario réduit, k6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Services de développement (PostgreSQL, Valkey, migrations)
+        run: pnpm dev:up
+      - run: pnpm turbo run build --filter=@scolaly/api --filter=@scolaly/worker
+      - name: API et worker
+        run: |
+          (cd apps/api && LOG_LEVEL=warn nohup node --env-file=../../.env dist/main.js > /tmp/api.log 2>&1 &)
+          (cd apps/worker && LOG_LEVEL=warn nohup node --env-file=../../.env dist/main.js > /tmp/worker.log 2>&1 &)
+          for i in $(seq 1 60); do
+            curl -s -o /dev/null -X POST -H 'content-type: application/json' -d '{}' \
+              http://localhost:3001/api/emargement/scan && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: 500 apprenants, 5 % de répétitions, 0 perte et 0 doublon
+        run: APPRENANTS=500 SEUIL_P99=0 sh infra/charge/lancer.sh
+      - name: Journaux de l'API et du worker
+        if: failure()
+        run: tail -n 100 /tmp/api.log /tmp/worker.log
+
   installation:
     name: Installation Docker Compose (test de fumée)
     runs-on: ubuntu-latest

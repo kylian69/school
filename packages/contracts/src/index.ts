@@ -16,3 +16,5 @@ export * from './personnes.js';
 export * from './imports.js';
 export * from './audit.js';
 export * from './corbeille.js';
+export * from './emargement-jeton.js';
+export * from './emargement.js';

@@ -1,18 +1,43 @@
 import type { SecondaryStorage } from 'better-auth';
+import { PREFIXE_SESSIONS } from '@scolaly/contracts';
 import { Redis } from 'ioredis';
 
+/**
+ * Client Valkey de l'API. Une commande prend quelques millisecondes : au-delà d'une seconde, elle
+ * échoue, et l'émargement passe aussitôt en mode dégradé au lieu d'attendre les nouvelles
+ * tentatives pendant une coupure.
+ */
 export function createValkey(url: string): Redis {
-  return new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
+  return new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3, commandTimeout: 1000 });
 }
 
-/** Stockage secondaire de Better Auth (sessions en cache, compteurs de limitation de débit). */
-export function valkeySecondaryStorage(valkey: Redis, prefix = 'auth:'): SecondaryStorage {
+/**
+ * Stockage secondaire de Better Auth (sessions en cache, compteurs de limitation de débit).
+ * Si Valkey ne répond pas, la lecture et l'écriture d'une session se rabattent sur la base (mode
+ * dégradé de l'émargement) ; la suppression et les compteurs restent stricts : une révocation ou
+ * une limitation ne sont jamais ignorées en silence.
+ */
+export function valkeySecondaryStorage(valkey: Redis, prefix = PREFIXE_SESSIONS): SecondaryStorage {
+  // Connexion coupée : on n'attend pas les nouvelles tentatives du client, on lit la base.
+  const coupe = () => ['reconnecting', 'close', 'end'].includes(valkey.status);
   return {
-    get: (key) => valkey.get(prefix + key),
+    get: async (key) => {
+      if (coupe()) return null;
+      try {
+        return await valkey.get(prefix + key);
+      } catch {
+        return null;
+      }
+    },
     getAndDelete: (key) => valkey.getdel(prefix + key),
     set: async (key, value, ttl) => {
-      if (ttl) await valkey.set(prefix + key, value, 'EX', ttl);
-      else await valkey.set(prefix + key, value);
+      if (coupe()) return;
+      try {
+        if (ttl) await valkey.set(prefix + key, value, 'EX', ttl);
+        else await valkey.set(prefix + key, value);
+      } catch {
+        // Session gardée en base seulement : relue de là tant que Valkey ne répond pas.
+      }
     },
     delete: async (key) => {
       await valkey.del(prefix + key);
