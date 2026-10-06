@@ -6,6 +6,7 @@ import {
   type Formation,
   type ListeFormations,
   type Maquette,
+  type ResultatImportMaquette,
   type ResultatSimulation,
 } from '@scolaly/contracts';
 import {
@@ -636,5 +637,108 @@ describe('E-02-10 règles de l’école', () => {
       (await requete('GET', '/api/referentiel/regles', admin())).json<{ regles: unknown[] }>()
         .regles,
     ).toEqual([]);
+  });
+});
+
+describe('US-02-02 RG-02-21 import d’une maquette et de compétences', () => {
+  let version: string;
+  const deposer = (url: string, csv: string) =>
+    app.inject({
+      method: 'POST',
+      url,
+      headers: { cookie: admin(), origin: WEB_ORIGIN, 'content-type': 'text/csv' },
+      payload: csv,
+    });
+
+  beforeAll(async () => {
+    const reponse = await requete('POST', '/api/formations', admin(), {
+      ...BACHELOR,
+      intitule: 'BTS importé',
+      type: 'bts',
+      niveau: 5,
+      dureeAnnees: 2,
+      codeRncp: '',
+    });
+    version = reponse.json<Formation>().versions[0]?.id ?? '';
+  });
+
+  const MAQUETTE = [
+    'Bloc;Intitulé du bloc;UE;Intitulé de l’UE;Semestre;ECTS;Coefficient UE;Module;Intitulé du module;CM;TD',
+    'BC1;Vendre;UE1;Relation client;S1;30;2;M1;Techniques de vente;20;10,5',
+    'BC1;;UE1;;S1;30;2;M2;Négociation;;12',
+    ';;UE2;Culture;S2;30;1;;;;',
+  ].join('\n');
+
+  it('vérifie le fichier sans rien écrire (aperçu), puis l’importe tout ou rien', async () => {
+    const apercu = await deposer(`/api/maquettes/${version}/import?apercu=true`, MAQUETTE);
+    expect(apercu.statusCode, apercu.body).toBe(200);
+    expect(apercu.json<ResultatImportMaquette>()).toMatchObject({
+      apercu: true,
+      importe: false,
+      blocs: 1,
+      ues: 2,
+      modules: 2,
+      erreurs: [],
+      avertissements: ['L’UE UE2 n’a aucun module : elle sera créée vide.'],
+      maquette: null,
+    });
+    const vide = (await requete('GET', `/api/maquettes/${version}`, admin())).json<Maquette>();
+    expect(vide.ues).toEqual([]);
+
+    const importe = await deposer(`/api/maquettes/${version}/import`, MAQUETTE);
+    const resultat = importe.json<ResultatImportMaquette>();
+    expect(resultat.importe).toBe(true);
+    expect(resultat.maquette?.totaux).toMatchObject({ ects: 60, heuresTotal: 42.5 });
+    expect(resultat.maquette?.ues.find((u) => u.code === 'UE1')?.blocId).toBe(
+      resultat.maquette?.blocs[0]?.id,
+    );
+  });
+
+  it('refuse un second import des mêmes UE et rapporte les erreurs ligne par ligne', async () => {
+    const doublon = await deposer(`/api/maquettes/${version}/import`, MAQUETTE);
+    expect(doublon.json<ResultatImportMaquette>().erreurs).toContainEqual({
+      ligne: null,
+      message: 'L’UE UE1 existe déjà dans cette maquette.',
+    });
+    const fautif = await deposer(
+      `/api/maquettes/${version}/import`,
+      'UE;Intitulé de l’UE;Semestre;ECTS\nUE7;Stage;S5;x',
+    );
+    expect(fautif.json<ResultatImportMaquette>()).toMatchObject({
+      importe: false,
+      erreurs: [
+        { ligne: 2, message: 'L’UE UE7 est en 3e année : la formation dure 2 an(s).' },
+        { ligne: 2, message: 'ECTS illisibles pour l’UE UE7.' },
+      ],
+    });
+    const format = await app.inject({
+      method: 'POST',
+      url: `/api/maquettes/${version}/import`,
+      headers: { cookie: admin(), origin: WEB_ORIGIN, 'content-type': 'application/json' },
+      payload: {},
+    });
+    expect(format.statusCode).toBe(400);
+  });
+
+  it('importe le référentiel de compétences et le rattache aux modules par leur code', async () => {
+    const csv = [
+      'Bloc;Compétence;Intitulé de la compétence;Critères;Modules',
+      'BC1;C1.1;Conseiller un client;"Besoin reformulé ; Offre adaptée";M1 M2',
+      'BC2;C2.1;Fidéliser;;M9',
+    ].join('\n');
+    const refus = await deposer(`/api/maquettes/${version}/import?type=competences`, csv);
+    expect(refus.json<ResultatImportMaquette>().erreurs).toEqual([
+      { ligne: null, message: 'Compétence C2.1 : le module M9 n’existe pas dans cette maquette.' },
+    ]);
+    const reponse = await deposer(
+      `/api/maquettes/${version}/import?type=competences`,
+      csv.replace('M9', 'M1'),
+    );
+    const resultat = reponse.json<ResultatImportMaquette>();
+    expect(resultat).toMatchObject({ importe: true, blocs: 1, competences: 2 });
+    const c11 = resultat.maquette?.competences.find((c) => c.code === 'C1.1');
+    expect(c11).toMatchObject({ criteres: ['Besoin reformulé', 'Offre adaptée'] });
+    expect(c11?.moduleIds).toHaveLength(2);
+    expect(resultat.maquette?.blocs.map((b) => b.code)).toEqual(['BC1', 'BC2']);
   });
 });

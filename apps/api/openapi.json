@@ -1502,6 +1502,31 @@
         }
       }
     },
+    "/api/maquettes/{version}/import": {
+      "post": {
+        "operationId": "MaquettesController.importer",
+        "summary": "Importer une maquette ou un référentiel de compétences (corps text/csv ou .xlsx), tout ou rien",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "referentiel:gerer"
+          ],
+          "scope": "formation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatImportMaquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/maquettes/{version}/modules": {
       "post": {
         "operationId": "MaquettesController.creerModule",
@@ -7577,6 +7602,85 @@
         "required": [
           "email",
           "compteExistant"
+        ],
+        "additionalProperties": false
+      },
+      "ResultatImportMaquette": {
+        "type": "object",
+        "properties": {
+          "apercu": {
+            "type": "boolean"
+          },
+          "importe": {
+            "type": "boolean"
+          },
+          "blocs": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "ues": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "modules": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "competences": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "erreurs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ligne": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ligne",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "avertissements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maquette": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Maquette"
+              }
+            ]
+          }
+        },
+        "required": [
+          "apercu",
+          "importe",
+          "blocs",
+          "ues",
+          "modules",
+          "competences",
+          "erreurs",
+          "avertissements",
+          "maquette"
         ],
         "additionalProperties": false
       },

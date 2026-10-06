@@ -26,8 +26,10 @@ import {
   ModificationModule,
   ModificationUe,
   NouvelleFormation,
+  ParametresImportMaquette,
   RechercheFormations,
   RegleBibliotheque,
+  ResultatImportMaquette,
   ResultatSimulation,
   SaisieBloc,
   SaisieCompetence,
@@ -45,6 +47,8 @@ import { RequestContext } from '../../access/request-context.js';
 import { ApiContract } from '../../contracts/api-contract.js';
 import { BibliothequeService } from './bibliotheque.service.js';
 import { FormationsService } from './formations.service.js';
+import { ImportMaquetteService } from './import-maquette.service.js';
+import { lireFichierTableur } from '../../shared/tableur.js';
 import { MaquettesService } from './maquettes.service.js';
 
 const LECTURE = ['referentiel:lire', 'referentiel:gerer', 'referentiel:publier'] as const;
@@ -118,7 +122,28 @@ export class FormationsController {
 /** Éditeur de maquette, versions, règles et simulateur (E-02-02, E-02-03, E-02-09). */
 @Controller('api/maquettes/:version')
 export class MaquettesController {
-  constructor(private readonly maquettes: MaquettesService) {}
+  constructor(
+    private readonly maquettes: MaquettesService,
+    private readonly imports: ImportMaquetteService,
+  ) {}
+
+  @Post('import')
+  @HttpCode(200)
+  @RequirePermission('referentiel:gerer', 'formation')
+  @ApiContract({
+    summary:
+      'Importer une maquette ou un référentiel de compétences (corps text/csv ou .xlsx), tout ou rien',
+    query: ParametresImportMaquette,
+    response: ResultatImportMaquette,
+  })
+  async importer(
+    @Param('version', ParseUUIDPipe) version: string,
+    @Query() parametres: ParametresImportMaquette,
+    @Req() request: ScolalyRequest,
+  ) {
+    const tableau = await lireFichierTableur(request.body, request.headers['content-type']);
+    return this.imports.importer(...ctx(), version, parametres, tableau, request.ip);
+  }
 
   @Get()
   @RequirePermission(LECTURE, 'formation')

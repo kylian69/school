@@ -910,6 +910,32 @@ export const fr = {
       total: 'Total',
       coefEcts: (coef: string, ects: string) => `Coef. ${coef} · ${ects} ECTS`,
     },
+    import: {
+      boutonMaquette: 'Importer une maquette',
+      boutonCompetences: 'Importer des compétences',
+      titreMaquette: 'Importer une maquette (Excel ou CSV)',
+      titreCompetences: 'Importer un référentiel de compétences (Excel ou CSV)',
+      aide: 'Le fichier est d’abord vérifié, sans rien enregistrer. Son contenu s’ajoute ensuite à la version, en entier ou pas du tout.',
+      colonnes: 'Colonnes attendues :',
+      modeleMaquette:
+        'Bloc;Intitulé du bloc;UE;Intitulé de l’UE;Année;Semestre;ECTS;Coefficient UE;Option;Module;Intitulé du module;Coefficient module;CM;TD;TP;Projet;E-learning',
+      modeleCompetences:
+        'Bloc;Intitulé du bloc;Compétence;Intitulé de la compétence;Critères;Modules',
+      telecharger: 'Télécharger le modèle (CSV)',
+      fichier: 'Fichier (.xlsx ou .csv, 10 Mo au plus)',
+      formatInconnu: 'Format non reconnu : déposez un fichier .xlsx ou .csv.',
+      verifier: 'Vérifier le fichier',
+      importer: 'Importer',
+      resumeMaquette: (blocs: number, ues: number, modules: number) =>
+        `${blocs} bloc${blocs > 1 ? 's' : ''}, ${ues} UE, ${modules} module${modules > 1 ? 's' : ''}`,
+      resumeCompetences: (blocs: number, competences: number) =>
+        `${blocs} bloc${blocs > 1 ? 's' : ''}, ${competences} compétence${competences > 1 ? 's' : ''}`,
+      pret: (resume: string) => `Fichier valide : ${resume} à ajouter.`,
+      importe: (resume: string) => `Import terminé : ${resume} ajoutés.`,
+      aCorriger: (n: number) =>
+        `${n} erreur${n > 1 ? 's' : ''} à corriger dans le fichier : rien n’a été importé.`,
+      ligne: (ligne: number, message: string) => `Ligne ${ligne} : ${message}`,
+    },
     regles: {
       titre: 'Règles de validation',
       mode: 'Mode de validation',
