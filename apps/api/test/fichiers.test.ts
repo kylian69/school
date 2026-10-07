@@ -100,6 +100,7 @@ describe('Antivirus (clamd, protocole INSTREAM)', () => {
     const sansAntivirus = {
       ...testEnv(),
       S3_FORCE_PATH_STYLE: 'true',
+      ANNUAIRE_ENTREPRISES_DISABLED: 'true',
       ANTIVIRUS_DISABLED: 'false',
       CLAMAV_HOST: undefined,
     };

@@ -30,6 +30,8 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
     S3_FORCE_PATH_STYLE: true,
     CLAMAV_PORT: 3310,
     ANTIVIRUS_DISABLED: true,
+    ANNUAIRE_ENTREPRISES_URL: 'http://127.0.0.1:9',
+    ANNUAIRE_ENTREPRISES_DISABLED: true,
     ...overrides,
   };
 }

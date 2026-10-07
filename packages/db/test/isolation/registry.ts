@@ -39,6 +39,8 @@ import {
   affectationGroupe,
   salle,
   seancePublic,
+  contactEntreprise,
+  entreprise,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -232,6 +234,19 @@ async function insertAffectation(db: Database, organisationId: string): Promise<
   return id;
 }
 
+async function insertEntreprise(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(entreprise).values({
+    id,
+    organisationId,
+    // SIRET distinct à chaque appel (unique dans l'école) ; la clé n'est pas contrôlée ici.
+    siret: `123456789${String(Math.floor(Math.random() * 100_000)).padStart(5, '0')}`,
+    siren: '123456789',
+    raisonSociale: 'Entreprise fictive',
+  });
+  return id;
+}
+
 export const sampleRows: Record<string, ScopedTableSample> = {
   formation: {
     insert: async (db, organisationId) => {
@@ -358,6 +373,21 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         organisationId,
         seanceId: await insertSeance(db, organisationId),
         promotionId: await insertPromotion(db, organisationId),
+      });
+    },
+  },
+  entreprise: {
+    insert: async (db, organisationId) => {
+      await insertEntreprise(db, organisationId);
+    },
+  },
+  contact_entreprise: {
+    insert: async (db, organisationId) => {
+      await db.insert(contactEntreprise).values({
+        organisationId,
+        entrepriseId: await insertEntreprise(db, organisationId),
+        personneId: await insertPersonne(db, organisationId),
+        type: 'tuteur',
       });
     },
   },

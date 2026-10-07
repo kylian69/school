@@ -253,6 +253,20 @@
       "when": 1791326235974,
       "tag": "0035_seance_attendu_calcule",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791358122765,
+      "tag": "0036_entreprises",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791358124431,
+      "tag": "0037_entreprises_permissions",
+      "breakpoints": true
     }
   ]
 }

@@ -570,6 +570,68 @@
         }
       }
     },
+    "/api/contacts-entreprise/{id}": {
+      "patch": {
+        "operationId": "EntreprisesController.modifierContact",
+        "summary": "Modifier un contact",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationContact"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactEntreprise"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "EntreprisesController.retirerContact",
+        "summary": "Retirer un contact de l’entreprise",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/corbeille": {
       "get": {
         "operationId": "CorbeilleController.lister",
@@ -760,6 +822,185 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultatScan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entreprises": {
+      "get": {
+        "operationId": "EntreprisesController.lister",
+        "summary": "Entreprises de l’école, filtrables",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:lire",
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeEntreprises"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "EntreprisesController.creer",
+        "summary": "Créer une entreprise à partir de son SIRET (US-03-01)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelleEntreprise"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entreprise"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entreprises/{id}": {
+      "get": {
+        "operationId": "EntreprisesController.lire",
+        "summary": "Une entreprise, ses contacts et ses tuteurs",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:lire",
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entreprise"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "EntreprisesController.modifier",
+        "summary": "Modifier une entreprise (IDCC, OPCO, statut…)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationEntreprise"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entreprise"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entreprises/{id}/contacts": {
+      "post": {
+        "operationId": "EntreprisesController.ajouterContact",
+        "summary": "Ajouter un contact ou un tuteur (RG-03-03)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouveauContact"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactEntreprise"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entreprises/siret/{siret}": {
+      "get": {
+        "operationId": "EntreprisesController.rechercherSiret",
+        "summary": "Rechercher un SIRET dans l’école puis dans l’annuaire public (RG-03-01)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:lire",
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RechercheSiret"
                 }
               }
             }
@@ -2259,6 +2500,32 @@
                       ]
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/opcos": {
+      "get": {
+        "operationId": "EntreprisesController.opcos",
+        "summary": "Opérateurs de compétences (table datée)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "entreprises:lire",
+            "entreprises:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeOpcos"
                 }
               }
             }
@@ -5289,6 +5556,79 @@
         ],
         "additionalProperties": false
       },
+      "ContactEntreprise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "personne": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "compteEtat": {
+                "type": "string",
+                "enum": [
+                  "cree",
+                  "invite",
+                  "actif",
+                  "desactive"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom",
+              "email",
+              "compteEtat"
+            ],
+            "additionalProperties": false
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "rh",
+              "dirigeant",
+              "tuteur",
+              "autre"
+            ]
+          },
+          "fonction": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dansEntrepriseDepuis": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "id",
+          "personne",
+          "type",
+          "fonction",
+          "dansEntrepriseDepuis"
+        ],
+        "additionalProperties": false
+      },
       "ContexteSession": {
         "type": "object",
         "properties": {
@@ -5389,6 +5729,8 @@
                 "salles:lire",
                 "salles:gerer",
                 "affectations:gerer",
+                "entreprises:lire",
+                "entreprises:gerer",
                 "emargement:animer"
               ]
             }
@@ -5889,6 +6231,90 @@
         "required": [
           "id",
           "maquette"
+        ],
+        "additionalProperties": false
+      },
+      "Entreprise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "siret": {
+            "type": "string"
+          },
+          "siren": {
+            "type": "string"
+          },
+          "raisonSociale": {
+            "type": "string"
+          },
+          "adresse": {
+            "nullable": true,
+            "type": "string"
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string"
+          },
+          "naf": {
+            "nullable": true,
+            "type": "string"
+          },
+          "effectif": {
+            "nullable": true,
+            "type": "string"
+          },
+          "idcc": {
+            "nullable": true,
+            "type": "string"
+          },
+          "opco": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "active",
+              "fermee"
+            ]
+          },
+          "aVerifier": {
+            "type": "boolean"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContactEntreprise"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "siret",
+          "siren",
+          "raisonSociale",
+          "adresse",
+          "codePostal",
+          "ville",
+          "naf",
+          "effectif",
+          "idcc",
+          "opco",
+          "statut",
+          "aVerifier",
+          "contacts",
+          "modifiable"
         ],
         "additionalProperties": false
       },
@@ -6612,6 +7038,105 @@
         ],
         "additionalProperties": false
       },
+      "ListeEntreprises": {
+        "type": "object",
+        "properties": {
+          "entreprises": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "siret": {
+                  "type": "string"
+                },
+                "siren": {
+                  "type": "string"
+                },
+                "raisonSociale": {
+                  "type": "string"
+                },
+                "adresse": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "codePostal": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "ville": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "naf": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "effectif": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "idcc": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "opco": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "statut": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "fermee"
+                  ]
+                },
+                "aVerifier": {
+                  "type": "boolean"
+                },
+                "modifiable": {
+                  "type": "boolean"
+                },
+                "tuteurs": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "siret",
+                "siren",
+                "raisonSociale",
+                "adresse",
+                "codePostal",
+                "ville",
+                "naf",
+                "effectif",
+                "idcc",
+                "opco",
+                "statut",
+                "aVerifier",
+                "modifiable",
+                "tuteurs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "entreprises",
+          "creation"
+        ],
+        "additionalProperties": false
+      },
       "ListeFormations": {
         "type": "object",
         "properties": {
@@ -6628,6 +7153,21 @@
         "required": [
           "formations",
           "creation"
+        ],
+        "additionalProperties": false
+      },
+      "ListeOpcos": {
+        "type": "object",
+        "properties": {
+          "opcos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Opco"
+            }
+          }
+        },
+        "required": [
+          "opcos"
         ],
         "additionalProperties": false
       },
@@ -7252,6 +7792,32 @@
         },
         "additionalProperties": false
       },
+      "ModificationContact": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "rh",
+              "dirigeant",
+              "tuteur",
+              "autre"
+            ]
+          },
+          "fonction": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          },
+          "dansEntrepriseDepuis": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "additionalProperties": false
+      },
       "ModificationCorrespondance": {
         "type": "object",
         "properties": {
@@ -7281,6 +7847,49 @@
         "required": [
           "correspondance"
         ],
+        "additionalProperties": false
+      },
+      "ModificationEntreprise": {
+        "type": "object",
+        "properties": {
+          "raisonSociale": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "adresse": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 80
+          },
+          "idcc": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10
+          },
+          "opco": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "active",
+              "fermee"
+            ]
+          }
+        },
         "additionalProperties": false
       },
       "ModificationEtablissement": {
@@ -7698,7 +8307,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 27,
+            "maxItems": 29,
             "type": "array",
             "items": {
               "type": "string",
@@ -7729,6 +8338,8 @@
                 "salles:lire",
                 "salles:gerer",
                 "affectations:gerer",
+                "entreprises:lire",
+                "entreprises:gerer",
                 "emargement:animer"
               ]
             }
@@ -8081,6 +8692,71 @@
         ],
         "additionalProperties": false
       },
+      "NouveauContact": {
+        "type": "object",
+        "properties": {
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "personne": {
+            "type": "object",
+            "properties": {
+              "nom": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "prenom": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "email": {
+                "type": "string",
+                "maxLength": 200,
+                "format": "email",
+                "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              }
+            },
+            "required": [
+              "nom",
+              "prenom",
+              "email"
+            ],
+            "additionalProperties": false
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "rh",
+              "dirigeant",
+              "tuteur",
+              "autre"
+            ]
+          },
+          "fonction": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          },
+          "dansEntrepriseDepuis": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "type",
+          "fonction",
+          "dansEntrepriseDepuis"
+        ],
+        "additionalProperties": false
+      },
       "NouveauRole": {
         "type": "object",
         "properties": {
@@ -8099,7 +8775,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 27,
+            "maxItems": 29,
             "type": "array",
             "items": {
               "type": "string",
@@ -8130,6 +8806,8 @@
                 "salles:lire",
                 "salles:gerer",
                 "affectations:gerer",
+                "entreprises:lire",
+                "entreprises:gerer",
                 "emargement:animer"
               ]
             }
@@ -8352,6 +9030,47 @@
         "required": [
           "roleId",
           "perimetreType"
+        ],
+        "additionalProperties": false
+      },
+      "NouvelleEntreprise": {
+        "type": "object",
+        "properties": {
+          "siret": {
+            "type": "string"
+          },
+          "raisonSociale": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "adresse": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 200
+          },
+          "codePostal": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10
+          },
+          "ville": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 80
+          },
+          "idcc": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 10
+          },
+          "opco": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "siret"
         ],
         "additionalProperties": false
       },
@@ -8601,6 +9320,22 @@
           "anneeFormation",
           "anneeScolaireId",
           "etablissementId"
+        ],
+        "additionalProperties": false
+      },
+      "Opco": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "libelle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "libelle"
         ],
         "additionalProperties": false
       },
@@ -9255,6 +9990,91 @@
           "periodes",
           "fermetures",
           "dupliqueDe"
+        ],
+        "additionalProperties": false
+      },
+      "RechercheSiret": {
+        "type": "object",
+        "properties": {
+          "siret": {
+            "type": "string"
+          },
+          "existante": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "annuaire": {
+            "type": "string",
+            "enum": [
+              "trouve",
+              "introuvable",
+              "indisponible"
+            ]
+          },
+          "fiche": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "siren": {
+                "type": "string"
+              },
+              "raisonSociale": {
+                "type": "string"
+              },
+              "adresse": {
+                "nullable": true,
+                "type": "string"
+              },
+              "codePostal": {
+                "nullable": true,
+                "type": "string"
+              },
+              "ville": {
+                "nullable": true,
+                "type": "string"
+              },
+              "naf": {
+                "nullable": true,
+                "type": "string"
+              },
+              "effectif": {
+                "nullable": true,
+                "type": "string"
+              },
+              "ferme": {
+                "type": "boolean"
+              },
+              "idcc": {
+                "nullable": true,
+                "type": "string"
+              },
+              "opcoPropose": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "siren",
+              "raisonSociale",
+              "adresse",
+              "codePostal",
+              "ville",
+              "naf",
+              "effectif",
+              "ferme",
+              "idcc",
+              "opcoPropose"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "siret",
+          "existante",
+          "annuaire",
+          "fiche"
         ],
         "additionalProperties": false
       },
@@ -10418,6 +11238,8 @@
                 "salles:lire",
                 "salles:gerer",
                 "affectations:gerer",
+                "entreprises:lire",
+                "entreprises:gerer",
                 "emargement:animer"
               ]
             }
