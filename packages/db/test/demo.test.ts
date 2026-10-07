@@ -2,7 +2,13 @@ import { eq, sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildDemoDataset, DEMO_EMAIL_DOMAIN, seedDemoDataset } from '../src/demo/index.js';
 import { withOrganisation } from '../src/organisation-context.js';
-import { etablissement, formation, maquetteModule, personne } from '../src/schema/index.js';
+import {
+  etablissement,
+  formation,
+  inscription,
+  maquetteModule,
+  personne,
+} from '../src/schema/index.js';
 import { openApp, openOwner } from './fixtures.js';
 
 describe('Jeu de démonstration (plan, section 5)', () => {
@@ -54,18 +60,21 @@ describe('Jeu de démonstration (plan, section 5)', () => {
         etablissements: (await tx.select().from(etablissement)).length,
         formations: (await tx.select().from(formation)).length,
         modules: (await tx.select().from(maquetteModule)).length,
+        inscriptions: (await tx.select().from(inscription)).length,
       }));
     expect(await compter(premiere.id)).toEqual({
       personnes: 120,
       etablissements: 2,
       formations: 2,
       modules: 13,
+      inscriptions: 120,
     });
     expect(await compter(seconde.id)).toEqual({
       personnes: 120,
       etablissements: 1,
       formations: 1,
       modules: 4,
+      inscriptions: 120,
     });
     const lignes = await owner.db
       .select()

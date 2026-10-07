@@ -14,6 +14,7 @@ import type {
 } from '../schema/index.js';
 import { SeededRandom } from './random.js';
 import { buildDemoReferentiel, type DemoReferentiel } from './referentiel.js';
+import { buildDemoScolarite, type DemoScolarite } from './scolarite.js';
 
 /**
  * Jeu de démonstration (plan, section 5) : entièrement fictif. Aucune enseigne, école, personne
@@ -114,6 +115,8 @@ export interface DemoDataset {
   superAdministrateur: { email: string; name: string };
   /** Formations et maquettes (I3.1). */
   referentiel: DemoReferentiel;
+  /** Promotions, groupes et inscriptions (I3.2). */
+  scolarite: DemoScolarite;
 }
 
 /** Modules de la formule Pro, repris de packages/referentials (sans dépendance du paquet db). */
@@ -236,6 +239,14 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
     personnes: [],
     comptes: [],
     referentiel: buildDemoReferentiel([], []),
+    scolarite: {
+      promotions: [],
+      groupes: [],
+      groupePromotions: [],
+      inscriptions: [],
+      statuts: [],
+      membres: [],
+    },
   };
 
   ECOLES.forEach((ecole, index) => {
@@ -355,5 +366,17 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       dataset.etablissements.filter((e) => e.organisationId === o).flatMap((e) => e.id ?? []),
     ),
   );
+  dataset.scolarite = buildDemoScolarite({
+    referentiel: dataset.referentiel,
+    annees: dataset.annees.map((a) => ({
+      id: a.id,
+      organisationId: a.organisationId,
+      libelle: a.libelle,
+      dateDebut: a.dateDebut,
+      dateFin: a.dateFin,
+    })),
+    etablissements: dataset.etablissements,
+    personnes: dataset.personnes,
+  });
   return dataset;
 }

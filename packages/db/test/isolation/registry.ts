@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
 import {
@@ -28,6 +29,12 @@ import {
   maquetteVersionRegle,
   niveauMaitrise,
   regleParticuliere,
+  groupeEleves,
+  groupeMembre,
+  groupePromotion,
+  inscription,
+  inscriptionStatut,
+  promotion,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -165,6 +172,48 @@ async function insertRegle(db: Database, organisationId: string): Promise<string
   return id;
 }
 
+async function insertPromotion(db: Database, organisationId: string): Promise<string> {
+  const versionId = await insertVersion(db, organisationId);
+  const [version] = await db
+    .select()
+    .from(maquetteVersion)
+    .where(eq(maquetteVersion.id, versionId));
+  const etablissementId = newId();
+  await db.insert(etablissement).values({ id: etablissementId, organisationId, nom: 'Campus' });
+  const id = newId();
+  await db.insert(promotion).values({
+    id,
+    organisationId,
+    formationId: version?.formationId ?? '',
+    versionId,
+    anneeFormation: 1,
+    anneeScolaireId: await insertAnnee(db, organisationId),
+    etablissementId,
+    libelle: 'Promotion fictive',
+    dateDebut: '2026-09-01',
+    dateFin: '2027-06-30',
+  });
+  return id;
+}
+
+async function insertInscription(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(inscription).values({
+    id,
+    organisationId,
+    personneId: await insertPersonne(db, organisationId),
+    promotionId: await insertPromotion(db, organisationId),
+    dateEntree: '2026-09-01',
+  });
+  return id;
+}
+
+async function insertGroupe(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(groupeEleves).values({ id, organisationId, libelle: 'TD 1', type: 'td' });
+  return id;
+}
+
 export const sampleRows: Record<string, ScopedTableSample> = {
   formation: {
     insert: async (db, organisationId) => {
@@ -238,6 +287,50 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         libelle: 'Points de jury',
         type: 'points_jury',
         parametres: { type: 'points_jury', maximum: 0.3, seuils: [] },
+      });
+    },
+  },
+  promotion: {
+    insert: async (db, organisationId) => {
+      await insertPromotion(db, organisationId);
+    },
+  },
+  groupe_eleves: {
+    insert: async (db, organisationId) => {
+      await insertGroupe(db, organisationId);
+    },
+  },
+  groupe_promotion: {
+    insert: async (db, organisationId) => {
+      await db.insert(groupePromotion).values({
+        organisationId,
+        groupeId: await insertGroupe(db, organisationId),
+        promotionId: await insertPromotion(db, organisationId),
+      });
+    },
+  },
+  inscription: {
+    insert: async (db, organisationId) => {
+      await insertInscription(db, organisationId);
+    },
+  },
+  inscription_statut: {
+    insert: async (db, organisationId) => {
+      await db.insert(inscriptionStatut).values({
+        organisationId,
+        inscriptionId: await insertInscription(db, organisationId),
+        statut: 'initial',
+        debut: '2026-09-01',
+      });
+    },
+  },
+  groupe_membre: {
+    insert: async (db, organisationId) => {
+      await db.insert(groupeMembre).values({
+        organisationId,
+        groupeId: await insertGroupe(db, organisationId),
+        inscriptionId: await insertInscription(db, organisationId),
+        debut: '2026-09-01',
       });
     },
   },

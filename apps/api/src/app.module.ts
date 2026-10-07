@@ -20,6 +20,7 @@ import { CorbeilleModule } from './modules/corbeille/index.js';
 import { EmargementModule } from './modules/emargement/index.js';
 import { PersonnesModule } from './modules/personnes/index.js';
 import { ReferentielModule } from './modules/referentiel/index.js';
+import { ScolariteModule } from './modules/scolarite/index.js';
 import { RolesModule } from './modules/roles/index.js';
 import { StructureModule } from './modules/structure/index.js';
 import { SessionController } from './modules/session/index.js';
@@ -72,6 +73,7 @@ export class AppModule {
         EmargementModule,
         PersonnesModule,
         ReferentielModule,
+        ScolariteModule,
         RolesModule,
         StructureModule,
         ...(resources.platformDatabase

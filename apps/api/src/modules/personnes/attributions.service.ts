@@ -16,6 +16,7 @@ import {
   etablissement,
   formation,
   personne,
+  promotion,
   role,
   type Transaction,
 } from '@scolaly/db';
@@ -33,20 +34,20 @@ import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
 import { PersonnesService } from './personnes.service.js';
 
-/** Périmètres dont les objets existent ; les promotions arrivent avec I3.2. */
 const PERIMETRES_DISPONIBLES: readonly TypePerimetre[] = [
   'organisation',
   'etablissement',
   'formation',
+  'promotion',
   'soi',
 ];
 
 const MESSAGES: Record<RefusNouvelleAttribution, string> = {
-  'perimetre-sans-cible': 'Choisissez l’établissement ou la formation sur lequel ce rôle s’exerce.',
+  'perimetre-sans-cible':
+    'Choisissez l’établissement, la formation ou la promotion sur lequel ce rôle s’exerce.',
   'perimetre-cible-inattendue':
-    'Ce périmètre ne désigne ni établissement ni formation : retirez la cible.',
-  'perimetre-indisponible':
-    'Le périmètre « promotion » sera disponible avec les promotions. Choisissez l’école, un établissement ou une formation.',
+    'Ce périmètre ne désigne ni établissement, ni formation, ni promotion : retirez la cible.',
+  'perimetre-indisponible': 'Ce périmètre n’est pas disponible.',
   dates: 'La fin du rôle doit être postérieure à son début.',
   'deja-attribue': 'Cette personne a déjà ce rôle sur ce périmètre pour cette période.',
 };
@@ -78,6 +79,7 @@ export class AttributionsService {
         roleLibelle: role.libelle,
         etablissement: etablissement.nom,
         formation: formation.intitule,
+        promotion: promotion.libelle,
       })
       .from(attribution)
       .innerJoin(role, eq(role.id, attribution.roleId))
@@ -92,17 +94,27 @@ export class AttributionsService {
         formation,
         and(eq(attribution.perimetreType, 'formation'), eq(formation.id, attribution.perimetreId)),
       )
+      .leftJoin(
+        promotion,
+        and(eq(attribution.perimetreType, 'promotion'), eq(promotion.id, attribution.perimetreId)),
+      )
       .where(and(eq(attribution.personneId, personneId), isNull(attribution.deletedAt)))
       .orderBy(desc(attribution.debut), asc(role.libelle));
     return {
       attributions: lignes.map(
-        ({ attribution: a, roleLibelle, etablissement: nom, formation: intitule }) => ({
+        ({
+          attribution: a,
+          roleLibelle,
+          etablissement: nom,
+          formation: intitule,
+          promotion: promo,
+        }) => ({
           id: a.id,
           roleId: a.roleId,
           roleLibelle,
           perimetreType: a.perimetreType,
           perimetreId: a.perimetreId,
-          perimetreLibelle: nom ?? intitule,
+          perimetreLibelle: nom ?? intitule ?? promo,
           debut: a.debut,
           fin: a.fin,
           statut: estEnCours(a, date) ? 'en-cours' : a.debut > date ? 'a-venir' : 'terminee',
@@ -140,6 +152,13 @@ export class AttributionsService {
         .from(formation)
         .where(and(eq(formation.id, perimetreId), isNull(formation.deletedAt)));
       if (!cible) throw invalide('perimetreId', 'Cette formation n’existe pas dans l’école.');
+    }
+    if (entree.perimetreType === 'promotion' && perimetreId) {
+      const [cible] = await tx
+        .select({ id: promotion.id })
+        .from(promotion)
+        .where(and(eq(promotion.id, perimetreId), isNull(promotion.deletedAt)));
+      if (!cible) throw invalide('perimetreId', 'Cette promotion n’existe pas dans l’école.');
     }
     const [existante] = await tx
       .select({ id: attribution.id })

@@ -1,7 +1,16 @@
 import { and, eq } from 'drizzle-orm';
 import type { Database } from '../client.js';
 import { initialiserRolesParDefaut, type DefinitionRole } from '../roles-par-defaut.js';
-import { attribution, personne, role } from '../schema/index.js';
+import {
+  attribution,
+  groupeMembre,
+  groupePromotion,
+  inscription,
+  inscriptionStatut,
+  personne,
+  promotion,
+  role,
+} from '../schema/index.js';
 import type { DemoDataset } from './dataset.js';
 
 /**
@@ -61,5 +70,44 @@ export async function seedDemoDroits(
       perimetreId: parEtablissement ? (campus?.id ?? null) : null,
       debut: '2026-09-01',
     });
+    // Le compte apprenant suit la première promotion de son école (I3.2), dans son premier TD.
+    if (compte.role === 'apprenant') {
+      const [promo] = await owner
+        .select()
+        .from(promotion)
+        .where(eq(promotion.organisationId, organisationId))
+        .orderBy(promotion.libelle)
+        .limit(1);
+      if (!promo) continue;
+      const [nouvelle] = await owner
+        .insert(inscription)
+        .values({
+          organisationId,
+          personneId: fiche.id,
+          promotionId: promo.id,
+          dateEntree: promo.dateDebut,
+        })
+        .returning({ id: inscription.id });
+      if (!nouvelle) continue;
+      await owner.insert(inscriptionStatut).values({
+        organisationId,
+        inscriptionId: nouvelle.id,
+        statut: 'apprenti',
+        debut: promo.dateDebut,
+      });
+      const [td] = await owner
+        .select({ id: groupePromotion.groupeId })
+        .from(groupePromotion)
+        .where(eq(groupePromotion.promotionId, promo.id))
+        .limit(1);
+      if (td) {
+        await owner.insert(groupeMembre).values({
+          organisationId,
+          groupeId: td.id,
+          inscriptionId: nouvelle.id,
+          debut: promo.dateDebut,
+        });
+      }
+    }
   }
 }

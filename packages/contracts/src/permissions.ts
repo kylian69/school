@@ -30,6 +30,11 @@ export const PERMISSIONS = {
   'referentiel:publier': 'Publier une version de maquette',
   'referentiel:parametrer':
     'Définir l’échelle de maîtrise et la bibliothèque de règles particulières',
+  'promotions:lire': 'Consulter les promotions, groupes et inscriptions',
+  'promotions:gerer':
+    'Créer les promotions et les groupes, inscrire les apprenants et les répartir dans les groupes',
+  'promotions:changer-version':
+    'Changer la version de maquette d’une promotion en cours d’année (RG-02-05)',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

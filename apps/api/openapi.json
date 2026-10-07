@@ -1042,6 +1042,138 @@
         }
       }
     },
+    "/api/groupes/{id}": {
+      "patch": {
+        "operationId": "ScolariteController.modifierGroupe",
+        "summary": "Modifier un groupe",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationGroupe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Groupe"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "ScolariteController.supprimerGroupe",
+        "summary": "Supprimer un groupe qui n’a jamais eu de membre",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groupes/{id}/membres": {
+      "post": {
+        "operationId": "ScolariteController.ajouterMembres",
+        "summary": "Ajouter des apprenants à un groupe à une date d’effet (changement de groupe compris)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AjoutMembres"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Groupe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groupes/{id}/retrait": {
+      "post": {
+        "operationId": "ScolariteController.retirerMembre",
+        "summary": "Retirer un apprenant d’un groupe à une date",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetraitMembre"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Groupe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/imports": {
       "post": {
         "operationId": "ImportsController.creer",
@@ -1205,6 +1337,76 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApercuImport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inscriptions/{id}": {
+      "patch": {
+        "operationId": "ScolariteController.modifierInscription",
+        "summary": "Modifier une inscription : état, sortie et motif (RG-02-17), option",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationInscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inscription"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inscriptions/{id}/statut": {
+      "post": {
+        "operationId": "ScolariteController.changerStatut",
+        "summary": "Changer le statut à une date d’effet (section 7)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangementStatut"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inscription"
                 }
               }
             }
@@ -2571,6 +2773,229 @@
         }
       }
     },
+    "/api/promotions": {
+      "get": {
+        "operationId": "ScolariteController.lister",
+        "summary": "Promotions dans le périmètre de la personne, avec leurs effectifs par statut",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:lire",
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListePromotions"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "ScolariteController.creer",
+        "summary": "Créer une promotion (RG-02-12)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "etablissement"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvellePromotion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/{id}": {
+      "get": {
+        "operationId": "ScolariteController.lire",
+        "summary": "Une promotion : groupes et inscriptions",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:lire",
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailPromotion"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "ScolariteController.modifier",
+        "summary": "Modifier une promotion ; changer de version demande un droit spécifique (RG-02-05)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationPromotion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/{id}/groupes": {
+      "post": {
+        "operationId": "ScolariteController.creerGroupe",
+        "summary": "Créer un groupe, éventuellement transversal (RG-02-14)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieGroupe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Groupe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/{id}/inscriptions": {
+      "post": {
+        "operationId": "ScolariteController.inscrire",
+        "summary": "Inscrire un apprenant avec son statut (RG-02-13)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelleInscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inscription"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/{id}/repartition": {
+      "post": {
+        "operationId": "ScolariteController.repartir",
+        "summary": "Répartir automatiquement les apprenants dans des groupes (RG-02-16)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieRepartition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatRepartition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/referentiel/echelle": {
       "get": {
         "operationId": "BibliothequeController.echelle",
@@ -3116,6 +3541,35 @@
         "required": [
           "motDePasse",
           "conditionsAcceptees"
+        ],
+        "additionalProperties": false
+      },
+      "AjoutMembres": {
+        "type": "object",
+        "properties": {
+          "inscriptionIds": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "forcer": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "inscriptionIds",
+          "forcer"
         ],
         "additionalProperties": false
       },
@@ -3837,6 +4291,30 @@
         ],
         "additionalProperties": false
       },
+      "ChangementStatut": {
+        "type": "object",
+        "properties": {
+          "statut": {
+            "type": "string",
+            "enum": [
+              "initial",
+              "apprenti",
+              "professionnalisation",
+              "formation_continue"
+            ]
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "statut",
+          "debut"
+        ],
+        "additionalProperties": false
+      },
       "ChoixEcole": {
         "type": "object",
         "properties": {
@@ -4349,6 +4827,9 @@
                 "referentiel:gerer",
                 "referentiel:publier",
                 "referentiel:parametrer",
+                "promotions:lire",
+                "promotions:gerer",
+                "promotions:changer-version",
                 "emargement:animer"
               ]
             }
@@ -4517,6 +4998,215 @@
           "avancement",
           "termine",
           "constats"
+        ],
+        "additionalProperties": false
+      },
+      "DetailPromotion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "formation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "intitule": {
+                "type": "string"
+              },
+              "dureeAnnees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "intitule",
+              "dureeAnnees"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "numero": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "numero"
+            ],
+            "additionalProperties": false
+          },
+          "anneeFormation": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "anneeScolaire": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "libelle": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "libelle"
+            ],
+            "additionalProperties": false
+          },
+          "etablissement": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nom"
+            ],
+            "additionalProperties": false
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "effectifs": {
+            "type": "object",
+            "properties": {
+              "inscrits": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "preinscrits": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "parStatut": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "required": [
+                  "initial",
+                  "apprenti",
+                  "professionnalisation",
+                  "formation_continue"
+                ]
+              }
+            },
+            "required": [
+              "inscrits",
+              "preinscrits",
+              "parStatut"
+            ],
+            "additionalProperties": false
+          },
+          "modifiable": {
+            "type": "boolean"
+          },
+          "groupes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Groupe"
+            }
+          },
+          "inscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Inscription"
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changementVersion": {
+            "type": "boolean"
+          },
+          "versionsDisponibles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "numero": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "numero"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "formation",
+          "version",
+          "anneeFormation",
+          "anneeScolaire",
+          "etablissement",
+          "dateDebut",
+          "dateFin",
+          "effectifs",
+          "modifiable",
+          "groupes",
+          "inscriptions",
+          "options",
+          "changementVersion",
+          "versionsDisponibles"
         ],
         "additionalProperties": false
       },
@@ -4968,6 +5658,62 @@
         ],
         "additionalProperties": false
       },
+      "Groupe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "td",
+              "tp",
+              "option",
+              "langue",
+              "autre"
+            ]
+          },
+          "capacite": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "option": {
+            "nullable": true,
+            "type": "string"
+          },
+          "promotionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "effectif": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "type",
+          "capacite",
+          "option",
+          "promotionIds",
+          "effectif"
+        ],
+        "additionalProperties": false
+      },
       "HealthResponse": {
         "type": "object",
         "properties": {
@@ -4980,6 +5726,165 @@
         },
         "required": [
           "status"
+        ],
+        "additionalProperties": false
+      },
+      "Inscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "promotionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "personne": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "matricule": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom",
+              "matricule"
+            ],
+            "additionalProperties": false
+          },
+          "etat": {
+            "type": "string",
+            "enum": [
+              "preinscrit",
+              "inscrit",
+              "demissionnaire",
+              "exclu",
+              "diplome"
+            ]
+          },
+          "dateEntree": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateSortie": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "motifSortie": {
+            "nullable": true,
+            "type": "string"
+          },
+          "option": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "initial",
+              "apprenti",
+              "professionnalisation",
+              "formation_continue"
+            ]
+          },
+          "statuts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "debut": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "fin": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "statut": {
+                  "type": "string",
+                  "enum": [
+                    "initial",
+                    "apprenti",
+                    "professionnalisation",
+                    "formation_continue"
+                  ]
+                }
+              },
+              "required": [
+                "debut",
+                "fin",
+                "statut"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "groupes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "debut": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "fin": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "groupeId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              "required": [
+                "debut",
+                "fin",
+                "groupeId"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "promotionId",
+          "personne",
+          "etat",
+          "dateEntree",
+          "dateSortie",
+          "motifSortie",
+          "option",
+          "statut",
+          "statuts",
+          "groupes"
         ],
         "additionalProperties": false
       },
@@ -5176,6 +6081,25 @@
           "total",
           "page",
           "parPage"
+        ],
+        "additionalProperties": false
+      },
+      "ListePromotions": {
+        "type": "object",
+        "properties": {
+          "promotions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Promotion"
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "promotions",
+          "creation"
         ],
         "additionalProperties": false
       },
@@ -5652,6 +6576,65 @@
         },
         "additionalProperties": false
       },
+      "ModificationGroupe": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "capacite": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2000
+          },
+          "option": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationInscription": {
+        "type": "object",
+        "properties": {
+          "etat": {
+            "type": "string",
+            "enum": [
+              "preinscrit",
+              "inscrit",
+              "demissionnaire",
+              "exclu",
+              "diplome"
+            ]
+          },
+          "dateEntree": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateSortie": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "motifSortie": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          },
+          "option": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "additionalProperties": false
+      },
       "ModificationModule": {
         "type": "object",
         "properties": {
@@ -5829,6 +6812,35 @@
         ],
         "additionalProperties": false
       },
+      "ModificationPromotion": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "confirmation": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "ModificationRole": {
         "type": "object",
         "properties": {
@@ -5843,7 +6855,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 21,
+            "maxItems": 24,
             "type": "array",
             "items": {
               "type": "string",
@@ -5868,6 +6880,9 @@
                 "referentiel:gerer",
                 "referentiel:publier",
                 "referentiel:parametrer",
+                "promotions:lire",
+                "promotions:gerer",
+                "promotions:changer-version",
                 "emargement:animer"
               ]
             }
@@ -6192,7 +7207,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 21,
+            "maxItems": 24,
             "type": "array",
             "items": {
               "type": "string",
@@ -6217,6 +7232,9 @@
                 "referentiel:gerer",
                 "referentiel:publier",
                 "referentiel:parametrer",
+                "promotions:lire",
+                "promotions:gerer",
+                "promotions:changer-version",
                 "emargement:animer"
               ]
             }
@@ -6510,6 +7528,51 @@
         ],
         "additionalProperties": false
       },
+      "NouvelleInscription": {
+        "type": "object",
+        "properties": {
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "initial",
+              "apprenti",
+              "professionnalisation",
+              "formation_continue"
+            ]
+          },
+          "etat": {
+            "default": "inscrit",
+            "type": "string",
+            "enum": [
+              "preinscrit",
+              "inscrit"
+            ]
+          },
+          "dateEntree": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "option": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "personneId",
+          "statut",
+          "etat",
+          "option"
+        ],
+        "additionalProperties": false
+      },
       "NouvellePersonne": {
         "type": "object",
         "properties": {
@@ -6591,6 +7654,58 @@
           "nom",
           "prenom",
           "email"
+        ],
+        "additionalProperties": false
+      },
+      "NouvellePromotion": {
+        "type": "object",
+        "properties": {
+          "formationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "anneeFormation": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "anneeScolaireId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "etablissementId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "formationId",
+          "anneeFormation",
+          "anneeScolaireId",
+          "etablissementId"
         ],
         "additionalProperties": false
       },
@@ -6959,6 +8074,166 @@
           "attenteUrl",
           "statut",
           "motif"
+        ],
+        "additionalProperties": false
+      },
+      "Promotion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "formation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "intitule": {
+                "type": "string"
+              },
+              "dureeAnnees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "intitule",
+              "dureeAnnees"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "numero": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "numero"
+            ],
+            "additionalProperties": false
+          },
+          "anneeFormation": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "anneeScolaire": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "libelle": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "libelle"
+            ],
+            "additionalProperties": false
+          },
+          "etablissement": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nom"
+            ],
+            "additionalProperties": false
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "effectifs": {
+            "type": "object",
+            "properties": {
+              "inscrits": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "preinscrits": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "parStatut": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "required": [
+                  "initial",
+                  "apprenti",
+                  "professionnalisation",
+                  "formation_continue"
+                ]
+              }
+            },
+            "required": [
+              "inscrits",
+              "preinscrits",
+              "parStatut"
+            ],
+            "additionalProperties": false
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "formation",
+          "version",
+          "anneeFormation",
+          "anneeScolaire",
+          "etablissement",
+          "dateDebut",
+          "dateFin",
+          "effectifs",
+          "modifiable"
         ],
         "additionalProperties": false
       },
@@ -7684,6 +8959,51 @@
         ],
         "additionalProperties": false
       },
+      "ResultatRepartition": {
+        "type": "object",
+        "properties": {
+          "affectations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "inscriptionId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "groupeId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              "required": [
+                "inscriptionId",
+                "groupeId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nonAffectes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "applique": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "affectations",
+          "nonAffectes",
+          "applique"
+        ],
+        "additionalProperties": false
+      },
       "ResultatScan": {
         "type": "object",
         "properties": {
@@ -7972,6 +9292,25 @@
         ],
         "additionalProperties": false
       },
+      "RetraitMembre": {
+        "type": "object",
+        "properties": {
+          "inscriptionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "inscriptionId"
+        ],
+        "additionalProperties": false
+      },
       "RoleDetail": {
         "type": "object",
         "properties": {
@@ -8029,6 +9368,9 @@
                 "referentiel:gerer",
                 "referentiel:publier",
                 "referentiel:parametrer",
+                "promotions:lire",
+                "promotions:gerer",
+                "promotions:changer-version",
                 "emargement:animer"
               ]
             }
@@ -8217,6 +9559,57 @@
         ],
         "additionalProperties": false
       },
+      "SaisieGroupe": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "td",
+              "tp",
+              "option",
+              "langue",
+              "autre"
+            ]
+          },
+          "capacite": {
+            "default": null,
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2000
+          },
+          "option": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 60
+          },
+          "autresPromotionIds": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "libelle",
+          "type",
+          "capacite",
+          "option",
+          "autresPromotionIds"
+        ],
+        "additionalProperties": false
+      },
       "SaisieModule": {
         "type": "object",
         "properties": {
@@ -8351,6 +9744,51 @@
         "required": [
           "regles",
           "reglesParticulieres"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieRepartition": {
+        "type": "object",
+        "properties": {
+          "groupeIds": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "methode": {
+            "type": "string",
+            "enum": [
+              "alphabetique",
+              "equilibre",
+              "critere"
+            ]
+          },
+          "critere": {
+            "type": "string",
+            "enum": [
+              "statut",
+              "option"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "apercu": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "groupeIds",
+          "methode",
+          "apercu"
         ],
         "additionalProperties": false
       },

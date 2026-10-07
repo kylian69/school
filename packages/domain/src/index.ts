@@ -27,3 +27,5 @@ export * from './referentiel/regles.js';
 export * from './referentiel/competences.js';
 export * from './referentiel/calcul.js';
 export * from './referentiel/import-maquette.js';
+export * from './scolarite/inscriptions.js';
+export * from './scolarite/groupes.js';
