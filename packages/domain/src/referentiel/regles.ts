@@ -79,8 +79,11 @@ export type RegleParticuliere =
     }
   | {
       type: 'ue_bonus';
-      /** UE ou module bonus, retiré des moyennes ordinaires. */
-      source: { niveau: 'ue' | 'module'; id: string };
+      /**
+       * UE ou module bonus, retiré des moyennes ordinaires ; null dans la bibliothèque de l'école,
+       * choisi à l'activation dans une version.
+       */
+      source: { niveau: 'ue' | 'module'; id: string } | null;
       /** Seuls les points au-dessus du seuil comptent… */
       seuil: number;
       /** … divisés par ce nombre. */

@@ -552,6 +552,16 @@ describe('RG-02-26 et RG-02-27 règles particulières', () => {
       calculer([...notes(12, 12, 12, 12), note('m7', 8)], { maquette, particulieres: [sport] })
         .explications,
     ).toEqual([]);
+    const sansSource: RegleActivee = {
+      ...sport,
+      regle: { ...sport.regle, source: null } as typeof sport.regle,
+    };
+    expect(
+      calculer([...notes(12, 12, 12, 12), note('m7', 16)], {
+        maquette,
+        particulieres: [sansSource],
+      }).moyenneGenerale,
+    ).toBe(12.57);
     const diviseurNul: RegleActivee = {
       ...sport,
       regle: { ...sport.regle, diviseur: 0 } as typeof sport.regle,

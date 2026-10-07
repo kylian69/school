@@ -42,6 +42,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 19v-1a4 4 0 0 0-3-3.9M15.5 4.1a3 3 0 0 1 0 5.8',
   },
   {
+    label: fr.coquille.entrees.formations,
+    href: '/formations',
+    module: 'referentiel',
+    permissions: ['referentiel:lire', 'referentiel:gerer', 'referentiel:publier'],
+    icon: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h7M8 11h5',
+  },
+  {
     label: fr.coquille.entrees.seances,
     href: '/seances',
     module: 'emargement',

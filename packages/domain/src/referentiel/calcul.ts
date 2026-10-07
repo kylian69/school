@@ -168,7 +168,7 @@ export function calculerResultats(entree: EntreeCalcul): ResultatCalcul {
   // UE et modules bonus : calculés, mais retirés des moyennes ordinaires.
   const sourcesBonus = new Set<string>();
   for (const { regle } of actives) {
-    if (regle.type === 'ue_bonus') sourcesBonus.add(regle.source.id);
+    if (regle.type === 'ue_bonus' && regle.source) sourcesBonus.add(regle.source.id);
   }
   const estBonus = (m: ModuleMaquette) => sourcesBonus.has(m.id) || sourcesBonus.has(m.ueId);
 
@@ -180,7 +180,7 @@ export function calculerResultats(entree: EntreeCalcul): ResultatCalcul {
     for (const { id, libelle, regle } of actives) {
       const avant = courante;
       if (regle.type === 'ue_bonus' && memeCible(regle.cible, cible)) {
-        const source = sources.get(regle.source.id) ?? null;
+        const source = regle.source ? (sources.get(regle.source.id) ?? null) : null;
         if (source === null || regle.diviseur <= 0) continue;
         courante = borner(courante + Math.max(0, source - regle.seuil) / regle.diviseur);
       } else if (regle.type === 'bonus' && memeCible(regle.cible, cible)) {

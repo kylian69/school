@@ -35,6 +35,11 @@ export const SECTIONS_PARAMETRES: readonly SectionParametres[] = [
     permissions: ['roles:gerer', 'roles:attribuer'],
   },
   {
+    label: fr.parametres.sections.reglesEcole,
+    href: '/parametres/regles-ecole',
+    permissions: ['referentiel:parametrer'],
+  },
+  {
     label: fr.parametres.sections.journal,
     href: '/parametres/journal',
     permissions: ['audit:lire'],
