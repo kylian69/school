@@ -21,3 +21,8 @@ export * from './imports/validation.js';
 export * from './corbeille/corbeille.js';
 export * from './photos/photo.js';
 export * from './emargement/fenetre-scan.js';
+export * from './referentiel/maquette.js';
+export * from './referentiel/versions.js';
+export * from './referentiel/regles.js';
+export * from './referentiel/competences.js';
+export * from './referentiel/calcul.js';
