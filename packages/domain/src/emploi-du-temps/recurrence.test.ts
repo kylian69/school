@@ -152,19 +152,20 @@ describe('RG-04-03 occurrences d’une série', () => {
   });
 });
 
-describe('RG-03 portée d’une modification', () => {
-  const serie = [1, 2, 3].map((n) => ({
+describe('RG-04-03 portée d’une modification', () => {
+  const seance = (n: number) => ({
     id: `s${n}`,
     debut: new Date(`2026-09-0${n}T07:00:00Z`),
     serieId: 'serie',
-  }));
+  });
+  const [s1, s2, s3] = [seance(1), seance(2), seance(3)];
   const seule = { id: 'seule', debut: new Date('2026-09-02T07:00:00Z'), serieId: null };
-  const seances = [...serie, seule];
+  const seances = [s1, s2, s3, seule];
 
   it('s’applique à cette séance, aux suivantes ou à toute la série', () => {
-    expect(seancesConcernees(seances, serie[1]!, 'seance')).toEqual([serie[1]]);
-    expect(seancesConcernees(seances, serie[1]!, 'suivantes')).toEqual([serie[1], serie[2]]);
-    expect(seancesConcernees(seances, serie[1]!, 'serie')).toEqual(serie);
+    expect(seancesConcernees(seances, s2, 'seance')).toEqual([s2]);
+    expect(seancesConcernees(seances, s2, 'suivantes')).toEqual([s2, s3]);
+    expect(seancesConcernees(seances, s2, 'serie')).toEqual([s1, s2, s3]);
   });
 
   it('ne touche que la séance si elle n’appartient à aucune série', () => {

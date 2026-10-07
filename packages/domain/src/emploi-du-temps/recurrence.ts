@@ -107,8 +107,15 @@ function decalage(instant: number, fuseau: string): number {
     minute: 'numeric',
     second: 'numeric',
   }).formatToParts(new Date(instant));
-  const v = Object.fromEntries(parties.map((p) => [p.type, Number(p.value)]));
-  const local = Date.UTC(v.year!, v.month! - 1, v.day!, v.hour!, v.minute!, v.second!);
+  const v = Object.fromEntries(parties.map((p) => [p.type, p.value]));
+  const local = Date.UTC(
+    Number(v.year),
+    Number(v.month) - 1,
+    Number(v.day),
+    Number(v.hour),
+    Number(v.minute),
+    Number(v.second),
+  );
   return local - Math.floor(instant / 1000) * 1000;
 }
 
