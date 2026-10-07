@@ -67,6 +67,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 9h3a1 1 0 0 1 1 1v11M8 8h4M8 12h4M8 16h4',
   },
   {
+    label: fr.coquille.entrees.contrats,
+    href: '/contrats',
+    module: 'alternance',
+    permissions: ['contrats:lire', 'contrats:gerer'],
+    icon: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
+  },
+  {
     label: fr.coquille.entrees.maFormation,
     href: '/ma-formation',
     module: 'referentiel',

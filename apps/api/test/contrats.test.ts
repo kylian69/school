@@ -480,6 +480,18 @@ describe('section 2 : droits sur les contrats', () => {
   it('la direction lit sans modifier ; un intervenant n’y a pas accès ; une autre école ne voit rien', async () => {
     const liste = (await requete('GET', '/api/contrats', admin)).json<ListeContrats>();
     const id = liste.contrats[0]?.id ?? '';
+    // E-01-05 : sur la fiche d'un apprenant, ses inscriptions en cours accompagnent ses contrats.
+    const fiche = (
+      await requete('GET', `/api/contrats?personneId=${inscriptions[0]?.personne.id ?? ''}`, admin)
+    ).json<ListeContrats>();
+    expect(fiche.contrats).toHaveLength(1);
+    expect(fiche.inscriptions).toEqual([
+      {
+        id: inscriptions[0]?.id,
+        promotion: expect.objectContaining({}) as unknown,
+        modifiable: true,
+      },
+    ]);
     const direction = await compte('direction');
     const lue = (await requete('GET', `/api/contrats/${id}`, direction)).json<Contrat>();
     expect(lue.modifiable).toBe(false);

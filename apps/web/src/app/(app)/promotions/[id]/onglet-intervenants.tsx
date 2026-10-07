@@ -6,7 +6,7 @@ import { useId, useState, type SyntheticEvent } from 'react';
 import { Champ, MessageErreur } from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
 import { chiffre, nombre, useEnvoi } from '../../formations/envoi';
-import { RecherchePersonne } from './recherche-personne';
+import { RecherchePersonne } from '@/components/recherche-personne';
 
 const t = fr.scolarite;
 const ti = t.intervenants;

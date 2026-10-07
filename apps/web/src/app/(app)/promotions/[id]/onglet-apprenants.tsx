@@ -14,7 +14,7 @@ import { Champ, MessageErreur } from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
 import { formatDate } from '@/lib/format';
 import { SELECT, texte, useEnvoi } from '../../formations/envoi';
-import { RecherchePersonne } from './recherche-personne';
+import { RecherchePersonne } from '@/components/recherche-personne';
 
 const t = fr.scolarite;
 const ta = t.apprenants;

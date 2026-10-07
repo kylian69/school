@@ -295,6 +295,14 @@ export const ListeContrats = z
   .object({
     contrats: z.array(Contrat.omit({ tuteurs: true })),
     conventions: z.array(ConventionStage),
+    /** Avec le filtre `personneId` : ses inscriptions en cours, pour un nouveau contrat ou stage. */
+    inscriptions: z.array(
+      z.object({
+        id: z.uuid(),
+        promotion: z.object({ id: z.uuid(), libelle: z.string() }),
+        modifiable: z.boolean(),
+      }),
+    ),
     creation: z.boolean(),
   })
   .meta({ id: 'ListeContrats' });
