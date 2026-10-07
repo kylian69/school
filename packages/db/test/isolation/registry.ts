@@ -39,6 +39,7 @@ import {
   affectationGroupe,
   salle,
   seancePublic,
+  seanceSerie,
   contactEntreprise,
   entreprise,
   contratAlternance,
@@ -396,6 +397,32 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         organisationId,
         seanceId: await insertSeance(db, organisationId),
         promotionId: await insertPromotion(db, organisationId),
+      });
+    },
+  },
+  seance_serie: {
+    insert: async (db, organisationId) => {
+      const etablissementId = newId();
+      await db.insert(etablissement).values({ id: etablissementId, organisationId, nom: 'Campus' });
+      const serieId = newId();
+      await db.insert(seanceSerie).values({
+        id: serieId,
+        organisationId,
+        etablissementId,
+        dateDebut: '2026-09-01',
+        dateFin: '2026-12-15',
+        joursSemaine: [2],
+        heureDebut: '09:00',
+        heureFin: '12:30',
+      });
+      await db.insert(seance).values({
+        organisationId,
+        libelle: 'Séance de série fictive',
+        debut: new Date('2026-09-01T07:00:00Z'),
+        fin: new Date('2026-09-01T10:30:00Z'),
+        statut: 'brouillon',
+        type: 'td',
+        serieId,
       });
     },
   },

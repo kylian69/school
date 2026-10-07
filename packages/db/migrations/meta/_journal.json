@@ -302,6 +302,13 @@
       "when": 1791413020669,
       "tag": "0042_apprenti_sans_employeur",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791416042495,
+      "tag": "0043_seances",
+      "breakpoints": true
     }
   ]
 }

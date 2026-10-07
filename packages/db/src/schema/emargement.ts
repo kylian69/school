@@ -2,11 +2,14 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  date,
   foreignKey,
   index,
   pgEnum,
   pgTable,
+  smallint,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -15,11 +18,62 @@ import {
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 import { personne } from './personne.js';
-import { groupeEleves, promotion } from './scolarite.js';
+import { maquetteModule } from './referentiel.js';
+import { groupeEleves, promotion, salle } from './scolarite.js';
+import { etablissement } from './structure.js';
 
 /**
- * Séance (P2, version minimale) : ce qu'il faut pour émarger. L'emploi du temps (I4.1) la complétera
- * par ajout de colonnes (salle, groupes, module, récurrence, publication).
+ * Série de séances récurrentes (US-04-02, RG-04-03) : la règle d'où ses séances ont été calculées
+ * (packages/domain, occurrencesSerie). Les séances restent indépendantes une fois créées. Les heures
+ * sont locales, dans le fuseau de l'établissement.
+ */
+export const seanceSerie = pgTable(
+  'seance_serie',
+  {
+    ...organisationScoped(),
+    etablissementId: uuid().notNull(),
+    dateDebut: date().notNull(),
+    dateFin: date().notNull(),
+    /** Jours de la semaine, de 1 (lundi) à 7 (dimanche). */
+    joursSemaine: smallint().array().notNull(),
+    intervalleSemaines: smallint().notNull().default(1),
+    heureDebut: time().notNull(),
+    heureFin: time().notNull(),
+    sauterJoursEntreprise: boolean().notNull().default(false),
+    joursExclus: date()
+      .array()
+      .notNull()
+      .default(sql`'{}'::date[]`),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('seance_serie', t),
+    index('seance_serie_etablissement_idx').on(t.organisationId, t.etablissementId),
+    foreignKey({
+      name: 'seance_serie_etablissement_fk',
+      columns: [t.organisationId, t.etablissementId],
+      foreignColumns: [etablissement.organisationId, etablissement.id],
+    }),
+    check(
+      'seance_serie_regle_check',
+      sql`${t.dateFin} >= ${t.dateDebut} and ${t.heureFin} > ${t.heureDebut} and ${t.intervalleSemaines} >= 1 and cardinality(${t.joursSemaine}) > 0`,
+    ),
+  ],
+).enableRLS();
+
+/** RG-04-01 : statut d'une séance ; les séances créées avant I4.1 sont publiées. */
+export const seanceStatut = pgEnum('seance_statut', [
+  'brouillon',
+  'publiee',
+  'annulee',
+  'reportee',
+]);
+/** RG-04-01 : type d'une séance. */
+export const seanceType = pgEnum('seance_type', ['cm', 'td', 'tp', 'projet', 'examen']);
+
+/**
+ * Séance (P2, complétée en I4.1, RG-04-01) : module ou activité hors maquette, type, statut, salle
+ * ou lien de visio, série éventuelle. Son public est dans seance_public.
  */
 export const seance = pgTable(
   'seance',
@@ -31,17 +85,46 @@ export const seance = pgTable(
     /** RG-06-08 : séance à distance, sans contrôle de localisation. */
     distanciel: boolean().notNull().default(false),
     intervenantId: uuid(),
+    statut: seanceStatut().notNull().default('publiee'),
+    type: seanceType(),
+    moduleId: uuid(),
+    /** Activité hors maquette (réunion, accueil, rattrapage) quand il n'y a pas de module. */
+    activite: text(),
+    salleId: uuid(),
+    lienVisio: text(),
+    motifAnnulation: text(),
+    serieId: uuid(),
     ...trackingColumns(),
   },
   (t) => [
     ...organisationConstraints('seance', t),
     index('seance_organisation_id_debut_idx').on(t.organisationId, t.debut),
+    index('seance_serie_idx').on(t.organisationId, t.serieId),
     foreignKey({
       name: 'seance_intervenant_fk',
       columns: [t.organisationId, t.intervenantId],
       foreignColumns: [personne.organisationId, personne.id],
     }),
+    foreignKey({
+      name: 'seance_module_fk',
+      columns: [t.organisationId, t.moduleId],
+      foreignColumns: [maquetteModule.organisationId, maquetteModule.id],
+    }),
+    foreignKey({
+      name: 'seance_salle_fk',
+      columns: [t.organisationId, t.salleId],
+      foreignColumns: [salle.organisationId, salle.id],
+    }),
+    foreignKey({
+      name: 'seance_serie_fk',
+      columns: [t.organisationId, t.serieId],
+      foreignColumns: [seanceSerie.organisationId, seanceSerie.id],
+    }),
     check('seance_dates_check', sql`${t.fin} > ${t.debut}`),
+    check(
+      'seance_annulation_check',
+      sql`${t.statut} <> 'annulee' or ${t.motifAnnulation} is not null`,
+    ),
   ],
 ).enableRLS();
 
