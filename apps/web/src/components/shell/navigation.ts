@@ -60,6 +60,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6',
   },
   {
+    label: fr.coquille.entrees.entreprises,
+    href: '/entreprises',
+    module: 'alternance',
+    permissions: ['entreprises:lire', 'entreprises:gerer'],
+    icon: 'M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 9h3a1 1 0 0 1 1 1v11M8 8h4M8 12h4M8 16h4',
+  },
+  {
     label: fr.coquille.entrees.maFormation,
     href: '/ma-formation',
     module: 'referentiel',

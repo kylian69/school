@@ -696,6 +696,135 @@ async function routeReferentiel(path, request, json, response, url) {
   return json(200, detailMaquette(m));
 }
 
+// Alternance (module 03) : entreprises et contacts en mémoire. L'annuaire répond pour les SIRET
+// commençant par 999 ; les contrôles (clé, IDCC, doublons) sont testés par l'API.
+const OPCOS = { akto: 'AKTO', atlas: 'Atlas', 'opco-ep': 'OPCO EP' };
+const entreprises = [];
+const ficheEntreprise = (e) => ({
+  ...e,
+  contacts: e.contacts.map((c) => ({
+    ...c,
+    personne: (({ id, nom, prenom, email, compteEtat }) => ({
+      id,
+      nom,
+      prenom,
+      email,
+      compteEtat,
+    }))(personnes.find((p) => p.id === c.personneId)),
+  })),
+  modifiable: true,
+});
+async function routeAlternance(path, request, json, response, url) {
+  if (path === '/api/opcos') {
+    return json(200, {
+      opcos: Object.entries(OPCOS).map(([code, libelle]) => ({ code, libelle })),
+    });
+  }
+  const siret = path.match(/^\/api\/entreprises\/siret\/(\d{14})$/);
+  if (siret) {
+    const existante = entreprises.find((e) => e.siret === siret[1]);
+    const connu = siret[1].startsWith('999');
+    return json(200, {
+      siret: siret[1],
+      existante: existante?.id ?? null,
+      annuaire: connu ? 'trouve' : 'introuvable',
+      fiche: connu
+        ? {
+            siren: siret[1].slice(0, 9),
+            raisonSociale: 'ATELIERS FICTIFS DE LUMERAC',
+            adresse: '1 rue Fictive',
+            codePostal: '99100',
+            ville: 'LUMERAC',
+            naf: '62.01Z',
+            effectif: null,
+            ferme: false,
+            idcc: '1486',
+            opcoPropose: 'atlas',
+          }
+        : null,
+    });
+  }
+  if (path === '/api/entreprises' && request.method === 'GET') {
+    const q = (url.searchParams.get('q') ?? '').toLowerCase();
+    return json(200, {
+      entreprises: entreprises
+        .filter((e) => `${e.raisonSociale} ${e.siret} ${e.ville ?? ''}`.toLowerCase().includes(q))
+        .map((e) => ({
+          ...ficheEntreprise(e),
+          contacts: undefined,
+          tuteurs: e.contacts.filter((c) => c.type === 'tuteur').length,
+        })),
+      creation: true,
+    });
+  }
+  if (path === '/api/entreprises') {
+    const body = await readBody(request);
+    const connu = body.siret.startsWith('999');
+    const e = {
+      id: randomUUID(),
+      siret: body.siret,
+      siren: body.siret.slice(0, 9),
+      raisonSociale: connu ? 'ATELIERS FICTIFS DE LUMERAC' : body.raisonSociale,
+      adresse: connu ? '1 rue Fictive' : (body.adresse ?? null),
+      codePostal: connu ? '99100' : (body.codePostal ?? null),
+      ville: connu ? 'LUMERAC' : (body.ville ?? null),
+      naf: connu ? '62.01Z' : null,
+      effectif: null,
+      idcc: connu ? '1486' : (body.idcc ?? null),
+      opco: body.opco ?? (connu ? 'atlas' : null),
+      statut: 'active',
+      aVerifier: !connu,
+      contacts: [],
+    };
+    entreprises.push(e);
+    return json(201, ficheEntreprise(e));
+  }
+  const fiche = path.match(/^\/api\/entreprises\/([^/]+)(\/contacts)?$/);
+  if (fiche) {
+    const e = entreprises.find((x) => x.id === fiche[1]);
+    if (!e) return json(404, { message: 'Entreprise introuvable.' });
+    if (fiche[2]) {
+      const body = await readBody(request);
+      const personne = {
+        id: randomUUID(),
+        civilite: null,
+        nomUsage: null,
+        telephone: null,
+        adresseLigne1: null,
+        codePostal: null,
+        ville: null,
+        dateNaissance: null,
+        lieuNaissance: null,
+        ine: null,
+        ...body.personne,
+        compteEtat: 'cree',
+        matricule: String(personnes.length).padStart(6, '0'),
+        roles: [],
+        version: new Date().toISOString(),
+      };
+      personnes.push(personne);
+      const contact = {
+        id: randomUUID(),
+        personneId: personne.id,
+        type: body.type,
+        fonction: body.fonction ?? null,
+        dansEntrepriseDepuis: body.dansEntrepriseDepuis ?? null,
+      };
+      e.contacts.push(contact);
+      return json(201, ficheEntreprise({ ...e, contacts: [contact] }).contacts[0]);
+    }
+    if (request.method === 'PATCH') Object.assign(e, await readBody(request));
+    return json(200, ficheEntreprise(e));
+  }
+  const contact = path.match(/^\/api\/contacts-entreprise\/([^/]+)$/);
+  if (contact) {
+    for (const e of entreprises) e.contacts = e.contacts.filter((c) => c.id !== contact[1]);
+    response.writeHead(204);
+    return response.end();
+  }
+  return false;
+}
+
 // Scolarité (module 02) : promotions, groupes, inscriptions, affectations et salles en mémoire.
 // Les règles (périodes, capacités, répartition, écarts) sont couvertes par le domaine et l'API.
 const promotions = [];
@@ -1141,6 +1270,12 @@ createServer(async (request, response) => {
             'organisation:lire',
             'organisation:modifier',
             'affectations:gerer',
+            'contrats:gerer',
+            'contrats:lire',
+            'entreprises:gerer',
+            'entreprises:lire',
+            'rythmes:gerer',
+            'rythmes:lire',
             'promotions:gerer',
             'promotions:lire',
             'salles:gerer',
@@ -1153,7 +1288,7 @@ createServer(async (request, response) => {
             'roles:gerer',
           ]
         : [],
-      modules: active ? ['socle', 'emargement', 'referentiel'] : [],
+      modules: active ? ['socle', 'emargement', 'referentiel', 'alternance'] : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
@@ -1672,6 +1807,14 @@ createServer(async (request, response) => {
   ) {
     if (!user) return json(401, { message: 'Session absente' });
     const traite = await routeScolarite(path, request, json, response, url);
+    if (traite !== false) return traite;
+  }
+
+  if (
+    ['/api/opcos', '/api/entreprises', '/api/contacts-entreprise/'].some((p) => path.startsWith(p))
+  ) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const traite = await routeAlternance(path, request, json, response, url);
     if (traite !== false) return traite;
   }
 
