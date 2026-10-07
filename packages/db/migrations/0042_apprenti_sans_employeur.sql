@@ -1,0 +1,1 @@
+ALTER TYPE "public"."statut_apprenant" ADD VALUE 'apprenti_sans_employeur' BEFORE 'professionnalisation';

@@ -131,6 +131,7 @@ export const inscriptionEtat = pgEnum('inscription_etat', [
 export const statutApprenant = pgEnum('statut_apprenant', [
   'initial',
   'apprenti',
+  'apprenti_sans_employeur',
   'professionnalisation',
   'formation_continue',
 ]);

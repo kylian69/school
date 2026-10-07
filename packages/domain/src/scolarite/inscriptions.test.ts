@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   changerPeriode,
+  changerStatut,
   inscriptionActive,
+  MODE_DU_STATUT,
+  ouvrirSansEmployeur,
+  statutsReconduits,
   valeurA,
   verifierInscription,
   verifierPromotion,
@@ -163,6 +167,99 @@ describe('section 7 : changement de statut ou de groupe en cours d’année', ()
       ['a', '2026-10-01'],
       ['b', '2027-01-01'],
       ['c', null],
+    ]);
+  });
+});
+
+describe('module 03, section 7 : apprenti sans employeur', () => {
+  const apprenti = [
+    { debut: '2026-09-01', fin: '2026-11-02', valeur: 'initial' },
+    { debut: '2026-11-02', fin: null, valeur: 'apprenti' },
+  ] as const;
+  const rompu = ouvrirSansEmployeur(apprenti, '2027-02-10', '2027-08-10');
+
+  it('RG-03-07 ouvre la période sans employeur à la rupture, puis prévoit le retour en initial', () => {
+    expect(rompu).toEqual([
+      { debut: '2026-09-01', fin: '2026-11-02', valeur: 'initial' },
+      { debut: '2026-11-02', fin: '2027-02-10', valeur: 'apprenti' },
+      { debut: '2027-02-10', fin: '2027-08-10', valeur: 'apprenti_sans_employeur' },
+      { debut: '2027-08-10', fin: null, valeur: 'initial' },
+    ]);
+    expect(MODE_DU_STATUT.apprenti_sans_employeur).toBe('apprentissage');
+  });
+  it('ouvre la recherche d’employeur dès l’entrée en formation', () => {
+    expect(ouvrirSansEmployeur([], '2026-09-01', '2026-12-01')).toEqual([
+      { debut: '2026-09-01', fin: '2026-12-01', valeur: 'apprenti_sans_employeur' },
+      { debut: '2026-12-01', fin: null, valeur: 'initial' },
+    ]);
+  });
+  it('ne prolonge pas une période sans employeur en cours', () => {
+    expect(ouvrirSansEmployeur(rompu, '2027-05-01', '2027-08-01')).toEqual(rompu);
+    const prevue = [
+      { debut: '2026-09-01', fin: '2027-01-04', valeur: 'initial' },
+      { debut: '2027-01-04', fin: null, valeur: 'apprenti_sans_employeur' },
+    ] as const;
+    expect(ouvrirSansEmployeur(prevue, '2026-12-01', '2027-03-01').slice(1)).toEqual([
+      { debut: '2027-01-04', fin: '2027-03-01', valeur: 'apprenti_sans_employeur' },
+      { debut: '2027-03-01', fin: null, valeur: 'initial' },
+    ]);
+  });
+  it('sans durée, laisse un apprenant déjà en initial tel quel', () => {
+    const initial = [{ debut: '2026-09-01', fin: null, valeur: 'initial' }] as const;
+    expect(ouvrirSansEmployeur(initial, '2027-01-01', '2027-01-01')).toEqual(initial);
+  });
+  it('repasse en initial à la date prévue si la période est vide ou impossible', () => {
+    expect(ouvrirSansEmployeur(apprenti, '2027-02-10', '2027-02-10').at(-1)).toEqual({
+      debut: '2027-02-10',
+      fin: null,
+      valeur: 'initial',
+    });
+  });
+  it('RG-03-06 un nouveau contrat pendant la période annule le retour en initial prévu', () => {
+    expect(changerStatut(rompu, 'apprenti', '2027-04-01')?.slice(2)).toEqual([
+      { debut: '2027-02-10', fin: '2027-04-01', valeur: 'apprenti_sans_employeur' },
+      { debut: '2027-04-01', fin: null, valeur: 'apprenti' },
+    ]);
+    expect(changerStatut(rompu, 'apprenti', '2027-02-10')?.at(-1)).toEqual({
+      debut: '2027-02-10',
+      fin: null,
+      valeur: 'apprenti',
+    });
+    expect(changerStatut(rompu, 'apprenti_sans_employeur', '2027-04-01')?.at(-1)).toEqual({
+      debut: '2027-02-10',
+      fin: null,
+      valeur: 'apprenti_sans_employeur',
+    });
+  });
+  it('après l’échéance, ou avant la période, le statut prend effet comme avant', () => {
+    expect(changerStatut(rompu, 'apprenti', '2027-09-01')?.at(-1)).toEqual({
+      debut: '2027-09-01',
+      fin: null,
+      valeur: 'apprenti',
+    });
+    expect(changerStatut(rompu, 'apprenti', '2027-01-01')?.at(-1)).toEqual({
+      debut: '2027-08-10',
+      fin: null,
+      valeur: 'apprenti',
+    });
+    expect(changerStatut(rompu, 'initial', '2027-09-01')).toBeNull();
+    expect(changerStatut([], 'initial', '2027-09-01')).toEqual([
+      { debut: '2027-09-01', fin: null, valeur: 'initial' },
+    ]);
+  });
+  it('reconduit la période sans employeur jusqu’à son échéance l’année suivante', () => {
+    expect(statutsReconduits(rompu, '2027-06-30', '2027-07-01')).toEqual([
+      { debut: '2027-07-01', fin: '2027-08-10', valeur: 'apprenti_sans_employeur' },
+      { debut: '2027-08-10', fin: null, valeur: 'initial' },
+    ]);
+    expect(statutsReconduits(rompu, '2027-06-30', '2027-09-01')).toEqual([
+      { debut: '2027-09-01', fin: null, valeur: 'initial' },
+    ]);
+    expect(statutsReconduits(apprenti, '2027-06-30', '2027-09-01')).toEqual([
+      { debut: '2027-09-01', fin: null, valeur: 'apprenti' },
+    ]);
+    expect(statutsReconduits([], '2027-06-30', '2027-09-01')).toEqual([
+      { debut: '2027-09-01', fin: null, valeur: 'initial' },
     ]);
   });
 });

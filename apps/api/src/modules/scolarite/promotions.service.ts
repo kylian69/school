@@ -42,9 +42,12 @@ import {
   type Transaction,
 } from '@scolaly/db';
 import {
+  ajouterMois,
+  annulerRetourPrevu,
   changerPeriode,
   couvre,
   inscriptionActive,
+  ouvrirSansEmployeur,
   repartir,
   valeurA,
   verifierAjoutMembre,
@@ -55,7 +58,9 @@ import {
   type RefusGroupe,
   type RefusInscription,
   type RefusPromotion,
+  type StatutApprenant,
 } from '@scolaly/domain';
+import { reglesApprentissage, valueAt } from '@scolaly/referentials';
 import { and, asc, eq, inArray, isNotNull, isNull, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
@@ -85,6 +90,23 @@ const MESSAGES: Record<RefusPromotion | RefusInscription | RefusGroupe, string> 
     'Le groupe est plein : augmentez sa capacité, ou forcez l’ajout si vous êtes responsable (l’action est tracée).',
   'hors-promotion': 'Ce groupe n’appartient pas à la promotion de l’apprenant.',
 };
+
+/**
+ * Module 03, section 7 : un apprenti inscrit sans employeur a la durée légale de recherche (table
+ * datée) pour signer son contrat ; à l'échéance, il repasse en initial.
+ */
+const periodesDuStatut = (
+  periodes: Parameters<typeof ouvrirSansEmployeur>[0],
+  statut: StatutApprenant,
+  debut: string,
+) =>
+  statut === 'apprenti_sans_employeur'
+    ? ouvrirSansEmployeur(
+        periodes,
+        debut,
+        ajouterMois(debut, valueAt(reglesApprentissage, debut).valeur.rechercheEmployeurMois),
+      )
+    : null;
 
 const invalide = (champ: string, message: string) =>
   new BadRequestException({
@@ -330,13 +352,19 @@ export class PromotionsService {
       option: entree.option || null,
       createdBy: access.userId,
     });
-    await tx.insert(inscriptionStatut).values({
-      organisationId: access.organisationId,
-      inscriptionId: id,
-      statut: entree.statut,
-      debut: dateEntree,
-      createdBy: access.userId,
-    });
+    const periodes = periodesDuStatut([], entree.statut, dateEntree) ?? [
+      { debut: dateEntree, fin: null, valeur: entree.statut },
+    ];
+    await tx.insert(inscriptionStatut).values(
+      periodes.map((p) => ({
+        organisationId: access.organisationId,
+        inscriptionId: id,
+        statut: p.valeur,
+        debut: p.debut,
+        fin: p.fin,
+        createdBy: access.userId,
+      })),
+    );
     const [resultat] = await this.inscriptionsDe(tx, [promotionId], id);
     await this.auditer(
       tx,
@@ -435,8 +463,9 @@ export class PromotionsService {
       .select()
       .from(inscriptionStatut)
       .where(and(eq(inscriptionStatut.inscriptionId, id), isNull(inscriptionStatut.deletedAt)));
+    const enregistrees = periodes.map((p) => ({ debut: p.debut, fin: p.fin, valeur: p.statut }));
     const verdict = changerPeriode(
-      periodes.map((p) => ({ debut: p.debut, fin: p.fin, valeur: p.statut })),
+      annulerRetourPrevu(enregistrees, changement.debut),
       changement.statut,
       changement.debut,
     );
@@ -446,9 +475,11 @@ export class PromotionsService {
         'Le changement de statut ne peut pas précéder le début du statut en cours.',
       );
     }
+    const nouvelles =
+      periodesDuStatut(enregistrees, changement.statut, changement.debut) ?? verdict.periodes;
     await tx.delete(inscriptionStatut).where(eq(inscriptionStatut.inscriptionId, id));
     await tx.insert(inscriptionStatut).values(
-      verdict.periodes.map((p) => ({
+      nouvelles.map((p) => ({
         organisationId: access.organisationId,
         inscriptionId: id,
         statut: p.valeur,
@@ -841,7 +872,13 @@ export class PromotionsService {
       const f = formations.find((x) => x.id === p.formationId);
       const siennes = inscriptions.filter((i) => i.promotionId === p.id);
       const actives = siennes.filter((i) => inscriptionActive(i, date));
-      const parStatut = { initial: 0, apprenti: 0, professionnalisation: 0, formation_continue: 0 };
+      const parStatut = {
+        initial: 0,
+        apprenti: 0,
+        apprenti_sans_employeur: 0,
+        professionnalisation: 0,
+        formation_continue: 0,
+      };
       for (const i of actives) if (i.statut) parStatut[i.statut] += 1;
       return {
         id: p.id,

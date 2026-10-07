@@ -5973,6 +5973,7 @@
             "enum": [
               "initial",
               "apprenti",
+              "apprenti_sans_employeur",
               "professionnalisation",
               "formation_continue"
             ]
@@ -7479,6 +7480,7 @@
                 "required": [
                   "initial",
                   "apprenti",
+                  "apprenti_sans_employeur",
                   "professionnalisation",
                   "formation_continue"
                 ]
@@ -8323,6 +8325,7 @@
             "enum": [
               "initial",
               "apprenti",
+              "apprenti_sans_employeur",
               "professionnalisation",
               "formation_continue"
             ]
@@ -8348,6 +8351,7 @@
                   "enum": [
                     "initial",
                     "apprenti",
+                    "apprenti_sans_employeur",
                     "professionnalisation",
                     "formation_continue"
                   ]
@@ -11397,6 +11401,7 @@
             "enum": [
               "initial",
               "apprenti",
+              "apprenti_sans_employeur",
               "professionnalisation",
               "formation_continue"
             ]
@@ -12139,6 +12144,7 @@
                 "required": [
                   "initial",
                   "apprenti",
+                  "apprenti_sans_employeur",
                   "professionnalisation",
                   "formation_continue"
                 ]

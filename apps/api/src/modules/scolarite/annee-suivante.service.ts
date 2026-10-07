@@ -25,7 +25,7 @@ import {
   promotion,
   type Transaction,
 } from '@scolaly/db';
-import { valeurA, versionDeReference } from '@scolaly/domain';
+import { statutsReconduits, versionDeReference } from '@scolaly/domain';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
@@ -317,7 +317,6 @@ export class AnneeSuivanteService {
       const periodes = statuts
         .filter((s) => s.inscriptionId === i.id)
         .map((s) => ({ debut: s.debut, fin: s.fin, valeur: s.statut }));
-      const statut = valeurA(periodes, aujourdhui()) ?? periodes.at(-1)?.valeur ?? 'initial';
       const id = newId();
       await tx.insert(inscription).values({
         id,
@@ -327,13 +326,16 @@ export class AnneeSuivanteService {
         dateEntree: cible.dateDebut,
         createdBy: access.userId,
       });
-      await tx.insert(inscriptionStatut).values({
-        organisationId: access.organisationId,
-        inscriptionId: id,
-        statut,
-        debut: cible.dateDebut,
-        createdBy: access.userId,
-      });
+      await tx.insert(inscriptionStatut).values(
+        statutsReconduits(periodes, aujourdhui(), cible.dateDebut).map((p) => ({
+          organisationId: access.organisationId,
+          inscriptionId: id,
+          statut: p.valeur,
+          debut: p.debut,
+          fin: p.fin,
+          createdBy: access.userId,
+        })),
+      );
       inscrites += 1;
     }
     await enregistrerAudit(tx, {

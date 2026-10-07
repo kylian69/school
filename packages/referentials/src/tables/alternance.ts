@@ -130,6 +130,11 @@ export interface ReglesApprentissage {
   periodeEssaiJours: number;
   /** RG-03-07 : poursuite de la formation sans employeur après une rupture, en mois. */
   sansEmployeurMois: number;
+  /**
+   * Apprenti sans employeur au début de sa formation : durée maximale de recherche d'employeur
+   * avant la signature du contrat, en mois.
+   */
+  rechercheEmployeurMois: number;
 }
 
 export const reglesApprentissage: DatedTable<ReglesApprentissage> = {
@@ -142,12 +147,13 @@ export const reglesApprentissage: DatedTable<ReglesApprentissage> = {
       debut: '2019-01-01',
       fin: null,
       source:
-        'Code du travail, articles R6223-6 (deux apprentis et un apprenti prolongé par maître), L6222-18 (45 jours de formation pratique en entreprise) et L6222-18-2 (six mois sans employeur)',
+        'Code du travail, articles R6223-6 (deux apprentis et un apprenti prolongé par maître), L6222-18 (45 jours de formation pratique en entreprise), L6222-18-2 (six mois sans employeur après une rupture) et L6222-12-1 (trois mois pour trouver un employeur au début de la formation)',
       valeur: {
         apprentisParMaitre: 2,
         apprentisSupplementairesProlonges: 1,
         periodeEssaiJours: 45,
         sansEmployeurMois: 6,
+        rechercheEmployeurMois: 3,
       },
     },
   ],

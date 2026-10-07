@@ -381,7 +381,8 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
     expect(restants).toHaveLength(2);
     expect(await statuts(premier.apprenant.inscriptionId)).toEqual([
       ['initial', '2026-09-01', '2026-10-01'],
-      ['apprenti', '2026-10-01', '2027-08-15'],
+      ['apprenti', '2026-10-01', '2027-02-15'],
+      ['apprenti_sans_employeur', '2027-02-15', '2027-08-15'],
       ['initial', '2027-08-15', null],
     ]);
     expect(
@@ -396,6 +397,32 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
         })
       ).statusCode,
     ).toBe(409);
+  });
+
+  it('section 7 apprenti sans employeur : pas de convention de stage ; un nouveau contrat à temps annule le retour en initial', async () => {
+    const stage = await requete('POST', '/api/conventions-stage', admin, {
+      inscriptionId: premier.apprenant.inscriptionId,
+      entrepriseId: lEntreprise.id,
+      tuteurId: tuteurs[2]?.personne.id,
+      referentId: referent,
+      debut: '2027-03-01',
+      fin: '2027-03-31',
+      heuresPresence: 100,
+      missions: 'Découvrir le métier',
+    });
+    expect(stage.statusCode).toBe(400);
+    expect(stage.json<{ details: string[] }>().details[0]).toContain('sans employeur');
+    const nouveau = (
+      await requete('POST', '/api/contrats', admin, contrat(0, 1, '2027-04-01'))
+    ).json<Contrat>();
+    const signe = await requete('PATCH', `/api/contrats/${nouveau.id}`, admin, { statut: 'signe' });
+    expect(signe.statusCode, signe.body).toBe(200);
+    expect(await statuts(premier.apprenant.inscriptionId)).toEqual([
+      ['initial', '2026-09-01', '2026-10-01'],
+      ['apprenti', '2026-10-01', '2027-02-15'],
+      ['apprenti_sans_employeur', '2027-02-15', '2027-04-01'],
+      ['apprenti', '2027-04-01', null],
+    ]);
   });
 });
 
@@ -484,7 +511,8 @@ describe('section 2 : droits sur les contrats', () => {
     const fiche = (
       await requete('GET', `/api/contrats?personneId=${inscriptions[0]?.personne.id ?? ''}`, admin)
     ).json<ListeContrats>();
-    expect(fiche.contrats).toHaveLength(1);
+    // Le contrat rompu et celui qui l'a remplacé pendant la période sans employeur.
+    expect(fiche.contrats).toHaveLength(2);
     expect(fiche.inscriptions).toEqual([
       {
         id: inscriptions[0]?.id,
