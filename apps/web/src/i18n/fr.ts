@@ -1138,7 +1138,12 @@ export const fr = {
     annuler: 'Annuler',
     confirmer: 'Confirmer',
     lectureSeule: 'Consultation seule : vous ne gérez pas cette promotion.',
-    vues: { apprenants: 'Apprenants', groupes: 'Groupes', intervenants: 'Intervenants' },
+    vues: {
+      apprenants: 'Apprenants',
+      groupes: 'Groupes',
+      intervenants: 'Intervenants',
+      rythme: 'Rythme d’alternance',
+    },
     navigationVues: 'Vues de la promotion',
     changerVersion: 'Changer de version de maquette',
     aideChangerVersion:
@@ -1480,6 +1485,52 @@ export const fr = {
       derogation: 'Motif de dérogation à la gratification (facultatif)',
       derogationAide: 'À renseigner seulement si l’école déroge à l’obligation de gratification.',
     },
+    enregistrer: 'Enregistrer',
+    annuler: 'Annuler',
+  },
+  rythmes: {
+    indisponible:
+      'Le rythme d’alternance est momentanément indisponible. Rechargez la page dans quelques instants.',
+    erreur: 'L’enregistrement a échoué. Vérifiez votre connexion puis réessayez.',
+    aucun: 'Aucun calendrier d’alternance pour cette promotion : générez-le à partir d’un modèle.',
+    modeleOrigine: (modele: string) =>
+      `Généré à partir du modèle « ${modele} », puis retouchable jour par jour.`,
+    modele: 'Modèle',
+    generer: 'Générer le calendrier',
+    confirmerGeneration:
+      'Générer de nouveau le calendrier ? Les retouches faites à la main seront remplacées.',
+    nouveauModele: 'Nouveau modèle',
+    types: { ecole: 'École', entreprise: 'Entreprise', ferme: 'Fermé', examen: 'Examen' },
+    compte: (type: string, n: number) => `${type} : ${n} j`,
+    legende: 'Légende et nombre de jours',
+    pinceau: 'Type à appliquer aux jours choisis',
+    aideRetouche:
+      'Choisissez un type, touchez les jours à modifier, puis enregistrez les retouches.',
+    jour: (date: string, type: string) => `${date} : ${type}`,
+    retouches: (n: number) => `Enregistrer ${n} retouche${n > 1 ? 's' : ''}`,
+    abandonner: 'Abandonner',
+    exceptions: 'Exceptions individuelles',
+    aucuneException:
+      'Aucune exception : tous les apprenants suivent le calendrier de la promotion.',
+    nouvelleException: 'Nouvelle exception',
+    exception: (nom: string, debut: string, fin: string) => `${nom} · du ${debut} au ${fin}`,
+    supprimerException: (nom: string) => `Supprimer l’exception de ${nom}`,
+    confirmerSuppression:
+      'Supprimer cette exception ? L’apprenant suivra le calendrier de la promotion.',
+    champs: {
+      apprenant: 'Apprenant',
+      debut: 'Début',
+      fin: 'Fin',
+      motif: 'Motif (facultatif)',
+      motifAide:
+        'Une raison courte, par exemple « entreprise saisonnière ». N’y indiquez jamais de donnée de santé : un aménagement lié au handicap se gère avec le référent handicap.',
+      libelle: 'Nom du modèle',
+      semaines: 'Nombre de semaines du motif',
+      semaine: (n: number) => `Semaine ${n}`,
+      jourSemaine: (jour: string, semaine: number) => `${jour}, semaine ${semaine}`,
+    },
+    joursSemaine: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
+    initialesSemaine: ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
     enregistrer: 'Enregistrer',
     annuler: 'Annuler',
   },
