@@ -22,6 +22,7 @@ test.describe('E-01-02 Organisation et établissements', () => {
       'Calendrier',
       'Apparence',
       'Rôles et permissions',
+      'Salles',
       'Règles de l’école',
       'Journal d’audit',
       'Corbeille',

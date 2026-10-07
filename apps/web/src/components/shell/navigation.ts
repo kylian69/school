@@ -14,6 +14,8 @@ export interface NavigationEntry {
   module: string | null;
   /** Permissions dont l'une suffit à voir l'entrée ; absente pour une entrée ouverte à tous. */
   permissions?: readonly Permission[];
+  /** Entrée réservée à qui suit une formation ou enseigne dans l'école (module 02). */
+  parcours?: 'apprenant' | 'intervenant';
   /** Tracé SVG de l'icône (24 × 24), repris des maquettes. */
   icon: string;
 }
@@ -23,9 +25,11 @@ export const entreeVisible = (
   entry: NavigationEntry,
   modules: readonly string[],
   permissions: readonly string[],
+  parcours: { apprenant: boolean; intervenant: boolean } = { apprenant: false, intervenant: false },
 ) =>
   (entry.module === null || modules.includes(entry.module)) &&
-  (!entry.permissions || entry.permissions.some((p) => permissions.includes(p)));
+  (!entry.permissions || entry.permissions.some((p) => permissions.includes(p))) &&
+  (!entry.parcours || parcours[entry.parcours]);
 
 export const NAVIGATION: readonly NavigationEntry[] = [
   {
@@ -47,6 +51,27 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     module: 'referentiel',
     permissions: ['referentiel:lire', 'referentiel:gerer', 'referentiel:publier'],
     icon: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h7M8 11h5',
+  },
+  {
+    label: fr.coquille.entrees.promotions,
+    href: '/promotions',
+    module: 'referentiel',
+    permissions: ['promotions:lire', 'promotions:gerer'],
+    icon: 'M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6',
+  },
+  {
+    label: fr.coquille.entrees.maFormation,
+    href: '/ma-formation',
+    module: 'referentiel',
+    parcours: 'apprenant',
+    icon: 'M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13',
+  },
+  {
+    label: fr.coquille.entrees.mesEnseignements,
+    href: '/mes-enseignements',
+    module: 'referentiel',
+    parcours: 'intervenant',
+    icon: 'M4 5h16v11H4zM8 20h8M12 16v4',
   },
   {
     label: fr.coquille.entrees.seances,

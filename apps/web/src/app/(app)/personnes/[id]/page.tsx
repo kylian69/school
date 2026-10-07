@@ -2,6 +2,7 @@ import {
   JournalAudit,
   ListeAttributions,
   ListeFormations,
+  ListePromotions,
   ListeRoles,
   OrganisationDetail,
   PersonneDetail,
@@ -44,6 +45,7 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
     { data: organisation },
     { data: historique },
     { data: catalogue },
+    { data: promotions },
   ] = await Promise.all([
     apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
     apiGet('/api/roles', ListeRoles),
@@ -55,6 +57,9 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
     // Périmètre « formation » (RG-00-10) : les formations que la personne connectée peut lire.
     permissions.includes('roles:attribuer') && permissions.includes('referentiel:lire')
       ? apiGet('/api/formations?statut=active', ListeFormations)
+      : Promise.resolve({ data: null }),
+    permissions.includes('roles:attribuer') && permissions.includes('promotions:lire')
+      ? apiGet('/api/promotions', ListePromotions)
       : Promise.resolve({ data: null }),
   ]);
   const nom = `${personne.prenom} ${personne.nomUsage ?? personne.nom}`;
@@ -120,6 +125,7 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
         roles={roles?.roles ?? []}
         etablissements={(organisation?.etablissements ?? []).filter((e) => e.statut === 'actif')}
         formations={catalogue?.formations ?? []}
+        promotions={promotions?.promotions ?? []}
         droits={{
           attribuer: permissions.includes('roles:attribuer'),
           inviter:

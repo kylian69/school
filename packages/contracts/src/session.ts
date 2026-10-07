@@ -21,6 +21,13 @@ export const ContexteSession = z
     doubleAuthentificationActive: z.boolean(),
     /** Apparence de l’école active (US-01-14) ; null sans école active. */
     apparence: ApparenceEcole.nullable(),
+    /**
+     * Ce que la personne suit ou enseigne dans l'école active (module 02) : ouvre « Ma formation »
+     * (E-02-07) et « Mes enseignements » (E-02-08).
+     */
+    parcours: z
+      .object({ apprenant: z.boolean(), intervenant: z.boolean() })
+      .default({ apprenant: false, intervenant: false }),
   })
   .meta({ id: 'ContexteSession' });
 export type ContexteSession = z.infer<typeof ContexteSession>;

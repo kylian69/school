@@ -380,3 +380,51 @@ export const MesEnseignements = z
   })
   .meta({ id: 'MesEnseignements' });
 export type MesEnseignements = z.infer<typeof MesEnseignements>;
+
+// ——— Préparer l'année suivante (RG-02-20, parcours « préparer la rentrée ») ———
+
+export const PreparationAnneeSuivante = z
+  .object({
+    anneeSourceId: z.uuid(),
+    anneeCibleId: z.uuid(),
+    formationIds: z.array(z.uuid()).min(1, 'Cochez au moins une formation à reconduire.').max(200),
+    /** Vrai : aperçu sans rien écrire. */
+    apercu: z.boolean().default(true),
+  })
+  .meta({ id: 'PreparationAnneeSuivante' });
+export type PreparationAnneeSuivante = z.infer<typeof PreparationAnneeSuivante>;
+
+export const ResultatPreparation = z
+  .object({
+    apercu: z.boolean(),
+    promotions: z.array(
+      z.object({
+        sourceId: z.uuid(),
+        libelle: z.string(),
+        version: z.int(),
+        groupes: z.int(),
+        affectations: z.int(),
+        /** Affectations dont le module n'existe plus dans la nouvelle version. */
+        affectationsIgnorees: z.int(),
+        /** La promotion existe déjà pour l'année cible : elle n'est pas recréée. */
+        existante: z.boolean(),
+      }),
+    ),
+    creees: z.int(),
+  })
+  .meta({ id: 'ResultatPreparation' });
+export type ResultatPreparation = z.infer<typeof ResultatPreparation>;
+
+/** Passage en année supérieure des apprenants admis, choisis par la scolarité (RG-02-20). */
+export const PassageAnnee = z
+  .object({
+    promotionCibleId: z.uuid(),
+    inscriptionIds: z.array(z.uuid()).min(1).max(2000),
+  })
+  .meta({ id: 'PassageAnnee' });
+export type PassageAnnee = z.infer<typeof PassageAnnee>;
+
+export const ResultatPassage = z
+  .object({ inscrites: z.int(), dejaInscrites: z.int() })
+  .meta({ id: 'ResultatPassage' });
+export type ResultatPassage = z.infer<typeof ResultatPassage>;

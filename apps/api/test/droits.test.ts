@@ -187,6 +187,7 @@ describe('RG-01-16 et RG-00-11 droits réels, recalculés à chaque requête', (
       doubleAuthentificationExigee: false,
       doubleAuthentificationActive: false,
       apparence: null,
+      parcours: { apprenant: false, intervenant: false },
     });
   });
 });
