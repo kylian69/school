@@ -35,7 +35,6 @@
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(git push origin main*)",
-      "Bash(gh pr merge*)",
       "Bash(gh pr review*)",
       "Read(./apps/api/openapi.json)",
       "Read(./packages/db/migrations/meta/**)"
