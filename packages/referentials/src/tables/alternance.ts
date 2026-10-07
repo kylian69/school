@@ -78,6 +78,8 @@ export interface ReglesStage {
   seuilGratificationHeures: number;
   /** Durée maximale par organisme d'accueil et par année d'enseignement, en mois. */
   dureeMaximaleMois: number;
+  /** Heures de présence comptées pour un mois (22 jours de 7 heures). */
+  heuresParMois: number;
 }
 
 export const reglesStage: DatedTable<ReglesStage> = {
@@ -90,8 +92,8 @@ export const reglesStage: DatedTable<ReglesStage> = {
       debut: '2014-12-01',
       fin: null,
       source:
-        'Code de l’éducation, articles L124-5 (six mois par organisme et par année d’enseignement), L124-6 et D124-6 (gratification au-delà de deux mois, soit 44 jours de 7 heures : 308 heures)',
-      valeur: { seuilGratificationHeures: 308, dureeMaximaleMois: 6 },
+        'Code de l’éducation, articles L124-5 (six mois par organisme et par année d’enseignement), L124-6 et D124-6 (gratification au-delà de deux mois ; un mois compte 22 jours de présence de 7 heures, soit 308 heures pour deux mois)',
+      valeur: { seuilGratificationHeures: 308, dureeMaximaleMois: 6, heuresParMois: 154 },
     },
   ],
 };

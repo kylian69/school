@@ -54,7 +54,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'salles:gerer',
       'affectations:gerer',
       'entreprises:lire',
+      'contrats:lire',
       'entreprises:gerer',
+      'contrats:gerer',
     ],
   },
   {
@@ -74,6 +76,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'promotions:lire',
       'salles:lire',
       'entreprises:lire',
+      'contrats:lire',
     ],
   },
   {
@@ -97,7 +100,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'salles:lire',
       'affectations:gerer',
       'entreprises:lire',
+      'contrats:lire',
       'entreprises:gerer',
+      'contrats:gerer',
     ],
   },
   {
@@ -123,7 +128,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'salles:lire',
       'salles:gerer',
       'entreprises:lire',
+      'contrats:lire',
       'entreprises:gerer',
+      'contrats:gerer',
     ],
   },
   {

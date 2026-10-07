@@ -41,6 +41,8 @@ export const PERMISSIONS = {
   // Module 03 · Alternance et stages
   'entreprises:lire': 'Consulter les entreprises, leurs contacts et leurs tuteurs',
   'entreprises:gerer': 'Créer et modifier les entreprises, leurs contacts et leurs tuteurs',
+  'contrats:lire': 'Consulter les contrats d’alternance et les conventions de stage',
+  'contrats:gerer': 'Créer et modifier les contrats d’alternance et les conventions de stage',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

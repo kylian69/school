@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
   ARCHIVE_PHOTOS_TAILLE_MAX,
+  DOCUMENT_CONTRAT_TAILLE_MAX,
   IMPORT_TAILLE_MAX,
   LOGO_TAILLE_MAX,
   TYPES_ARCHIVE_PHOTOS,
@@ -130,6 +131,14 @@ export async function createApp(
   fastify.addContentTypeParser(
     TYPES_ARCHIVE_PHOTOS,
     { parseAs: 'buffer', bodyLimit: ARCHIVE_PHOTOS_TAILLE_MAX + 1024 * 1024 },
+    (_request, body, done) => {
+      done(null, body);
+    },
+  );
+  // Contrat ou convention de stage signés (10 Mo contrôlés par le service).
+  fastify.addContentTypeParser(
+    'application/pdf',
+    { parseAs: 'buffer', bodyLimit: 2 * DOCUMENT_CONTRAT_TAILLE_MAX },
     (_request, body, done) => {
       done(null, body);
     },

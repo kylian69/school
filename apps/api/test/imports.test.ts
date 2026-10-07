@@ -190,7 +190,10 @@ describe('E-01-06 assistant d’import', () => {
     const lourd = await deposer(Buffer.alloc(10 * 1024 * 1024 + 1, 0x41));
     expect(lourd.statusCode).toBe(400);
     expect(lourd.json<{ details: string[] }>().details[0]).toMatch(/10 Mo/);
-    expect((await deposer('%PDF-1.7', 'application/pdf')).statusCode).toBe(415);
+    // Un PDF est lu (contrats signés), puis refusé avec la marche à suivre.
+    const pdf = await deposer('%PDF-1.7', 'application/pdf');
+    expect(pdf.statusCode).toBe(400);
+    expect(pdf.json<{ details: string[] }>().details[0]).toContain('CSV ou Excel');
   });
 
   it('réserve l’import à qui en a la permission', async () => {

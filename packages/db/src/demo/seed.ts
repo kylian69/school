@@ -6,7 +6,10 @@ import {
   clientEtatEvenement,
   competence,
   competenceModule,
+  contactEntreprise,
   contrat,
+  contratAlternance,
+  contratTuteur,
   entreprise,
   formation,
   formationEtablissement,
@@ -69,7 +72,12 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
       await tx.insert(competence).values(referentiel.competences);
       await tx.insert(competenceModule).values(referentiel.competenceModules);
     }
-    if (dataset.entreprises.length > 0) await tx.insert(entreprise).values(dataset.entreprises);
+    const alternance = dataset.alternance;
+    if (alternance.entreprises.length > 0) {
+      await tx.insert(entreprise).values(alternance.entreprises);
+      await tx.insert(personne).values(alternance.tuteurs);
+      await tx.insert(contactEntreprise).values(alternance.contacts);
+    }
     const scolarite = dataset.scolarite;
     if (scolarite.salles.length > 0) await tx.insert(salle).values(scolarite.salles);
     if (scolarite.promotions.length > 0) {
@@ -79,6 +87,10 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
       await tx.insert(inscription).values(scolarite.inscriptions);
       await tx.insert(inscriptionStatut).values(scolarite.statuts);
       await tx.insert(groupeMembre).values(scolarite.membres);
+    }
+    if (alternance.contrats.length > 0) {
+      await tx.insert(contratAlternance).values(alternance.contrats);
+      await tx.insert(contratTuteur).values(alternance.contratTuteurs);
     }
   });
   return true;

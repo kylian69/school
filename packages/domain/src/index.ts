@@ -31,3 +31,4 @@ export * from './scolarite/inscriptions.js';
 export * from './scolarite/groupes.js';
 export * from './scolarite/affectations.js';
 export * from './alternance/entreprises.js';
+export * from './alternance/contrats.js';
