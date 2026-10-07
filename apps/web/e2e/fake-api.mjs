@@ -480,7 +480,7 @@ const invalideRef = (champ, message) => ({
   message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
   details: [`${champ} : ${message}`],
 });
-async function routeReferentiel(path, request, json, response) {
+async function routeReferentiel(path, request, json, response, url) {
   if (path === '/api/referentiel/echelle') {
     if (request.method === 'PUT') {
       const { niveaux } = await readBody(request);
@@ -546,7 +546,7 @@ async function routeReferentiel(path, request, json, response) {
     return json(200, detailFormation(f));
   }
   const maquette = path.match(
-    /^\/api\/maquettes\/([^/]+)(?:\/(publication|nouvelle-version|archivage|regles|simulation|blocs|ues|modules|competences)(?:\/([^/]+))?)?$/,
+    /^\/api\/maquettes\/([^/]+)(?:\/(publication|nouvelle-version|archivage|regles|simulation|import|blocs|ues|modules|competences)(?:\/([^/]+))?)?$/,
   );
   if (!maquette) return false;
   const [, versionId, action, elementId] = maquette;
@@ -568,6 +568,49 @@ async function routeReferentiel(path, request, json, response) {
     const body = await readBody(request);
     m.regles = body.regles;
     m.reglesParticulieres = body.reglesParticulieres.map((r) => ({ id: randomUUID(), ...r }));
+  }
+  if (action === 'import') {
+    const texte = await new Promise((resolve) => {
+      let data = '';
+      request.on('data', (chunk) => (data += chunk));
+      request.on('end', () => resolve(data));
+    });
+    const [entete = '', ...lignes] = texte
+      .replace(/^\uFEFF/, '')
+      .split(/\r?\n/)
+      .filter(Boolean);
+    const colonnes = entete.split(';');
+    const ue = colonnes.indexOf('UE');
+    const intitule = colonnes.indexOf('Intitulé de l’UE');
+    const ues = lignes.map((l) => l.split(';')).filter((c) => c[ue]);
+    const apercu = url.searchParams.get('apercu') === 'true';
+    if (!apercu) {
+      for (const c of ues) {
+        m.ues.push({
+          id: randomUUID(),
+          blocId: null,
+          code: c[ue],
+          intitule: c[intitule] || c[ue],
+          annee: 1,
+          semestre: 1,
+          ects: 0,
+          coefficient: 1,
+          option: null,
+          ordre: m.ues.length,
+        });
+      }
+    }
+    return json(200, {
+      apercu,
+      importe: !apercu,
+      blocs: 0,
+      ues: ues.length,
+      modules: 0,
+      competences: 0,
+      erreurs: [],
+      avertissements: ues.map((c) => `L’UE ${c[ue]} n’a aucun module : elle sera créée vide.`),
+      maquette: apercu ? null : detailMaquette(m),
+    });
   }
   if (action === 'simulation') {
     const { evaluations } = await readBody(request);
@@ -1326,7 +1369,7 @@ createServer(async (request, response) => {
     path.startsWith('/api/referentiel/')
   ) {
     if (!user) return json(401, { message: 'Session absente' });
-    const traite = await routeReferentiel(path, request, json, response);
+    const traite = await routeReferentiel(path, request, json, response, url);
     if (traite !== false) return traite;
   }
 

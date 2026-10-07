@@ -1,7 +1,6 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   IMPORT_TAILLE_MAX,
-  TYPES_FICHIER_IMPORT,
   type ApercuImport,
   type ChampImport,
   type LigneApercu,
@@ -12,7 +11,6 @@ import { attribution, importPersonnes, invitation, personne, type Transaction } 
 import {
   analyserLignes,
   CHAMPS_OBLIGATOIRES,
-  lireCsv,
   proposerCorrespondance,
   type Correspondance,
   type Probleme,
@@ -21,10 +19,10 @@ import {
   verifierAnnulation,
 } from '@scolaly/domain';
 import { and, count, desc, eq, inArray, isNull, lt, ne, notInArray } from 'drizzle-orm';
-import { readSheet } from 'read-excel-file/node';
 import type { Access } from '../../access/access-resolver.js';
 import { ObjectStorage } from '../../shared/storage/object-storage.js';
 import { UploadRejectedError, type UploadService } from '../../shared/storage/uploads.js';
+import { formatTableur, lireTableau } from '../../shared/tableur.js';
 import { OBJECT_STORAGE, UPLOADS } from '../../shared/tokens.js';
 
 /** Lignes renvoyées dans l'aperçu : toutes les lignes à revoir, puis un échantillon des autres. */
@@ -46,31 +44,11 @@ const MESSAGES: Record<ProblemeLigne, string> = {
   'civilite-inconnue': 'Civilité non reconnue (Madame ou Monsieur) : elle restera vide.',
 };
 
-const FORMATS = new Map<string, 'csv' | 'xlsx'>(Object.entries(TYPES_FICHIER_IMPORT));
-
 const invalide = (champ: string, message: string) =>
   new BadRequestException({
     message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
     details: [`${champ} : ${message}`],
   });
-
-/** Texte d'un CSV : UTF-8 s'il est valide, sinon Windows-1252 (RG-01-17, détection automatique). */
-function decoder(contenu: Buffer): string {
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(contenu);
-  } catch {
-    return new TextDecoder('windows-1252').decode(contenu);
-  }
-}
-
-/** Valeur d'une cellule Excel en texte ; une date devient AAAA-MM-JJ. */
-function cellule(valeur: unknown): string {
-  if (valeur === null || valeur === undefined) return '';
-  if (valeur instanceof Date) return valeur.toISOString().slice(0, 10);
-  if (typeof valeur === 'boolean') return valeur ? 'oui' : 'non';
-  if (typeof valeur === 'number' || typeof valeur === 'string') return String(valeur);
-  return '';
-}
 
 /** Ce qu'un import validé a créé ou modifié, pour pouvoir l'annuler (RG-01-20). */
 export interface ResultatImport {
@@ -114,7 +92,7 @@ export class ImportsService {
     contenu: Buffer | undefined,
     typeContenu: string | undefined,
   ): Promise<ApercuImport> {
-    const fichierType = FORMATS.get((typeContenu ?? '').split(';')[0] ?? '');
+    const fichierType = formatTableur(typeContenu);
     if (!fichierType || !Buffer.isBuffer(contenu)) {
       throw invalide('fichier', 'Déposez un fichier CSV ou Excel (.xlsx).');
     }
@@ -135,7 +113,7 @@ export class ImportsService {
       if (erreur instanceof UploadRejectedError) throw invalide('fichier', erreur.message);
       throw erreur;
     }
-    const tableau = await this.lireTableau(contenu, fichierType);
+    const tableau = await lireTableau(contenu, fichierType);
     if (tableau.colonnes.length === 0) {
       throw invalide(
         'fichier',
@@ -196,7 +174,7 @@ export class ImportsService {
 
   /** Tableau lu depuis le fichier conservé (reprise d'un import interrompu). */
   async tableau(ligne: LigneImport): Promise<TableauLu> {
-    return this.lireTableau(await this.storage.get(ligne.fichierCle), ligne.fichierType);
+    return lireTableau(await this.storage.get(ligne.fichierCle), ligne.fichierType);
   }
 
   /** Ce que l'école contient déjà : emails, INE et matricules (même supprimés, RG-01-06). */
@@ -273,22 +251,6 @@ export class ImportsService {
       .where(and(eq(importPersonnes.id, id), isNull(importPersonnes.deletedAt)));
     if (!ligne) throw new NotFoundException('Import introuvable dans cette école.');
     return ligne;
-  }
-
-  private async lireTableau(contenu: Buffer, fichierType: string): Promise<TableauLu> {
-    if (fichierType === 'csv') return lireCsv(decoder(contenu));
-    let lignes;
-    try {
-      lignes = await readSheet(contenu);
-    } catch {
-      throw invalide(
-        'fichier',
-        'Ce classeur Excel est illisible. Enregistrez-le de nouveau au format .xlsx, ou en CSV.',
-      );
-    }
-    const texte = lignes.map((l) => l.map(cellule)).filter((l) => l.some((v) => v.trim() !== ''));
-    const [colonnes = [], ...donnees] = texte;
-    return { colonnes: colonnes.map((c) => c.trim()), lignes: donnees };
   }
 
   /** RG-01-18 : la correspondance du dernier import de même type est reprise si elle convient. */

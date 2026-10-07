@@ -611,7 +611,7 @@ export class MaquettesService {
   }
 
   /** Droits et RG-02-04 : la modification demandée est-elle permise sur cette version ? */
-  private async modifiable(
+  async modifiable(
     tx: Transaction,
     access: Access,
     versionId: string,
@@ -627,7 +627,7 @@ export class MaquettesService {
     return { ...ctx, apresPublication: verdict.trace };
   }
 
-  private async construire(tx: Transaction, ctx: Contexte): Promise<Maquette> {
+  async construire(tx: Transaction, ctx: Contexte): Promise<Maquette> {
     const versionId = ctx.version.id;
     const [version] = await tx
       .select()
@@ -912,7 +912,7 @@ export class MaquettesService {
     }
   }
 
-  private async auditer(
+  async auditer(
     tx: Transaction,
     access: Access,
     ctx: Contexte & { apresPublication?: boolean },

@@ -101,6 +101,35 @@ test.describe('Module 02 · formations et maquettes', () => {
     await expectNoAccessibilityViolations(page);
   });
 
+  test('US-02-02 vérifie puis importe une maquette depuis un fichier', async ({ page }) => {
+    await page.goto('/formations');
+    await page.getByRole('button', { name: 'Nouvelle formation' }).click();
+    const dialogue = page.getByRole('dialog', { name: 'Nouvelle formation' });
+    await dialogue.getByLabel('Intitulé').fill('BTS importé');
+    await dialogue.getByRole('button', { name: 'Enregistrer' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('BTS importé');
+
+    await page.getByRole('button', { name: 'Importer une maquette' }).click();
+    const importer = page.getByRole('dialog', { name: 'Importer une maquette (Excel ou CSV)' });
+    await expect(importer.getByRole('link', { name: 'Télécharger le modèle (CSV)' })).toBeVisible();
+    await importer.getByLabel(/^Fichier/).setInputFiles({
+      name: 'maquette.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('UE;Intitulé de l’UE;Semestre\nUE1;Relation client;S1\n'),
+    });
+    await expectNoAccessibilityViolations(page);
+    await importer.getByRole('button', { name: 'Vérifier le fichier' }).click();
+    await expect(
+      importer.getByText('Fichier valide : 0 bloc, 1 UE, 0 module à ajouter.'),
+    ).toBeVisible();
+    await importer.getByRole('button', { name: 'Importer', exact: true }).click();
+    await expect(
+      importer.getByText('Import terminé : 0 bloc, 1 UE, 0 module ajoutés.'),
+    ).toBeVisible();
+    await importer.getByRole('button', { name: 'Confirmer' }).click();
+    await expect(page.getByRole('heading', { name: /UE1 · Relation client/ })).toBeVisible();
+  });
+
   test('E-02-10 enregistre l’échelle de maîtrise et une règle de la bibliothèque', async ({
     page,
   }) => {

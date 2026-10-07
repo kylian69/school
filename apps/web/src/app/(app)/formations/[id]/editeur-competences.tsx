@@ -6,6 +6,7 @@ import { useId, useState, type SyntheticEvent } from 'react';
 import { Champ, MessageErreur } from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
 import { texte, useEnvoi } from '../envoi';
+import { ImportMaquette } from './import-maquette';
 
 const t = fr.referentiel;
 const tc = t.competences;
@@ -24,9 +25,12 @@ export function EditeurCompetences({ maquette }: { maquette: Maquette }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">{tc.titre}</h2>
-        <p className="text-sm text-muted">{tc.aide}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">{tc.titre}</h2>
+          <p className="text-sm text-muted">{tc.aide}</p>
+        </div>
+        {modifiable ? <ImportMaquette versionId={maquette.version.id} type="competences" /> : null}
       </div>
       <MessageErreur erreurs={erreurs} />
       {maquette.blocs.length === 0 ? <p className="text-sm text-muted">{tc.sansBloc}</p> : null}

@@ -12,6 +12,7 @@ import { useId, useState, type SyntheticEvent } from 'react';
 import { Champ, MessageErreur } from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
 import { chiffre, nombre, SELECT, texte, useEnvoi } from '../envoi';
+import { ImportMaquette } from './import-maquette';
 
 const t = fr.referentiel;
 const tm = t.maquette;
@@ -160,13 +161,16 @@ export function EditeurMaquette({ maquette }: { maquette: Maquette }) {
             {t.vues.maquette}
           </h2>
           {modifiable ? (
-            <Button
-              onClick={() => {
-                setEdition({ type: 'ue' });
-              }}
-            >
-              {tm.ajouterUe}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <ImportMaquette versionId={maquette.version.id} type="maquette" />
+              <Button
+                onClick={() => {
+                  setEdition({ type: 'ue' });
+                }}
+              >
+                {tm.ajouterUe}
+              </Button>
+            </div>
           ) : null}
         </div>
         {ues.length === 0 ? <p className="text-sm text-muted">{tm.vide}</p> : null}

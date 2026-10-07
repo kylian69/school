@@ -600,3 +600,29 @@ export const ResultatSimulation = z
   })
   .meta({ id: 'ResultatSimulation' });
 export type ResultatSimulation = z.infer<typeof ResultatSimulation>;
+
+// ——— Import d'une maquette ou d'un référentiel de compétences (US-02-02, RG-02-21) ———
+
+export const ParametresImportMaquette = z.object({
+  type: z.enum(['maquette', 'competences']).default('maquette'),
+  /** Vérifier sans rien enregistrer. */
+  apercu: z.stringbool().default(false),
+});
+export type ParametresImportMaquette = z.infer<typeof ParametresImportMaquette>;
+
+export const ResultatImportMaquette = z
+  .object({
+    apercu: z.boolean(),
+    /** Vrai si le contenu a été ajouté à la maquette. */
+    importe: z.boolean(),
+    blocs: z.int(),
+    ues: z.int(),
+    modules: z.int(),
+    competences: z.int(),
+    /** Erreurs ligne par ligne (null : erreur qui ne tient pas à une ligne) ; rien n'est écrit. */
+    erreurs: z.array(z.object({ ligne: z.int().nullable(), message: z.string() })),
+    avertissements: z.array(z.string()),
+    maquette: Maquette.nullable(),
+  })
+  .meta({ id: 'ResultatImportMaquette' });
+export type ResultatImportMaquette = z.infer<typeof ResultatImportMaquette>;
