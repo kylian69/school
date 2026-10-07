@@ -225,6 +225,20 @@
       "when": 1791324313407,
       "tag": "0031_scolarite_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791325361535,
+      "tag": "0032_salles_affectations",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791325363044,
+      "tag": "0033_salles_permissions",
+      "breakpoints": true
     }
   ]
 }

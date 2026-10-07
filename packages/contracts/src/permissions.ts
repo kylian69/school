@@ -35,6 +35,9 @@ export const PERMISSIONS = {
     'Créer les promotions et les groupes, inscrire les apprenants et les répartir dans les groupes',
   'promotions:changer-version':
     'Changer la version de maquette d’une promotion en cours d’année (RG-02-05)',
+  'salles:lire': 'Consulter les salles et leurs équipements',
+  'salles:gerer': 'Créer et modifier les salles de ses établissements',
+  'affectations:gerer': 'Affecter les intervenants aux modules, avec leurs heures prévues',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

@@ -50,6 +50,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'promotions:lire',
       'promotions:gerer',
       'promotions:changer-version',
+      'salles:lire',
+      'salles:gerer',
+      'affectations:gerer',
     ],
   },
   {
@@ -67,6 +70,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'audit:lire',
       'referentiel:lire',
       'promotions:lire',
+      'salles:lire',
     ],
   },
   {
@@ -87,6 +91,8 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'referentiel:publier',
       'promotions:lire',
       'promotions:gerer',
+      'salles:lire',
+      'affectations:gerer',
     ],
   },
   {
@@ -109,6 +115,8 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'referentiel:lire',
       'promotions:lire',
       'promotions:gerer',
+      'salles:lire',
+      'salles:gerer',
     ],
   },
   {
@@ -118,7 +126,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
     perimetre: 'soi',
     doubleAuthentificationRequise: false,
     phase: 'MVP',
-    permissions: ['emargement:animer'],
+    permissions: ['emargement:animer', 'salles:lire'],
   },
   {
     code: 'apprenant',

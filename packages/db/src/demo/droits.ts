@@ -2,7 +2,9 @@ import { and, eq } from 'drizzle-orm';
 import type { Database } from '../client.js';
 import { initialiserRolesParDefaut, type DefinitionRole } from '../roles-par-defaut.js';
 import {
+  affectation,
   attribution,
+  maquetteModule,
   groupeMembre,
   groupePromotion,
   inscription,
@@ -70,6 +72,35 @@ export async function seedDemoDroits(
       perimetreId: parEtablissement ? (campus?.id ?? null) : null,
       debut: '2026-09-01',
     });
+    // Le compte intervenant enseigne les deux premiers modules de la première promotion.
+    if (compte.role === 'intervenant') {
+      const [promo] = await owner
+        .select()
+        .from(promotion)
+        .where(eq(promotion.organisationId, organisationId))
+        .orderBy(promotion.libelle)
+        .limit(1);
+      if (!promo) continue;
+      const modules = await owner
+        .select()
+        .from(maquetteModule)
+        .where(eq(maquetteModule.versionId, promo.versionId))
+        .orderBy(maquetteModule.code)
+        .limit(2);
+      if (modules.length > 0) {
+        await owner.insert(affectation).values(
+          modules.map((m) => ({
+            organisationId,
+            personneId: fiche.id,
+            moduleId: m.id,
+            promotionId: promo.id,
+            heuresCm: m.heuresCm,
+            heuresTd: m.heuresTd,
+            heuresTp: m.heuresTp,
+          })),
+        );
+      }
+    }
     // Le compte apprenant suit la première promotion de son école (I3.2), dans son premier TD.
     if (compte.role === 'apprenant') {
       const [promo] = await owner

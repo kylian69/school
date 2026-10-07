@@ -5,6 +5,68 @@
     "version": "0.0.0"
   },
   "paths": {
+    "/api/affectations/{id}": {
+      "patch": {
+        "operationId": "RessourcesController.modifierAffectation",
+        "summary": "Modifier les groupes ou les heures d’une affectation",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "affectations:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationAffectation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Affectation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RessourcesController.supprimerAffectation",
+        "summary": "Retirer une affectation",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "affectations:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/annees": {
       "get": {
         "operationId": "CalendrierController.lister",
@@ -2037,6 +2099,48 @@
         }
       }
     },
+    "/api/moi/enseignements": {
+      "get": {
+        "operationId": "MoiScolariteController.enseignements",
+        "summary": "Mes modules, groupes et heures prévues (E-02-08)",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesEnseignements"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/formation": {
+      "get": {
+        "operationId": "MoiScolariteController.formation",
+        "summary": "Ma maquette : UE, modules, ECTS, coefficients et règles (E-02-07)",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaFormation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/moi/photo": {
       "get": {
         "operationId": "MaPhotoController.lire",
@@ -2891,6 +2995,65 @@
         }
       }
     },
+    "/api/promotions/{id}/affectations": {
+      "get": {
+        "operationId": "RessourcesController.listerAffectations",
+        "summary": "Affectations des intervenants et écarts d’heures avec la maquette (RG-02-18)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:lire",
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffectationsPromotion"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "RessourcesController.creerAffectation",
+        "summary": "Affecter un intervenant à un module (US-02-08)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "affectations:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieAffectation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Affectation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/promotions/{id}/groupes": {
       "post": {
         "operationId": "ScolariteController.creerGroupe",
@@ -3301,6 +3464,100 @@
         }
       }
     },
+    "/api/salles": {
+      "get": {
+        "operationId": "RessourcesController.listerSalles",
+        "summary": "Salles des établissements, filtrables (RG-02-19)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "salles:lire",
+            "salles:gerer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeSalles"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "RessourcesController.creerSalle",
+        "summary": "Décrire une salle (US-02-09)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "salles:gerer"
+          ],
+          "scope": "etablissement"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieSalle"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Salle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/salles/{id}": {
+      "patch": {
+        "operationId": "RessourcesController.modifierSalle",
+        "summary": "Modifier ou fermer une salle",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "salles:gerer"
+          ],
+          "scope": "etablissement"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationSalle"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Salle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/seances": {
       "get": {
         "operationId": "SeancesController.aAnimer",
@@ -3541,6 +3798,235 @@
         "required": [
           "motDePasse",
           "conditionsAcceptees"
+        ],
+        "additionalProperties": false
+      },
+      "Affectation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "promotionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "moduleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "intervenant": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom"
+            ],
+            "additionalProperties": false
+          },
+          "groupeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "type": "number"
+              },
+              "td": {
+                "type": "number"
+              },
+              "tp": {
+                "type": "number"
+              },
+              "projet": {
+                "type": "number"
+              },
+              "elearning": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "promotionId",
+          "moduleId",
+          "intervenant",
+          "groupeIds",
+          "heures"
+        ],
+        "additionalProperties": false
+      },
+      "AffectationsPromotion": {
+        "type": "object",
+        "properties": {
+          "affectations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Affectation"
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "intitule": {
+                  "type": "string"
+                },
+                "ueCode": {
+                  "type": "string"
+                },
+                "prevu": {
+                  "type": "object",
+                  "properties": {
+                    "cm": {
+                      "type": "number"
+                    },
+                    "td": {
+                      "type": "number"
+                    },
+                    "tp": {
+                      "type": "number"
+                    },
+                    "projet": {
+                      "type": "number"
+                    },
+                    "elearning": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cm",
+                    "td",
+                    "tp",
+                    "projet",
+                    "elearning"
+                  ],
+                  "additionalProperties": false
+                },
+                "affecte": {
+                  "type": "object",
+                  "properties": {
+                    "cm": {
+                      "type": "number"
+                    },
+                    "td": {
+                      "type": "number"
+                    },
+                    "tp": {
+                      "type": "number"
+                    },
+                    "projet": {
+                      "type": "number"
+                    },
+                    "elearning": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cm",
+                    "td",
+                    "tp",
+                    "projet",
+                    "elearning"
+                  ],
+                  "additionalProperties": false
+                },
+                "ecarts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "cm",
+                          "td",
+                          "tp",
+                          "projet",
+                          "elearning"
+                        ]
+                      },
+                      "prevu": {
+                        "type": "number"
+                      },
+                      "affecte": {
+                        "type": "number"
+                      },
+                      "ecart": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "prevu",
+                      "affecte",
+                      "ecart"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "intitule",
+                "ueCode",
+                "prevu",
+                "affecte",
+                "ecarts"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "affectations",
+          "modules",
+          "modifiable"
         ],
         "additionalProperties": false
       },
@@ -4830,6 +5316,9 @@
                 "promotions:lire",
                 "promotions:gerer",
                 "promotions:changer-version",
+                "salles:lire",
+                "salles:gerer",
+                "affectations:gerer",
                 "emargement:animer"
               ]
             }
@@ -6133,6 +6622,79 @@
         ],
         "additionalProperties": false
       },
+      "ListeSalles": {
+        "type": "object",
+        "properties": {
+          "salles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Salle"
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "salles",
+          "creation"
+        ],
+        "additionalProperties": false
+      },
+      "MaFormation": {
+        "type": "object",
+        "properties": {
+          "formations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "promotion": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "libelle": {
+                      "type": "string"
+                    },
+                    "anneeFormation": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "libelle",
+                    "anneeFormation"
+                  ],
+                  "additionalProperties": false
+                },
+                "option": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "maquette": {
+                  "$ref": "#/components/schemas/Maquette"
+                }
+              },
+              "required": [
+                "promotion",
+                "option",
+                "maquette"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "formations"
+        ],
+        "additionalProperties": false
+      },
       "Maquette": {
         "type": "object",
         "properties": {
@@ -6262,6 +6824,196 @@
         "required": [
           "role"
         ],
+        "additionalProperties": false
+      },
+      "MesEnseignements": {
+        "type": "object",
+        "properties": {
+          "enseignements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "affectationId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "promotion": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "libelle": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "libelle"
+                  ],
+                  "additionalProperties": false
+                },
+                "module": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "intitule": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "intitule"
+                  ],
+                  "additionalProperties": false
+                },
+                "groupes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "heures": {
+                  "type": "object",
+                  "properties": {
+                    "cm": {
+                      "type": "number"
+                    },
+                    "td": {
+                      "type": "number"
+                    },
+                    "tp": {
+                      "type": "number"
+                    },
+                    "projet": {
+                      "type": "number"
+                    },
+                    "elearning": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cm",
+                    "td",
+                    "tp",
+                    "projet",
+                    "elearning"
+                  ],
+                  "additionalProperties": false
+                },
+                "realisees": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "cm": {
+                      "type": "number"
+                    },
+                    "td": {
+                      "type": "number"
+                    },
+                    "tp": {
+                      "type": "number"
+                    },
+                    "projet": {
+                      "type": "number"
+                    },
+                    "elearning": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cm",
+                    "td",
+                    "tp",
+                    "projet",
+                    "elearning"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "affectationId",
+                "promotion",
+                "module",
+                "groupes",
+                "heures",
+                "realisees"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "totalHeures": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enseignements",
+          "totalHeures"
+        ],
+        "additionalProperties": false
+      },
+      "ModificationAffectation": {
+        "type": "object",
+        "properties": {
+          "groupeIds": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "td": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "tp": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "projet": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "elearning": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          }
+        },
         "additionalProperties": false
       },
       "ModificationAnnee": {
@@ -6855,7 +7607,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 24,
+            "maxItems": 27,
             "type": "array",
             "items": {
               "type": "string",
@@ -6883,12 +7635,61 @@
                 "promotions:lire",
                 "promotions:gerer",
                 "promotions:changer-version",
+                "salles:lire",
+                "salles:gerer",
+                "affectations:gerer",
                 "emargement:animer"
               ]
             }
           },
           "doubleAuthentificationRequise": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationSalle": {
+        "type": "object",
+        "properties": {
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "capacite": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5000
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "cours",
+              "tp_informatique",
+              "laboratoire",
+              "amphitheatre",
+              "virtuelle"
+            ]
+          },
+          "equipements": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          },
+          "pmr": {
+            "type": "boolean"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "disponible",
+              "fermee"
+            ]
           }
         },
         "additionalProperties": false
@@ -7207,7 +8008,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 24,
+            "maxItems": 27,
             "type": "array",
             "items": {
               "type": "string",
@@ -7235,6 +8036,9 @@
                 "promotions:lire",
                 "promotions:gerer",
                 "promotions:changer-version",
+                "salles:lire",
+                "salles:gerer",
+                "affectations:gerer",
                 "emargement:animer"
               ]
             }
@@ -9371,6 +10175,9 @@
                 "promotions:lire",
                 "promotions:gerer",
                 "promotions:changer-version",
+                "salles:lire",
+                "salles:gerer",
+                "affectations:gerer",
                 "emargement:animer"
               ]
             }
@@ -9398,6 +10205,81 @@
           "personnes",
           "parDefaut",
           "verrouille"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieAffectation": {
+        "type": "object",
+        "properties": {
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "moduleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "groupeIds": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "heures": {
+            "type": "object",
+            "properties": {
+              "cm": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "td": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "tp": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "projet": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "elearning": {
+                "default": 0,
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              }
+            },
+            "required": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "elearning"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "personneId",
+          "moduleId",
+          "groupeIds",
+          "heures"
         ],
         "additionalProperties": false
       },
@@ -9792,6 +10674,71 @@
         ],
         "additionalProperties": false
       },
+      "SaisieSalle": {
+        "type": "object",
+        "properties": {
+          "etablissementId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "capacite": {
+            "default": null,
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5000
+          },
+          "type": {
+            "default": "cours",
+            "type": "string",
+            "enum": [
+              "cours",
+              "tp_informatique",
+              "laboratoire",
+              "amphitheatre",
+              "virtuelle"
+            ]
+          },
+          "equipements": {
+            "default": [],
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          },
+          "pmr": {
+            "default": false,
+            "type": "boolean"
+          },
+          "statut": {
+            "default": "disponible",
+            "type": "string",
+            "enum": [
+              "disponible",
+              "fermee"
+            ]
+          }
+        },
+        "required": [
+          "etablissementId",
+          "nom",
+          "capacite",
+          "type",
+          "equipements",
+          "pmr",
+          "statut"
+        ],
+        "additionalProperties": false
+      },
       "SaisieSimulation": {
         "type": "object",
         "properties": {
@@ -10056,6 +11003,71 @@
           "ects",
           "coefficient",
           "option"
+        ],
+        "additionalProperties": false
+      },
+      "Salle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "etablissementId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "capacite": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "cours",
+              "tp_informatique",
+              "laboratoire",
+              "amphitheatre",
+              "virtuelle"
+            ]
+          },
+          "equipements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pmr": {
+            "type": "boolean"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "disponible",
+              "fermee"
+            ]
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "etablissementId",
+          "nom",
+          "capacite",
+          "type",
+          "equipements",
+          "pmr",
+          "statut",
+          "modifiable"
         ],
         "additionalProperties": false
       },

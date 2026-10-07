@@ -6,6 +6,7 @@ import type {
   inscription,
   inscriptionStatut,
   promotion,
+  salle,
 } from '../schema/index.js';
 import { SeededRandom } from './random.js';
 import type { DemoReferentiel } from './referentiel.js';
@@ -25,6 +26,7 @@ export interface DemoScolarite {
   inscriptions: InferInsertModel<typeof inscription>[];
   statuts: InferInsertModel<typeof inscriptionStatut>[];
   membres: InferInsertModel<typeof groupeMembre>[];
+  salles: InferInsertModel<typeof salle>[];
 }
 
 export function buildDemoScolarite(source: {
@@ -48,7 +50,36 @@ export function buildDemoScolarite(source: {
     inscriptions: [],
     statuts: [],
     membres: [],
+    salles: [],
   };
+  // RG-02-19 : la salle virtuelle de chaque établissement, et deux salles de cours.
+  for (const e of source.etablissements) {
+    if (!e.id) continue;
+    const commun = {
+      organisationId: e.organisationId,
+      etablissementId: e.id,
+      createdAt: CREATED_AT,
+    };
+    jeu.salles.push(
+      { ...commun, id: id(), nom: 'Salle virtuelle (à distance)', type: 'virtuelle' },
+      {
+        ...commun,
+        id: id(),
+        nom: 'Salle 101',
+        capacite: 35,
+        equipements: ['vidéoprojecteur'],
+        pmr: true,
+      },
+      {
+        ...commun,
+        id: id(),
+        nom: 'Salle informatique 2',
+        capacite: 24,
+        type: 'tp_informatique',
+        equipements: ['ordinateurs', 'vidéoprojecteur'],
+      },
+    );
+  }
   const organisations = [...new Set(source.referentiel.formations.map((f) => f.organisationId))];
   for (const organisationId of organisations) {
     const annee = source.annees.find((a) => a.organisationId === organisationId);

@@ -1,10 +1,12 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   date,
   foreignKey,
   index,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   smallint,
@@ -15,7 +17,7 @@ import {
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 import { personne } from './personne.js';
-import { formation, maquetteVersion } from './referentiel.js';
+import { formation, maquetteModule, maquetteVersion } from './referentiel.js';
 import { anneeScolaire, etablissement } from './structure.js';
 
 /**
@@ -221,5 +223,112 @@ export const groupeMembre = pgTable(
       foreignColumns: [inscription.organisationId, inscription.id],
     }).onDelete('cascade'),
     check('groupe_membre_dates_check', sql`${t.fin} is null or ${t.fin} > ${t.debut}`),
+  ],
+).enableRLS();
+
+export const salleType = pgEnum('salle_type', [
+  'cours',
+  'tp_informatique',
+  'laboratoire',
+  'amphitheatre',
+  'virtuelle',
+]);
+export const salleStatut = pgEnum('salle_statut', ['disponible', 'fermee']);
+
+/** Salle d'un établissement (RG-02-19) ; une salle virtuelle existe par défaut. */
+export const salle = pgTable(
+  'salle',
+  {
+    ...organisationScoped(),
+    etablissementId: uuid().notNull(),
+    nom: text().notNull(),
+    capacite: integer(),
+    type: salleType().notNull().default('cours'),
+    equipements: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    pmr: boolean().notNull().default(false),
+    statut: salleStatut().notNull().default('disponible'),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('salle', t),
+    index('salle_etablissement_idx').on(t.organisationId, t.etablissementId),
+    foreignKey({
+      name: 'salle_etablissement_fk',
+      columns: [t.organisationId, t.etablissementId],
+      foreignColumns: [etablissement.organisationId, etablissement.id],
+    }),
+    check('salle_capacite_check', sql`${t.capacite} is null or ${t.capacite} > 0`),
+  ],
+).enableRLS();
+
+const heuresAffectees = () =>
+  numeric({ precision: 7, scale: 2, mode: 'number' }).notNull().default(0);
+
+/**
+ * Affectation d'un intervenant à un module pour une promotion (RG-02-18), avec ses heures prévues
+ * par type ; ses groupes sont dans affectation_groupe (aucun : toute la promotion).
+ */
+export const affectation = pgTable(
+  'affectation',
+  {
+    ...organisationScoped(),
+    personneId: uuid().notNull(),
+    moduleId: uuid().notNull(),
+    promotionId: uuid().notNull(),
+    heuresCm: heuresAffectees(),
+    heuresTd: heuresAffectees(),
+    heuresTp: heuresAffectees(),
+    heuresProjet: heuresAffectees(),
+    heuresElearning: heuresAffectees(),
+    /** Affectation reconduite d'une année à l'autre (RG-02-20). */
+    reconduiteDe: uuid(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('affectation', t),
+    index('affectation_promotion_idx').on(t.organisationId, t.promotionId),
+    index('affectation_personne_idx').on(t.organisationId, t.personneId),
+    foreignKey({
+      name: 'affectation_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    foreignKey({
+      name: 'affectation_module_fk',
+      columns: [t.organisationId, t.moduleId],
+      foreignColumns: [maquetteModule.organisationId, maquetteModule.id],
+    }),
+    foreignKey({
+      name: 'affectation_promotion_fk',
+      columns: [t.organisationId, t.promotionId],
+      foreignColumns: [promotion.organisationId, promotion.id],
+    }),
+  ],
+).enableRLS();
+
+export const affectationGroupe = pgTable(
+  'affectation_groupe',
+  {
+    ...organisationScoped(),
+    affectationId: uuid().notNull(),
+    groupeId: uuid().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('affectation_groupe', t),
+    uniqueIndex('affectation_groupe_paire_key').on(t.organisationId, t.affectationId, t.groupeId),
+    foreignKey({
+      name: 'affectation_groupe_affectation_fk',
+      columns: [t.organisationId, t.affectationId],
+      foreignColumns: [affectation.organisationId, affectation.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'affectation_groupe_groupe_fk',
+      columns: [t.organisationId, t.groupeId],
+      foreignColumns: [groupeEleves.organisationId, groupeEleves.id],
+    }),
   ],
 ).enableRLS();

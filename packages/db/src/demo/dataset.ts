@@ -246,6 +246,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       inscriptions: [],
       statuts: [],
       membres: [],
+      salles: [],
     },
   };
 
