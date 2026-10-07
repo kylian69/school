@@ -24,6 +24,7 @@ export function RolesCompte({
   roles,
   etablissements,
   formations = [],
+  promotions = [],
   droits,
 }: {
   personne: PersonneDetail;
@@ -32,6 +33,8 @@ export function RolesCompte({
   etablissements: readonly Etablissement[];
   /** Formations proposées comme périmètre (module 02) ; vide sans droit de lecture. */
   formations?: readonly { id: string; intitule: string }[];
+  /** Promotions proposées comme périmètre (module 02). */
+  promotions?: readonly { id: string; libelle: string }[];
   droits: { attribuer: boolean; inviter: boolean; desactiver: boolean };
 }) {
   const router = useRouter();
@@ -96,7 +99,9 @@ export function RolesCompte({
         ? t.roles.soi
         : a.perimetreType === 'formation'
           ? t.roles.formation(a.perimetreLibelle ?? '—')
-          : t.roles.etablissement(a.perimetreLibelle ?? '—');
+          : a.perimetreType === 'promotion'
+            ? t.roles.promotion(a.perimetreLibelle ?? '—')
+            : t.roles.etablissement(a.perimetreLibelle ?? '—');
 
   return (
     <div className="grid max-w-3xl gap-4">
@@ -143,7 +148,7 @@ export function RolesCompte({
                 id={roleId}
                 name="roleId"
                 required
-                className="h-11 rounded-control border border-line bg-surface px-3 text-base md:h-10 md:text-sm"
+                className="h-11 w-full min-w-0 max-w-full rounded-control border border-line bg-surface px-3 text-base md:h-10 md:text-sm"
               >
                 {roles.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -157,7 +162,7 @@ export function RolesCompte({
               <select
                 id={perimetreId}
                 name="perimetre"
-                className="h-11 rounded-control border border-line bg-surface px-3 text-base md:h-10 md:text-sm"
+                className="h-11 w-full min-w-0 max-w-full rounded-control border border-line bg-surface px-3 text-base md:h-10 md:text-sm"
               >
                 <option value="organisation">{t.roles.ecole}</option>
                 {etablissements.map((e) => (
@@ -168,6 +173,11 @@ export function RolesCompte({
                 {formations.map((f) => (
                   <option key={f.id} value={`formation:${f.id}`}>
                     {t.roles.formation(f.intitule)}
+                  </option>
+                ))}
+                {promotions.map((p) => (
+                  <option key={p.id} value={`promotion:${p.id}`}>
+                    {t.roles.promotion(p.libelle)}
                   </option>
                 ))}
                 <option value="soi">{t.roles.soi}</option>

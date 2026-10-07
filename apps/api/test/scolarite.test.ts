@@ -13,6 +13,8 @@ import {
   type MesEnseignements,
   type Salle,
   type Maquette,
+  type ResultatPassage,
+  type ResultatPreparation,
   type ResultatRepartition,
 } from '@scolaly/contracts';
 import {
@@ -563,6 +565,11 @@ describe('E-02-06 salles, affectations, E-02-07 et E-02-08', () => {
     });
     expect(refus.statusCode).toBe(403);
 
+    const contexte = await requete('GET', '/api/session/contexte', intervenant);
+    expect(contexte.json<{ parcours: unknown }>().parcours).toEqual({
+      apprenant: false,
+      intervenant: true,
+    });
     // E-02-08 : l'intervenant voit ses modules, groupes et heures, sans permission particulière.
     const mes = await requete('GET', '/api/moi/enseignements', intervenant);
     expect(mes.statusCode, mes.body).toBe(200);
@@ -609,6 +616,11 @@ describe('E-02-06 salles, affectations, E-02-07 et E-02-08', () => {
       option: 'anglais',
     });
     const cookie = await signInCookie(app, email, PASSWORD, { doubleAuthentification: false });
+    const contexte = await requete('GET', '/api/session/contexte', cookie);
+    expect(contexte.json<{ parcours: unknown }>().parcours).toEqual({
+      apprenant: true,
+      intervenant: false,
+    });
     const reponse = await requete('GET', '/api/moi/formation', cookie);
     expect(reponse.statusCode, reponse.body).toBe(200);
     const [suivie] = reponse.json<MaFormation>().formations;
@@ -640,5 +652,115 @@ describe('RG-00-10 périmètre de lecture des personnes par les inscriptions', (
     expect(
       (await requete('GET', `/api/personnes/${apprenants[0] ?? ''}`, ailleurs)).statusCode,
     ).toBe(404);
+  });
+});
+
+describe('RG-02-20 préparer l’année suivante et passage en année supérieure', () => {
+  it('reconduit promotions, groupes vides et affectations, en aperçu puis pour de bon', async () => {
+    const [suivante] = await owner.db
+      .insert(anneeScolaire)
+      .values({
+        organisationId: ecole,
+        libelle: '2027-2028',
+        dateDebut: '2027-09-01',
+        dateFin: '2028-08-31',
+      })
+      .returning();
+    const saisie = {
+      anneeSourceId: annee,
+      anneeCibleId: suivante?.id,
+      formationIds: [formationId],
+    };
+    const apercu = await requete('POST', '/api/promotions/annee-suivante', admin, saisie);
+    expect(apercu.statusCode, apercu.body).toBe(200);
+    const proposition = apercu.json<ResultatPreparation>();
+    expect(proposition).toMatchObject({ apercu: true, creees: 0 });
+    const premiere = proposition.promotions.find((p) =>
+      p.libelle.startsWith('BTS Commerce · 1re année'),
+    );
+    expect(premiere).toMatchObject({
+      libelle: 'BTS Commerce · 1re année · 2027-2028',
+      version: 2,
+      existante: false,
+      affectations: 1,
+    });
+    expect(premiere?.groupes).toBeGreaterThanOrEqual(3);
+    expect(
+      (
+        await requete('GET', `/api/promotions?anneeScolaireId=${suivante?.id ?? ''}`, admin)
+      ).json<ListePromotions>().promotions,
+    ).toEqual([]);
+
+    const fait = (
+      await requete('POST', '/api/promotions/annee-suivante', admin, { ...saisie, apercu: false })
+    ).json<ResultatPreparation>();
+    expect(fait.creees).toBe(proposition.promotions.length);
+    const nouvelles = (
+      await requete('GET', `/api/promotions?anneeScolaireId=${suivante?.id ?? ''}`, admin)
+    ).json<ListePromotions>().promotions;
+    const n1 = nouvelles.find((p) => p.anneeFormation === 1);
+    const detail = (
+      await requete('GET', `/api/promotions/${n1?.id ?? ''}`, admin)
+    ).json<DetailPromotion>();
+    expect(detail).toMatchObject({ dateDebut: '2027-09-01', inscriptions: [] });
+    expect(detail.groupes.every((g) => g.effectif === 0)).toBe(true);
+    // Le groupe transversal reste unique et rattaché aux deux nouvelles promotions.
+    const anglais = detail.groupes.find((g) => g.libelle === 'Anglais B2');
+    expect(anglais?.promotionIds).toHaveLength(2);
+    const affectations = (
+      await requete('GET', `/api/promotions/${n1?.id ?? ''}/affectations`, admin)
+    ).json<AffectationsPromotion>();
+    expect(affectations.affectations).toHaveLength(1);
+
+    const encore = (
+      await requete('POST', '/api/promotions/annee-suivante', admin, { ...saisie, apercu: false })
+    ).json<ResultatPreparation>();
+    expect(encore.creees).toBe(0);
+    expect(encore.promotions.every((p) => p.existante)).toBe(true);
+  });
+
+  it('passe en 2e année les apprenants choisis, avec leur statut', async () => {
+    const promos = (await requete('GET', '/api/promotions', admin)).json<ListePromotions>()
+      .promotions;
+    const source = promos.find(
+      (p) =>
+        p.anneeFormation === 1 &&
+        p.anneeScolaire.libelle === '2026-2027' &&
+        p.etablissement.id === campusA,
+    );
+    const cible = promos.find(
+      (p) => p.anneeFormation === 2 && p.anneeScolaire.libelle === '2027-2028',
+    );
+    const detail = (
+      await requete('GET', `/api/promotions/${source?.id ?? ''}`, admin)
+    ).json<DetailPromotion>();
+    const choisis = detail.inscriptions
+      .filter((i) => ['Bernard', 'Arnaud'].includes(i.personne.nom))
+      .map((i) => i.id);
+    const passage = await requete('POST', `/api/promotions/${source?.id ?? ''}/passage`, admin, {
+      promotionCibleId: cible?.id,
+      inscriptionIds: choisis,
+    });
+    expect(passage.statusCode, passage.body).toBe(200);
+    expect(passage.json<ResultatPassage>()).toEqual({ inscrites: 2, dejaInscrites: 0 });
+    const apres = (
+      await requete('GET', `/api/promotions/${cible?.id ?? ''}`, admin)
+    ).json<DetailPromotion>();
+    expect(
+      apres.inscriptions.map((i) => [i.personne.nom, i.statuts[0]?.statut, i.dateEntree]),
+    ).toEqual([
+      ['Arnaud', 'initial', '2027-09-01'],
+      ['Bernard', 'apprenti', '2027-09-01'],
+    ]);
+    const encore = await requete('POST', `/api/promotions/${source?.id ?? ''}/passage`, admin, {
+      promotionCibleId: cible?.id,
+      inscriptionIds: choisis,
+    });
+    expect(encore.json<ResultatPassage>()).toEqual({ inscrites: 0, dejaInscrites: 2 });
+    const arriere = await requete('POST', `/api/promotions/${cible?.id ?? ''}/passage`, admin, {
+      promotionCibleId: source?.id,
+      inscriptionIds: [apres.inscriptions[0]?.id],
+    });
+    expect(arriere.statusCode).toBe(400);
   });
 });

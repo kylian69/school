@@ -23,7 +23,11 @@ import {
   ModificationPromotion,
   NouvelleInscription,
   NouvellePromotion,
+  PassageAnnee,
+  PreparationAnneeSuivante,
   RecherchePromotions,
+  ResultatPassage,
+  ResultatPreparation,
   ResultatRepartition,
   RetraitMembre,
   SaisieGroupe,
@@ -34,6 +38,7 @@ import { RequirePermission } from '../../access/access.decorators.js';
 import type { ScolalyRequest } from '../../access/access.guard.js';
 import { RequestContext } from '../../access/request-context.js';
 import { ApiContract } from '../../contracts/api-contract.js';
+import { AnneeSuivanteService } from './annee-suivante.service.js';
 import { PromotionsService } from './promotions.service.js';
 
 const LECTURE = ['promotions:lire', 'promotions:gerer'] as const;
@@ -42,7 +47,38 @@ const ctx = () => [RequestContext.tx(), RequestContext.access()] as const;
 /** Promotions de l'année et promotion (E-02-04, E-02-05 ; RG-02-12 à RG-02-17). */
 @Controller('api')
 export class ScolariteController {
-  constructor(private readonly promotions: PromotionsService) {}
+  constructor(
+    private readonly promotions: PromotionsService,
+    private readonly anneeSuivante: AnneeSuivanteService,
+  ) {}
+
+  @Post('promotions/annee-suivante')
+  @HttpCode(200)
+  @RequirePermission('promotions:gerer', 'formation')
+  @ApiContract({
+    summary: 'Préparer l’année suivante : promotions, groupes vides, affectations (RG-02-20)',
+    body: PreparationAnneeSuivante,
+    response: ResultatPreparation,
+  })
+  preparerAnneeSuivante(@Body() saisie: PreparationAnneeSuivante, @Req() request: ScolalyRequest) {
+    return this.anneeSuivante.preparer(...ctx(), saisie, request.ip);
+  }
+
+  @Post('promotions/:id/passage')
+  @HttpCode(200)
+  @RequirePermission('promotions:gerer', 'promotion')
+  @ApiContract({
+    summary: 'Passer des apprenants admis en année supérieure (RG-02-20)',
+    body: PassageAnnee,
+    response: ResultatPassage,
+  })
+  passer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() saisie: PassageAnnee,
+    @Req() request: ScolalyRequest,
+  ) {
+    return this.anneeSuivante.passer(...ctx(), id, saisie, request.ip);
+  }
 
   @Get('promotions')
   @RequirePermission(LECTURE, 'promotion')

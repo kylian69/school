@@ -50,4 +50,4 @@ export const chiffre = (n: number) =>
   new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(n);
 
 export const SELECT =
-  'h-11 rounded-control border border-line bg-surface px-3 text-base md:h-10 md:text-sm';
+  'h-11 w-full min-w-0 max-w-full rounded-control border border-line bg-surface px-3 text-base md:h-10 md:text-sm';

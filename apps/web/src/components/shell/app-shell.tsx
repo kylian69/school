@@ -41,6 +41,7 @@ export function AppShell({
         consoleAccessible={consoleAccessible}
         modules={contexte?.modules ?? []}
         permissions={contexte?.permissions ?? []}
+        {...(contexte ? { parcours: contexte.parcours } : {})}
         {...(onNavigate ? { onNavigate } : {})}
       />
       <div className="grow" />

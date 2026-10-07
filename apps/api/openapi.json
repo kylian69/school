@@ -3124,6 +3124,41 @@
         }
       }
     },
+    "/api/promotions/{id}/passage": {
+      "post": {
+        "operationId": "ScolariteController.passer",
+        "summary": "Passer des apprenants admis en année supérieure (RG-02-20)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassageAnnee"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatPassage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/promotions/{id}/repartition": {
       "post": {
         "operationId": "ScolariteController.repartir",
@@ -3152,6 +3187,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultatRepartition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/annee-suivante": {
+      "post": {
+        "operationId": "ScolariteController.preparerAnneeSuivante",
+        "summary": "Préparer l’année suivante : promotions, groupes vides, affectations (RG-02-20)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "promotions:gerer"
+          ],
+          "scope": "formation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreparationAnneeSuivante"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatPreparation"
                 }
               }
             }
@@ -5342,6 +5412,26 @@
                 "$ref": "#/components/schemas/ApparenceEcole"
               }
             ]
+          },
+          "parcours": {
+            "default": {
+              "apprenant": false,
+              "intervenant": false
+            },
+            "type": "object",
+            "properties": {
+              "apprenant": {
+                "type": "boolean"
+              },
+              "intervenant": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "apprenant",
+              "intervenant"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -5351,7 +5441,8 @@
           "modules",
           "doubleAuthentificationExigee",
           "doubleAuthentificationActive",
-          "apparence"
+          "apparence",
+          "parcours"
         ],
         "additionalProperties": false
       },
@@ -8648,6 +8739,31 @@
         ],
         "additionalProperties": false
       },
+      "PassageAnnee": {
+        "type": "object",
+        "properties": {
+          "promotionCibleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "inscriptionIds": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "promotionCibleId",
+          "inscriptionIds"
+        ],
+        "additionalProperties": false
+      },
       "Periode": {
         "type": "object",
         "properties": {
@@ -8878,6 +8994,42 @@
           "attenteUrl",
           "statut",
           "motif"
+        ],
+        "additionalProperties": false
+      },
+      "PreparationAnneeSuivante": {
+        "type": "object",
+        "properties": {
+          "anneeSourceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "anneeCibleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "formationIds": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "apercu": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "anneeSourceId",
+          "anneeCibleId",
+          "formationIds",
+          "apercu"
         ],
         "additionalProperties": false
       },
@@ -9760,6 +9912,94 @@
           "erreurs",
           "avertissements",
           "maquette"
+        ],
+        "additionalProperties": false
+      },
+      "ResultatPassage": {
+        "type": "object",
+        "properties": {
+          "inscrites": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "dejaInscrites": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "inscrites",
+          "dejaInscrites"
+        ],
+        "additionalProperties": false
+      },
+      "ResultatPreparation": {
+        "type": "object",
+        "properties": {
+          "apercu": {
+            "type": "boolean"
+          },
+          "promotions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "groupes": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "affectations": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "affectationsIgnorees": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "existante": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "sourceId",
+                "libelle",
+                "version",
+                "groupes",
+                "affectations",
+                "affectationsIgnorees",
+                "existante"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "creees": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "apercu",
+          "promotions",
+          "creees"
         ],
         "additionalProperties": false
       },

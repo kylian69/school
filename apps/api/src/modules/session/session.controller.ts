@@ -9,8 +9,15 @@ import {
   Req,
 } from '@nestjs/common';
 import { ChoixEcole, ContexteSession } from '@scolaly/contracts';
-import { authUser, ecolesDuCompte, withOrganisation, type Database } from '@scolaly/db';
-import { eq } from 'drizzle-orm';
+import {
+  affectation,
+  authUser,
+  ecolesDuCompte,
+  inscription,
+  withOrganisation,
+  type Database,
+} from '@scolaly/db';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { ACCESS_RESOLVER, type AccessResolver } from '../../access/access-resolver.js';
 import { Authenticated } from '../../access/access.decorators.js';
 import type { ScolalyRequest } from '../../access/access.guard.js';
@@ -91,6 +98,30 @@ export class SessionController {
               this.apparence.lire(tx, ecoleActive.id),
             )
           : null,
+      parcours:
+        access && ecoleActive
+          ? await withOrganisation(this.db, ecoleActive.id, async (tx) => {
+              const [suivie] = await tx
+                .select({ id: inscription.id })
+                .from(inscription)
+                .where(
+                  and(
+                    eq(inscription.personneId, access.personneId),
+                    inArray(inscription.etat, ['preinscrit', 'inscrit']),
+                    isNull(inscription.deletedAt),
+                  ),
+                )
+                .limit(1);
+              const [enseignee] = await tx
+                .select({ id: affectation.id })
+                .from(affectation)
+                .where(
+                  and(eq(affectation.personneId, access.personneId), isNull(affectation.deletedAt)),
+                )
+                .limit(1);
+              return { apprenant: suivie !== undefined, intervenant: enseignee !== undefined };
+            })
+          : { apprenant: false, intervenant: false },
     };
   }
 }

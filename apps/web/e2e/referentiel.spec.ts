@@ -140,11 +140,14 @@ test.describe('Module 02 · formations et maquettes', () => {
 
     await page.getByRole('button', { name: 'Ajouter une règle' }).click();
     const regle = page.getByRole('dialog', { name: 'Nouvelle règle' });
-    await regle.getByLabel('Libellé affiché à l’apprenant').fill('Rattrapage plafonné');
+    const libelle = `Rattrapage plafonné ${Math.random().toString(36).slice(2, 6)}`;
+    await regle.getByLabel('Libellé affiché à l’apprenant').fill(libelle);
     await regle.getByLabel('Type de règle').selectOption('plafond');
     await expectNoAccessibilityViolations(page);
     await regle.getByRole('button', { name: 'Enregistrer' }).click();
-    await expect(page.getByText('rattrapage : plafond 10')).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: libelle })).toContainText(
+      'rattrapage : plafond 10',
+    );
     await expectNoAccessibilityViolations(page);
   });
 });

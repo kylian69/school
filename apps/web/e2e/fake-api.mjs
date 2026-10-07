@@ -526,6 +526,7 @@ async function routeReferentiel(path, request, json, response, url) {
       const f = {
         id: randomUUID(),
         statut: 'active',
+        etablissementIds: [],
         ...body,
         codeRncp: body.codeRncp ? body.codeRncp.toUpperCase() : null,
       };
@@ -695,6 +696,296 @@ async function routeReferentiel(path, request, json, response, url) {
   return json(200, detailMaquette(m));
 }
 
+// Scolarité (module 02) : promotions, groupes, inscriptions, affectations et salles en mémoire.
+// Les règles (périodes, capacités, répartition, écarts) sont couvertes par le domaine et l'API.
+const promotions = [];
+const groupesScol = [];
+const salles = [];
+const affectationsScol = [];
+const aujourdhuiFake = () => new Date().toISOString().slice(0, 10);
+const actifCe = (p, jour) => p.debut <= jour && (p.fin === null || jour < p.fin);
+const resumePromotion = (p) => {
+  const actives = p.inscriptions.filter((i) => i.etat === 'inscrit');
+  const parStatut = { initial: 0, apprenti: 0, professionnalisation: 0, formation_continue: 0 };
+  for (const i of actives) parStatut[i.statut] += 1;
+  return {
+    ...p,
+    inscriptions: undefined,
+    effectifs: { inscrits: actives.length, preinscrits: 0, parStatut },
+    modifiable: true,
+  };
+};
+const groupeDetail = (g) => ({
+  ...g,
+  effectif: promotions
+    .flatMap((p) => p.inscriptions)
+    .filter((i) => i.groupes.some((m) => m.groupeId === g.id && actifCe(m, aujourdhuiFake())))
+    .length,
+});
+const detailPromotion = (p) => {
+  const m = maquettes.get(p.version.id);
+  return {
+    ...resumePromotion(p),
+    groupes: groupesScol.filter((g) => g.promotionIds.includes(p.id)).map(groupeDetail),
+    inscriptions: p.inscriptions,
+    options: [...new Set((m?.ues ?? []).flatMap((u) => (u.option ? [u.option] : [])))],
+    changementVersion: false,
+    versionsDisponibles: [],
+  };
+};
+async function routeScolarite(path, request, json, response, url) {
+  if (path === '/api/moi/formation') {
+    const p = promotions[0];
+    return json(200, {
+      formations: p
+        ? [
+            {
+              promotion: { id: p.id, libelle: p.libelle, anneeFormation: p.anneeFormation },
+              option: null,
+              maquette: detailMaquette(maquettes.get(p.version.id)),
+            },
+          ]
+        : [],
+    });
+  }
+  if (path === '/api/moi/enseignements') {
+    const enseignements = affectationsScol.map((a) => {
+      const p = promotions.find((x) => x.id === a.promotionId);
+      const mod = maquettes.get(p.version.id).modules.find((x) => x.id === a.moduleId);
+      return {
+        affectationId: a.id,
+        promotion: { id: p.id, libelle: p.libelle },
+        module: { code: mod.code, intitule: mod.intitule },
+        groupes: [],
+        heures: a.heures,
+        realisees: null,
+      };
+    });
+    return json(200, {
+      enseignements,
+      totalHeures: enseignements.reduce(
+        (s, e) => s + TYPES_H.reduce((x, t) => x + e.heures[t], 0),
+        0,
+      ),
+    });
+  }
+  const salleRoute = path.match(/^\/api\/salles(?:\/([^/]+))?$/);
+  if (salleRoute) {
+    if (!salleRoute[1] && request.method === 'GET') {
+      const min = Number(url.searchParams.get('capaciteMin') ?? 0);
+      return json(200, { salles: salles.filter((s) => (s.capacite ?? 0) >= min), creation: true });
+    }
+    if (!salleRoute[1]) {
+      const body = await readBody(request);
+      const salle = {
+        id: randomUUID(),
+        capacite: null,
+        type: 'cours',
+        equipements: [],
+        pmr: false,
+        statut: 'disponible',
+        ...body,
+        modifiable: true,
+      };
+      salles.push(salle);
+      return json(201, salle);
+    }
+    const salle = salles.find((s) => s.id === salleRoute[1]);
+    Object.assign(salle, await readBody(request));
+    return json(200, salle);
+  }
+  if (path === '/api/promotions/annee-suivante') {
+    const body = await readBody(request);
+    const sources = promotions.filter((p) => p.anneeScolaire.id === body.anneeSourceId);
+    return json(200, {
+      apercu: body.apercu,
+      promotions: sources.map((p) => ({
+        sourceId: p.id,
+        libelle: p.libelle,
+        version: p.version.numero,
+        groupes: 0,
+        affectations: 0,
+        affectationsIgnorees: 0,
+        existante: false,
+      })),
+      creees: body.apercu ? 0 : sources.length,
+    });
+  }
+  const groupeRoute = path.match(/^\/api\/groupes\/([^/]+)\/(membres|retrait)$/);
+  if (groupeRoute) {
+    const body = await readBody(request);
+    const g = groupesScol.find((x) => x.id === groupeRoute[1]);
+    const date = body.date ?? aujourdhuiFake();
+    for (const i of promotions.flatMap((p) => p.inscriptions)) {
+      if (groupeRoute[2] === 'membres' && body.inscriptionIds.includes(i.id)) {
+        for (const m of i.groupes) {
+          const autre = groupesScol.find((x) => x.id === m.groupeId);
+          if (autre.type === g.type && m.fin === null) m.fin = date;
+        }
+        i.groupes.push({ groupeId: g.id, debut: date, fin: null });
+      }
+      if (groupeRoute[2] === 'retrait' && i.id === body.inscriptionId) {
+        for (const m of i.groupes) if (m.groupeId === g.id && m.fin === null) m.fin = date;
+      }
+    }
+    return json(200, groupeDetail(g));
+  }
+  const affectationRoute = path.match(/^\/api\/affectations\/([^/]+)$/);
+  if (affectationRoute && request.method === 'DELETE') {
+    affectationsScol.splice(
+      affectationsScol.findIndex((a) => a.id === affectationRoute[1]),
+      1,
+    );
+    response.writeHead(204);
+    return response.end();
+  }
+  const promo = path.match(
+    /^\/api\/promotions(?:\/([^/]+))?(?:\/(inscriptions|groupes|repartition|affectations|passage))?$/,
+  );
+  if (!promo) return false;
+  const [, id, sous] = promo;
+  if (!id && request.method === 'GET') {
+    const annee = url.searchParams.get('anneeScolaireId');
+    return json(200, {
+      promotions: promotions
+        .filter((p) => !annee || p.anneeScolaire.id === annee)
+        .map(resumePromotion),
+      creation: true,
+    });
+  }
+  if (!id) {
+    const body = await readBody(request);
+    const f = formations.find((x) => x.id === body.formationId);
+    const annee = annees.find((a) => a.id === body.anneeScolaireId);
+    const version = versionsDe(f.id)
+      .filter((v) => v.statut === 'publiee')
+      .at(-1);
+    if (!version)
+      return json(
+        400,
+        invalideRef(
+          'versionId',
+          'Une promotion suit une version publiée de la maquette : publiez d’abord la maquette de la formation.',
+        ),
+      );
+    const p = {
+      id: randomUUID(),
+      libelle:
+        body.libelle ??
+        `${f.intitule} · ${body.anneeFormation === 1 ? '1re' : `${body.anneeFormation}e`} année · ${annee.libelle}`,
+      formation: { id: f.id, intitule: f.intitule, dureeAnnees: f.dureeAnnees },
+      version: { id: version.id, numero: version.numero },
+      anneeFormation: body.anneeFormation,
+      anneeScolaire: { id: annee.id, libelle: annee.libelle },
+      etablissement: {
+        id: body.etablissementId,
+        nom: ecole.etablissements.find((e) => e.id === body.etablissementId)?.nom ?? '',
+      },
+      dateDebut: annee.dateDebut,
+      dateFin: annee.dateFin,
+      inscriptions: [],
+    };
+    promotions.push(p);
+    return json(201, detailPromotion(p));
+  }
+  const p = promotions.find((x) => x.id === id);
+  if (!p) return json(404, { message: 'Promotion introuvable.' });
+  if (sous === 'inscriptions') {
+    const body = await readBody(request);
+    const personne = personnes.find((x) => x.id === body.personneId);
+    const inscription = {
+      id: randomUUID(),
+      promotionId: p.id,
+      personne: {
+        id: personne.id,
+        nom: personne.nom,
+        prenom: personne.prenom,
+        matricule: personne.matricule,
+      },
+      etat: body.etat ?? 'inscrit',
+      dateEntree: body.dateEntree ?? p.dateDebut,
+      dateSortie: null,
+      motifSortie: null,
+      option: body.option ?? null,
+      statut: body.statut,
+      statuts: [{ debut: body.dateEntree ?? p.dateDebut, fin: null, statut: body.statut }],
+      groupes: [],
+    };
+    p.inscriptions.push(inscription);
+    return json(201, inscription);
+  }
+  if (sous === 'groupes') {
+    const body = await readBody(request);
+    const g = {
+      id: randomUUID(),
+      libelle: body.libelle,
+      type: body.type,
+      capacite: body.capacite ?? null,
+      option: body.option ?? null,
+      promotionIds: [p.id],
+    };
+    groupesScol.push(g);
+    return json(201, groupeDetail(g));
+  }
+  if (sous === 'repartition') {
+    const body = await readBody(request);
+    const sansGroupe = p.inscriptions.filter(
+      (i) => !i.groupes.some((m) => body.groupeIds.includes(m.groupeId)),
+    );
+    const affectations = sansGroupe.map((i, rang) => ({
+      inscriptionId: i.id,
+      groupeId: body.groupeIds[rang % body.groupeIds.length],
+    }));
+    if (!body.apercu)
+      for (const a of affectations)
+        p.inscriptions
+          .find((i) => i.id === a.inscriptionId)
+          .groupes.push({ groupeId: a.groupeId, debut: body.date ?? aujourdhuiFake(), fin: null });
+    return json(200, { affectations, nonAffectes: [], applique: !body.apercu });
+  }
+  if (sous === 'affectations') {
+    if (request.method === 'POST') {
+      const body = await readBody(request);
+      const a = {
+        id: randomUUID(),
+        promotionId: p.id,
+        moduleId: body.moduleId,
+        intervenant: { id: body.personneId, nom: 'Fictive', prenom: 'Camille' },
+        groupeIds: body.groupeIds ?? [],
+        heures: { ...heuresVides(), ...body.heures },
+      };
+      affectationsScol.push(a);
+      return json(201, a);
+    }
+    const m = maquettes.get(p.version.id);
+    const siennes = affectationsScol.filter((a) => a.promotionId === p.id);
+    return json(200, {
+      affectations: siennes,
+      modules: m.modules.map((mod) => {
+        const affecte = heuresVides();
+        for (const a of siennes.filter((x) => x.moduleId === mod.id))
+          for (const t of TYPES_H) affecte[t] += a.heures[t];
+        return {
+          id: mod.id,
+          code: mod.code,
+          intitule: mod.intitule,
+          ueCode: m.ues.find((u) => u.id === mod.ueId)?.code ?? '',
+          prevu: mod.heures,
+          affecte,
+          ecarts: TYPES_H.filter((t) => affecte[t] !== mod.heures[t]).map((t) => ({
+            type: t,
+            prevu: mod.heures[t],
+            affecte: affecte[t],
+            ecart: affecte[t] - mod.heures[t],
+          })),
+        };
+      }),
+      modifiable: true,
+    });
+  }
+  return json(200, detailPromotion(p));
+}
+
 const readBody = (request) =>
   new Promise((resolve) => {
     let data = '';
@@ -849,6 +1140,11 @@ createServer(async (request, response) => {
             'emargement:animer',
             'organisation:lire',
             'organisation:modifier',
+            'affectations:gerer',
+            'promotions:gerer',
+            'promotions:lire',
+            'salles:gerer',
+            'salles:lire',
             'referentiel:gerer',
             'referentiel:lire',
             'referentiel:parametrer',
@@ -861,6 +1157,7 @@ createServer(async (request, response) => {
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
+      parcours: { apprenant: active !== null, intervenant: active !== null },
     });
   }
 
@@ -1361,6 +1658,21 @@ createServer(async (request, response) => {
       return response.end();
     }
     return json(200, detailAnnee(annee));
+  }
+
+  if (
+    [
+      '/api/promotions',
+      '/api/groupes/',
+      '/api/salles',
+      '/api/affectations/',
+      '/api/moi/formation',
+      '/api/moi/enseignements',
+    ].some((p) => path.startsWith(p))
+  ) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const traite = await routeScolarite(path, request, json, response, url);
+    if (traite !== false) return traite;
   }
 
   if (

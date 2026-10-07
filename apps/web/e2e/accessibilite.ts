@@ -3,6 +3,9 @@ import { expect, type Page } from '@playwright/test';
 
 /** RGAA 4 / WCAG 2.2 AA (ACC-01) : aucune violation détectée automatiquement, thèmes clair et sombre. */
 export async function expectNoAccessibilityViolations(page: Page): Promise<void> {
+  // Après un rafraîchissement des données, le titre (métadonnées diffusées en flux) revient
+  // un instant plus tard : l'analyse attend qu'il soit en place.
+  await expect.poll(() => page.title()).not.toBe('');
   for (const colorScheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme });
     await page.waitForFunction(
