@@ -991,6 +991,93 @@ async function routeContrats(path, request, json, response, url) {
   return false;
 }
 
+// Rythmes (module 03) : génération simplifiée (lundi, mardi à l'école ; week-end fermé), la
+// génération réelle (motifs, fériés, fermetures) étant testée par le domaine et l'API.
+const modelesRythme = [
+  {
+    id: 'deux-jours-ecole',
+    libelle: '2 jours école (lundi, mardi) / 3 jours entreprise',
+    fourni: true,
+  },
+  { id: 'une-semaine-sur-deux', libelle: '1 semaine école / 1 semaine entreprise', fourni: true },
+].map((m) => ({
+  ...m,
+  motif: [['ecole', 'ecole', 'entreprise', 'entreprise', 'entreprise', 'ferme', 'ferme']],
+}));
+const calendriersRythme = new Map();
+const exceptionsRythme = [];
+const genererFake = (debut, fin) => {
+  const jours = {};
+  for (let n = Date.parse(`${debut}T00:00:00Z`); n <= Date.parse(`${fin}T00:00:00Z`); n += 864e5) {
+    const d = new Date(n);
+    const rang = (d.getUTCDay() + 6) % 7;
+    jours[d.toISOString().slice(0, 10)] = rang < 2 ? 'ecole' : rang < 5 ? 'entreprise' : 'ferme';
+  }
+  return jours;
+};
+const vueRythme = (p) => {
+  const c = calendriersRythme.get(p.id);
+  const compte = { ecole: 0, entreprise: 0, ferme: 0, examen: 0 };
+  for (const type of Object.values(c?.jours ?? {})) compte[type] += 1;
+  return {
+    promotion: { id: p.id, libelle: p.libelle, dateDebut: p.dateDebut, dateFin: p.dateFin },
+    calendrier: c ? { ...c, compte } : null,
+    exceptions: exceptionsRythme
+      .filter((e) => e.promotionId === p.id)
+      .map((e) => ({ ...e, promotionId: undefined })),
+    modifiable: true,
+  };
+};
+async function routeRythmes(path, request, json) {
+  if (path === '/api/rythmes/modeles') {
+    if (request.method === 'GET') return json(200, { modeles: modelesRythme, creation: true });
+    const body = await readBody(request);
+    const m = { id: randomUUID(), ...body, fourni: false };
+    modelesRythme.push(m);
+    return json(201, m);
+  }
+  const exception = path.match(/^\/api\/exceptions-rythme\/([^/]+)$/);
+  if (exception) {
+    const e = exceptionsRythme.find((x) => x.id === exception[1]);
+    exceptionsRythme.splice(exceptionsRythme.indexOf(e), 1);
+    return json(200, vueRythme(promotions.find((p) => p.id === e.promotionId)));
+  }
+  const route = path.match(/^\/api\/promotions\/([^/]+)\/rythme(\/jours|\/exceptions)?$/);
+  if (!route) return false;
+  const p = promotions.find((x) => x.id === route[1]);
+  if (!p) return json(404, { message: 'Promotion introuvable.' });
+  if (request.method === 'PUT') {
+    const body = await readBody(request);
+    const modele = modelesRythme.find((m) => m.id === body.modele);
+    calendriersRythme.set(p.id, {
+      modele: modele.libelle,
+      jours: genererFake(p.dateDebut, p.dateFin),
+    });
+  } else if (route[2] === '/jours') {
+    const body = await readBody(request);
+    for (const { date, type } of body.jours) calendriersRythme.get(p.id).jours[date] = type;
+  } else if (route[2] === '/exceptions') {
+    const body = await readBody(request);
+    const i = p.inscriptions.find((x) => x.id === body.inscriptionId);
+    exceptionsRythme.push({
+      id: randomUUID(),
+      promotionId: p.id,
+      apprenant: {
+        inscriptionId: i.id,
+        personneId: i.personne.id,
+        nom: i.personne.nom,
+        prenom: i.personne.prenom,
+      },
+      debut: body.debut,
+      fin: body.fin,
+      motif: body.motif ?? null,
+      jours: genererFake(body.debut, body.fin),
+    });
+    return json(201, vueRythme(p));
+  }
+  return json(200, vueRythme(p));
+}
+
 // Scolarité (module 02) : promotions, groupes, inscriptions, affectations et salles en mémoire.
 // Les règles (périodes, capacités, répartition, écarts) sont couvertes par le domaine et l'API.
 const promotions = [];
@@ -1973,6 +2060,16 @@ createServer(async (request, response) => {
   ) {
     if (!user) return json(401, { message: 'Session absente' });
     const traite = await routeScolarite(path, request, json, response, url);
+    if (traite !== false) return traite;
+  }
+
+  if (
+    path.startsWith('/api/rythmes/') ||
+    path.startsWith('/api/exceptions-rythme/') ||
+    /^\/api\/promotions\/[^/]+\/rythme/.test(path)
+  ) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const traite = await routeRythmes(path, request, json);
     if (traite !== false) return traite;
   }
 

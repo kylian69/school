@@ -1,20 +1,28 @@
-import { AffectationsPromotion, DetailPromotion, ListePromotions } from '@scolaly/contracts';
+import {
+  AffectationsPromotion,
+  CalendrierPromotion,
+  DetailPromotion,
+  ListeModelesRythme,
+  ListePromotions,
+} from '@scolaly/contracts';
 import { Badge, Card } from '@scolaly/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fr } from '@/i18n/fr';
 import { apiGet } from '@/lib/api';
+import { getContexte } from '@/lib/contexte';
 import { formatDate } from '@/lib/format';
 import { ChangementVersion } from './changement-version';
 import { OngletApprenants } from './onglet-apprenants';
 import { OngletGroupes } from './onglet-groupes';
 import { OngletIntervenants } from './onglet-intervenants';
+import { OngletRythme } from './onglet-rythme';
 
 const t = fr.scolarite;
 export const metadata: Metadata = { title: t.titre };
 
-const VUES = ['apprenants', 'groupes', 'intervenants'] as const;
+const VUES = ['apprenants', 'groupes', 'intervenants', 'rythme'] as const;
 type Vue = (typeof VUES)[number];
 
 /** E-02-05 · Promotion : apprenants (inscriptions, statuts), groupes, intervenants. */
@@ -27,7 +35,15 @@ export default async function PromotionPage({
 }) {
   const { id } = await params;
   const { vue: demandee } = await searchParams;
-  const vue: Vue = VUES.find((v) => v === demandee) ?? 'apprenants';
+  const permissions = (await getContexte())?.permissions ?? [];
+  // E-03-05 : l'onglet du rythme, pour qui lit ou définit les rythmes d'alternance.
+  const vues = VUES.filter(
+    (v) =>
+      v !== 'rythme' ||
+      permissions.includes('rythmes:lire') ||
+      permissions.includes('rythmes:gerer'),
+  );
+  const vue: Vue = vues.find((v) => v === demandee) ?? 'apprenants';
   const { data: promo, status } = await apiGet(`/api/promotions/${id}`, DetailPromotion);
   if (status === 404 || status === 403) notFound();
   if (!promo) {
@@ -39,14 +55,21 @@ export default async function PromotionPage({
       </Card>
     );
   }
-  const [{ data: affectations }, { data: suivantes }] = await Promise.all([
-    vue === 'intervenants'
-      ? apiGet(`/api/promotions/${id}/affectations`, AffectationsPromotion)
-      : Promise.resolve({ data: null }),
-    vue === 'apprenants' && promo.modifiable
-      ? apiGet(`/api/promotions?formationId=${promo.formation.id}`, ListePromotions)
-      : Promise.resolve({ data: null }),
-  ]);
+  const [{ data: affectations }, { data: suivantes }, { data: rythme }, { data: modeles }] =
+    await Promise.all([
+      vue === 'intervenants'
+        ? apiGet(`/api/promotions/${id}/affectations`, AffectationsPromotion)
+        : Promise.resolve({ data: null }),
+      vue === 'apprenants' && promo.modifiable
+        ? apiGet(`/api/promotions?formationId=${promo.formation.id}`, ListePromotions)
+        : Promise.resolve({ data: null }),
+      vue === 'rythme'
+        ? apiGet(`/api/promotions/${id}/rythme`, CalendrierPromotion)
+        : Promise.resolve({ data: null }),
+      vue === 'rythme'
+        ? apiGet('/api/rythmes/modeles', ListeModelesRythme)
+        : Promise.resolve({ data: null }),
+    ]);
 
   return (
     <>
@@ -82,7 +105,7 @@ export default async function PromotionPage({
         {promo.modifiable ? null : <p className="text-sm text-muted">{t.lectureSeule}</p>}
       </div>
       <nav aria-label={t.navigationVues} className="flex flex-wrap gap-1 border-b border-line">
-        {VUES.map((v) => (
+        {vues.map((v) => (
           <Link
             key={v}
             href={`/promotions/${promo.id}?vue=${v}`}
@@ -100,6 +123,17 @@ export default async function PromotionPage({
         />
       ) : null}
       {vue === 'groupes' ? <OngletGroupes promotion={promo} /> : null}
+      {vue === 'rythme' ? (
+        rythme && modeles ? (
+          <OngletRythme promotion={promo} rythme={rythme} modeles={modeles} />
+        ) : (
+          <Card>
+            <p role="alert" className="text-sm">
+              {fr.rythmes.indisponible}
+            </p>
+          </Card>
+        )
+      ) : null}
       {vue === 'intervenants' ? (
         affectations ? (
           <OngletIntervenants promotion={promo} affectations={affectations} />
