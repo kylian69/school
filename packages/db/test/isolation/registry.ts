@@ -41,6 +41,9 @@ import {
   seancePublic,
   contactEntreprise,
   entreprise,
+  contratAlternance,
+  contratTuteur,
+  conventionStage,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -247,6 +250,23 @@ async function insertEntreprise(db: Database, organisationId: string): Promise<s
   return id;
 }
 
+async function insertContrat(db: Database, organisationId: string): Promise<string> {
+  const inscriptionId = await insertInscription(db, organisationId);
+  const [ins] = await db.select().from(inscription).where(eq(inscription.id, inscriptionId));
+  const id = newId();
+  await db.insert(contratAlternance).values({
+    id,
+    organisationId,
+    inscriptionId,
+    personneId: ins?.personneId ?? '',
+    entrepriseId: await insertEntreprise(db, organisationId),
+    type: 'apprentissage',
+    debut: '2026-09-01',
+    fin: '2028-08-31',
+  });
+  return id;
+}
+
 export const sampleRows: Record<string, ScopedTableSample> = {
   formation: {
     insert: async (db, organisationId) => {
@@ -388,6 +408,37 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         entrepriseId: await insertEntreprise(db, organisationId),
         personneId: await insertPersonne(db, organisationId),
         type: 'tuteur',
+      });
+    },
+  },
+  contrat_alternance: {
+    insert: async (db, organisationId) => {
+      await insertContrat(db, organisationId);
+    },
+  },
+  contrat_tuteur: {
+    insert: async (db, organisationId) => {
+      await db.insert(contratTuteur).values({
+        organisationId,
+        contratId: await insertContrat(db, organisationId),
+        personneId: await insertPersonne(db, organisationId),
+        debut: '2026-09-01',
+      });
+    },
+  },
+  convention_stage: {
+    insert: async (db, organisationId) => {
+      const inscriptionId = await insertInscription(db, organisationId);
+      const [ins] = await db.select().from(inscription).where(eq(inscription.id, inscriptionId));
+      await db.insert(conventionStage).values({
+        organisationId,
+        inscriptionId,
+        personneId: ins?.personneId ?? '',
+        entrepriseId: await insertEntreprise(db, organisationId),
+        referentId: await insertPersonne(db, organisationId),
+        debut: '2027-04-01',
+        fin: '2027-06-30',
+        heuresPresence: 400,
       });
     },
   },

@@ -632,6 +632,413 @@
         }
       }
     },
+    "/api/contrats": {
+      "get": {
+        "operationId": "ContratsController.lister",
+        "summary": "Contrats et conventions de stage du périmètre (E-03-03)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:lire",
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeContrats"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "ContratsController.creer",
+        "summary": "Enregistrer le contrat d’un alternant (US-03-02)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouveauContrat"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contrat"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contrats/{id}": {
+      "get": {
+        "operationId": "ContratsController.lire",
+        "summary": "Un contrat, ses tuteurs et ses avertissements",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:lire",
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contrat"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "ContratsController.modifier",
+        "summary": "Modifier un contrat ou changer son statut (RG-03-05, RG-03-06)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationContrat"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contrat"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "ContratsController.supprimer",
+        "summary": "Supprimer un contrat en brouillon",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contrats/{id}/document": {
+      "put": {
+        "operationId": "ContratsController.deposerContrat",
+        "summary": "Joindre le contrat signé (corps application/pdf, 10 Mo au plus)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contrat"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "ContratsController.documentContrat",
+        "summary": "Lien de téléchargement du contrat signé",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:lire",
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LienDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contrats/{id}/rupture": {
+      "post": {
+        "operationId": "ContratsController.rompre",
+        "summary": "Enregistrer la rupture d’un contrat (US-03-12, RG-03-07)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuptureContrat"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contrat"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contrats/{id}/tuteurs": {
+      "post": {
+        "operationId": "ContratsController.changerTuteur",
+        "summary": "Ajouter ou remplacer un tuteur à une date d’effet",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangementTuteur"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contrat"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conventions-stage": {
+      "post": {
+        "operationId": "ContratsController.creerConvention",
+        "summary": "Enregistrer une convention de stage, avec ses contrôles légaux (US-03-15)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelleConvention"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConventionStage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conventions-stage/{id}": {
+      "get": {
+        "operationId": "ContratsController.lireConvention",
+        "summary": "Une convention de stage et ses contrôles",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:lire",
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConventionStage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "ContratsController.modifierConvention",
+        "summary": "Modifier une convention de stage ou changer son statut",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationConvention"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConventionStage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conventions-stage/{id}/document": {
+      "put": {
+        "operationId": "ContratsController.deposerConvention",
+        "summary": "Joindre la convention signée (corps application/pdf, 10 Mo au plus)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConventionStage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "ContratsController.documentConvention",
+        "summary": "Lien de téléchargement de la convention signée",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "contrats:lire",
+            "contrats:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LienDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/corbeille": {
       "get": {
         "operationId": "CorbeilleController.lister",
@@ -4872,6 +5279,30 @@
         ],
         "additionalProperties": false
       },
+      "AvertissementContrat": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "entreprise-fermee",
+              "entreprise-a-verifier",
+              "capacite-maitre"
+            ]
+          },
+          "tuteurId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "type",
+          "tuteurId"
+        ],
+        "additionalProperties": false
+      },
       "AvertissementMaquette": {
         "oneOf": [
           {
@@ -5135,6 +5566,34 @@
         "required": [
           "statut",
           "debut"
+        ],
+        "additionalProperties": false
+      },
+      "ChangementTuteur": {
+        "type": "object",
+        "properties": {
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "remplace": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "personneId",
+          "date",
+          "remplace"
         ],
         "additionalProperties": false
       },
@@ -5731,6 +6190,8 @@
                 "affectations:gerer",
                 "entreprises:lire",
                 "entreprises:gerer",
+                "contrats:lire",
+                "contrats:gerer",
                 "emargement:animer"
               ]
             }
@@ -5785,6 +6246,543 @@
           "doubleAuthentificationActive",
           "apparence",
           "parcours"
+        ],
+        "additionalProperties": false
+      },
+      "Contrat": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "apprenant": {
+            "type": "object",
+            "properties": {
+              "personneId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "inscriptionId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "promotion": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "libelle": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "libelle"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "personneId",
+              "nom",
+              "prenom",
+              "inscriptionId",
+              "promotion"
+            ],
+            "additionalProperties": false
+          },
+          "entreprise": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "raisonSociale": {
+                "type": "string"
+              },
+              "siret": {
+                "type": "string"
+              },
+              "statut": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "fermee"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raisonSociale",
+              "siret",
+              "statut"
+            ],
+            "additionalProperties": false
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "apprentissage",
+              "professionnalisation",
+              "autre"
+            ]
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "opco": {
+            "nullable": true,
+            "type": "string"
+          },
+          "numeroDepot": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "brouillon",
+              "signe",
+              "en_cours",
+              "termine",
+              "rompu"
+            ]
+          },
+          "referent": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "compteEtat": {
+                "type": "string",
+                "enum": [
+                  "cree",
+                  "invite",
+                  "actif",
+                  "desactive"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom",
+              "email",
+              "compteEtat"
+            ],
+            "additionalProperties": false
+          },
+          "formationProlongee": {
+            "type": "boolean"
+          },
+          "rupture": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "motif": {
+                "type": "string",
+                "enum": [
+                  "periode_essai",
+                  "accord_commun",
+                  "demission",
+                  "licenciement",
+                  "autre"
+                ]
+              },
+              "sansEmployeurJusquau": {
+                "nullable": true,
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              }
+            },
+            "required": [
+              "date",
+              "motif",
+              "sansEmployeurJusquau"
+            ],
+            "additionalProperties": false
+          },
+          "document": {
+            "type": "boolean"
+          },
+          "tuteurs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TuteurContrat"
+            }
+          },
+          "avertissements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvertissementContrat"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "apprenant",
+          "entreprise",
+          "type",
+          "debut",
+          "fin",
+          "opco",
+          "numeroDepot",
+          "statut",
+          "referent",
+          "formationProlongee",
+          "rupture",
+          "document",
+          "tuteurs",
+          "avertissements",
+          "modifiable"
+        ],
+        "additionalProperties": false
+      },
+      "ControleStage": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "gratification-obligatoire"
+                ]
+              },
+              "heures": {
+                "type": "number"
+              },
+              "seuil": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "heures",
+              "seuil"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "gratification-insuffisante"
+                ]
+              },
+              "montant": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "minimum": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "type",
+              "montant",
+              "minimum"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "duree-maximale"
+                ]
+              },
+              "heures": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type",
+              "heures",
+              "maximum"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ConventionStage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "apprenant": {
+            "type": "object",
+            "properties": {
+              "personneId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "inscriptionId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "promotion": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "libelle": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "libelle"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "personneId",
+              "nom",
+              "prenom",
+              "inscriptionId",
+              "promotion"
+            ],
+            "additionalProperties": false
+          },
+          "entreprise": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "raisonSociale": {
+                "type": "string"
+              },
+              "siret": {
+                "type": "string"
+              },
+              "statut": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "fermee"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raisonSociale",
+              "siret",
+              "statut"
+            ],
+            "additionalProperties": false
+          },
+          "tuteur": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "compteEtat": {
+                "type": "string",
+                "enum": [
+                  "cree",
+                  "invite",
+                  "actif",
+                  "desactive"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom",
+              "email",
+              "compteEtat"
+            ],
+            "additionalProperties": false
+          },
+          "referent": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "compteEtat": {
+                "type": "string",
+                "enum": [
+                  "cree",
+                  "invite",
+                  "actif",
+                  "desactive"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom",
+              "email",
+              "compteEtat"
+            ],
+            "additionalProperties": false
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "heuresPresence": {
+            "type": "number"
+          },
+          "missions": {
+            "nullable": true,
+            "type": "string"
+          },
+          "gratificationHoraire": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "brouillon",
+              "signee",
+              "en_cours",
+              "terminee",
+              "annulee"
+            ]
+          },
+          "derogationMotif": {
+            "nullable": true,
+            "type": "string"
+          },
+          "document": {
+            "type": "boolean"
+          },
+          "controles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ControleStage"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "apprenant",
+          "entreprise",
+          "tuteur",
+          "referent",
+          "debut",
+          "fin",
+          "heuresPresence",
+          "missions",
+          "gratificationHoraire",
+          "statut",
+          "derogationMotif",
+          "document",
+          "controles",
+          "modifiable"
         ],
         "additionalProperties": false
       },
@@ -6993,6 +7991,18 @@
         ],
         "additionalProperties": false
       },
+      "LienDocument": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      },
       "ListeAnnees": {
         "type": "object",
         "properties": {
@@ -7035,6 +8045,255 @@
         },
         "required": [
           "clients"
+        ],
+        "additionalProperties": false
+      },
+      "ListeContrats": {
+        "type": "object",
+        "properties": {
+          "contrats": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "apprenant": {
+                  "type": "object",
+                  "properties": {
+                    "personneId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "nom": {
+                      "type": "string"
+                    },
+                    "prenom": {
+                      "type": "string"
+                    },
+                    "inscriptionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "promotion": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "libelle": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "libelle"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "personneId",
+                    "nom",
+                    "prenom",
+                    "inscriptionId",
+                    "promotion"
+                  ],
+                  "additionalProperties": false
+                },
+                "entreprise": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "raisonSociale": {
+                      "type": "string"
+                    },
+                    "siret": {
+                      "type": "string"
+                    },
+                    "statut": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "fermee"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "raisonSociale",
+                    "siret",
+                    "statut"
+                  ],
+                  "additionalProperties": false
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apprentissage",
+                    "professionnalisation",
+                    "autre"
+                  ]
+                },
+                "debut": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "fin": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "opco": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "numeroDepot": {
+                  "nullable": true,
+                  "type": "string"
+                },
+                "statut": {
+                  "type": "string",
+                  "enum": [
+                    "brouillon",
+                    "signe",
+                    "en_cours",
+                    "termine",
+                    "rompu"
+                  ]
+                },
+                "referent": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "nom": {
+                      "type": "string"
+                    },
+                    "prenom": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "compteEtat": {
+                      "type": "string",
+                      "enum": [
+                        "cree",
+                        "invite",
+                        "actif",
+                        "desactive"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nom",
+                    "prenom",
+                    "email",
+                    "compteEtat"
+                  ],
+                  "additionalProperties": false
+                },
+                "formationProlongee": {
+                  "type": "boolean"
+                },
+                "rupture": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                    },
+                    "motif": {
+                      "type": "string",
+                      "enum": [
+                        "periode_essai",
+                        "accord_commun",
+                        "demission",
+                        "licenciement",
+                        "autre"
+                      ]
+                    },
+                    "sansEmployeurJusquau": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "motif",
+                    "sansEmployeurJusquau"
+                  ],
+                  "additionalProperties": false
+                },
+                "document": {
+                  "type": "boolean"
+                },
+                "avertissements": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvertissementContrat"
+                  }
+                },
+                "modifiable": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "apprenant",
+                "entreprise",
+                "type",
+                "debut",
+                "fin",
+                "opco",
+                "numeroDepot",
+                "statut",
+                "referent",
+                "formationProlongee",
+                "rupture",
+                "document",
+                "avertissements",
+                "modifiable"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "conventions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConventionStage"
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contrats",
+          "conventions",
+          "creation"
         ],
         "additionalProperties": false
       },
@@ -7818,6 +9077,109 @@
         },
         "additionalProperties": false
       },
+      "ModificationContrat": {
+        "type": "object",
+        "properties": {
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "opco": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          },
+          "numeroDepot": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          },
+          "referentId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "formationProlongee": {
+            "type": "boolean"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "brouillon",
+              "signe",
+              "en_cours",
+              "termine"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModificationConvention": {
+        "type": "object",
+        "properties": {
+          "tuteurId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "referentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "heuresPresence": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 10000
+          },
+          "missions": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 4000
+          },
+          "gratificationHoraire": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "derogationMotif": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "brouillon",
+              "signee",
+              "en_cours",
+              "terminee",
+              "annulee"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "ModificationCorrespondance": {
         "type": "object",
         "properties": {
@@ -8307,7 +9669,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 29,
+            "maxItems": 31,
             "type": "array",
             "items": {
               "type": "string",
@@ -8340,6 +9702,8 @@
                 "affectations:gerer",
                 "entreprises:lire",
                 "entreprises:gerer",
+                "contrats:lire",
+                "contrats:gerer",
                 "emargement:animer"
               ]
             }
@@ -8757,6 +10121,83 @@
         ],
         "additionalProperties": false
       },
+      "NouveauContrat": {
+        "type": "object",
+        "properties": {
+          "inscriptionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "entrepriseId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "apprentissage",
+              "professionnalisation",
+              "autre"
+            ]
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "opco": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          },
+          "numeroDepot": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 40
+          },
+          "referentId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "formationProlongee": {
+            "default": false,
+            "type": "boolean"
+          },
+          "tuteurIds": {
+            "minItems": 1,
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "inscriptionId",
+          "entrepriseId",
+          "type",
+          "debut",
+          "fin",
+          "numeroDepot",
+          "referentId",
+          "formationProlongee",
+          "tuteurIds"
+        ],
+        "additionalProperties": false
+      },
       "NouveauRole": {
         "type": "object",
         "properties": {
@@ -8775,7 +10216,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 29,
+            "maxItems": 31,
             "type": "array",
             "items": {
               "type": "string",
@@ -8808,6 +10249,8 @@
                 "affectations:gerer",
                 "entreprises:lire",
                 "entreprises:gerer",
+                "contrats:lire",
+                "contrats:gerer",
                 "emargement:animer"
               ]
             }
@@ -9030,6 +10473,81 @@
         "required": [
           "roleId",
           "perimetreType"
+        ],
+        "additionalProperties": false
+      },
+      "NouvelleConvention": {
+        "type": "object",
+        "properties": {
+          "inscriptionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "entrepriseId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "tuteurId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "referentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "heuresPresence": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 10000
+          },
+          "missions": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 4000
+          },
+          "gratificationHoraire": {
+            "default": null,
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "derogationMotif": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "inscriptionId",
+          "entrepriseId",
+          "tuteurId",
+          "referentId",
+          "debut",
+          "fin",
+          "heuresPresence",
+          "missions",
+          "gratificationHoraire",
+          "derogationMotif"
         ],
         "additionalProperties": false
       },
@@ -11240,6 +12758,8 @@
                 "affectations:gerer",
                 "entreprises:lire",
                 "entreprises:gerer",
+                "contrats:lire",
+                "contrats:gerer",
                 "emargement:animer"
               ]
             }
@@ -11267,6 +12787,36 @@
           "personnes",
           "parDefaut",
           "verrouille"
+        ],
+        "additionalProperties": false
+      },
+      "RuptureContrat": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "motif": {
+            "type": "string",
+            "enum": [
+              "periode_essai",
+              "accord_commun",
+              "demission",
+              "licenciement",
+              "autre"
+            ]
+          },
+          "poursuiteSansEmployeur": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "motif",
+          "poursuiteSansEmployeur"
         ],
         "additionalProperties": false
       },
@@ -12381,6 +13931,70 @@
           "annees",
           "ues",
           "blocs"
+        ],
+        "additionalProperties": false
+      },
+      "TuteurContrat": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "personne": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "compteEtat": {
+                "type": "string",
+                "enum": [
+                  "cree",
+                  "invite",
+                  "actif",
+                  "desactive"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "nom",
+              "prenom",
+              "email",
+              "compteEtat"
+            ],
+            "additionalProperties": false
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "id",
+          "personne",
+          "debut",
+          "fin"
         ],
         "additionalProperties": false
       },

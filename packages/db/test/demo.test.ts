@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { buildDemoDataset, DEMO_EMAIL_DOMAIN, seedDemoDataset } from '../src/demo/index.js';
 import { withOrganisation } from '../src/organisation-context.js';
 import {
+  contratAlternance,
   etablissement,
   formation,
   inscription,
@@ -61,13 +62,16 @@ describe('Jeu de démonstration (plan, section 5)', () => {
         formations: (await tx.select().from(formation)).length,
         modules: (await tx.select().from(maquetteModule)).length,
         inscriptions: (await tx.select().from(inscription)).length,
+        contrats: (await tx.select().from(contratAlternance)).length,
       }));
+    // La première école a aussi trois tuteurs en entreprise et leurs contrats (I3.3).
     expect(await compter(premiere.id)).toEqual({
-      personnes: 120,
+      personnes: 123,
       etablissements: 2,
       formations: 2,
       modules: 13,
       inscriptions: 120,
+      contrats: 3,
     });
     expect(await compter(seconde.id)).toEqual({
       personnes: 120,
@@ -75,11 +79,12 @@ describe('Jeu de démonstration (plan, section 5)', () => {
       formations: 1,
       modules: 4,
       inscriptions: 120,
+      contrats: 0,
     });
     const lignes = await owner.db
       .select()
       .from(personne)
       .where(eq(personne.organisationId, premiere.id));
-    expect(lignes.length).toBe(120);
+    expect(lignes.length).toBe(123);
   });
 });

@@ -267,6 +267,20 @@
       "when": 1791358124431,
       "tag": "0037_entreprises_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791359121116,
+      "tag": "0038_contrats",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791359122739,
+      "tag": "0039_contrats_permissions",
+      "breakpoints": true
     }
   ]
 }
