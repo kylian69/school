@@ -37,6 +37,12 @@ const EnvSchema = z
      * qu'en connaissance de cause : les fichiers déposés ne sont alors pas analysés.
      */
     ANTIVIRUS_DISABLED: z.stringbool().default(false),
+    /**
+     * Annuaire public des entreprises (module 03, RG-03-01) : pré-remplissage par SIRET, mis en
+     * cache 30 jours. Désactivable en auto-hébergement (saisie manuelle).
+     */
+    ANNUAIRE_ENTREPRISES_URL: z.url().default('https://recherche-entreprises.api.gouv.fr'),
+    ANNUAIRE_ENTREPRISES_DISABLED: z.stringbool().default(false),
   })
   .refine((env) => env.ANTIVIRUS_DISABLED || env.CLAMAV_HOST, {
     path: ['CLAMAV_HOST'],

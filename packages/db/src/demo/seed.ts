@@ -7,6 +7,7 @@ import {
   competence,
   competenceModule,
   contrat,
+  entreprise,
   formation,
   formationEtablissement,
   groupeEleves,
@@ -68,6 +69,7 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
       await tx.insert(competence).values(referentiel.competences);
       await tx.insert(competenceModule).values(referentiel.competenceModules);
     }
+    if (dataset.entreprises.length > 0) await tx.insert(entreprise).values(dataset.entreprises);
     const scolarite = dataset.scolarite;
     if (scolarite.salles.length > 0) await tx.insert(salle).values(scolarite.salles);
     if (scolarite.promotions.length > 0) {

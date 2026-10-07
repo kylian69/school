@@ -4,6 +4,7 @@ import type {
   client,
   clientEtatEvenement,
   contrat,
+  entreprise,
   organisationModule,
   etablissement,
   fermeture,
@@ -13,6 +14,7 @@ import type {
   personne,
 } from '../schema/index.js';
 import { SeededRandom } from './random.js';
+import { buildDemoEntreprises } from './alternance.js';
 import { buildDemoReferentiel, type DemoReferentiel } from './referentiel.js';
 import { buildDemoScolarite, type DemoScolarite } from './scolarite.js';
 
@@ -117,6 +119,8 @@ export interface DemoDataset {
   referentiel: DemoReferentiel;
   /** Promotions, groupes et inscriptions (I3.2). */
   scolarite: DemoScolarite;
+  /** Entreprises fictives (I3.3). */
+  entreprises: InferInsertModel<typeof entreprise>[];
 }
 
 /** Modules de la formule Pro, repris de packages/referentials (sans dépendance du paquet db). */
@@ -248,6 +252,7 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       membres: [],
       salles: [],
     },
+    entreprises: [],
   };
 
   ECOLES.forEach((ecole, index) => {
@@ -379,5 +384,6 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
     etablissements: dataset.etablissements,
     personnes: dataset.personnes,
   });
+  dataset.entreprises = buildDemoEntreprises(dataset.organisations[0]?.id);
   return dataset;
 }

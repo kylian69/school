@@ -38,6 +38,9 @@ export const PERMISSIONS = {
   'salles:lire': 'Consulter les salles et leurs équipements',
   'salles:gerer': 'Créer et modifier les salles de ses établissements',
   'affectations:gerer': 'Affecter les intervenants aux modules, avec leurs heures prévues',
+  // Module 03 · Alternance et stages
+  'entreprises:lire': 'Consulter les entreprises, leurs contacts et leurs tuteurs',
+  'entreprises:gerer': 'Créer et modifier les entreprises, leurs contacts et leurs tuteurs',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

@@ -4,3 +4,4 @@ export * from './seed.js';
 export * from './droits.js';
 export * from './referentiel.js';
 export * from './scolarite.js';
+export * from './alternance.js';

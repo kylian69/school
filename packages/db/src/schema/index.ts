@@ -10,3 +10,4 @@ export * from './imports.js';
 export * from './emargement.js';
 export * from './referentiel.js';
 export * from './scolarite.js';
+export * from './alternance.js';
