@@ -1,0 +1,4 @@
+# Fichiers générés : pas de diff texte (git diff, revue des agents) et repliés dans les PR GitHub.
+apps/api/openapi.json -diff linguist-generated=true
+packages/db/migrations/meta/** -diff linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
