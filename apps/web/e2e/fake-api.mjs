@@ -1088,7 +1088,13 @@ const aujourdhuiFake = () => new Date().toISOString().slice(0, 10);
 const actifCe = (p, jour) => p.debut <= jour && (p.fin === null || jour < p.fin);
 const resumePromotion = (p) => {
   const actives = p.inscriptions.filter((i) => i.etat === 'inscrit');
-  const parStatut = { initial: 0, apprenti: 0, professionnalisation: 0, formation_continue: 0 };
+  const parStatut = {
+    initial: 0,
+    apprenti: 0,
+    apprenti_sans_employeur: 0,
+    professionnalisation: 0,
+    formation_continue: 0,
+  };
   for (const i of actives) parStatut[i.statut] += 1;
   return {
     ...p,
