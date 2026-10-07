@@ -48,6 +48,17 @@ Ne réécris jamais une décision validée. Si quelque chose semble à revoir, s
 
 Critères d'acceptation couverts par des tests numérotés ; RLS et test d'isolation pour toute nouvelle table ; permissions déclarées ; aucune valeur légale en dur ; test E2E du parcours principal (360 px pour les rôles mobiles) sans violation d'accessibilité ; migrations compatibles ; jeu de démonstration à jour ; OpenAPI régénérée ; registre RGPD (`docs/rgpd/registre.md`) et note de version à jour. Détail : plan de développement, section 3.
 
+## Méthode de travail des agents
+
+Chaque tour renvoie tout l'historique de la session au modèle : la consommation dépend surtout de la taille du contexte. Ces règles la réduisent sans rien retirer aux contrôles.
+
+- **Une session par PR.** En fin de PR (poussée, CI verte), mettre à jour la mémoire d'avancement (branche, PR, points ouverts, suite prévue) et s'arrêter ; la PR suivante démarre dans une nouvelle session. Si l'on doit continuer dans la même session, lancer `/compact` entre deux PR.
+- **Conteneur cloud** : le hook `SessionStart` (`infra/claude/preparer-conteneur.sh`) installe Node, pnpm et Docker, les dépendances, construit les paquets et lance `pnpm dev:up`. Ne pas refaire ces étapes ; en cas d'échec, lire `/tmp/preparation-conteneur.log`.
+- **Modifier les fichiers avec les outils Edit et Write**, jamais par script (`python3 - <<EOF`, `sed -i`, `cat >`) : les scripts passent par la vérification des commandes et sont bien plus lents.
+- **Lire juste ce qu'il faut** : `grep -n` puis une plage de lignes plutôt qu'un fichier entier ; du cahier des charges et du plan, seulement la section de l'incrément ; ne jamais lire `apps/api/openapi.json` ni `packages/db/migrations/meta/` (générés).
+- **Sorties courtes** : limiter les sorties longues (`| tail -n 40`) en vérifiant toujours le code de sortie réel, pour ne masquer aucune erreur.
+- **Tests ciblés pendant le développement** : le fichier touché (`pnpm exec vitest run test/x.test.ts` dans le paquet, `pnpm exec playwright test e2e/x.spec.ts` dans `apps/web`). **Une seule fois avant de pousser** : la suite complète des paquets touchés, l'E2E complet si l'interface a changé, puis les contrôles de la CI (format, lint, typage, `deps:check`, `db:check`, OpenAPI).
+
 ## Commandes
 
 Prérequis : Node 24 (`.nvmrc`) et pnpm via corepack (`corepack enable`).
