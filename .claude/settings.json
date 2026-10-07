@@ -29,7 +29,9 @@
       "Bash(gh run list*)",
       "Bash(docker compose *)",
       "Bash(docker ps*)",
-      "Bash(docker logs *)"
+      "Bash(docker logs *)",
+      "Bash(gh pr edit * --base main)",
+      "Bash(gh pr merge * --merge)"
     ],
     "deny": [
       "Bash(git push --force*)",
