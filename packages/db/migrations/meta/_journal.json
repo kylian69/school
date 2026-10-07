@@ -295,6 +295,13 @@
       "when": 1791376759755,
       "tag": "0041_rythmes_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791413020669,
+      "tag": "0042_apprenti_sans_employeur",
+      "breakpoints": true
     }
   ]
 }

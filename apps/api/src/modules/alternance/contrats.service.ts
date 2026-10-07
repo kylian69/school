@@ -37,12 +37,13 @@ import {
 } from '@scolaly/db';
 import {
   bloquant,
-  changerPeriode,
+  changerStatut,
   contratActif,
   controlerStage,
   depasseCapaciteMaitre,
   finPeriodeEssai,
   MODE_DU_STATUT,
+  ouvrirSansEmployeur,
   statutDuContrat,
   transitionConventionPermise,
   transitionPermise,
@@ -360,7 +361,8 @@ export class ContratsService {
 
   /**
    * US-03-12 et RG-03-07 : rupture datée et motivée. Le tuteur perd l'accès le jour de la
-   * rupture ; l'inscription repasse en initial, à l'issue de la période sans employeur s'il y en a.
+   * rupture ; l'inscription repasse en initial, ou passe « apprenti sans employeur » jusqu'à
+   * l'échéance légale puis en initial si l'apprenti poursuit sa formation.
    */
   async rompre(
     tx: Transaction,
@@ -419,7 +421,8 @@ export class ContratsService {
         access,
         apres.inscriptionId,
         'initial',
-        verdict.finSansEmployeur ?? rupture.date,
+        rupture.date,
+        verdict.finSansEmployeur,
       );
     }
     await this.auditer(tx, access, 'contrat.rompre', id, adresseIp, avant, apres);
@@ -441,6 +444,12 @@ export class ContratsService {
       throw invalide(
         'inscriptionId',
         'Cet apprenant est alternant à cette date : son contrat tient lieu de convention (RG-03-24).',
+      );
+    }
+    if (statut === 'apprenti_sans_employeur') {
+      throw invalide(
+        'inscriptionId',
+        'Cet apprenti est sans employeur à cette date : enregistrez son contrat d’apprentissage, ou passez-le en initial avant de saisir une convention de stage (RG-03-22).',
       );
     }
     const valeurs = {
@@ -1001,7 +1010,8 @@ export class ContratsService {
   /**
    * RG-03-06 et section 7 : nouvelle période de statut de l'inscription à la date d'effet ; la
    * période précédente reste inchangée. Une date antérieure au statut en cours prend effet au
-   * début de celui-ci.
+   * début de celui-ci. Avec `finSansEmployeur` (RG-03-07), l'apprenti est « sans employeur »
+   * de la date d'effet à cette échéance, puis repasse au statut demandé (initial).
    */
   private async appliquerStatut(
     tx: Transaction,
@@ -1009,6 +1019,7 @@ export class ContratsService {
     inscriptionId: string,
     statut: StatutApprenant,
     date: string,
+    finSansEmployeur: string | null = null,
   ) {
     const periodes = await tx
       .select()
@@ -1020,14 +1031,13 @@ export class ContratsService {
         ),
       );
     const actuelles = periodes.map((p) => ({ debut: p.debut, fin: p.fin, valeur: p.statut }));
-    const ouverte = actuelles.find((p) => p.fin === null);
-    if (ouverte?.valeur === statut) return;
-    const effet = ouverte && date < ouverte.debut ? ouverte.debut : date;
-    const verdict = changerPeriode(actuelles, statut, effet);
-    if (!verdict.ok) return;
+    const nouvelles = finSansEmployeur
+      ? ouvrirSansEmployeur(actuelles, date, finSansEmployeur)
+      : changerStatut(actuelles, statut, date);
+    if (!nouvelles) return;
     await tx.delete(inscriptionStatut).where(eq(inscriptionStatut.inscriptionId, inscriptionId));
     await tx.insert(inscriptionStatut).values(
-      verdict.periodes.map((p) => ({
+      nouvelles.map((p) => ({
         organisationId: access.organisationId,
         inscriptionId,
         statut: p.valeur,

@@ -1112,6 +1112,7 @@ export const fr = {
     statuts: {
       initial: 'Initial',
       apprenti: 'Apprenti',
+      apprenti_sans_employeur: 'Apprenti sans employeur',
       professionnalisation: 'Professionnalisation',
       formation_continue: 'Formation continue',
     },

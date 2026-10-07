@@ -17,6 +17,8 @@ export const ETATS_INSCRIPTION = [
 export const STATUTS_APPRENANT = [
   'initial',
   'apprenti',
+  /** Recherche d'employeur au début de la formation, ou poursuite après une rupture (durée légale). */
+  'apprenti_sans_employeur',
   'professionnalisation',
   'formation_continue',
 ] as const;

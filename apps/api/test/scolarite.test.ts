@@ -262,7 +262,13 @@ describe('E-02-04 et E-02-05 promotions, inscriptions et groupes', () => {
     expect(promo.effectifs).toEqual({
       inscrits: 6,
       preinscrits: 0,
-      parStatut: { initial: 4, apprenti: 2, professionnalisation: 0, formation_continue: 0 },
+      parStatut: {
+        initial: 4,
+        apprenti: 2,
+        apprenti_sans_employeur: 0,
+        professionnalisation: 0,
+        formation_continue: 0,
+      },
     });
   });
 
@@ -282,6 +288,28 @@ describe('E-02-04 et E-02-05 promotions, inscriptions et groupes', () => {
       debut: '2026-10-01',
     });
     expect(avant.statusCode).toBe(400);
+  });
+
+  it('module 03 section 7 : un apprenti sans employeur a la durée légale de recherche, puis repasse en initial', async () => {
+    const moreau = inscriptions.find((i) => i.personne.nom === 'Moreau');
+    const url = `/api/inscriptions/${moreau?.id ?? ''}/statut`;
+    const attendu = [
+      { debut: '2026-09-01', fin: '2027-01-04', statut: 'initial' },
+      { debut: '2027-01-04', fin: '2027-04-04', statut: 'apprenti_sans_employeur' },
+      { debut: '2027-04-04', fin: null, statut: 'initial' },
+    ];
+    const reponse = await requete('POST', url, admin, {
+      statut: 'apprenti_sans_employeur',
+      debut: '2027-01-04',
+    });
+    expect(reponse.statusCode, reponse.body).toBe(200);
+    expect(reponse.json<Inscription>().statuts).toEqual(attendu);
+    // La période en cours ne se prolonge pas en la redemandant.
+    const encore = await requete('POST', url, admin, {
+      statut: 'apprenti_sans_employeur',
+      debut: '2027-02-01',
+    });
+    expect(encore.json<Inscription>().statuts).toEqual(attendu);
   });
 
   it('US-02-07 RG-02-16 répartit en deux TD équilibrés, d’abord en aperçu', async () => {
