@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../client.js';
 import {
   anneeScolaire,
+  calendrierAlternance,
   client,
   clientEtatEvenement,
   competence,
@@ -91,6 +92,7 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
     if (alternance.contrats.length > 0) {
       await tx.insert(contratAlternance).values(alternance.contrats);
       await tx.insert(contratTuteur).values(alternance.contratTuteurs);
+      await tx.insert(calendrierAlternance).values(alternance.calendriers);
     }
   });
   return true;

@@ -43,6 +43,8 @@ export const PERMISSIONS = {
   'entreprises:gerer': 'Créer et modifier les entreprises, leurs contacts et leurs tuteurs',
   'contrats:lire': 'Consulter les contrats d’alternance et les conventions de stage',
   'contrats:gerer': 'Créer et modifier les contrats d’alternance et les conventions de stage',
+  'rythmes:lire': 'Consulter les rythmes et calendriers d’alternance',
+  'rythmes:gerer': 'Définir les modèles de rythme, les calendriers et les exceptions individuelles',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

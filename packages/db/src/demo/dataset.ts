@@ -251,7 +251,14 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
       membres: [],
       salles: [],
     },
-    alternance: { entreprises: [], tuteurs: [], contacts: [], contrats: [], contratTuteurs: [] },
+    alternance: {
+      entreprises: [],
+      tuteurs: [],
+      contacts: [],
+      contrats: [],
+      contratTuteurs: [],
+      calendriers: [],
+    },
   };
 
   ECOLES.forEach((ecole, index) => {

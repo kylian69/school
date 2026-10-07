@@ -44,6 +44,9 @@ import {
   contratAlternance,
   contratTuteur,
   conventionStage,
+  modeleRythme,
+  calendrierAlternance,
+  exceptionRythme,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -439,6 +442,36 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         debut: '2027-04-01',
         fin: '2027-06-30',
         heuresPresence: 400,
+      });
+    },
+  },
+  modele_rythme: {
+    insert: async (db, organisationId) => {
+      await db.insert(modeleRythme).values({
+        organisationId,
+        libelle: `Rythme ${newId()}`,
+        motif: [['ecole', 'ecole', 'entreprise', 'entreprise', 'entreprise', 'ferme', 'ferme']],
+      });
+    },
+  },
+  calendrier_alternance: {
+    insert: async (db, organisationId) => {
+      await db.insert(calendrierAlternance).values({
+        organisationId,
+        promotionId: await insertPromotion(db, organisationId),
+        modele: '2 jours école / 3 jours entreprise',
+        jours: { '2026-09-01': 'ecole', '2026-09-02': 'entreprise' },
+      });
+    },
+  },
+  exception_rythme: {
+    insert: async (db, organisationId) => {
+      await db.insert(exceptionRythme).values({
+        organisationId,
+        inscriptionId: await insertInscription(db, organisationId),
+        debut: '2026-09-01',
+        fin: '2026-09-30',
+        jours: { '2026-09-01': 'entreprise' },
       });
     },
   },

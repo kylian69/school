@@ -1535,6 +1535,66 @@
         }
       }
     },
+    "/api/exceptions-rythme/{id}": {
+      "delete": {
+        "operationId": "RythmesController.supprimerException",
+        "summary": "Supprimer une exception de rythme",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendrierPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exceptions-rythme/{id}/jours": {
+      "patch": {
+        "operationId": "RythmesController.retoucherException",
+        "summary": "Retoucher des jours d’une exception",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetoucheJours"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendrierPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/fermetures/{id}": {
       "put": {
         "operationId": "CalendrierController.modifierFermeture",
@@ -3868,6 +3928,135 @@
         }
       }
     },
+    "/api/promotions/{id}/rythme": {
+      "get": {
+        "operationId": "RythmesController.calendrier",
+        "summary": "Calendrier d’alternance d’une promotion et exceptions individuelles",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:lire",
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendrierPromotion"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "RythmesController.generer",
+        "summary": "Générer le calendrier d’après un modèle, fériés et fermetures appliqués (RG-03-11)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationCalendrier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendrierPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/{id}/rythme/exceptions": {
+      "post": {
+        "operationId": "RythmesController.creerException",
+        "summary": "Exception de rythme d’un apprenant (RG-03-12)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouvelleExceptionRythme"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendrierPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/promotions/{id}/rythme/jours": {
+      "patch": {
+        "operationId": "RythmesController.retoucher",
+        "summary": "Retoucher des jours du calendrier annuel",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetoucheJours"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendrierPromotion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/promotions/annee-suivante": {
       "post": {
         "operationId": "ScolariteController.preparerAnneeSuivante",
@@ -4189,6 +4378,127 @@
             "roles:gerer"
           ],
           "scope": "organisation"
+        },
+        "responses": {
+          "204": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rythmes/modeles": {
+      "get": {
+        "operationId": "RythmesController.modeles",
+        "summary": "Modèles de rythme : les 5 fournis et ceux de l’école (RG-03-10)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:lire",
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeModelesRythme"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "RythmesController.creerModele",
+        "summary": "Créer un modèle de rythme",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouveauModeleRythme"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeleRythme"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rythmes/modeles/{id}": {
+      "patch": {
+        "operationId": "RythmesController.modifierModele",
+        "summary": "Modifier un modèle de l’école (les calendriers générés ne changent pas)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationModeleRythme"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModeleRythme"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RythmesController.supprimerModele",
+        "summary": "Supprimer un modèle de l’école",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "rythmes:gerer"
+          ],
+          "scope": "promotion"
         },
         "responses": {
           "204": {
@@ -5522,6 +5832,116 @@
         ],
         "additionalProperties": false
       },
+      "CalendrierPromotion": {
+        "type": "object",
+        "properties": {
+          "promotion": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "libelle": {
+                "type": "string"
+              },
+              "dateDebut": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "dateFin": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              }
+            },
+            "required": [
+              "id",
+              "libelle",
+              "dateDebut",
+              "dateFin"
+            ],
+            "additionalProperties": false
+          },
+          "calendrier": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "modele": {
+                "type": "string"
+              },
+              "jours": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "ecole",
+                    "entreprise",
+                    "ferme",
+                    "examen"
+                  ]
+                }
+              },
+              "compte": {
+                "type": "object",
+                "properties": {
+                  "ecole": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "entreprise": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "ferme": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "examen": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "ecole",
+                  "entreprise",
+                  "ferme",
+                  "examen"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "modele",
+              "jours",
+              "compte"
+            ],
+            "additionalProperties": false
+          },
+          "exceptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExceptionRythme"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "promotion",
+          "calendrier",
+          "exceptions",
+          "modifiable"
+        ],
+        "additionalProperties": false
+      },
       "ChangementEtatClient": {
         "type": "object",
         "properties": {
@@ -6192,6 +6612,8 @@
                 "entreprises:gerer",
                 "contrats:lire",
                 "contrats:gerer",
+                "rythmes:lire",
+                "rythmes:gerer",
                 "emargement:animer"
               ]
             }
@@ -6446,6 +6868,12 @@
           "document": {
             "type": "boolean"
           },
+          "finPeriodeEssai": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
           "tuteurs": {
             "type": "array",
             "items": {
@@ -6476,6 +6904,7 @@
           "formationProlongee",
           "rupture",
           "document",
+          "finPeriodeEssai",
           "tuteurs",
           "avertissements",
           "modifiable"
@@ -7504,6 +7933,79 @@
         ],
         "additionalProperties": false
       },
+      "ExceptionRythme": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "apprenant": {
+            "type": "object",
+            "properties": {
+              "inscriptionId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "personneId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "nom": {
+                "type": "string"
+              },
+              "prenom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "inscriptionId",
+              "personneId",
+              "nom",
+              "prenom"
+            ],
+            "additionalProperties": false
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "motif": {
+            "nullable": true,
+            "type": "string"
+          },
+          "jours": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "ecole",
+                "entreprise",
+                "ferme",
+                "examen"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "apprenant",
+          "debut",
+          "fin",
+          "motif",
+          "jours"
+        ],
+        "additionalProperties": false
+      },
       "ExportDiffere": {
         "type": "object",
         "properties": {
@@ -7659,6 +8161,19 @@
           "versions",
           "modifiable",
           "publiable"
+        ],
+        "additionalProperties": false
+      },
+      "GenerationCalendrier": {
+        "type": "object",
+        "properties": {
+          "modele": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "modele"
         ],
         "additionalProperties": false
       },
@@ -8250,6 +8765,12 @@
                 "document": {
                   "type": "boolean"
                 },
+                "finPeriodeEssai": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
                 "avertissements": {
                   "type": "array",
                   "items": {
@@ -8274,6 +8795,7 @@
                 "formationProlongee",
                 "rupture",
                 "document",
+                "finPeriodeEssai",
                 "avertissements",
                 "modifiable"
               ],
@@ -8411,6 +8933,25 @@
         },
         "required": [
           "formations",
+          "creation"
+        ],
+        "additionalProperties": false
+      },
+      "ListeModelesRythme": {
+        "type": "object",
+        "properties": {
+          "modeles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModeleRythme"
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "modeles",
           "creation"
         ],
         "additionalProperties": false
@@ -8845,6 +9386,42 @@
         "required": [
           "enseignements",
           "totalHeures"
+        ],
+        "additionalProperties": false
+      },
+      "ModeleRythme": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "motif": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ecole",
+                  "entreprise",
+                  "ferme",
+                  "examen"
+                ]
+              }
+            }
+          },
+          "fourni": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "motif",
+          "fourni"
         ],
         "additionalProperties": false
       },
@@ -9449,6 +10026,36 @@
         },
         "additionalProperties": false
       },
+      "ModificationModeleRythme": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "motif": {
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "minItems": 7,
+              "maxItems": 7,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ecole",
+                  "entreprise",
+                  "ferme",
+                  "examen"
+                ]
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "ModificationModule": {
         "type": "object",
         "properties": {
@@ -9669,7 +10276,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 31,
+            "maxItems": 33,
             "type": "array",
             "items": {
               "type": "string",
@@ -9704,6 +10311,8 @@
                 "entreprises:gerer",
                 "contrats:lire",
                 "contrats:gerer",
+                "rythmes:lire",
+                "rythmes:gerer",
                 "emargement:animer"
               ]
             }
@@ -10198,6 +10807,40 @@
         ],
         "additionalProperties": false
       },
+      "NouveauModeleRythme": {
+        "type": "object",
+        "properties": {
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "motif": {
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "minItems": 7,
+              "maxItems": 7,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ecole",
+                  "entreprise",
+                  "ferme",
+                  "examen"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "libelle",
+          "motif"
+        ],
+        "additionalProperties": false
+      },
       "NouveauRole": {
         "type": "object",
         "properties": {
@@ -10216,7 +10859,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 31,
+            "maxItems": 33,
             "type": "array",
             "items": {
               "type": "string",
@@ -10251,6 +10894,8 @@
                 "entreprises:gerer",
                 "contrats:lire",
                 "contrats:gerer",
+                "rythmes:lire",
+                "rythmes:gerer",
                 "emargement:animer"
               ]
             }
@@ -10589,6 +11234,44 @@
         },
         "required": [
           "siret"
+        ],
+        "additionalProperties": false
+      },
+      "NouvelleExceptionRythme": {
+        "type": "object",
+        "properties": {
+          "inscriptionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "modele": {
+            "type": "string",
+            "minLength": 1
+          },
+          "motif": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "inscriptionId",
+          "debut",
+          "fin",
+          "modele",
+          "motif"
         ],
         "additionalProperties": false
       },
@@ -12674,6 +13357,44 @@
         ],
         "additionalProperties": false
       },
+      "RetoucheJours": {
+        "type": "object",
+        "properties": {
+          "jours": {
+            "minItems": 1,
+            "maxItems": 400,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "ecole",
+                    "entreprise",
+                    "ferme",
+                    "examen"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "jours"
+        ],
+        "additionalProperties": false
+      },
       "RetraitMembre": {
         "type": "object",
         "properties": {
@@ -12760,6 +13481,8 @@
                 "entreprises:gerer",
                 "contrats:lire",
                 "contrats:gerer",
+                "rythmes:lire",
+                "rythmes:gerer",
                 "emargement:animer"
               ]
             }
