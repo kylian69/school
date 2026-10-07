@@ -1,7 +1,7 @@
 import { and, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import type { Database } from './client.js';
 import { withOrganisation, type Transaction } from './organisation-context.js';
-import { presence, seance, seanceAttendu } from './schema/emargement.js';
+import { presence, seance, seanceAttenduCalcule } from './schema/emargement.js';
 import { authSession, authUser } from './schema/auth.js';
 import { personne } from './schema/personne.js';
 
@@ -41,21 +41,15 @@ export async function seanceEtAttendus(tx: Transaction, seanceId: string) {
       nom: personne.nom,
       prenom: personne.prenom,
     })
-    .from(seanceAttendu)
+    .from(seanceAttenduCalcule)
     .innerJoin(
       personne,
       and(
-        eq(personne.organisationId, seanceAttendu.organisationId),
-        eq(personne.id, seanceAttendu.personneId),
+        eq(personne.organisationId, seanceAttenduCalcule.organisationId),
+        eq(personne.id, seanceAttenduCalcule.personneId),
       ),
     )
-    .where(
-      and(
-        eq(seanceAttendu.seanceId, seanceId),
-        isNull(seanceAttendu.deletedAt),
-        isNull(personne.deletedAt),
-      ),
-    )
+    .where(and(eq(seanceAttenduCalcule.seanceId, seanceId), isNull(personne.deletedAt)))
     .orderBy(personne.nom, personne.prenom);
   return { seance: ligne, attendus };
 }
@@ -143,19 +137,18 @@ export async function attenduDeSeance(
 ): Promise<string | null> {
   const [trouve] = await tx
     .select({ personneId: personne.id })
-    .from(seanceAttendu)
+    .from(seanceAttenduCalcule)
     .innerJoin(
       personne,
       and(
-        eq(personne.organisationId, seanceAttendu.organisationId),
-        eq(personne.id, seanceAttendu.personneId),
+        eq(personne.organisationId, seanceAttenduCalcule.organisationId),
+        eq(personne.id, seanceAttenduCalcule.personneId),
       ),
     )
     .where(
       and(
-        eq(seanceAttendu.seanceId, seanceId),
+        eq(seanceAttenduCalcule.seanceId, seanceId),
         eq(personne.userId, userId),
-        isNull(seanceAttendu.deletedAt),
         isNull(personne.deletedAt),
       ),
     );

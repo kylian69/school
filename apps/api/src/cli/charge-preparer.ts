@@ -9,8 +9,10 @@ import {
   newId,
   organisation,
   personne,
+  inscrireManquants,
+  promotionTechnique,
   seance,
-  seanceAttendu,
+  seancePublic,
   sessionsDesComptes,
 } from '@scolaly/db';
 import { eq, like } from 'drizzle-orm';
@@ -135,18 +137,22 @@ try {
     debut: debutSeance,
     fin: finSeance,
   });
+  // Les apprenants sont inscrits (une fois) à une promotion technique, public de la séance.
   const attendus = Array.from({ length: nombre }, (_, i) => parEmail.get(email(i))).flatMap((f) =>
     f ? [f] : [],
   );
-  for (let debut = 0; debut < attendus.length; debut += 1000) {
-    await db
-      .insert(seanceAttendu)
-      .values(
-        attendus
-          .slice(debut, debut + 1000)
-          .map((f) => ({ organisationId, seanceId, personneId: f.id })),
-      );
-  }
+  const promotionId = await promotionTechnique(
+    db,
+    organisationId,
+    'Promotion de la preuve de charge',
+  );
+  await inscrireManquants(
+    db,
+    organisationId,
+    promotionId,
+    attendus.map((f) => f.id),
+  );
+  await db.insert(seancePublic).values({ organisationId, seanceId, promotionId });
   await valkey
     .pipeline(
       commandesPrechargement(

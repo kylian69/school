@@ -10,10 +10,12 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  pgView,
 } from 'drizzle-orm/pg-core';
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 import { personne } from './personne.js';
+import { groupeEleves, promotion } from './scolarite.js';
 
 /**
  * Séance (P2, version minimale) : ce qu'il faut pour émarger. L'emploi du temps (I4.1) la complétera
@@ -44,8 +46,9 @@ export const seance = pgTable(
 ).enableRLS();
 
 /**
- * Apprenants attendus à une séance (RG-06-04). Provisoire : avec les inscriptions (I3.2) et les
- * groupes, la liste sera calculée ; cette table sera alors retirée.
+ * Apprenants attendus à une séance, saisis un à un (P2). Remplacée en I3.2 par le public de la
+ * séance (seance_public) : plus aucune écriture ; la vue seance_attendu_calcule la lit encore
+ * pendant la bascule, puis la table sera retirée (« ajouter, basculer, retirer »).
  */
 export const seanceAttendu = pgTable(
   'seance_attendu',
@@ -104,3 +107,49 @@ export const presence = pgTable(
     }),
   ],
 ).enableRLS();
+
+/**
+ * Public d'une séance (RG-06-04, I3.2) : une promotion entière, ou un groupe. Les apprenants
+ * attendus en découlent, le jour de la séance (inscriptions et appartenances aux groupes datées).
+ */
+export const seancePublic = pgTable(
+  'seance_public',
+  {
+    ...organisationScoped(),
+    seanceId: uuid().notNull(),
+    promotionId: uuid(),
+    groupeId: uuid(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('seance_public', t),
+    index('seance_public_seance_idx').on(t.organisationId, t.seanceId),
+    foreignKey({
+      name: 'seance_public_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'seance_public_promotion_fk',
+      columns: [t.organisationId, t.promotionId],
+      foreignColumns: [promotion.organisationId, promotion.id],
+    }),
+    foreignKey({
+      name: 'seance_public_groupe_fk',
+      columns: [t.organisationId, t.groupeId],
+      foreignColumns: [groupeEleves.organisationId, groupeEleves.id],
+    }),
+    check('seance_public_cible_check', sql`(${t.promotionId} is null) <> (${t.groupeId} is null)`),
+  ],
+).enableRLS();
+
+/**
+ * Apprenants attendus à une séance, calculés (migration 0035, security_invoker : la RLS des tables
+ * s'applique). Inscrits actifs le jour de la séance, de la promotion visée ou membres du groupe
+ * visé ce jour-là, plus les lignes historiques de seance_attendu tant qu'elle existe.
+ */
+export const seanceAttenduCalcule = pgView('seance_attendu_calcule', {
+  organisationId: uuid().notNull(),
+  seanceId: uuid().notNull(),
+  personneId: uuid().notNull(),
+}).existing();
