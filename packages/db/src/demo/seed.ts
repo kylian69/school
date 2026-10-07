@@ -4,7 +4,15 @@ import {
   anneeScolaire,
   client,
   clientEtatEvenement,
+  competence,
+  competenceModule,
   contrat,
+  formation,
+  formationEtablissement,
+  maquetteBloc,
+  maquetteModule,
+  maquetteUe,
+  maquetteVersion,
   organisationModule,
   etablissement,
   fermeture,
@@ -41,6 +49,17 @@ export async function seedDemoDataset(owner: Database, dataset: DemoDataset): Pr
     await tx.insert(clientEtatEvenement).values(dataset.etatsClient);
     for (let i = 0; i < dataset.personnes.length; i += 500) {
       await tx.insert(personne).values(dataset.personnes.slice(i, i + 500));
+    }
+    const referentiel = dataset.referentiel;
+    if (referentiel.formations.length > 0) {
+      await tx.insert(formation).values(referentiel.formations);
+      await tx.insert(formationEtablissement).values(referentiel.formationEtablissements);
+      await tx.insert(maquetteVersion).values(referentiel.versions);
+      await tx.insert(maquetteBloc).values(referentiel.blocs);
+      await tx.insert(maquetteUe).values(referentiel.ues);
+      await tx.insert(maquetteModule).values(referentiel.modules);
+      await tx.insert(competence).values(referentiel.competences);
+      await tx.insert(competenceModule).values(referentiel.competenceModules);
     }
   });
   return true;

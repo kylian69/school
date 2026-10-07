@@ -25,6 +25,8 @@ Dernière mise à jour : incrément I2.1 (émargement, chemin rapide).
 | T9 | Membres et audit de la console (module 19) — **Scolaly responsable de traitement** | Contrôler l'accès à la console et tracer chaque action | Membres de l'équipe Scolaly | Compte, rôle ; actions avec auteur, adresse IP, valeurs avant et après | Audit : **3 ans** (module 19, table `durees-conservation`) | Super-administrateurs |
 | T7 | Journaux techniques | Exploitation, sécurité, diagnostic | Utilisateurs de la plateforme | Méthode et chemin des requêtes, statut, durée, adresse IP ; **sans mot de passe, cookie, jeton ni contenu d'email** (masqués et testés) | **À définir** (exploitation, section 7) | Exploitants de la plateforme |
 
+Le référentiel pédagogique (module 02, I3.1 : formations, maquettes, compétences, règles de calcul) ne contient aucune donnée personnelle ; ses modifications sont tracées au journal d'audit (T4). Le simulateur de résultats (RG-02-10) calcule sur des notes fictives et n'enregistre rien.
+
 ## Mesures de sécurité communes
 
 - Console de la plateforme : rôle de base de données dédié, **sans aucun accès aux données des écoles** (ADR 0004) ; l'accès du support aux données d'une école passera par une autorisation datée de l'école (RG-19-09).

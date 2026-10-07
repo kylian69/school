@@ -14,6 +14,7 @@ import {
   attribution,
   enregistrerAudit,
   etablissement,
+  formation,
   personne,
   role,
   type Transaction,
@@ -32,14 +33,20 @@ import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
 import { PersonnesService } from './personnes.service.js';
 
-/** Périmètres dont les objets existent ; formations et promotions arrivent avec le module 02. */
-const PERIMETRES_DISPONIBLES: readonly TypePerimetre[] = ['organisation', 'etablissement', 'soi'];
+/** Périmètres dont les objets existent ; les promotions arrivent avec I3.2. */
+const PERIMETRES_DISPONIBLES: readonly TypePerimetre[] = [
+  'organisation',
+  'etablissement',
+  'formation',
+  'soi',
+];
 
 const MESSAGES: Record<RefusNouvelleAttribution, string> = {
-  'perimetre-sans-cible': 'Choisissez l’établissement sur lequel ce rôle s’exerce.',
-  'perimetre-cible-inattendue': 'Ce périmètre ne désigne pas d’établissement : retirez-le.',
+  'perimetre-sans-cible': 'Choisissez l’établissement ou la formation sur lequel ce rôle s’exerce.',
+  'perimetre-cible-inattendue':
+    'Ce périmètre ne désigne ni établissement ni formation : retirez la cible.',
   'perimetre-indisponible':
-    'Les périmètres « formation » et « promotion » seront disponibles avec le référentiel pédagogique. Choisissez l’école ou un établissement.',
+    'Le périmètre « promotion » sera disponible avec les promotions. Choisissez l’école, un établissement ou une formation.',
   dates: 'La fin du rôle doit être postérieure à son début.',
   'deja-attribue': 'Cette personne a déjà ce rôle sur ce périmètre pour cette période.',
 };
@@ -66,7 +73,12 @@ export class AttributionsService {
     await this.personnes.lire(tx, access, personneId);
     const date = aujourdhui();
     const lignes = await tx
-      .select({ attribution, roleLibelle: role.libelle, etablissement: etablissement.nom })
+      .select({
+        attribution,
+        roleLibelle: role.libelle,
+        etablissement: etablissement.nom,
+        formation: formation.intitule,
+      })
       .from(attribution)
       .innerJoin(role, eq(role.id, attribution.roleId))
       .leftJoin(
@@ -76,20 +88,26 @@ export class AttributionsService {
           eq(etablissement.id, attribution.perimetreId),
         ),
       )
+      .leftJoin(
+        formation,
+        and(eq(attribution.perimetreType, 'formation'), eq(formation.id, attribution.perimetreId)),
+      )
       .where(and(eq(attribution.personneId, personneId), isNull(attribution.deletedAt)))
       .orderBy(desc(attribution.debut), asc(role.libelle));
     return {
-      attributions: lignes.map(({ attribution: a, roleLibelle, etablissement: nom }) => ({
-        id: a.id,
-        roleId: a.roleId,
-        roleLibelle,
-        perimetreType: a.perimetreType,
-        perimetreId: a.perimetreId,
-        perimetreLibelle: nom,
-        debut: a.debut,
-        fin: a.fin,
-        statut: estEnCours(a, date) ? 'en-cours' : a.debut > date ? 'a-venir' : 'terminee',
-      })),
+      attributions: lignes.map(
+        ({ attribution: a, roleLibelle, etablissement: nom, formation: intitule }) => ({
+          id: a.id,
+          roleId: a.roleId,
+          roleLibelle,
+          perimetreType: a.perimetreType,
+          perimetreId: a.perimetreId,
+          perimetreLibelle: nom ?? intitule,
+          debut: a.debut,
+          fin: a.fin,
+          statut: estEnCours(a, date) ? 'en-cours' : a.debut > date ? 'a-venir' : 'terminee',
+        }),
+      ),
     };
   }
 
@@ -115,6 +133,13 @@ export class AttributionsService {
         .from(etablissement)
         .where(and(eq(etablissement.id, perimetreId), isNull(etablissement.deletedAt)));
       if (!cible) throw invalide('perimetreId', 'Cet établissement n’existe pas dans l’école.');
+    }
+    if (entree.perimetreType === 'formation' && perimetreId) {
+      const [cible] = await tx
+        .select({ id: formation.id })
+        .from(formation)
+        .where(and(eq(formation.id, perimetreId), isNull(formation.deletedAt)));
+      if (!cible) throw invalide('perimetreId', 'Cette formation n’existe pas dans l’école.');
     }
     const [existante] = await tx
       .select({ id: attribution.id })

@@ -17,6 +17,17 @@ import {
   presence,
   seance,
   seanceAttendu,
+  competence,
+  competenceModule,
+  formation,
+  formationEtablissement,
+  maquetteBloc,
+  maquetteModule,
+  maquetteUe,
+  maquetteVersion,
+  maquetteVersionRegle,
+  niveauMaitrise,
+  regleParticuliere,
 } from '../../src/schema/index.js';
 import { auditEvenement, outboxEvenement } from '../../src/schema/journal.js';
 
@@ -78,7 +89,158 @@ async function insertAnnee(db: Database, organisationId: string): Promise<string
   return id;
 }
 
+async function insertFormation(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(formation).values({
+    id,
+    organisationId,
+    intitule: 'Bachelor fictif',
+    type: 'bachelor',
+    niveau: 6,
+    dureeAnnees: 3,
+    modes: ['initial'],
+  });
+  return id;
+}
+
+async function insertVersion(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  const formationId = await insertFormation(db, organisationId);
+  await db
+    .insert(maquetteVersion)
+    .values({ id, organisationId, formationId, numero: 1, regles: {} });
+  return id;
+}
+
+async function insertBloc(db: Database, organisationId: string, versionId: string) {
+  const id = newId();
+  await db
+    .insert(maquetteBloc)
+    .values({ id, organisationId, versionId, code: 'BC1', intitule: 'Bloc fictif', ordre: 0 });
+  return id;
+}
+
+async function insertModule(db: Database, organisationId: string, versionId: string) {
+  const ueId = newId();
+  await db
+    .insert(maquetteUe)
+    .values({ id: ueId, organisationId, versionId, code: 'UE1', intitule: 'UE fictive', ordre: 0 });
+  const id = newId();
+  await db.insert(maquetteModule).values({
+    id,
+    organisationId,
+    versionId,
+    ueId,
+    code: 'M1',
+    intitule: 'Module fictif',
+    ordre: 0,
+  });
+  return id;
+}
+
+async function insertCompetence(db: Database, organisationId: string, versionId: string) {
+  const id = newId();
+  const blocId = await insertBloc(db, organisationId, versionId);
+  await db.insert(competence).values({
+    id,
+    organisationId,
+    versionId,
+    blocId,
+    code: 'C1',
+    intitule: 'Compétence',
+    ordre: 0,
+  });
+  return id;
+}
+
+async function insertRegle(db: Database, organisationId: string): Promise<string> {
+  const id = newId();
+  await db.insert(regleParticuliere).values({
+    id,
+    organisationId,
+    libelle: 'Bonus fictif',
+    type: 'points_jury',
+    parametres: { type: 'points_jury', maximum: 0.3, seuils: [] },
+  });
+  return id;
+}
+
 export const sampleRows: Record<string, ScopedTableSample> = {
+  formation: {
+    insert: async (db, organisationId) => {
+      await insertFormation(db, organisationId);
+    },
+  },
+  formation_etablissement: {
+    insert: async (db, organisationId) => {
+      const etablissementId = newId();
+      await db.insert(etablissement).values({ id: etablissementId, organisationId, nom: 'Campus' });
+      await db.insert(formationEtablissement).values({
+        organisationId,
+        formationId: await insertFormation(db, organisationId),
+        etablissementId,
+      });
+    },
+  },
+  maquette_version: {
+    insert: async (db, organisationId) => {
+      await insertVersion(db, organisationId);
+    },
+  },
+  maquette_bloc: {
+    insert: async (db, organisationId) => {
+      await insertBloc(db, organisationId, await insertVersion(db, organisationId));
+    },
+  },
+  maquette_ue: {
+    insert: async (db, organisationId) => {
+      await insertModule(db, organisationId, await insertVersion(db, organisationId));
+    },
+  },
+  maquette_module: {
+    insert: async (db, organisationId) => {
+      await insertModule(db, organisationId, await insertVersion(db, organisationId));
+    },
+  },
+  competence: {
+    insert: async (db, organisationId) => {
+      await insertCompetence(db, organisationId, await insertVersion(db, organisationId));
+    },
+  },
+  competence_module: {
+    insert: async (db, organisationId) => {
+      const versionId = await insertVersion(db, organisationId);
+      await db.insert(competenceModule).values({
+        organisationId,
+        competenceId: await insertCompetence(db, organisationId, versionId),
+        moduleId: await insertModule(db, organisationId, versionId),
+      });
+    },
+  },
+  niveau_maitrise: {
+    insert: async (db, organisationId) => {
+      await db
+        .insert(niveauMaitrise)
+        .values({ organisationId, libelle: 'Acquis', couleur: '#16A34A', ordre: 1, valide: true });
+    },
+  },
+  regle_particuliere: {
+    insert: async (db, organisationId) => {
+      await insertRegle(db, organisationId);
+    },
+  },
+  maquette_version_regle: {
+    insert: async (db, organisationId) => {
+      await db.insert(maquetteVersionRegle).values({
+        organisationId,
+        versionId: await insertVersion(db, organisationId),
+        regleId: await insertRegle(db, organisationId),
+        libelle: 'Points de jury',
+        type: 'points_jury',
+        parametres: { type: 'points_jury', maximum: 0.3, seuils: [] },
+      });
+    },
+  },
   etablissement: {
     insert: async (db, organisationId) => {
       await db.insert(etablissement).values({ organisationId, nom: 'Campus fictif' });

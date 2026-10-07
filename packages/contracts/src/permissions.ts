@@ -23,6 +23,13 @@ export const PERMISSIONS = {
   'audit:lire': "Consulter le journal d'audit",
   'apparence:gerer': "Personnaliser l'apparence et les modèles",
   'corbeille:restaurer': 'Restaurer des éléments depuis la corbeille',
+  // Module 02 · Référentiel pédagogique (matrice de la section 2)
+  'referentiel:lire': 'Consulter les formations, les maquettes et leurs règles de validation',
+  'referentiel:gerer':
+    'Créer et modifier les formations, les maquettes et leurs règles de validation',
+  'referentiel:publier': 'Publier une version de maquette',
+  'referentiel:parametrer':
+    'Définir l’échelle de maîtrise et la bibliothèque de règles particulières',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

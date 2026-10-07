@@ -19,6 +19,7 @@ import { ComptesModule } from './modules/comptes/index.js';
 import { CorbeilleModule } from './modules/corbeille/index.js';
 import { EmargementModule } from './modules/emargement/index.js';
 import { PersonnesModule } from './modules/personnes/index.js';
+import { ReferentielModule } from './modules/referentiel/index.js';
 import { RolesModule } from './modules/roles/index.js';
 import { StructureModule } from './modules/structure/index.js';
 import { SessionController } from './modules/session/index.js';
@@ -70,6 +71,7 @@ export class AppModule {
         CorbeilleModule,
         EmargementModule,
         PersonnesModule,
+        ReferentielModule,
         RolesModule,
         StructureModule,
         ...(resources.platformDatabase
