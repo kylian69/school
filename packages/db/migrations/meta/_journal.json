@@ -281,6 +281,20 @@
       "when": 1791359122739,
       "tag": "0039_contrats_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791376746549,
+      "tag": "0040_rythmes",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791376759755,
+      "tag": "0041_rythmes_permissions",
+      "breakpoints": true
     }
   ]
 }

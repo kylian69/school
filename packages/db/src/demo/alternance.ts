@@ -1,5 +1,6 @@
 import type { InferInsertModel } from 'drizzle-orm';
 import type {
+  calendrierAlternance,
   contactEntreprise,
   contratAlternance,
   contratTuteur,
@@ -7,6 +8,7 @@ import type {
   inscription,
   inscriptionStatut,
   personne,
+  promotion,
 } from '../schema/index.js';
 import { SeededRandom } from './random.js';
 
@@ -30,6 +32,21 @@ export interface DemoAlternance {
   contacts: InferInsertModel<typeof contactEntreprise>[];
   contrats: InferInsertModel<typeof contratAlternance>[];
   contratTuteurs: InferInsertModel<typeof contratTuteur>[];
+  calendriers: InferInsertModel<typeof calendrierAlternance>[];
+}
+
+/**
+ * Calendrier « 2 jours école (lundi, mardi) / 3 jours entreprise » de démonstration. Les fériés
+ * et fermetures s'appliquent quand le calendrier est régénéré depuis l'écran des rythmes.
+ */
+function calendrierDeuxTrois(debut: string, fin: string) {
+  const jours: Record<string, 'ecole' | 'entreprise' | 'ferme'> = {};
+  for (let t = Date.parse(`${debut}T00:00:00Z`); t <= Date.parse(`${fin}T00:00:00Z`); t += 864e5) {
+    const jour = new Date(t);
+    const rang = (jour.getUTCDay() + 6) % 7;
+    jours[jour.toISOString().slice(0, 10)] = rang < 2 ? 'ecole' : rang < 5 ? 'entreprise' : 'ferme';
+  }
+  return jours;
 }
 
 /** Clé de Luhn ajoutée à 13 chiffres. */
@@ -56,6 +73,7 @@ function finApres(debut: string, annees: number): string {
 export function buildDemoAlternance(
   organisationId: string | undefined,
   scolarite: {
+    promotions: readonly InferInsertModel<typeof promotion>[];
     inscriptions: readonly InferInsertModel<typeof inscription>[];
     statuts: readonly InferInsertModel<typeof inscriptionStatut>[];
   },
@@ -66,6 +84,7 @@ export function buildDemoAlternance(
     contacts: [],
     contrats: [],
     contratTuteurs: [],
+    calendriers: [],
   };
   if (!organisationId) return jeu;
   const random = new SeededRandom(GRAINE);
@@ -133,6 +152,18 @@ export function buildDemoAlternance(
       contratId,
       personneId: tuteur.id,
       debut: i.dateEntree,
+    });
+  }
+  // Le calendrier d'alternance des promotions de ces apprentis.
+  const promotions = new Set(apprentis.slice(0, ENTREPRISES.length).map((i) => i.promotionId));
+  for (const p of scolarite.promotions.filter((p) => p.id && promotions.has(p.id))) {
+    if (!p.id) continue;
+    jeu.calendriers.push({
+      ...commun,
+      id: random.uuid(CREATED_AT),
+      promotionId: p.id,
+      modele: '2 jours école (lundi, mardi) / 3 jours entreprise',
+      jours: calendrierDeuxTrois(p.dateDebut, p.dateFin),
     });
   }
   return jeu;

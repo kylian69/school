@@ -41,6 +41,7 @@ import {
   contratActif,
   controlerStage,
   depasseCapaciteMaitre,
+  finPeriodeEssai,
   MODE_DU_STATUT,
   statutDuContrat,
   transitionConventionPermise,
@@ -49,6 +50,7 @@ import {
   verifierContrat,
   verifierRupture,
   type StatutApprenant,
+  type TypeJour,
 } from '@scolaly/domain';
 import {
   gratificationMinimale,
@@ -65,6 +67,7 @@ import { UploadRejectedError, type UploadService } from '../../shared/storage/up
 import { OBJECT_STORAGE, UPLOADS } from '../../shared/tokens.js';
 import { couvrePromotion, promotionsCouvertes } from '../scolarite/index.js';
 import { EntreprisesService } from './entreprises.service.js';
+import { RythmesService } from './rythmes.service.js';
 
 type LignePersonne = typeof personne.$inferSelect;
 
@@ -99,6 +102,7 @@ const resume = (p: LignePersonne) => ({
 export class ContratsService {
   constructor(
     private readonly entreprises: EntreprisesService,
+    private readonly rythmes: RythmesService,
     @Inject(UPLOADS) private readonly uploads: UploadService,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
@@ -657,6 +661,10 @@ export class ContratsService {
       tx,
       tuteurs.map((t) => t.personneId),
     );
+    const calendriers = await this.rythmes.typeDuJourPour(
+      tx,
+      lignes.filter((l) => l.contrat.type === 'apprentissage').map((l) => l.contrat.inscriptionId),
+    );
     const jour = aujourdhui();
     return lignes.map((l) => {
       const c = l.contrat;
@@ -710,6 +718,7 @@ export class ContratsService {
               }
             : null,
         document: c.documentCle !== null,
+        finPeriodeEssai: this.finPeriodeEssai(c, calendriers.get(c.inscriptionId)),
         tuteurs: lesTuteurs.flatMap((t) => {
           const p = personnes.get(t.personneId);
           return p ? [{ id: t.id, personne: resume(p), debut: t.debut, fin: t.fin }] : [];
@@ -779,6 +788,20 @@ export class ContratsService {
       });
     }
     return resultat;
+  }
+
+  /** RG-03-08 : 45e jour de présence en entreprise d'un apprenti, d'après son calendrier. */
+  private finPeriodeEssai(
+    c: typeof contratAlternance.$inferSelect,
+    typeDuJour: ((jour: string) => TypeJour | null) | undefined,
+  ) {
+    if (c.type !== 'apprentissage' || !typeDuJour) return null;
+    return finPeriodeEssai({
+      debut: c.debut,
+      fin: c.dateRupture ?? c.fin,
+      joursEntreprise: valueAt(reglesApprentissage, c.debut).valeur.periodeEssaiJours,
+      typeDuJour,
+    });
   }
 
   private apprenant(l: {

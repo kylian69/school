@@ -241,6 +241,8 @@ export const Contrat = z
       })
       .nullable(),
     document: z.boolean(),
+    /** RG-03-08 : 45e jour en entreprise d'après le calendrier ; null sans calendrier suffisant. */
+    finPeriodeEssai: jour.nullable(),
     tuteurs: z.array(TuteurContrat),
     avertissements: z.array(AvertissementContrat),
     modifiable: z.boolean(),
@@ -394,3 +396,100 @@ export type ModificationConvention = z.infer<typeof ModificationConvention>;
 /** Lien de téléchargement signé du document (quelques minutes). */
 export const LienDocument = z.object({ url: z.string() }).meta({ id: 'LienDocument' });
 export type LienDocument = z.infer<typeof LienDocument>;
+
+// ——— Rythmes d'alternance (RG-03-10 à RG-03-12) ———
+
+export const TYPES_JOUR = ['ecole', 'entreprise', 'ferme', 'examen'] as const;
+const TypeJour = z.enum(TYPES_JOUR);
+const Motif = z
+  .array(z.array(TypeJour).length(7, 'Une semaine compte 7 jours, du lundi au dimanche.'))
+  .min(1, 'Le motif compte au moins une semaine.')
+  .max(4, 'Le motif compte 4 semaines au plus.');
+const Jours = z.record(jour, TypeJour);
+
+export const ModeleRythme = z
+  .object({
+    /** Code d'un modèle fourni par Scolaly, ou identifiant d'un modèle de l'école. */
+    id: z.string(),
+    libelle: z.string(),
+    motif: z.array(z.array(TypeJour)),
+    fourni: z.boolean(),
+  })
+  .meta({ id: 'ModeleRythme' });
+export type ModeleRythme = z.infer<typeof ModeleRythme>;
+
+export const ListeModelesRythme = z
+  .object({ modeles: z.array(ModeleRythme), creation: z.boolean() })
+  .meta({ id: 'ListeModelesRythme' });
+export type ListeModelesRythme = z.infer<typeof ListeModelesRythme>;
+
+export const NouveauModeleRythme = z
+  .object({ libelle: texte(120), motif: Motif })
+  .meta({ id: 'NouveauModeleRythme' });
+export type NouveauModeleRythme = z.infer<typeof NouveauModeleRythme>;
+
+export const ModificationModeleRythme = NouveauModeleRythme.partial().meta({
+  id: 'ModificationModeleRythme',
+});
+export type ModificationModeleRythme = z.infer<typeof ModificationModeleRythme>;
+
+export const ExceptionRythme = z
+  .object({
+    id: z.uuid(),
+    apprenant: z.object({
+      inscriptionId: z.uuid(),
+      personneId: z.uuid(),
+      nom: z.string(),
+      prenom: z.string(),
+    }),
+    debut: jour,
+    fin: jour,
+    motif: z.string().nullable(),
+    jours: Jours,
+  })
+  .meta({ id: 'ExceptionRythme' });
+export type ExceptionRythme = z.infer<typeof ExceptionRythme>;
+
+/** E-03-05 : calendrier annuel d'une promotion et exceptions individuelles. */
+export const CalendrierPromotion = z
+  .object({
+    promotion: z.object({ id: z.uuid(), libelle: z.string(), dateDebut: jour, dateFin: jour }),
+    calendrier: z
+      .object({
+        modele: z.string(),
+        jours: Jours,
+        compte: z.object({ ecole: z.int(), entreprise: z.int(), ferme: z.int(), examen: z.int() }),
+      })
+      .nullable(),
+    exceptions: z.array(ExceptionRythme),
+    modifiable: z.boolean(),
+  })
+  .meta({ id: 'CalendrierPromotion' });
+export type CalendrierPromotion = z.infer<typeof CalendrierPromotion>;
+
+/** RG-03-11 : génération sur toute la promotion d'après un modèle ; les retouches sont perdues. */
+export const GenerationCalendrier = z
+  .object({ modele: z.string().min(1, 'Choisissez un modèle.') })
+  .meta({ id: 'GenerationCalendrier' });
+export type GenerationCalendrier = z.infer<typeof GenerationCalendrier>;
+
+export const RetoucheJours = z
+  .object({
+    jours: z
+      .array(z.object({ date: jour, type: TypeJour }))
+      .min(1, 'Choisissez au moins un jour.')
+      .max(400),
+  })
+  .meta({ id: 'RetoucheJours' });
+export type RetoucheJours = z.infer<typeof RetoucheJours>;
+
+export const NouvelleExceptionRythme = z
+  .object({
+    inscriptionId: z.uuid(),
+    debut: jour,
+    fin: jour,
+    modele: z.string().min(1, 'Choisissez un modèle.'),
+    motif: facultatif(300).default(null),
+  })
+  .meta({ id: 'NouvelleExceptionRythme' });
+export type NouvelleExceptionRythme = z.infer<typeof NouvelleExceptionRythme>;

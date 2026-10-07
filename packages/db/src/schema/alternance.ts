@@ -7,6 +7,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -17,7 +18,7 @@ import {
 import { trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 import { personne } from './personne.js';
-import { inscription } from './scolarite.js';
+import { inscription, promotion } from './scolarite.js';
 
 /**
  * Alternance et stages (module 03, section 6) : entreprises, contacts et tuteurs. Les contrats,
@@ -262,5 +263,74 @@ export const conventionStage = pgTable(
       'convention_stage_valeurs_check',
       sql`${t.heuresPresence} > 0 and (${t.gratificationHoraire} is null or ${t.gratificationHoraire} >= 0)`,
     ),
+  ],
+).enableRLS();
+
+/** Types d'un jour du rythme (RG-03-11) ; même liste que packages/domain (TYPES_JOUR). */
+type TypeJour = 'ecole' | 'entreprise' | 'ferme' | 'examen';
+
+/** Modèle de rythme créé par l'école (RG-03-10) ; les 5 modèles courants sont fournis par le domaine. */
+export const modeleRythme = pgTable(
+  'modele_rythme',
+  {
+    ...organisationScoped(),
+    libelle: text().notNull(),
+    /** 1 à 4 semaines de 7 jours, du lundi au dimanche. */
+    motif: jsonb().$type<TypeJour[][]>().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('modele_rythme', t),
+    uniqueIndex('modele_rythme_libelle_key')
+      .on(t.organisationId, t.libelle)
+      .where(sql`${t.deletedAt} is null`),
+  ],
+).enableRLS();
+
+/** Calendrier d'alternance d'une promotion, jour par jour (RG-03-11). */
+export const calendrierAlternance = pgTable(
+  'calendrier_alternance',
+  {
+    ...organisationScoped(),
+    promotionId: uuid().notNull(),
+    /** Modèle d'origine (libellé), pour mémoire : le calendrier a pu être retouché. */
+    modele: text().notNull(),
+    jours: jsonb().$type<Record<string, TypeJour>>().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('calendrier_alternance', t),
+    uniqueIndex('calendrier_alternance_promotion_key')
+      .on(t.organisationId, t.promotionId)
+      .where(sql`${t.deletedAt} is null`),
+    foreignKey({
+      name: 'calendrier_alternance_promotion_fk',
+      columns: [t.organisationId, t.promotionId],
+      foreignColumns: [promotion.organisationId, promotion.id],
+    }),
+  ],
+).enableRLS();
+
+/** Exception individuelle : remplace le rythme de la promotion pour un apprenant (RG-03-12). */
+export const exceptionRythme = pgTable(
+  'exception_rythme',
+  {
+    ...organisationScoped(),
+    inscriptionId: uuid().notNull(),
+    debut: date().notNull(),
+    fin: date().notNull(),
+    motif: text(),
+    jours: jsonb().$type<Record<string, TypeJour>>().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('exception_rythme', t),
+    index('exception_rythme_inscription_idx').on(t.organisationId, t.inscriptionId),
+    foreignKey({
+      name: 'exception_rythme_inscription_fk',
+      columns: [t.organisationId, t.inscriptionId],
+      foreignColumns: [inscription.organisationId, inscription.id],
+    }),
+    check('exception_rythme_dates_check', sql`${t.fin} >= ${t.debut}`),
   ],
 ).enableRLS();
