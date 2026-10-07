@@ -31,7 +31,12 @@
       "Bash(docker ps*)",
       "Bash(docker logs *)",
       "Bash(gh pr edit * --base main)",
-      "Bash(gh pr merge * --merge)"
+      "Bash(gh pr merge * --merge)",
+      "mcp__claude-code-remote__create_session",
+      "mcp__claude-code-remote__get_session",
+      "mcp__claude-code-remote__list_events",
+      "mcp__claude-code-remote__archive_session",
+      "mcp__claude-code-remote__send_later"
     ],
     "deny": [
       "Bash(git push --force*)",
