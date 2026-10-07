@@ -1,5 +1,8 @@
 import {
   JournalAudit,
+  ListeContrats,
+  ListeEntreprises,
+  ListeOpcos,
   ListeAttributions,
   ListeFormations,
   ListePromotions,
@@ -14,6 +17,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fr } from '@/i18n/fr';
 import { apiGet } from '@/lib/api';
+import { AlternancePersonne } from '../../contrats/alternance-personne';
 import { getContexte } from '@/lib/contexte';
 import { FicheIdentite } from './fiche-identite';
 import { PhotoFiche } from './photo-fiche';
@@ -46,6 +50,9 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
     { data: historique },
     { data: catalogue },
     { data: promotions },
+    { data: alternance },
+    { data: entreprises },
+    { data: opcos },
   ] = await Promise.all([
     apiGet(`/api/personnes/${id}/attributions`, ListeAttributions),
     apiGet('/api/roles', ListeRoles),
@@ -60,6 +67,16 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
       : Promise.resolve({ data: null }),
     permissions.includes('roles:attribuer') && permissions.includes('promotions:lire')
       ? apiGet('/api/promotions', ListePromotions)
+      : Promise.resolve({ data: null }),
+    // Module 03 : contrats et conventions de la personne, et ce qu'il faut pour en créer.
+    permissions.includes('contrats:lire') || permissions.includes('contrats:gerer')
+      ? apiGet(`/api/contrats?personneId=${id}`, ListeContrats)
+      : Promise.resolve({ data: null }),
+    permissions.includes('contrats:gerer') && permissions.includes('entreprises:lire')
+      ? apiGet('/api/entreprises', ListeEntreprises)
+      : Promise.resolve({ data: null }),
+    permissions.includes('contrats:gerer')
+      ? apiGet('/api/opcos', ListeOpcos)
       : Promise.resolve({ data: null }),
   ]);
   const nom = `${personne.prenom} ${personne.nomUsage ?? personne.nom}`;
@@ -133,6 +150,15 @@ export default async function FichePersonnePage({ params }: { params: Promise<{ 
           desactiver: permissions.includes('comptes:desactiver'),
         }}
       />
+      {alternance &&
+      (alternance.contrats.length + alternance.conventions.length > 0 ||
+        alternance.inscriptions.length > 0) ? (
+        <AlternancePersonne
+          liste={alternance}
+          entreprises={entreprises?.entreprises ?? []}
+          opcos={opcos?.opcos ?? []}
+        />
+      ) : null}
       {historique ? (
         <Card className="flex max-w-3xl flex-col gap-3">
           <h2 className="text-lg font-semibold">{fr.journal.historique}</h2>

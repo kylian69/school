@@ -825,6 +825,172 @@ async function routeAlternance(path, request, json, response, url) {
   return false;
 }
 
+// Contrats et conventions (module 03) en mémoire : seuls le seuil de gratification (308 h) et les
+// statuts sont simulés ; les autres règles sont testées par le domaine et l'API.
+const contratsAlt = [];
+const conventionsAlt = [];
+const resumeFiche = (id) => {
+  const p = personnes.find((x) => x.id === id);
+  return p
+    ? { id: p.id, nom: p.nom, prenom: p.prenom, email: p.email, compteEtat: p.compteEtat }
+    : null;
+};
+const apprenantDe = (inscriptionId) => {
+  for (const p of promotions) {
+    const i = p.inscriptions.find((x) => x.id === inscriptionId);
+    if (i)
+      return {
+        personneId: i.personne.id,
+        nom: i.personne.nom,
+        prenom: i.personne.prenom,
+        inscriptionId: i.id,
+        promotion: { id: p.id, libelle: p.libelle },
+      };
+  }
+  return null;
+};
+const entrepriseResumee = (id) => {
+  const e = entreprises.find((x) => x.id === id);
+  return { id: e.id, raisonSociale: e.raisonSociale, siret: e.siret, statut: e.statut };
+};
+const vueContrat = (c) => ({
+  ...c,
+  entreprise: entrepriseResumee(c.entrepriseId),
+  entrepriseId: undefined,
+  referent: c.referentId ? resumeFiche(c.referentId) : null,
+  referentId: undefined,
+  tuteurs: c.tuteurs.map((x) => ({ ...x, personne: resumeFiche(x.personneId) })),
+  avertissements: [],
+  modifiable: true,
+});
+const controlesStage = (c) =>
+  c.heuresPresence > 308 && !c.gratificationHoraire
+    ? [{ type: 'gratification-obligatoire', heures: c.heuresPresence, seuil: 308 }]
+    : [];
+const vueConvention = (c) => ({
+  ...c,
+  entreprise: entrepriseResumee(c.entrepriseId),
+  entrepriseId: undefined,
+  tuteur: c.tuteurId ? resumeFiche(c.tuteurId) : null,
+  tuteurId: undefined,
+  referent: resumeFiche(c.referentId),
+  referentId: undefined,
+  controles: controlesStage(c),
+  modifiable: true,
+});
+async function routeContrats(path, request, json, response, url) {
+  if (path === '/api/contrats' && request.method === 'GET') {
+    const personneId = url.searchParams.get('personneId');
+    const de = (c) => !personneId || c.apprenant.personneId === personneId;
+    return json(200, {
+      contrats: contratsAlt.filter(de).map(vueContrat),
+      conventions: conventionsAlt.filter(de).map(vueConvention),
+      inscriptions: personneId
+        ? promotions.flatMap((p) =>
+            p.inscriptions
+              .filter((i) => i.personne.id === personneId)
+              .map((i) => ({
+                id: i.id,
+                promotion: { id: p.id, libelle: p.libelle },
+                modifiable: true,
+              })),
+          )
+        : [],
+      creation: true,
+    });
+  }
+  if (path === '/api/contrats') {
+    const body = await readBody(request);
+    const c = {
+      id: randomUUID(),
+      apprenant: apprenantDe(body.inscriptionId),
+      entrepriseId: body.entrepriseId,
+      type: body.type,
+      debut: body.debut,
+      fin: body.fin,
+      opco: body.opco ?? entreprises.find((e) => e.id === body.entrepriseId)?.opco ?? null,
+      numeroDepot: body.numeroDepot ?? null,
+      statut: 'brouillon',
+      referentId: body.referentId ?? null,
+      formationProlongee: body.formationProlongee ?? false,
+      rupture: null,
+      document: false,
+      finPeriodeEssai: null,
+      tuteurs: body.tuteurIds.map((personneId) => ({
+        id: randomUUID(),
+        personneId,
+        debut: body.debut,
+        fin: null,
+      })),
+    };
+    contratsAlt.push(c);
+    return json(201, vueContrat(c));
+  }
+  const contrat = path.match(/^\/api\/contrats\/([^/]+)(?:\/(rupture|tuteurs|document))?$/);
+  if (contrat) {
+    const c = contratsAlt.find((x) => x.id === contrat[1]);
+    if (!c) return json(404, { message: 'Contrat introuvable.' });
+    if (contrat[2] === 'document') {
+      if (request.method === 'GET') return json(200, { url: '/fake-document.pdf' });
+      await lireCorps(request);
+      c.document = true;
+      return json(200, vueContrat(c));
+    }
+    if (request.method === 'DELETE') {
+      contratsAlt.splice(contratsAlt.indexOf(c), 1);
+      response.writeHead(204);
+      return response.end();
+    }
+    const body = request.method === 'GET' ? {} : await readBody(request);
+    if (contrat[2] === 'rupture') {
+      c.statut = 'rompu';
+      c.rupture = { date: body.date, motif: body.motif, sansEmployeurJusquau: null };
+      for (const x of c.tuteurs) if (x.fin === null) x.fin = body.date;
+    } else if (contrat[2] === 'tuteurs') {
+      const remplace = c.tuteurs.find((x) => x.personneId === body.remplace && x.fin === null);
+      if (remplace) remplace.fin = body.date;
+      c.tuteurs.push({
+        id: randomUUID(),
+        personneId: body.personneId,
+        debut: body.date,
+        fin: null,
+      });
+    } else Object.assign(c, body);
+    return json(200, vueContrat(c));
+  }
+  if (path === '/api/conventions-stage') {
+    const body = await readBody(request);
+    if (controlesStage(body).length > 0 && !body.derogationMotif)
+      return json(400, {
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: [
+          'gratificationHoraire : Au-delà de 308 heures de stage sur l’année, une gratification est obligatoire.',
+        ],
+      });
+    const c = {
+      id: randomUUID(),
+      apprenant: apprenantDe(body.inscriptionId),
+      ...body,
+      statut: 'brouillon',
+      document: false,
+    };
+    conventionsAlt.push(c);
+    return json(201, vueConvention(c));
+  }
+  const convention = path.match(/^\/api\/conventions-stage\/([^/]+)(\/document)?$/);
+  if (convention) {
+    const c = conventionsAlt.find((x) => x.id === convention[1]);
+    if (!c) return json(404, { message: 'Convention introuvable.' });
+    if (convention[2]) {
+      if (request.method === 'GET') return json(200, { url: '/fake-document.pdf' });
+      await lireCorps(request);
+      c.document = true;
+    } else if (request.method === 'PATCH') Object.assign(c, await readBody(request));
+    return json(200, vueConvention(c));
+  }
+  return false;
+}
+
 // Scolarité (module 02) : promotions, groupes, inscriptions, affectations et salles en mémoire.
 // Les règles (périodes, capacités, répartition, écarts) sont couvertes par le domaine et l'API.
 const promotions = [];
@@ -1807,6 +1973,12 @@ createServer(async (request, response) => {
   ) {
     if (!user) return json(401, { message: 'Session absente' });
     const traite = await routeScolarite(path, request, json, response, url);
+    if (traite !== false) return traite;
+  }
+
+  if (['/api/contrats', '/api/conventions-stage'].some((p) => path.startsWith(p))) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const traite = await routeContrats(path, request, json, response, url);
     if (traite !== false) return traite;
   }
 

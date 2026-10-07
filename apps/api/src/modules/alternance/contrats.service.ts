@@ -116,7 +116,9 @@ export class ContratsService {
   ): Promise<ListeContrats> {
     const couvertes = await promotionsCouvertes(tx, access, LECTURE);
     const gestion = await this.gestion(tx, access);
-    if (couvertes?.size === 0) return { contrats: [], conventions: [], creation: false };
+    if (couvertes?.size === 0) {
+      return { contrats: [], conventions: [], inscriptions: [], creation: false };
+    }
     const filtres = (table: typeof contratAlternance | typeof conventionStage) => {
       const conditions: (SQL | undefined)[] = [isNull(table.deletedAt)];
       if (couvertes) conditions.push(inArray(inscription.promotionId, [...couvertes]));
@@ -128,9 +130,29 @@ export class ContratsService {
     };
     const contrats = await this.contrats(tx, gestion, filtres(contratAlternance));
     const conventions = await this.conventions(tx, gestion, filtres(conventionStage));
+    const inscriptions = recherche.personneId
+      ? await tx
+          .select({ id: inscription.id, promotionId: promotion.id, libelle: promotion.libelle })
+          .from(inscription)
+          .innerJoin(promotion, eq(promotion.id, inscription.promotionId))
+          .where(
+            and(
+              eq(inscription.personneId, recherche.personneId),
+              inArray(inscription.etat, ['inscrit', 'preinscrit']),
+              isNull(inscription.deletedAt),
+              couvertes ? inArray(inscription.promotionId, [...couvertes]) : undefined,
+            ),
+          )
+          .orderBy(desc(promotion.dateDebut))
+      : [];
     return {
       contrats: contrats.map(({ tuteurs: _tuteurs, ...c }) => c),
       conventions,
+      inscriptions: inscriptions.map((i) => ({
+        id: i.id,
+        promotion: { id: i.promotionId, libelle: i.libelle },
+        modifiable: couvrePromotion(gestion, i.promotionId),
+      })),
       creation: access.permissions.has('contrats:gerer') && gestion?.size !== 0,
     };
   }
