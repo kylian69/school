@@ -44,6 +44,7 @@ import {
   seanceSerie,
   disponibiliteIntervenant,
   indisponibiliteIntervenant,
+  notificationEdt,
   contactEntreprise,
   entreprise,
   contratAlternance,
@@ -468,6 +469,18 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         personneId: await insertPersonne(db, organisationId),
         debut: new Date('2026-10-12T08:00:00Z'),
         fin: new Date('2026-10-12T12:00:00Z'),
+      });
+    },
+  },
+  notification_edt: {
+    insert: async (db, organisationId) => {
+      await db.insert(notificationEdt).values({
+        organisationId,
+        evenementId: newId(),
+        personneId: await insertPersonne(db, organisationId),
+        seanceId: await insertSeance(db, organisationId),
+        nature: 'modification',
+        urgente: true,
       });
     },
   },

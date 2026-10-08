@@ -12,6 +12,8 @@ test.describe('Module 06 Émargement', () => {
   }) => {
     await page.goto('/seances');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mes séances');
+    // RG-04-14 : la séance modifiée depuis peu porte le badge.
+    await expect(page.getByRole('heading', { name: 'Droit des affaires Modifiée' })).toBeVisible();
     await expectNoAccessibilityViolations(page);
     await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
 
@@ -30,6 +32,7 @@ test.describe('Module 06 Émargement', () => {
     await page.goto('/emarger');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Émarger');
     await expect(page.getByRole('button', { name: 'Scanner le QR code' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Droit des affaires Modifiée' })).toBeVisible();
     await expectNoAccessibilityViolations(page);
 
     await page.getByLabel('Code à 6 chiffres').fill('000000');

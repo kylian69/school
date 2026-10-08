@@ -367,6 +367,7 @@ export function Planificateur({
                                   t.statuts[s.statut],
                                   salle,
                                   bloquants.length,
+                                  s.modifiee,
                                 )}
                                 className={`flex size-full flex-col overflow-hidden rounded-md px-1.5 py-1 text-left text-xs ${
                                   COULEURS_TYPE[s.type ?? 'projet'] ?? ''
@@ -382,6 +383,11 @@ export function Planificateur({
                               >
                                 <span className="num">{horaire}</span>
                                 <span className="font-semibold text-fg">{s.libelle}</span>
+                                {s.modifiee ? (
+                                  <Badge tone="warn" className="self-start px-1 py-0 text-[10px]">
+                                    {t.modifiee}
+                                  </Badge>
+                                ) : null}
                                 {salle ? <span>{salle}</span> : null}
                               </button>
                             </li>
@@ -533,7 +539,10 @@ function FicheSeance({
     .join(', ');
   const actif = seance.statut !== 'annulee' && seance.statut !== 'reportee';
   const lignes: [string, string][] = [
-    [t.fiche.statut, t.statuts[seance.statut]],
+    [
+      t.fiche.statut,
+      seance.modifiee ? t.modifieeFiche(t.statuts[seance.statut]) : t.statuts[seance.statut],
+    ],
     [seance.moduleId ? t.fiche.module : t.fiche.activite, seance.libelle],
     [t.fiche.public, publique || t.fiche.aucun],
     [

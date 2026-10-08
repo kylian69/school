@@ -14,6 +14,7 @@ export {
   attenduDeSeance,
   enregistrerPresenceDirecte,
   enregistrerPresences,
+  notificationsEdtEnAttente,
   organisationDeSeance,
   seanceEtAttendus,
   seancesAPrecharger,

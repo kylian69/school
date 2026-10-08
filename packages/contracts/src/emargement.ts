@@ -187,6 +187,8 @@ export const SeanceProche = z
     fin: z.iso.datetime(),
     distanciel: z.boolean(),
     intervenant: z.string().nullable(),
+    /** RG-04-14 : badge « modifié », affiché quelques jours après la dernière modification. */
+    modifiee: z.boolean(),
   })
   .meta({ id: 'SeanceProche' });
 export type SeanceProche = z.infer<typeof SeanceProche>;

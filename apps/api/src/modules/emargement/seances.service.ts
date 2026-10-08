@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { SeanceProche } from '@scolaly/contracts';
 import {
   personne,
@@ -7,8 +7,11 @@ import {
   seanceIntervenant,
   type Transaction,
 } from '@scolaly/db';
+import { badgeModifie } from '@scolaly/domain';
 import { and, asc, eq, gt, inArray, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
+import type { Env } from '../../config/env.js';
+import { ENV } from '../../shared/tokens.js';
 
 const HEURE = 3600_000;
 
@@ -23,6 +26,8 @@ function seancesDe(tx: Transaction, personneId: string) {
 /** Séances proches : celles de l'intervenant, de toute l'école, ou où l'apprenant est attendu. */
 @Injectable()
 export class SeancesService {
+  constructor(@Inject(ENV) private readonly env: Env) {}
+
   async proches(tx: Transaction, filtre: SQL | undefined): Promise<SeanceProche[]> {
     const maintenant = Date.now();
     const lignes = await tx
@@ -32,6 +37,7 @@ export class SeancesService {
         debut: seance.debut,
         fin: seance.fin,
         distanciel: seance.distanciel,
+        modifieeLe: seance.modifieeLe,
       })
       .from(seance)
       .leftJoin(
@@ -63,6 +69,7 @@ export class SeancesService {
       fin: l.fin.toISOString(),
       distanciel: l.distanciel,
       intervenant: noms.get(l.id)?.join(', ') ?? null,
+      modifiee: badgeModifie(l.modifieeLe, new Date(maintenant), this.env.EDT_BADGE_MODIFIE_JOURS),
     }));
   }
 

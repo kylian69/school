@@ -164,3 +164,95 @@ export function emailPhotoRefusee(options: {
     }),
   };
 }
+
+/** Changement d'une séance annoncé à une personne (RG-04-14). */
+export interface ChangementEdtAnnonce {
+  nature: 'publication' | 'modification' | 'annulation' | 'report' | 'retrait';
+  libelle: string;
+  debut: Date;
+  fin: Date;
+  /** Fuseau de l'établissement, pour l'affichage. */
+  fuseau: string;
+  salle: string | null;
+  /** Nouveau créneau d'une séance reportée. */
+  reporteeVers: { debut: Date; fin: Date } | null;
+}
+
+const NATURES_EDT: Record<ChangementEdtAnnonce['nature'], string> = {
+  publication: 'Nouvelle séance',
+  modification: 'Séance modifiée',
+  annulation: 'Séance annulée',
+  report: 'Séance reportée',
+  retrait: 'Vous n’intervenez plus sur cette séance',
+};
+
+/** « mardi 03/11/2026, 08:00 – 10:00 », dans le fuseau de l'établissement. */
+export function creneauEnClair(debut: Date, fin: Date, fuseau: string): string {
+  const jour = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: fuseau,
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(debut);
+  const heure = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: fuseau,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `${jour}, ${heure.format(debut)} – ${heure.format(fin)}`;
+}
+
+/**
+ * RG-04-14 : changements de l'emploi du temps d'une personne, regroupés en un seul email
+ * (immédiat dans les 48 h, sinon récapitulatif quotidien). Le motif d'une annulation et les noms
+ * des personnes n'y figurent pas (minimisation) : le détail est dans Scolaly.
+ */
+export function emailChangementsEdt(options: {
+  to: string;
+  prenom: string;
+  ecole: string;
+  lien: string;
+  recapitulatif: boolean;
+  changements: readonly ChangementEdtAnnonce[];
+  marque?: MarqueEcole | null;
+}): EmailJob {
+  const lignes = options.changements.map((c) => {
+    const morceaux = [NATURES_EDT[c.nature], c.libelle, creneauEnClair(c.debut, c.fin, c.fuseau)];
+    if (c.reporteeVers)
+      morceaux.push(
+        `reportée au ${creneauEnClair(c.reporteeVers.debut, c.reporteeVers.fin, c.fuseau)}`,
+      );
+    else if (c.salle && c.nature !== 'annulation' && c.nature !== 'retrait')
+      morceaux.push(`salle ${c.salle}`);
+    return morceaux.join(' · ');
+  });
+  const salutation = `Bonjour ${options.prenom},`;
+  const presentation = options.recapitulatif
+    ? `Voici les changements de votre emploi du temps à ${options.ecole} depuis le dernier récapitulatif :`
+    : `Votre emploi du temps à ${options.ecole} change dans les 48 prochaines heures :`;
+  const mention =
+    'Vous recevez cet email parce que ces séances vous concernent. Le détail est dans Scolaly.';
+  return {
+    to: options.to,
+    subject: options.recapitulatif
+      ? `Récapitulatif des changements de votre emploi du temps · ${options.ecole}`
+      : `Changement de votre emploi du temps · ${options.ecole}`,
+    text: [
+      salutation,
+      '',
+      presentation,
+      ...lignes.map((l) => `- ${l}`),
+      '',
+      options.lien,
+      '',
+      mention,
+    ].join('\n'),
+    html: miseEnPageEmail({
+      marque: options.marque ?? null,
+      paragraphes: [salutation, presentation, ...lignes],
+      bouton: { libelle: 'Ouvrir Scolaly', lien: options.lien },
+      mention,
+    }),
+  };
+}

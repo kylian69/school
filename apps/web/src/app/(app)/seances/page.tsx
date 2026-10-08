@@ -1,5 +1,5 @@
 import { SeanceProche } from '@scolaly/contracts';
-import { Button, Card } from '@scolaly/ui';
+import { Badge, Button, Card } from '@scolaly/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -34,7 +34,14 @@ export default async function SeancesPage() {
             <li key={s.id}>
               <Card className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
-                  <h2 className="text-base font-semibold">{s.libelle}</h2>
+                  <h2 className="flex items-center gap-2 text-base font-semibold">
+                    {s.libelle}
+                    {s.modifiee ? (
+                      <Badge tone="warn" title={t.modifieeAide}>
+                        {t.modifiee}
+                      </Badge>
+                    ) : null}
+                  </h2>
                   <p className="text-sm text-muted">
                     {t.horaire(formatHeure(s.debut), formatHeure(s.fin))}
                     {s.distanciel ? ` · ${t.distanciel}` : ''}

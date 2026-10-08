@@ -1,3 +1,4 @@
+import { DUREE_BADGE_MODIFIE_JOURS } from '@scolaly/domain';
 import { z } from 'zod';
 
 /** Configuration de l'API, lue dans l'environnement et validée au démarrage. */
@@ -43,6 +44,13 @@ const EnvSchema = z
      */
     ANNUAIRE_ENTREPRISES_URL: z.url().default('https://recherche-entreprises.api.gouv.fr'),
     ANNUAIRE_ENTREPRISES_DISABLED: z.stringbool().default(false),
+    /** RG-04-14 : jours d'affichage du badge « modifié » sur une séance (réglage produit). */
+    EDT_BADGE_MODIFIE_JOURS: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(60)
+      .default(DUREE_BADGE_MODIFIE_JOURS),
   })
   .refine((env) => env.ANTIVIRUS_DISABLED || env.CLAMAV_HOST, {
     path: ['CLAMAV_HOST'],

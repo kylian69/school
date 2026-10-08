@@ -27,6 +27,34 @@ export async function seancesAPrecharger(
   return resultat.rows.map((r) => ({ organisationId: r.organisation_id, seanceId: r.id }));
 }
 
+export interface NotificationsEdtEnAttente {
+  organisationId: string;
+  personneId: string;
+  urgente: boolean;
+  premier: Date;
+  dernier: Date;
+}
+
+/** RG-04-14 : personnes ayant des changements d'EDT à recevoir, toutes organisations (worker). */
+export async function notificationsEdtEnAttente(
+  db: Database,
+): Promise<NotificationsEdtEnAttente[]> {
+  const resultat = await db.execute<{
+    organisation_id: string;
+    personne_id: string;
+    urgente: boolean;
+    premier: string | Date;
+    dernier: string | Date;
+  }>(sql`select * from notifications_edt_en_attente()`);
+  return resultat.rows.map((r) => ({
+    organisationId: r.organisation_id,
+    personneId: r.personne_id,
+    urgente: r.urgente,
+    premier: new Date(r.premier),
+    dernier: new Date(r.dernier),
+  }));
+}
+
 /** La séance et ses apprenants attendus (avec leur compte), dans le contexte de son école. */
 export async function seanceEtAttendus(tx: Transaction, seanceId: string) {
   const [ligne] = await tx
