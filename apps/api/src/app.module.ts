@@ -19,6 +19,7 @@ import { AuditModule } from './modules/audit/index.js';
 import { ComptesModule } from './modules/comptes/index.js';
 import { CorbeilleModule } from './modules/corbeille/index.js';
 import { EmargementModule } from './modules/emargement/index.js';
+import { EmploiDuTempsModule } from './modules/emploi-du-temps/index.js';
 import { PersonnesModule } from './modules/personnes/index.js';
 import { ReferentielModule } from './modules/referentiel/index.js';
 import { ScolariteModule } from './modules/scolarite/index.js';
@@ -73,6 +74,7 @@ export class AppModule {
         ComptesModule,
         CorbeilleModule,
         EmargementModule,
+        EmploiDuTempsModule,
         PersonnesModule,
         ReferentielModule,
         ScolariteModule,

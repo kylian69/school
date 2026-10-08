@@ -39,6 +39,7 @@ import {
   affectationGroupe,
   salle,
   seancePublic,
+  seanceForcage,
   seanceSerie,
   contactEntreprise,
   entreprise,
@@ -423,6 +424,17 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         statut: 'brouillon',
         type: 'td',
         serieId,
+      });
+    },
+  },
+  seance_forcage: {
+    insert: async (db, organisationId) => {
+      await db.insert(seanceForcage).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        code: 'salle-occupee',
+        autreSeanceId: await insertSeance(db, organisationId),
+        motif: 'Cours commun fictif',
       });
     },
   },

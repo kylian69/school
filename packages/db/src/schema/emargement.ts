@@ -128,6 +128,42 @@ export const seance = pgTable(
   ],
 ).enableRLS();
 
+/** RG-04-06 : seuls les conflits de salle et de groupe (cours commun) peuvent être forcés. */
+export const seanceForcageCode = pgEnum('seance_forcage_code', ['salle-occupee', 'groupe-occupe']);
+
+/**
+ * Conflit bloquant forcé par un responsable (RG-04-06), avec son motif : la séance peut être
+ * publiée malgré son conflit avec l'autre séance. Le forçage est aussi tracé dans le journal.
+ */
+export const seanceForcage = pgTable(
+  'seance_forcage',
+  {
+    ...organisationScoped(),
+    seanceId: uuid().notNull(),
+    code: seanceForcageCode().notNull(),
+    /** Séance avec laquelle le conflit est accepté. */
+    autreSeanceId: uuid().notNull(),
+    motif: text().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('seance_forcage', t),
+    uniqueIndex('seance_forcage_conflit_key')
+      .on(t.organisationId, t.seanceId, t.code, t.autreSeanceId)
+      .where(sql`${t.deletedAt} is null`),
+    foreignKey({
+      name: 'seance_forcage_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }),
+    foreignKey({
+      name: 'seance_forcage_autre_seance_fk',
+      columns: [t.organisationId, t.autreSeanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }),
+  ],
+).enableRLS();
+
 /**
  * Apprenants attendus à une séance, saisis un à un (P2). Remplacée en I3.2 par le public de la
  * séance (seance_public) : plus aucune écriture ; la vue seance_attendu_calcule la lit encore

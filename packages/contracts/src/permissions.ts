@@ -45,6 +45,10 @@ export const PERMISSIONS = {
   'contrats:gerer': 'Créer et modifier les contrats d’alternance et les conventions de stage',
   'rythmes:lire': 'Consulter les rythmes et calendriers d’alternance',
   'rythmes:gerer': 'Définir les modèles de rythme, les calendriers et les exceptions individuelles',
+  // Module 04 · Calendrier et emplois du temps (section 2)
+  'edt:lire': 'Consulter les emplois du temps, brouillons compris',
+  'edt:gerer': 'Créer, modifier, annuler et publier les séances',
+  'edt:forcer': 'Forcer un conflit de salle ou de groupe (cours commun), avec un motif',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

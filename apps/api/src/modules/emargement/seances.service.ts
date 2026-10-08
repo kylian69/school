@@ -39,6 +39,8 @@ export class SeancesService {
       .where(
         and(
           isNull(seance.deletedAt),
+          // RG-04-13 : les brouillons ne sont vus que de la pédagogie ; une séance annulée n'a pas d'appel.
+          eq(seance.statut, 'publiee'),
           gt(seance.fin, new Date(maintenant - HEURE)),
           lt(seance.debut, new Date(maintenant + 12 * HEURE)),
           filtre,

@@ -59,6 +59,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'contrats:gerer',
       'rythmes:lire',
       'rythmes:gerer',
+      'edt:lire',
+      'edt:gerer',
+      'edt:forcer',
     ],
   },
   {
@@ -80,6 +83,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'entreprises:lire',
       'contrats:lire',
       'rythmes:lire',
+      'edt:lire',
     ],
   },
   {
@@ -108,6 +112,9 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'contrats:gerer',
       'rythmes:lire',
       'rythmes:gerer',
+      'edt:lire',
+      'edt:gerer',
+      'edt:forcer',
     ],
   },
   {
@@ -137,6 +144,8 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'rythmes:lire',
       'entreprises:gerer',
       'contrats:gerer',
+      'edt:lire',
+      'edt:gerer',
     ],
   },
   {

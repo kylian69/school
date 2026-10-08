@@ -11,6 +11,6 @@ import { RythmesService } from './rythmes.service.js';
 @Module({
   controllers: [EntreprisesController, ContratsController, RythmesController],
   providers: [AnnuaireEntreprises, EntreprisesService, ContratsService, RythmesService],
-  exports: [EntreprisesService],
+  exports: [EntreprisesService, RythmesService],
 })
 export class AlternanceModule {}
