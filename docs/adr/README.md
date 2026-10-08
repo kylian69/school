@@ -8,3 +8,4 @@ Chaque décision prise après la validation de l'[architecture technique](../arc
 | [0002](0002-tables-plateforme-et-cles-par-organisation.md) | Tables de plateforme sans `organisation_id` (groupe, comptes) et clés de chiffrement dérivées par organisation | Accepté | 04/10/2026 |
 | [0003](0003-stockage-s3-garage.md) | Stockage S3 de l'auto-hébergement : Garage à la place de MinIO, qui ne publie plus d'images | Accepté | 05/10/2026 |
 | [0004](0004-role-plateforme.md) | Console de la plateforme : rôle PostgreSQL `scolaly_platform` aux droits restreints, sans accès aux données des écoles | Accepté | 05/10/2026 |
+| [0005](0005-migrations-une-transaction-par-migration.md) | Migrations appliquées une par une, chacune dans sa transaction (valeurs d'enum ajoutées validées avant usage) | Accepté | 08/10/2026 |
