@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PlageEdt } from './structure.js';
 
 /**
  * Contrats de l'emploi du temps (module 04 : US-04-01 à US-04-03, US-04-06 ; RG-04-01 à
@@ -215,10 +216,12 @@ export const VerificationSeance = ContenuSeance.extend({
   id: z.uuid().optional(),
   debut: instant,
   fin: instant,
-  /** RG-04-02 : plage horaire de l'établissement pour les créneaux proposés. */
-  plageDebut: heure.default('08:00'),
-  plageFin: heure.default('19:00'),
-  joursOuverts: z.array(z.int().min(1).max(7)).min(1).max(7).default([1, 2, 3, 4, 5]),
+  /**
+   * RG-04-02 : plage horaire et jours des créneaux proposés ; absents, ceux de l'établissement.
+   */
+  plageDebut: heure.optional(),
+  plageFin: heure.optional(),
+  joursOuverts: z.array(z.int().min(1).max(7)).min(1).max(7).optional(),
   typeSalle: z
     .enum(['cours', 'tp_informatique', 'laboratoire', 'amphitheatre', 'virtuelle'])
     .optional(),
@@ -258,6 +261,8 @@ export const SemaineEdt = z
     debut: jour,
     fin: jour,
     fuseau: z.string(),
+    /** RG-04-02 : heures et jours ouvrés de l'établissement, affichés par la grille. */
+    plage: PlageEdt,
     seances: z.array(Seance),
     creation: z.boolean(),
   })

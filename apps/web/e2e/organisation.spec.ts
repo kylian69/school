@@ -70,4 +70,35 @@ test.describe('E-01-02 Organisation et établissements', () => {
     await carte.getByRole('button', { name: `Réactiver ${nom}` }).click();
     await expect(carte.getByText('Actif', { exact: true })).toBeVisible();
   });
+
+  test('RG-04-02 règle la plage horaire et les jours ouvrés de l’emploi du temps', async ({
+    page,
+  }) => {
+    const nom = `Campus ${Math.random().toString(36).slice(2, 7)}`;
+    await page.goto('/parametres/organisation');
+    await page.getByRole('button', { name: 'Ajouter un établissement' }).click();
+    const dialogue = page.getByRole('dialog', { name: 'Nouvel établissement' });
+    await expect(dialogue.getByText(/Par défaut : de 08:00 à 19:00/)).toBeVisible();
+    await dialogue.getByLabel('Nom de l’établissement').fill(nom);
+    await dialogue.getByLabel('Adresse', { exact: true }).fill('5 rue Fictive');
+    await dialogue.getByLabel('Code postal').fill('69000');
+    await dialogue.getByLabel('Ville').fill('Lumerac');
+    await dialogue.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
+
+    const carte = page.getByRole('listitem').filter({ hasText: nom });
+    await expect(carte.getByText('08:00 – 19:00, lun. mar. mer. jeu. ven.')).toBeVisible();
+    await carte.getByRole('button', { name: `Modifier ${nom}` }).click();
+    const modification = page.getByRole('dialog', { name: `Modifier « ${nom} »` });
+    await modification.getByLabel('Début de journée').fill('09:00');
+    await modification.getByLabel('Fin de journée').fill('08:30');
+    await modification.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
+    await expect(modification.getByText('La fin de journée doit suivre le début.')).toBeVisible();
+    await expect(modification.getByLabel('Fin de journée')).toHaveAttribute('aria-invalid', 'true');
+    await modification.getByLabel('Fin de journée').fill('17:30');
+    await modification.getByLabel('Samedi').check();
+    await modification.getByLabel('Lundi').uncheck();
+    await expectNoAccessibilityViolations(page);
+    await modification.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
+    await expect(carte.getByText('09:00 – 17:30, mar. mer. jeu. ven. sam.')).toBeVisible();
+  });
 });

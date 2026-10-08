@@ -97,6 +97,14 @@ const roles = [
 ];
 
 // Organisation et établissements (E-01-02).
+// RG-04-02 : plage de l'emploi du temps par défaut d'un établissement.
+const PLAGE_EDT = {
+  debut: '08:00',
+  fin: '19:00',
+  limiteMidi: '13:00',
+  joursOuvres: [1, 2, 3, 4, 5],
+};
+
 const ecole = {
   id: '01a10000-0000-7000-8000-0000000000e1',
   nom: 'École de gestion de Lumerac',
@@ -119,6 +127,7 @@ const ecole = {
       telephone: null,
       email: null,
       statut: 'actif',
+      edt: { ...PLAGE_EDT },
     },
   ],
 };
@@ -1513,6 +1522,10 @@ async function routeEdt(path, request, json, url) {
       debut,
       fin,
       fuseau: FUSEAU_EDT,
+      plage: (
+        ecole.etablissements.find((e) => e.id === p.get('etablissementId')) ??
+        ecole.etablissements[0]
+      ).edt,
       seances: retenues.map(vueSeance),
       creation: true,
     });
@@ -2386,6 +2399,7 @@ createServer(async (request, response) => {
         telephone: null,
         email: null,
         statut: 'actif',
+        edt: { ...PLAGE_EDT },
         ...body,
       };
       ecole.etablissements.push(cree);
@@ -2404,6 +2418,11 @@ createServer(async (request, response) => {
         return json(400, {
           message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
           details: ['uai : L’UAI compte 7 chiffres suivis d’une lettre, par exemple 0691234A.'],
+        });
+      if (body.edt && body.edt.fin <= body.edt.debut)
+        return json(400, {
+          message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+          details: ['edt.fin : La fin de journée doit suivre le début.'],
         });
       for (const [cle, valeur] of Object.entries(body)) cible[cle] = nul(valeur);
       if (cible.uai) cible.uai = cible.uai.toUpperCase();

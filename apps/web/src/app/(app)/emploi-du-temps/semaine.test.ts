@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { auPas, disposer, instantLocal, lundiDe, numeroSemaine, partiesLocales } from './semaine';
+import {
+  auPas,
+  disposer,
+  grilleAffichee,
+  instantLocal,
+  lundiDe,
+  numeroSemaine,
+  partiesLocales,
+} from './semaine';
 
 describe('grille de l’emploi du temps', () => {
   it('trouve le lundi et le numéro ISO de la semaine', () => {
@@ -23,6 +31,21 @@ describe('grille de l’emploi du temps', () => {
   it('RG-04-02 arrondit au pas de 15 minutes', () => {
     expect(auPas(9 * 60 + 7)).toBe(9 * 60 + 0);
     expect(auPas(9 * 60 + 8)).toBe(9 * 60 + 15);
+  });
+
+  it('RG-04-02 affiche les jours ouvrés et la plage de l’établissement, élargis aux séances', () => {
+    const plage = { debut: '08:30', fin: '17:15', joursOuvres: [2, 3, 6] };
+    expect(grilleAffichee('2026-11-02', plage, [])).toEqual({
+      jours: ['2026-11-03', '2026-11-04', '2026-11-07'],
+      debut: 8 * 60,
+      fin: 18 * 60,
+    });
+    const horsPlage = [{ jour: '2026-11-02', debut: 7 * 60 + 15, fin: 21 * 60 + 30 }];
+    expect(grilleAffichee('2026-11-02', plage, horsPlage)).toEqual({
+      jours: ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-07'],
+      debut: 7 * 60,
+      fin: 22 * 60,
+    });
   });
 
   it('range côte à côte les séances qui se chevauchent', () => {

@@ -9,6 +9,7 @@ import {
   pgTable,
   smallint,
   text,
+  time,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -39,9 +40,30 @@ export const etablissement = pgTable(
     telephone: text(),
     email: text(),
     statut: etablissementStatut().notNull().default('actif'),
+    /** RG-04-02 : plage horaire de l'emploi du temps, en heures locales (pas de 15 minutes). */
+    edtDebut: time().notNull().default('08:00'),
+    edtFin: time().notNull().default('19:00'),
+    /** RG-04-02 : limite matin / après-midi (demi-journées d'assiduité, RG-06-18). */
+    edtLimiteMidi: time().notNull().default('13:00'),
+    /** RG-04-02 : jours ouvrés de la grille, ISO (lundi = 1 … dimanche = 7). */
+    edtJoursOuvres: smallint()
+      .array()
+      .notNull()
+      .default(sql`'{1,2,3,4,5}'::smallint[]`),
     ...trackingColumns(),
   },
-  (t) => organisationConstraints('etablissement', t),
+  (t) => [
+    ...organisationConstraints('etablissement', t),
+    check('etablissement_edt_plage_check', sql`${t.edtFin} > ${t.edtDebut}`),
+    check(
+      'etablissement_edt_limite_check',
+      sql`${t.edtLimiteMidi} > ${t.edtDebut} AND ${t.edtLimiteMidi} < ${t.edtFin}`,
+    ),
+    check(
+      'etablissement_edt_jours_check',
+      sql`cardinality(${t.edtJoursOuvres}) >= 1 AND ${t.edtJoursOuvres} <@ '{1,2,3,4,5,6,7}'::smallint[]`,
+    ),
+  ],
 ).enableRLS();
 
 /** Année scolaire (US-01-03, RG-01-03, RG-00-05). */
