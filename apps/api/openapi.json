@@ -1174,6 +1174,277 @@
         }
       }
     },
+    "/api/edt/publication": {
+      "post": {
+        "operationId": "SeancesController.publier",
+        "summary": "Publier des séances, sans conflit bloquant non forcé (RG-04-06, RG-04-13)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationSeances"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatSeances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/seances": {
+      "post": {
+        "operationId": "SeancesController.creer",
+        "summary": "Placer une séance, en brouillon (US-04-01, RG-04-01)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieSeance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Seance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/seances/{id}": {
+      "patch": {
+        "operationId": "SeancesController.modifier",
+        "summary": "Modifier une séance, les suivantes ou toute la série (RG-04-03)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModificationSeance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatSeances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/seances/{id}/annulation": {
+      "post": {
+        "operationId": "SeancesController.annuler",
+        "summary": "Annuler une séance avec un motif ; ses données sont conservées (RG-04-04)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnulationSeance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatSeances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/semaine": {
+      "get": {
+        "operationId": "SeancesController.semaine",
+        "summary": "Séances d’une semaine de l’établissement, brouillons et conflits compris",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:lire",
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SemaineEdt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/series": {
+      "post": {
+        "operationId": "SeancesController.creerSerie",
+        "summary": "Créer une série de séances, en brouillon (US-04-02, RG-04-03)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieSerie"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SerieCreee"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/series/apercu": {
+      "post": {
+        "operationId": "SeancesController.apercuSerie",
+        "summary": "Occurrences d’une série et jours sautés, avant création (RG-04-03)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieSerie"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApercuSerie"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/verification": {
+      "post": {
+        "operationId": "SeancesController.verifier",
+        "summary": "Conflits d’une séance envisagée, salles et créneaux libres (RG-04-05, RG-04-07)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationSeance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatVerification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/emargement/code": {
       "post": {
         "operationId": "ScanController.saisirCode",
@@ -5159,6 +5430,30 @@
         ],
         "additionalProperties": false
       },
+      "AnnulationSeance": {
+        "type": "object",
+        "properties": {
+          "motif": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "portee": {
+            "default": "seance",
+            "type": "string",
+            "enum": [
+              "seance",
+              "suivantes",
+              "serie"
+            ]
+          }
+        },
+        "required": [
+          "motif",
+          "portee"
+        ],
+        "additionalProperties": false
+      },
       "ApercuImport": {
         "type": "object",
         "properties": {
@@ -5428,6 +5723,71 @@
           "lignes",
           "expireLe",
           "bilan"
+        ],
+        "additionalProperties": false
+      },
+      "ApercuSerie": {
+        "type": "object",
+        "properties": {
+          "occurrences": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "jour": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "debut": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "fin": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "required": [
+                "jour",
+                "debut",
+                "fin"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "sautees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "jour": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "raison": {
+                  "type": "string",
+                  "enum": [
+                    "fermeture",
+                    "entreprise",
+                    "exclu"
+                  ]
+                }
+              },
+              "required": [
+                "jour",
+                "raison"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "occurrences",
+          "sautees"
         ],
         "additionalProperties": false
       },
@@ -6436,6 +6796,312 @@
         ],
         "additionalProperties": false
       },
+      "ConflitSeance": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "salle-occupee"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "bloquant"
+                ]
+              },
+              "seanceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "seanceId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "intervenant-occupe"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "bloquant"
+                ]
+              },
+              "seanceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "intervenantIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "seanceId",
+              "intervenantIds"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "groupe-occupe"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "bloquant"
+                ]
+              },
+              "seanceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "groupeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              "apprenantIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "seanceId",
+              "groupeIds",
+              "apprenantIds"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "jour-ferme"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "bloquant"
+                ]
+              },
+              "jours": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                }
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "jours"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "jour-entreprise"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "avertissement"
+                ]
+              },
+              "apprenants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "apprenantId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "raison": {
+                      "type": "string",
+                      "enum": [
+                        "entreprise",
+                        "stage"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "apprenantId",
+                    "raison"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "effectif": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "apprenants",
+              "effectif"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "capacite-salle"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "avertissement"
+                ]
+              },
+              "capacite": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "effectif": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "capacite",
+              "effectif"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "intervenant-indisponible"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "avertissement"
+                ]
+              },
+              "intervenantId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "raison": {
+                "type": "string",
+                "enum": [
+                  "indisponibilite",
+                  "hors-disponibilites"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "intervenantId",
+              "raison"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "volume-module"
+                ]
+              },
+              "niveau": {
+                "type": "string",
+                "enum": [
+                  "avertissement"
+                ]
+              },
+              "groupeId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "prevuMinutes": {
+                "type": "number"
+              },
+              "planifieMinutes": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "code",
+              "niveau",
+              "groupeId",
+              "prevuMinutes",
+              "planifieMinutes"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
       "ContactEntreprise": {
         "type": "object",
         "properties": {
@@ -6615,6 +7281,9 @@
                 "contrats:gerer",
                 "rythmes:lire",
                 "rythmes:gerer",
+                "edt:lire",
+                "edt:gerer",
+                "edt:forcer",
                 "emargement:animer"
               ]
             }
@@ -8071,6 +8740,34 @@
           "dateFin",
           "type",
           "etablissementIds"
+        ],
+        "additionalProperties": false
+      },
+      "ForcageConflit": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "salle-occupee",
+              "groupe-occupe"
+            ]
+          },
+          "seanceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "motif": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "code",
+          "seanceId",
+          "motif"
         ],
         "additionalProperties": false
       },
@@ -10321,7 +11018,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 33,
+            "maxItems": 36,
             "type": "array",
             "items": {
               "type": "string",
@@ -10358,6 +11055,9 @@
                 "contrats:gerer",
                 "rythmes:lire",
                 "rythmes:gerer",
+                "edt:lire",
+                "edt:gerer",
+                "edt:forcer",
                 "emargement:animer"
               ]
             }
@@ -10412,6 +11112,104 @@
             ]
           }
         },
+        "additionalProperties": false
+      },
+      "ModificationSeance": {
+        "type": "object",
+        "properties": {
+          "portee": {
+            "default": "seance",
+            "type": "string",
+            "enum": [
+              "seance",
+              "suivantes",
+              "serie"
+            ]
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "examen"
+            ]
+          },
+          "moduleId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "activite": {
+            "nullable": true,
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "promotionIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "groupeIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "intervenantId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "salleId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "lienVisio": {
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500,
+            "format": "uri"
+          },
+          "distanciel": {
+            "type": "boolean"
+          },
+          "forcages": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForcageConflit"
+            }
+          }
+        },
+        "required": [
+          "portee",
+          "forcages"
+        ],
         "additionalProperties": false
       },
       "ModificationUe": {
@@ -10904,7 +11702,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 33,
+            "maxItems": 36,
             "type": "array",
             "items": {
               "type": "string",
@@ -10941,6 +11739,9 @@
                 "contrats:gerer",
                 "rythmes:lire",
                 "rythmes:gerer",
+                "edt:lire",
+                "edt:gerer",
+                "edt:forcer",
                 "emargement:animer"
               ]
             }
@@ -12241,6 +13042,25 @@
         ],
         "additionalProperties": false
       },
+      "PublicationSeances": {
+        "type": "object",
+        "properties": {
+          "seanceIds": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "seanceIds"
+        ],
+        "additionalProperties": false
+      },
       "RechercheSiret": {
         "type": "object",
         "properties": {
@@ -13153,6 +13973,21 @@
         ],
         "additionalProperties": false
       },
+      "ResultatSeances": {
+        "type": "object",
+        "properties": {
+          "seances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Seance"
+            }
+          }
+        },
+        "required": [
+          "seances"
+        ],
+        "additionalProperties": false
+      },
       "ResultatSimulation": {
         "type": "object",
         "properties": {
@@ -13404,6 +14239,77 @@
         ],
         "additionalProperties": false
       },
+      "ResultatVerification": {
+        "type": "object",
+        "properties": {
+          "conflits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConflitSeance"
+            }
+          },
+          "sallesLibres": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "nom": {
+                  "type": "string"
+                },
+                "capacite": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "nom",
+                "capacite",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "creneauxLibres": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "debut": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "fin": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "required": [
+                "debut",
+                "fin"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "conflits",
+          "sallesLibres",
+          "creneauxLibres"
+        ],
+        "additionalProperties": false
+      },
       "RetoucheJours": {
         "type": "object",
         "properties": {
@@ -13530,6 +14436,9 @@
                 "contrats:gerer",
                 "rythmes:lire",
                 "rythmes:gerer",
+                "edt:lire",
+                "edt:gerer",
+                "edt:forcer",
                 "emargement:animer"
               ]
             }
@@ -14121,6 +15030,255 @@
         ],
         "additionalProperties": false
       },
+      "SaisieSeance": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "examen"
+            ]
+          },
+          "moduleId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "activite": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "promotionIds": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "groupeIds": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "intervenantId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "salleId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "lienVisio": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500,
+            "format": "uri"
+          },
+          "distanciel": {
+            "default": false,
+            "type": "boolean"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "forcages": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForcageConflit"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "moduleId",
+          "activite",
+          "promotionIds",
+          "groupeIds",
+          "intervenantId",
+          "salleId",
+          "lienVisio",
+          "distanciel",
+          "debut",
+          "fin",
+          "forcages"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieSerie": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "examen"
+            ]
+          },
+          "moduleId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "activite": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "promotionIds": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "groupeIds": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "intervenantId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "salleId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "lienVisio": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500,
+            "format": "uri"
+          },
+          "distanciel": {
+            "default": false,
+            "type": "boolean"
+          },
+          "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "dateFin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "joursSemaine": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "intervalleSemaines": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "heureDebut": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "heureFin": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "sauterJoursEntreprise": {
+            "default": false,
+            "type": "boolean"
+          },
+          "joursExclus": {
+            "default": [],
+            "maxItems": 366,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "moduleId",
+          "activite",
+          "promotionIds",
+          "groupeIds",
+          "intervenantId",
+          "salleId",
+          "lienVisio",
+          "distanciel",
+          "dateDebut",
+          "dateFin",
+          "joursSemaine",
+          "intervalleSemaines",
+          "heureDebut",
+          "heureFin",
+          "sauterJoursEntreprise",
+          "joursExclus"
+        ],
+        "additionalProperties": false
+      },
       "SaisieSimulation": {
         "type": "object",
         "properties": {
@@ -14469,6 +15627,141 @@
         ],
         "additionalProperties": false
       },
+      "Seance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "brouillon",
+              "publiee",
+              "annulee",
+              "reportee"
+            ]
+          },
+          "type": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "examen"
+            ]
+          },
+          "moduleId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "activite": {
+            "nullable": true,
+            "type": "string"
+          },
+          "promotionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "groupeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "intervenantId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "salleId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "lienVisio": {
+            "nullable": true,
+            "type": "string"
+          },
+          "distanciel": {
+            "type": "boolean"
+          },
+          "motifAnnulation": {
+            "nullable": true,
+            "type": "string"
+          },
+          "serieId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "conflits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConflitSeance"
+            }
+          },
+          "forcages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForcageConflit"
+            }
+          },
+          "modifiable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "debut",
+          "fin",
+          "statut",
+          "type",
+          "moduleId",
+          "activite",
+          "promotionIds",
+          "groupeIds",
+          "intervenantId",
+          "salleId",
+          "lienVisio",
+          "distanciel",
+          "motifAnnulation",
+          "serieId",
+          "conflits",
+          "forcages",
+          "modifiable"
+        ],
+        "additionalProperties": false
+      },
       "SeanceProche": {
         "type": "object",
         "properties": {
@@ -14505,6 +15798,89 @@
           "fin",
           "distanciel",
           "intervenant"
+        ],
+        "additionalProperties": false
+      },
+      "SemaineEdt": {
+        "type": "object",
+        "properties": {
+          "debut": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fuseau": {
+            "type": "string"
+          },
+          "seances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Seance"
+            }
+          },
+          "creation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "debut",
+          "fin",
+          "fuseau",
+          "seances",
+          "creation"
+        ],
+        "additionalProperties": false
+      },
+      "SerieCreee": {
+        "type": "object",
+        "properties": {
+          "serieId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "seances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Seance"
+            }
+          },
+          "sautees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "jour": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "raison": {
+                  "type": "string",
+                  "enum": [
+                    "fermeture",
+                    "entreprise",
+                    "exclu"
+                  ]
+                }
+              },
+              "required": [
+                "jour",
+                "raison"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "serieId",
+          "seances",
+          "sautees"
         ],
         "additionalProperties": false
       },
@@ -14852,6 +16228,159 @@
         "required": [
           "mode",
           "existants"
+        ],
+        "additionalProperties": false
+      },
+      "VerificationSeance": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "examen"
+            ]
+          },
+          "moduleId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "activite": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "promotionIds": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "groupeIds": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "intervenantId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "salleId": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "lienVisio": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 500,
+            "format": "uri"
+          },
+          "distanciel": {
+            "default": false,
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "plageDebut": {
+            "default": "08:00",
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "plageFin": {
+            "default": "19:00",
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "joursOuverts": {
+            "default": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          },
+          "typeSalle": {
+            "type": "string",
+            "enum": [
+              "cours",
+              "tp_informatique",
+              "laboratoire",
+              "amphitheatre",
+              "virtuelle"
+            ]
+          },
+          "equipements": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            }
+          }
+        },
+        "required": [
+          "type",
+          "moduleId",
+          "activite",
+          "promotionIds",
+          "groupeIds",
+          "intervenantId",
+          "salleId",
+          "lienVisio",
+          "distanciel",
+          "debut",
+          "fin",
+          "plageDebut",
+          "plageFin",
+          "joursOuverts",
+          "equipements"
         ],
         "additionalProperties": false
       },

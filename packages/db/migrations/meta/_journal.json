@@ -309,6 +309,20 @@
       "when": 1791416042495,
       "tag": "0043_seances",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791442486092,
+      "tag": "0044_seance_forcage",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1791442487755,
+      "tag": "0045_edt_permissions",
+      "breakpoints": true
     }
   ]
 }
