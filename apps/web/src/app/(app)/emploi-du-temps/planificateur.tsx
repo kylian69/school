@@ -12,13 +12,15 @@ import { AnnulationSeance, FormulaireSeance } from './formulaire-seance';
 import {
   auPas,
   disposer,
+  fondDuJour,
   grilleAffichee,
   HAUTEUR_HEURE,
   heureDe,
   instantLocal,
   partiesLocales,
 } from './semaine';
-import type { Defaut, Droits, Horaire, Referentiels } from './types';
+import { lireModuleDeplace, ModulesAPlacer } from './modules-a-placer';
+import type { Defaut, Droits, Horaire, ModeleSeance, Referentiels } from './types';
 
 const t = fr.edt;
 
@@ -31,6 +33,9 @@ const COULEURS_TYPE: Record<string, string> = {
   examen: 'bg-warn-soft text-warn',
 };
 
+/** Hachures des jours fermés ou en entreprise et des indisponibilités (maquette « hatch »). */
+const HACHURES = 'repeating-linear-gradient(135deg, var(--surface2) 0 8px, transparent 8px 16px)';
+
 const libelleJour = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'UTC',
   weekday: 'long',
@@ -39,7 +44,7 @@ const libelleJour = new Intl.DateTimeFormat('fr-FR', {
 });
 
 type Dialogue =
-  | { mode: 'creation' }
+  | { mode: 'creation'; horaire?: Horaire; modele?: ModeleSeance }
   | { mode: 'modification'; seance: Seance; horaire?: Horaire }
   | { mode: 'annulation'; seance: Seance };
 
@@ -100,6 +105,13 @@ export function Planificateur({
     (_, n) => plage.debut + n * 60,
   );
   const hauteur = ((plage.fin - plage.debut) / 60) * HAUTEUR_HEURE;
+  const fondJours = new Map(semaine.jours.map((j) => [j.jour, j]));
+  /** Jour fermé (RG-01-04) ou en entreprise (RG-03-13) : grisé, et dit en clair. */
+  const etatDuJour = (jour: string) => {
+    const j = fondJours.get(jour);
+    if (j?.fermeture) return t.fond.fermeture(j.fermeture);
+    return j?.entreprise ? t.fond.entreprise : null;
+  };
   const enConflit = semaine.seances.filter(
     (s) =>
       s.statut !== 'annulee' &&
@@ -127,19 +139,32 @@ export function Planificateur({
 
   function deposer(event: DragEvent<HTMLElement>, jour: string) {
     event.preventDefault();
-    const id = event.dataTransfer.getData('text/plain');
-    const s = semaine.seances.find((x) => x.id === id);
-    if (!s || !deplacable(s)) return;
     const zone = event.currentTarget.getBoundingClientRect();
     const minutes = auPas(
       plage.debut + ((event.clientY - zone.top - prise.current) / HAUTEUR_HEURE) * 60,
     );
-    const duree = Date.parse(s.fin) - Date.parse(s.debut);
     const debut = instantLocal(
       jour,
       heureDe(Math.max(plage.debut, Math.min(minutes, 24 * 60 - 15))),
       fuseau,
     );
+    const depose = lireModuleDeplace(event.dataTransfer);
+    if (depose) {
+      if (!droits.gerer) return;
+      setDialogue({
+        mode: 'creation',
+        modele: depose.modele,
+        horaire: {
+          debut,
+          fin: new Date(Date.parse(debut) + depose.minutes * 60_000).toISOString(),
+        },
+      });
+      return;
+    }
+    const id = event.dataTransfer.getData('text/plain');
+    const s = semaine.seances.find((x) => x.id === id);
+    if (!s || !deplacable(s)) return;
+    const duree = Date.parse(s.fin) - Date.parse(s.debut);
     setDialogue({
       mode: 'modification',
       seance: s,
@@ -180,6 +205,26 @@ export function Planificateur({
             </li>
           ))}
         </ul>
+        {semaine.disponibilites || semaine.jours.some((j) => j.entreprise || j.fermeture) ? (
+          <ul aria-label={t.fond.legende} className="flex flex-wrap items-center gap-1.5 text-xs">
+            <li
+              className="rounded-md border border-line px-2 py-0.5 font-semibold text-muted"
+              style={{ backgroundImage: HACHURES }}
+            >
+              {`${t.fond.entreprise} / ${t.fond.ferme}`}
+            </li>
+            {semaine.disponibilites ? (
+              <>
+                <li className="rounded-md bg-ok-soft px-2 py-0.5 font-semibold text-ok">
+                  {t.fond.disponible}
+                </li>
+                <li className="rounded-md bg-bad-soft px-2 py-0.5 font-semibold text-bad">
+                  {t.fond.indisponible}
+                </li>
+              </>
+            ) : null}
+          </ul>
+        ) : null}
         {enConflit > 0 ? <Badge tone="bad">{t.conflitsAResoudre(enConflit)}</Badge> : null}
       </div>
       <MessageErreur erreurs={erreurs} />
@@ -199,15 +244,17 @@ export function Planificateur({
               }}
             >
               <div aria-hidden className="border-b border-line" />
-              {jours.map((jour) => (
-                <h2
-                  key={jour}
-                  id={`jour-${jour}`}
-                  className="border-b border-l border-line px-2 py-2 text-sm font-semibold capitalize"
-                >
-                  {libelleJour.format(new Date(`${jour}T00:00:00Z`))}
-                </h2>
-              ))}
+              {jours.map((jour) => {
+                const etat = etatDuJour(jour);
+                return (
+                  <div key={jour} className="border-b border-l border-line px-2 py-2">
+                    <h2 id={`jour-${jour}`} className="text-sm font-semibold capitalize">
+                      {libelleJour.format(new Date(`${jour}T00:00:00Z`))}
+                    </h2>
+                    {etat ? <p className="text-xs font-semibold text-muted">{etat}</p> : null}
+                  </div>
+                );
+              })}
               <div aria-hidden className="relative" style={{ height: hauteur }}>
                 {heures.map((h) => (
                   <span
@@ -221,6 +268,16 @@ export function Planificateur({
               </div>
               {jours.map((jour) => {
                 const duJour = disposer(placees.filter((p) => p.jour === jour));
+                const grise = etatDuJour(jour) !== null;
+                const blocs = (
+                  semaine.disponibilites ? fondDuJour(jour, semaine.disponibilites, fuseau) : []
+                )
+                  .map((b) => ({
+                    ...b,
+                    debut: Math.max(b.debut, plage.debut),
+                    fin: Math.min(b.fin, plage.fin),
+                  }))
+                  .filter((b) => b.fin > b.debut);
                 return (
                   <section
                     key={jour}
@@ -228,8 +285,11 @@ export function Planificateur({
                     className="relative border-l border-line"
                     style={{
                       height: hauteur,
-                      backgroundImage: 'linear-gradient(var(--line) 1px, transparent 1px)',
-                      backgroundSize: `100% ${String(HAUTEUR_HEURE)}px`,
+                      backgroundImage: [
+                        'linear-gradient(var(--line) 1px, transparent 1px)',
+                        ...(grise ? [HACHURES] : []),
+                      ].join(', '),
+                      backgroundSize: `100% ${String(HAUTEUR_HEURE)}px${grise ? ', auto' : ''}`,
                     }}
                     onDragOver={(e) => {
                       if (droits.gerer) e.preventDefault();
@@ -238,6 +298,35 @@ export function Planificateur({
                       deposer(e, jour);
                     }}
                   >
+                    {blocs.length === 0 ? null : (
+                      <>
+                        <p className="sr-only">
+                          {t.fond.resumeJour(
+                            blocs.map((b) =>
+                              t.fond.creneau(t.fond[b.nature], heureDe(b.debut), heureDe(b.fin)),
+                            ),
+                          )}
+                        </p>
+                        {blocs.map((b) => (
+                          <div
+                            key={`${b.nature}-${String(b.debut)}`}
+                            aria-hidden
+                            className={`pointer-events-none absolute inset-x-0 px-1 text-[10px] font-semibold ${
+                              b.nature === 'disponible'
+                                ? 'bg-ok-soft text-ok'
+                                : 'bg-bad-soft text-bad'
+                            }`}
+                            style={{
+                              top: ((b.debut - plage.debut) / 60) * HAUTEUR_HEURE,
+                              height: ((b.fin - b.debut) / 60) * HAUTEUR_HEURE,
+                              ...(b.nature === 'indisponible' ? { backgroundImage: HACHURES } : {}),
+                            }}
+                          >
+                            {t.fond[b.nature]}
+                          </div>
+                        ))}
+                      </>
+                    )}
                     {duJour.length === 0 ? null : (
                       <ul>
                         {duJour.map((p) => {
@@ -310,30 +399,44 @@ export function Planificateur({
           ) : null}
         </Card>
 
-        <Card className="flex flex-col gap-3 self-start" aria-label={t.fiche.titre} role="region">
-          {seance ? (
-            <FicheSeance
-              seance={seance}
-              fuseau={fuseau}
-              noms={noms}
-              salle={seance.salleId ? (salles.get(seance.salleId) ?? null) : null}
-              droits={droits}
-              envoi={envoi}
-              onModifier={() => {
-                setDialogue({ mode: 'modification', seance });
+        <div className="flex min-w-0 flex-col gap-4 self-start">
+          <Card className="flex flex-col gap-3" aria-label={t.fiche.titre} role="region">
+            {seance ? (
+              <FicheSeance
+                seance={seance}
+                fuseau={fuseau}
+                noms={noms}
+                salle={seance.salleId ? (salles.get(seance.salleId) ?? null) : null}
+                droits={droits}
+                envoi={envoi}
+                onModifier={() => {
+                  setDialogue({ mode: 'modification', seance });
+                }}
+                onAnnuler={() => {
+                  setDialogue({ mode: 'annulation', seance });
+                }}
+                onPublier={() => void publier([seance.id])}
+                onFermer={() => {
+                  setChoisie(null);
+                }}
+              />
+            ) : (
+              <p className="text-sm text-muted">{t.fiche.vide}</p>
+            )}
+          </Card>
+          {semaine.aPlacer ? (
+            <ModulesAPlacer
+              modules={semaine.aPlacer}
+              gerer={droits.gerer}
+              onDebutGlisser={() => {
+                prise.current = 0;
               }}
-              onAnnuler={() => {
-                setDialogue({ mode: 'annulation', seance });
-              }}
-              onPublier={() => void publier([seance.id])}
-              onFermer={() => {
-                setChoisie(null);
+              onPlacer={(modele) => {
+                setDialogue({ mode: 'creation', modele });
               }}
             />
-          ) : (
-            <p className="text-sm text-muted">{t.fiche.vide}</p>
-          )}
-        </Card>
+          ) : null}
+        </div>
       </div>
 
       {dialogue?.mode === 'annulation' ? (
@@ -346,7 +449,8 @@ export function Planificateur({
       ) : dialogue ? (
         <FormulaireSeance
           seance={dialogue.mode === 'modification' ? dialogue.seance : null}
-          horaire={dialogue.mode === 'modification' ? dialogue.horaire : undefined}
+          horaire={dialogue.horaire}
+          modele={dialogue.mode === 'creation' ? dialogue.modele : undefined}
           jourParDefaut={semaine.debut}
           fuseau={fuseau}
           referentiels={referentiels}

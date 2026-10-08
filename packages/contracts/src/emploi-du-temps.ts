@@ -256,6 +256,44 @@ export const RechercheSemaine = z.object({
 });
 export type RechercheSemaine = z.infer<typeof RechercheSemaine>;
 
+/** Fond d'un jour de la grille : fermeture (RG-01-04) et jour en entreprise (RG-03-13). */
+export const JourEdt = z
+  .object({
+    jour,
+    /** Libellé de la fermeture ou du jour férié ; null si l'établissement est ouvert. */
+    fermeture: z.string().nullable(),
+    /** Toutes les promotions du public affiché sont en entreprise d'après leur rythme. */
+    entreprise: z.boolean(),
+  })
+  .meta({ id: 'JourEdt' });
+export type JourEdt = z.infer<typeof JourEdt>;
+
+/** RG-04-18 : disponibilités récurrentes et indisponibilités de l'intervenant affiché. */
+export const DisponibilitesEdt = z
+  .object({
+    /** Sans créneau, l'intervenant n'a rien déclaré. */
+    creneaux: z.array(
+      z.object({ jourSemaine: z.int().min(1).max(7), heureDebut: heure, heureFin: heure }),
+    ),
+    indisponibilites: z.array(z.object({ debut: instant, fin: instant })),
+  })
+  .meta({ id: 'DisponibilitesEdt' });
+export type DisponibilitesEdt = z.infer<typeof DisponibilitesEdt>;
+
+/** RG-04-16 : volume d'un module à placer pour le public affiché, par type (négatif : dépassé). */
+export const ModuleAPlacer = z
+  .object({
+    moduleId: z.uuid(),
+    code: z.string(),
+    intitule: z.string(),
+    type: z.enum(TYPES_SEANCE),
+    prevuMinutes: z.number(),
+    planifieMinutes: z.number(),
+    restantMinutes: z.number(),
+  })
+  .meta({ id: 'ModuleAPlacer' });
+export type ModuleAPlacer = z.infer<typeof ModuleAPlacer>;
+
 export const SemaineEdt = z
   .object({
     debut: jour,
@@ -265,6 +303,12 @@ export const SemaineEdt = z
     plage: PlageEdt,
     seances: z.array(Seance),
     creation: z.boolean(),
+    /** Les 7 jours de la semaine, pour le fond de la grille. */
+    jours: z.array(JourEdt),
+    /** Vue par intervenant, pour qui construit l'emploi du temps ; sinon null. */
+    disponibilites: DisponibilitesEdt.nullable(),
+    /** Vue par promotion ou par groupe, pour qui construit l'emploi du temps ; sinon null. */
+    aPlacer: z.array(ModuleAPlacer).nullable(),
   })
   .meta({ id: 'SemaineEdt' });
 export type SemaineEdt = z.infer<typeof SemaineEdt>;

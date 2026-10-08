@@ -1500,6 +1500,69 @@ const occurrencesSerie = (body) => {
   return occurrences;
 };
 
+// Fond de la grille : jours en entreprise d'après le calendrier de rythme, disponibilités fixes
+// de tout intervenant (lundi 08:00-12:00, la saisie arrivant avec E-04-07), modules à placer.
+const DISPONIBILITES_FAKE = {
+  creneaux: [{ jourSemaine: 1, heureDebut: '08:00', heureFin: '12:00' }],
+};
+function fondEdt(p, debut) {
+  const promos = p.get('promotionId')
+    ? promotions.filter((x) => x.id === p.get('promotionId'))
+    : p.get('groupeId')
+      ? promotions.filter((x) =>
+          groupesScol.find((g) => g.id === p.get('groupeId'))?.promotionIds.includes(x.id),
+        )
+      : [];
+  const publics = [...promos.map((x) => x.id), ...(p.get('groupeId') ? [p.get('groupeId')] : [])];
+  const jours = [0, 1, 2, 3, 4, 5, 6].map((n) => {
+    const jour = new Date(Date.parse(`${debut}T00:00:00Z`) + n * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    return {
+      jour,
+      fermeture: null,
+      entreprise:
+        promos.length > 0 &&
+        promos.every((x) => calendriersRythme.get(x.id)?.jours[jour] === 'entreprise'),
+    };
+  });
+  const placees = seancesEdt.filter(
+    (s) =>
+      (s.statut === 'brouillon' || s.statut === 'publiee') &&
+      [...s.promotionIds, ...s.groupeIds].some((id) => publics.includes(id)),
+  );
+  const aPlacer = promos
+    .flatMap((x) => maquettes.get(x.version.id)?.modules ?? [])
+    .flatMap((mod) =>
+      ['cm', 'td', 'tp', 'projet', 'examen'].flatMap((type) => {
+        const prevuMinutes = (mod.heures?.[type] ?? 0) * 60;
+        const planifieMinutes = placees
+          .filter((s) => s.moduleId === mod.id && s.type === type)
+          .reduce((t, s) => t + (Date.parse(s.fin) - Date.parse(s.debut)) / 60_000, 0);
+        return prevuMinutes > 0 || planifieMinutes > 0
+          ? [
+              {
+                moduleId: mod.id,
+                code: mod.code,
+                intitule: mod.intitule,
+                type,
+                prevuMinutes,
+                planifieMinutes,
+                restantMinutes: prevuMinutes - planifieMinutes,
+              },
+            ]
+          : [];
+      }),
+    );
+  return {
+    jours,
+    disponibilites: p.get('intervenantId')
+      ? { ...DISPONIBILITES_FAKE, indisponibilites: [] }
+      : null,
+    aPlacer: promos.length > 0 ? aPlacer : null,
+  };
+}
+
 async function routeEdt(path, request, json, url) {
   if (path === '/api/edt/semaine') {
     const p = url.searchParams;
@@ -1528,6 +1591,7 @@ async function routeEdt(path, request, json, url) {
       ).edt,
       seances: retenues.map(vueSeance),
       creation: true,
+      ...fondEdt(p, debut),
     });
   }
   if (path === '/api/edt/verification') {

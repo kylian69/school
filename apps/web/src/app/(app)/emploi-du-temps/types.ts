@@ -25,6 +25,12 @@ export interface Droits {
   forcer: boolean;
 }
 
+/** Module et type d'une séance créée depuis la barre des modules à placer. */
+export interface ModeleSeance {
+  moduleId: string;
+  type: 'cm' | 'td' | 'tp' | 'projet' | 'examen';
+}
+
 /** Nouvel horaire d'une séance déplacée dans la grille. */
 export interface Horaire {
   debut: string;

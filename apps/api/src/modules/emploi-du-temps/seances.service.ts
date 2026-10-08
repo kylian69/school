@@ -68,6 +68,7 @@ import {
   versPlanifiee,
   type LigneSeance,
 } from './contexte.service.js';
+import { GrilleService } from './grille.service.js';
 
 const LECTURE: readonly Permission[] = ['edt:lire', 'edt:gerer'];
 const JOUR_MS = 86_400_000;
@@ -121,7 +122,10 @@ type Contenu = Pick<
  */
 @Injectable()
 export class SeancesService {
-  constructor(private readonly contexte: ContexteService) {}
+  constructor(
+    private readonly contexte: ContexteService,
+    private readonly grille: GrilleService,
+  ) {}
 
   // ——— Lecture ———
 
@@ -162,6 +166,16 @@ export class SeancesService {
         fuseau: campus.fuseauHoraire,
       }),
       creation: gestion !== false,
+      ...(await this.grille.fond(tx, {
+        etablissementId: campus.id,
+        debut: recherche.debut,
+        fin,
+        debutFenetre,
+        finFenetre,
+        recherche,
+        lecture,
+        gestion,
+      })),
     };
   }
 
@@ -193,6 +207,7 @@ export class SeancesService {
       fin: new Date(candidate.fin.getTime() + marge),
       moduleIds: v.moduleId ? [v.moduleId] : [],
       publicIds: candidate.groupeIds,
+      intervenantIds: candidate.intervenantIds,
     });
     const conflits = detecterConflits(candidate, ctx);
     const codes = new Set(conflits.map((c) => c.code));

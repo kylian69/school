@@ -18,7 +18,7 @@ import { envoyer } from '@/lib/requete';
 import { SELECT, useEnvoi } from '../formations/envoi';
 import { cleForcage, ListeConflits, type Noms } from './conflits';
 import { heureDe, instantLocal, jourIso, minutesDe, partiesLocales } from './semaine';
-import type { Defaut, Droits, Horaire, Referentiels } from './types';
+import type { Defaut, Droits, Horaire, ModeleSeance, Referentiels } from './types';
 
 const t = fr.edt;
 const f = t.formulaire;
@@ -59,6 +59,7 @@ function Dialogue({
 export function FormulaireSeance({
   seance,
   horaire,
+  modele,
   jourParDefaut,
   fuseau,
   referentiels,
@@ -69,6 +70,8 @@ export function FormulaireSeance({
 }: {
   seance: Seance | null;
   horaire?: Horaire | undefined;
+  /** Création depuis la barre des modules à placer (RG-04-16). */
+  modele?: ModeleSeance | undefined;
   jourParDefaut: string;
   fuseau: string;
   referentiels: Referentiels;
@@ -94,8 +97,10 @@ export function FormulaireSeance({
   const [heureFin, setHeureFin] = useState(
     initial ? heureDe(partiesLocales(initial.fin, fuseau).minutes) : '12:00',
   );
-  const [type, setType] = useState<TypeSeance>(seance?.type ?? 'cm');
-  const [moduleId, setModuleId] = useState(seance ? (seance.moduleId ?? HORS_MAQUETTE) : '');
+  const [type, setType] = useState<TypeSeance>(seance?.type ?? modele?.type ?? 'cm');
+  const [moduleId, setModuleId] = useState(
+    seance ? (seance.moduleId ?? HORS_MAQUETTE) : (modele?.moduleId ?? ''),
+  );
   const [activite, setActivite] = useState(seance?.activite ?? '');
   const [promotionIds, setPromotionIds] = useState(seance?.promotionIds ?? defaut.promotionIds);
   const [groupeIds, setGroupeIds] = useState(seance?.groupeIds ?? defaut.groupeIds);

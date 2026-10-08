@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AlternanceModule } from '../alternance/index.js';
 import { ContexteService } from './contexte.service.js';
+import { GrilleService } from './grille.service.js';
 import { SeancesController } from './seances.controller.js';
 import { SeancesService } from './seances.service.js';
 
@@ -8,6 +9,6 @@ import { SeancesService } from './seances.service.js';
 @Module({
   imports: [AlternanceModule],
   controllers: [SeancesController],
-  providers: [ContexteService, SeancesService],
+  providers: [ContexteService, GrilleService, SeancesService],
 })
 export class EmploiDuTempsModule {}
