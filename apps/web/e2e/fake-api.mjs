@@ -1406,6 +1406,7 @@ const promotionsDeSeance = (s) => [
 const chevauche = (a, b) =>
   a.id !== b.id &&
   b.statut !== 'annulee' &&
+  b.statut !== 'reportee' &&
   Date.parse(a.debut) < Date.parse(b.fin) &&
   Date.parse(b.debut) < Date.parse(a.fin);
 const conflitsEdt = (s) =>
@@ -1431,11 +1432,14 @@ const libelleSeance = (s) =>
     ? ([...maquettes.values()].flatMap((m) => m.modules).find((m) => m.id === s.moduleId)
         ?.intitule ?? 'Module')
     : (s.activite ?? 'Activité');
+const actifEdt = (s) => s.statut === 'brouillon' || s.statut === 'publiee';
 const vueSeance = (s) => ({
+  reporteeVersId: null,
+  modifieeLe: null,
   ...s,
   libelle: libelleSeance(s),
-  conflits: s.statut === 'annulee' ? [] : conflitsEdt(s),
-  modifiable: true,
+  conflits: actifEdt(s) ? conflitsEdt(s) : [],
+  modifiable: actifEdt(s),
 });
 const CHAMPS_SEANCE = [
   'type',
@@ -1647,11 +1651,49 @@ async function routeEdt(path, request, json, url) {
     seancesEdt.push(s);
     return json(201, vueSeance(s));
   }
-  const seanceRoute = path.match(/^\/api\/edt\/seances\/([^/]+)(\/annulation)?$/);
+  const seanceRoute = path.match(
+    /^\/api\/edt\/seances\/([^/]+)(\/annulation|\/report|\/remplacement)?$/,
+  );
   if (seanceRoute) {
     const s = seancesEdt.find((x) => x.id === seanceRoute[1]);
     if (!s) return json(404, { message: 'Séance introuvable.' });
     const body = await readBody(request);
+    const maintenant = new Date().toISOString();
+    // US-04-11 : report vers une séance de remplacement publiée, refusé en conflit bloquant.
+    if (seanceRoute[2] === '/report') {
+      const nouvelle = {
+        ...s,
+        id: randomUUID(),
+        debut: body.debut,
+        fin: body.fin,
+        salleId: body.salleId !== undefined ? body.salleId : s.salleId,
+        serieId: null,
+        forcages: [],
+        modifieeLe: maintenant,
+      };
+      seancesEdt.push(nouvelle);
+      Object.assign(s, { statut: 'reportee' });
+      if (bloquee(nouvelle)) {
+        seancesEdt.pop();
+        Object.assign(s, { statut: 'publiee' });
+        return json(409, {
+          message:
+            'Des conflits bloquants empêchent la publication. Corrigez-les, ou faites-les forcer par un responsable, puis réessayez.',
+        });
+      }
+      Object.assign(s, {
+        motifAnnulation: body.motif,
+        reporteeVersId: nouvelle.id,
+        modifieeLe: maintenant,
+      });
+      return json(200, { seances: [s, nouvelle].map(vueSeance) });
+    }
+    if (seanceRoute[2] === '/remplacement') {
+      s.intervenantIds = s.intervenantIds
+        .map((id) => (id === body.ancienId ? body.nouveauId : id))
+        .sort();
+      return json(200, { seances: [vueSeance(s)] });
+    }
     const portee =
       s.serieId && body.portee === 'serie'
         ? seancesEdt.filter((x) => x.serieId === s.serieId)

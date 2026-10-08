@@ -112,6 +112,32 @@ describe('RG-00-17 préchargement des séances', () => {
     const enCacheLou = await valkey.get(PREFIXE_SESSIONS + jetonLou);
     expect(JSON.parse(enCacheLou ?? '{}')).toMatchObject({ session: { token: jetonLou } });
   });
+
+  it('US-04-11 ne précharge pas une séance annulée ou en brouillon', async () => {
+    const debut = new Date(Date.now() + 5 * 60_000);
+    const ids = [newId(), newId()];
+    await owner.db.insert(seance).values([
+      {
+        id: ids[0],
+        organisationId: ecole,
+        libelle: 'Séance annulée fictive',
+        debut,
+        fin: new Date(debut.getTime() + 3600_000),
+        statut: 'annulee',
+        motifAnnulation: 'Grève fictive',
+      },
+      {
+        id: ids[1],
+        organisationId: ecole,
+        libelle: 'Brouillon fictif',
+        debut,
+        fin: new Date(debut.getTime() + 3600_000),
+        statut: 'brouillon',
+      },
+    ]);
+    await prechargerSeances(app.db, valkey);
+    for (const id of ids) expect(await valkey.exists(CLES_EMARGEMENT.seance(id ?? ''))).toBe(0);
+  });
 });
 
 describe('RG-00-18 écriture des présences par lots', () => {

@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
+  CLES_EMARGEMENT,
   ROLES_PAR_DEFAUT,
   type ApercuSerie,
   type DetailPromotion,
@@ -34,9 +35,10 @@ import {
   seanceIntervenant,
 } from '@scolaly/db';
 import { and, eq } from 'drizzle-orm';
+import type { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
-import { AUTH } from '../src/shared/tokens.js';
+import { AUTH, VALKEY } from '../src/shared/tokens.js';
 import { signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
 
 const PASSWORD = 'phrase de passe des tests de l’emploi du temps';
@@ -793,5 +795,199 @@ describe('Cas limites', () => {
     });
     expect(reponse.statusCode).toBe(409);
     expect(reponse.json<{ message: string }>().message).toContain('appel');
+  });
+});
+
+describe('US-04-11 annulation, report et remplacement', () => {
+  // Créneaux lointains et libres : le report exige un créneau à venir.
+  const creneau = (jour: string) => ({
+    debut: `2099-03-${jour}T08:00:00Z`,
+    fin: `2099-03-${jour}T10:00:00Z`,
+  });
+  let origine: Seance;
+  let remplacement: Seance;
+  const publiee = async (jour: string, salleId = salles.amphi.id) => {
+    const creee = (
+      await requete('POST', '/api/edt/seances', admin, {
+        type: 'td',
+        activite: 'Rattrapage fictif',
+        groupeIds: [groupe.id],
+        salleId,
+        intervenantIds: [intervenantId, coIntervenantId],
+        ...creneau(jour),
+      })
+    ).json<Seance>();
+    const reponse = await requete('POST', '/api/edt/publication', admin, {
+      seanceIds: [creee.id],
+    });
+    expect(reponse.statusCode).toBe(200);
+    return reponse.json<ResultatSeances>().seances[0] as Seance;
+  };
+
+  beforeAll(async () => {
+    origine = await publiee('03');
+  });
+
+  it('US-04-11 refuse le report d’un brouillon ou sans motif', async () => {
+    const brouillon = (
+      await requete('POST', '/api/edt/seances', admin, {
+        type: 'td',
+        activite: 'Brouillon fictif',
+        groupeIds: [groupe.id],
+        ...creneau('24'),
+      })
+    ).json<Seance>();
+    const reponse = await requete('POST', `/api/edt/seances/${brouillon.id}/report`, admin, {
+      motif: 'Grève',
+      ...creneau('25'),
+    });
+    expect(reponse.statusCode).toBe(409);
+    const sansMotif = await requete('POST', `/api/edt/seances/${origine.id}/report`, admin, {
+      motif: ' ',
+      ...creneau('10'),
+    });
+    expect(sansMotif.statusCode).toBe(400);
+    const parIntervenant = await requete(
+      'POST',
+      `/api/edt/seances/${origine.id}/report`,
+      await compte('intervenant'),
+      { motif: 'Grève', ...creneau('10') },
+    );
+    expect(parIntervenant.statusCode).toBe(403);
+  });
+
+  it('US-04-11 refuse un nouveau créneau en conflit bloquant', async () => {
+    await publiee('17');
+    const reponse = await requete('POST', `/api/edt/seances/${origine.id}/report`, admin, {
+      motif: 'Intervenant malade',
+      ...creneau('17'),
+    });
+    expect(reponse.statusCode).toBe(409);
+    expect(reponse.json<{ message: string }>().message).toContain('conflits bloquants');
+  });
+
+  it('US-04-11 reporte une séance publiée : séance de remplacement publiée et lien tracés', async () => {
+    const reponse = await requete('POST', `/api/edt/seances/${origine.id}/report`, admin, {
+      motif: 'Intervenant malade',
+      salleId: salles.grande.id,
+      ...creneau('10'),
+    });
+    expect(reponse.statusCode).toBe(200);
+    const { seances } = reponse.json<ResultatSeances>();
+    const reportee = seances.find((s) => s.id === origine.id);
+    remplacement = seances.find((s) => s.id !== origine.id) as Seance;
+    expect(reportee).toMatchObject({
+      statut: 'reportee',
+      motifAnnulation: 'Intervenant malade',
+      reporteeVersId: remplacement.id,
+      modifiable: false,
+    });
+    expect(reportee?.modifieeLe).not.toBeNull();
+    expect(remplacement).toMatchObject({
+      statut: 'publiee',
+      libelle: 'Rattrapage fictif',
+      salleId: salles.grande.id,
+      groupeIds: [groupe.id],
+      intervenantIds: [intervenantId, coIntervenantId].sort(),
+      modifiable: true,
+    });
+    expect(remplacement.debut).toBe('2099-03-10T08:00:00.000Z');
+    expect(remplacement.modifieeLe).not.toBeNull();
+    const trace = (await audits(origine.id)).find((a) => a.action === 'seance.reporter');
+    expect(trace?.avant).toMatchObject({ statut: 'publiee' });
+    expect(trace?.apres).toMatchObject({
+      seance: { statut: 'reportee' },
+      remplacement: { id: remplacement.id },
+    });
+  });
+
+  it('US-04-11 une séance reportée ne se modifie, ne se publie, ni ne s’émarge plus', async () => {
+    const modif = await requete('PATCH', `/api/edt/seances/${origine.id}`, admin, {
+      salleId: salles.amphi.id,
+    });
+    expect(modif.statusCode).toBe(409);
+    const publication = await requete('POST', '/api/edt/publication', admin, {
+      seanceIds: [origine.id],
+    });
+    expect(publication.statusCode).toBe(409);
+    const appel = await requete('POST', `/api/seances/${origine.id}/appel/ouverture`, admin);
+    expect(appel.statusCode).toBe(409);
+  });
+
+  it('US-04-11 remplace un intervenant et garde le co-intervenant', async () => {
+    const [nouveau] = await owner.db
+      .insert(personne)
+      .values({
+        organisationId: ecole,
+        nom: 'Remplaçant',
+        prenom: 'Sacha',
+        email: `remplacant.${newId()}@edt.test`,
+      })
+      .returning();
+    const absent = await requete(
+      'POST',
+      `/api/edt/seances/${remplacement.id}/remplacement`,
+      admin,
+      {
+        ancienId: nouveau?.id,
+        nouveauId: intervenantId,
+      },
+    );
+    expect(absent.statusCode).toBe(400);
+    const reponse = await requete(
+      'POST',
+      `/api/edt/seances/${remplacement.id}/remplacement`,
+      admin,
+      { ancienId: intervenantId, nouveauId: nouveau?.id },
+    );
+    expect(reponse.statusCode).toBe(200);
+    const [apres] = reponse.json<ResultatSeances>().seances;
+    expect(apres?.intervenantIds).toEqual([coIntervenantId, nouveau?.id ?? ''].sort());
+    const trace = (await audits(remplacement.id)).find(
+      (a) => a.action === 'seance.remplacer-intervenant',
+    );
+    expect(trace?.avant).toMatchObject({ intervenantIds: expect.arrayContaining([intervenantId]) });
+    expect(trace?.apres).toMatchObject({ intervenantIds: apres?.intervenantIds });
+  });
+
+  it('RG-04-14 ne date la modification que d’une séance publiée', async () => {
+    const brouillon = (
+      await requete('POST', '/api/edt/seances', admin, {
+        type: 'td',
+        activite: 'Brouillon daté',
+        groupeIds: [groupe.id],
+        ...creneau('26'),
+      })
+    ).json<Seance>();
+    const modifie = await requete('PATCH', `/api/edt/seances/${brouillon.id}`, admin, {
+      salleId: salles.grande.id,
+    });
+    expect(modifie.json<ResultatSeances>().seances[0]?.modifieeLe).toBeNull();
+    const publiee31 = await publiee('31');
+    expect(publiee31.modifieeLe).toBeNull();
+    const deplacee = await requete('PATCH', `/api/edt/seances/${publiee31.id}`, admin, {
+      lienVisio: 'https://visio.example.test/fictive',
+    });
+    expect(deplacee.json<ResultatSeances>().seances[0]?.modifieeLe).toBeNull();
+    const changee = await requete('PATCH', `/api/edt/seances/${publiee31.id}`, admin, {
+      salleId: salles.grande.id,
+    });
+    expect(changee.json<ResultatSeances>().seances[0]?.modifieeLe).not.toBeNull();
+  });
+
+  it('US-04-11 une annulation retire la séance du cache de l’émargement', async () => {
+    const valkey = app.get<Redis>(VALKEY);
+    const cle = CLES_EMARGEMENT.seance(remplacement.id);
+    await valkey.hset(cle, 'organisationId', ecole);
+    await valkey.hset(CLES_EMARGEMENT.presences(remplacement.id), 'fiche', '{}');
+    const reponse = await requete('POST', `/api/edt/seances/${remplacement.id}/annulation`, admin, {
+      motif: 'Fermeture exceptionnelle',
+    });
+    expect(reponse.statusCode).toBe(200);
+    expect(reponse.json<ResultatSeances>().seances[0]).toMatchObject({ statut: 'annulee' });
+    expect(await valkey.exists(cle)).toBe(0);
+    // Les présences déjà scannées restent, le worker les écrit en base.
+    expect(await valkey.exists(CLES_EMARGEMENT.presences(remplacement.id))).toBe(1);
+    await valkey.del(CLES_EMARGEMENT.presences(remplacement.id));
   });
 });
