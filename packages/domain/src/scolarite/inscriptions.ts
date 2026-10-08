@@ -147,77 +147,58 @@ export function changerPeriode<T extends string>(
   return { ok: true, periodes: [...conservees, { debut, fin: null, valeur }] };
 }
 
-type PeriodeStatut = PeriodeDatee & { valeur: StatutApprenant };
+/**
+ * Période de statut d'une inscription. `echeance` : fin de la durée légale d'une période
+ * « apprenti sans employeur » (section 7 du module 03), sans effet sur le statut.
+ */
+export type PeriodeStatut = PeriodeDatee & {
+  valeur: StatutApprenant;
+  echeance?: string | null;
+};
 
 /**
- * Section 7 du module 03 : statut « apprenti sans employeur » de `debut` à `fin` (exclue), puis
- * retour en initial, sauf si un nouveau contrat prend effet avant (voir `changerStatut`).
+ * Section 7 du module 03 : statut « apprenti sans employeur » à partir de `debut`, avec son
+ * échéance légale. Le statut reste tel quel à l'échéance, jusqu'à ce que la scolarité décide
+ * (contrat signé, formation initiale ou désistement, RG-09-18) ; l'échéance sert aux alertes.
  */
 export function ouvrirSansEmployeur(
   periodes: readonly PeriodeStatut[],
   debut: string,
-  fin: string,
+  echeance: string,
 ): PeriodeStatut[] {
   // Une période sans employeur en cours garde son échéance : elle ne se prolonge pas.
-  if (periodes.some((p) => p.valeur === 'apprenti_sans_employeur' && couvre(p, debut))) {
-    return [...periodes];
-  }
-  const avec = changerStatut(periodes, 'apprenti_sans_employeur', debut) ?? [...periodes];
-  const ouverte = avec.find((p) => p.fin === null);
-  if (ouverte?.valeur !== 'apprenti_sans_employeur' || fin <= ouverte.debut) {
-    return changerStatut(periodes, 'initial', debut) ?? [...periodes];
-  }
-  return [
-    ...avec.map((p) => (p === ouverte ? { ...p, fin } : p)),
-    { debut: fin, fin: null, valeur: 'initial' },
-  ];
+  const avec = changerStatut(periodes, 'apprenti_sans_employeur', debut);
+  if (!avec) return [...periodes];
+  return avec.map((p) => (p.fin === null ? { ...p, echeance } : p));
 }
 
 /**
- * RG-03-06 : nouveau statut à une date d'effet. Un retour en initial prévu à l'issue d'une
- * période sans employeur est annulé quand le nouveau statut prend effet pendant cette période
- * (nouveau contrat signé à temps). Sinon, une date antérieure au statut en cours prend effet au
- * début de celui-ci. `null` : rien ne change.
+ * RG-03-06 : nouveau statut à une date d'effet ; une date antérieure au statut en cours prend
+ * effet au début de celui-ci. `null` : rien ne change.
  */
 export function changerStatut(
   periodes: readonly PeriodeStatut[],
   statut: StatutApprenant,
   date: string,
 ): PeriodeStatut[] | null {
-  const base = annulerRetourPrevu(periodes, date);
-  const enCours = base.find((p) => p.fin === null);
-  if (enCours?.valeur === statut) return base.length < periodes.length ? base : null;
+  const enCours = periodes.find((p) => p.fin === null);
+  if (enCours?.valeur === statut) return null;
   const effet = enCours && date < enCours.debut ? enCours.debut : date;
-  const conservees = base
+  const conservees = periodes
     .filter((p) => p.debut < effet)
     .map((p) => (p.fin === null || p.fin > effet ? { ...p, fin: effet } : p));
   return [...conservees, { debut: effet, fin: null, valeur: statut }];
 }
 
-/**
- * Le retour en initial prévu à l'issue d'une période sans employeur s'annule pour un statut qui
- * prend effet pendant cette période : la période sans employeur redevient la période en cours.
- */
-export function annulerRetourPrevu(
-  periodes: readonly PeriodeStatut[],
-  date: string,
-): PeriodeStatut[] {
-  const ouverte = periodes.find((p) => p.fin === null);
-  const sansEmployeur =
-    ouverte &&
-    date < ouverte.debut &&
-    periodes.find(
-      (p) => p.valeur === 'apprenti_sans_employeur' && p.fin === ouverte.debut && p.debut <= date,
-    );
-  if (!sansEmployeur) return [...periodes];
-  return periodes
-    .filter((p) => p !== ouverte)
-    .map((p) => (p === sansEmployeur ? { ...p, fin: null } : p));
+/** Échéance de la période « apprenti sans employeur » en vigueur à cette date, sinon `null`. */
+export function echeanceSansEmployeur(periodes: readonly PeriodeStatut[], date: string) {
+  const courante = periodes.find((p) => couvre(p, date));
+  return courante?.valeur === 'apprenti_sans_employeur' ? (courante.echeance ?? null) : null;
 }
 
 /**
  * Passage à l'année suivante : le statut du jour est reconduit au début de la nouvelle promotion ;
- * une période sans employeur garde son échéance, puis l'apprenant repasse en initial.
+ * une période sans employeur garde son échéance, même dépassée (la scolarité décide).
  */
 export function statutsReconduits(
   periodes: readonly PeriodeStatut[],
@@ -225,10 +206,8 @@ export function statutsReconduits(
   debut: string,
 ): PeriodeStatut[] {
   const courante = periodes.find((p) => couvre(p, date)) ?? periodes.at(-1);
-  if (courante?.valeur === 'apprenti_sans_employeur' && courante.fin !== null) {
-    return courante.fin > debut
-      ? ouvrirSansEmployeur([], debut, courante.fin)
-      : [{ debut, fin: null, valeur: 'initial' }];
+  if (courante?.valeur === 'apprenti_sans_employeur') {
+    return [{ debut, fin: null, valeur: courante.valeur, echeance: courante.echeance ?? null }];
   }
   return [{ debut, fin: null, valeur: courante?.valeur ?? 'initial' }];
 }

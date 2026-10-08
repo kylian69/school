@@ -142,7 +142,16 @@ export const Inscription = z
     option: z.string().nullable(),
     /** Statut à la date du jour, et son historique (section 7). */
     statut: z.enum(STATUTS_APPRENANT).nullable(),
-    statuts: z.array(Periode.extend({ statut: z.enum(STATUTS_APPRENANT) })),
+    statuts: z.array(
+      Periode.extend({
+        statut: z.enum(STATUTS_APPRENANT),
+        /**
+         * Apprenti sans employeur : fin de la durée légale (module 03, section 7). Le statut ne
+         * change pas à cette date ; la scolarité décide (RG-09-18).
+         */
+        echeance: jour.nullable(),
+      }),
+    ),
     groupes: z.array(Periode.extend({ groupeId: z.uuid() })),
   })
   .meta({ id: 'Inscription' });

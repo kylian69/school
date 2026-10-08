@@ -316,7 +316,7 @@ export class AnneeSuivanteService {
       if (deja.has(i.personneId)) continue;
       const periodes = statuts
         .filter((s) => s.inscriptionId === i.id)
-        .map((s) => ({ debut: s.debut, fin: s.fin, valeur: s.statut }));
+        .map((s) => ({ debut: s.debut, fin: s.fin, valeur: s.statut, echeance: s.echeance }));
       const id = newId();
       await tx.insert(inscription).values({
         id,
@@ -333,6 +333,7 @@ export class AnneeSuivanteService {
           statut: p.valeur,
           debut: p.debut,
           fin: p.fin,
+          echeance: p.echeance ?? null,
           createdBy: access.userId,
         })),
       );
