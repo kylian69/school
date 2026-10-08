@@ -42,6 +42,8 @@ import {
   seanceForcage,
   seanceIntervenant,
   seanceSerie,
+  disponibiliteIntervenant,
+  indisponibiliteIntervenant,
   contactEntreprise,
   entreprise,
   contratAlternance,
@@ -445,6 +447,27 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         organisationId,
         seanceId: await insertSeance(db, organisationId),
         personneId: await insertPersonne(db, organisationId),
+      });
+    },
+  },
+  disponibilite_intervenant: {
+    insert: async (db, organisationId) => {
+      await db.insert(disponibiliteIntervenant).values({
+        organisationId,
+        personneId: await insertPersonne(db, organisationId),
+        jourSemaine: 1,
+        heureDebut: '08:00',
+        heureFin: '12:00',
+      });
+    },
+  },
+  indisponibilite_intervenant: {
+    insert: async (db, organisationId) => {
+      await db.insert(indisponibiliteIntervenant).values({
+        organisationId,
+        personneId: await insertPersonne(db, organisationId),
+        debut: new Date('2026-10-12T08:00:00Z'),
+        fin: new Date('2026-10-12T12:00:00Z'),
       });
     },
   },

@@ -173,6 +173,96 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await expect(fiche.getByText(`Alix Duo${suffixe}, Basile Duo${suffixe}`)).toBeVisible();
   });
 
+  test('E-04-01 grise les jours en entreprise (RG-03-13), place un module depuis la barre « à placer » (RG-04-16) et montre les disponibilités (RG-04-18)', async ({
+    page,
+  }, testInfo) => {
+    const { semaine, promotion, etablissementId } = await preparerGrille(page, '2061', false);
+    const detail = (await (await page.request.get(`/api/promotions/${promotion.id}`)).json()) as {
+      version: { id: string };
+    };
+    const { modules } = (await (
+      await page.request.get(`/api/promotions/${promotion.id}/affectations`)
+    ).json()) as { modules: { id: string }[] };
+    const moduleId = modules[0]?.id ?? '';
+    await page.request.put(`/api/maquettes/${detail.version.id}/modules/${moduleId}`, {
+      data: {
+        code: 'M1',
+        intitule: 'Bois',
+        heures: { cm: 6, td: 0, tp: 0, projet: 0, elearning: 0 },
+      },
+    });
+    // Rythme fictif : lundi et mardi à l'école, du mercredi au vendredi en entreprise.
+    await page.request.put(`/api/promotions/${promotion.id}/rythme`, {
+      data: { modele: 'une-semaine-sur-deux' },
+    });
+    await page.reload();
+
+    const entete = (jour: string) => page.locator(`#jour-${jour}`).locator('..');
+    await expect(entete(plus(semaine, 2)).getByText('En entreprise')).toBeVisible();
+    await expect(entete(semaine).getByText('En entreprise')).toBeHidden();
+    const barre = page.getByRole('region', { name: 'Modules à placer' });
+    await expect(barre.getByText('M1 · Bois')).toBeVisible();
+    await expect(barre.getByText('6 h à placer sur 6 h')).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await barre.getByRole('button', { name: 'Placer M1 · Bois, Cours' }).click();
+    const dialogue = page.getByRole('dialog', { name: 'Nouvelle séance' });
+    await expect(dialogue.getByLabel('Module')).toHaveValue(moduleId);
+    await dialogue.getByLabel('Date', { exact: true }).fill(semaine);
+    await dialogue.getByLabel('Début', { exact: true }).fill('09:00');
+    await dialogue.getByLabel('Fin', { exact: true }).fill('12:00');
+    await dialogue.getByRole('button', { name: 'Enregistrer en brouillon' }).click();
+    await expect(dialogue).toBeHidden();
+    await expect(barre.getByText('3 h à placer sur 6 h')).toBeVisible();
+
+    if (testInfo.project.name === 'ordinateur') {
+      // Glisser le module sur le mardi à 13:00 : 2 heures proposées, formulaire prérempli.
+      const mardi = page.locator(`section[aria-labelledby="jour-${plus(semaine, 1)}"]`);
+      await barre
+        .getByRole('listitem')
+        .filter({ hasText: 'M1 · Bois' })
+        .dragTo(mardi, { targetPosition: { x: 40, y: 5 * 56 + 4 } });
+      const depot = page.getByRole('dialog', { name: 'Nouvelle séance' });
+      await expect(depot.getByLabel('Date', { exact: true })).toHaveValue(plus(semaine, 1));
+      await expect(depot.getByLabel('Début', { exact: true })).toHaveValue('13:00');
+      await expect(depot.getByLabel('Fin', { exact: true })).toHaveValue('15:00');
+      await depot.getByRole('button', { name: 'Enregistrer en brouillon' }).click();
+      await expect(depot).toBeHidden();
+      await expect(barre.getByText('1 h à placer sur 6 h')).toBeVisible();
+    }
+
+    // Vue par intervenant : ses disponibilités en fond, dites en clair.
+    const suffixe = Math.random().toString(36).slice(2, 6);
+    const fiche = (await (
+      await page.request.post('/api/personnes', {
+        data: {
+          ...FICHE_VIDE,
+          nom: `Dispo${suffixe}`,
+          prenom: 'Lina',
+          email: `lina.${suffixe}@exemple.test`,
+        },
+      })
+    ).json()) as { id: string };
+    await page.request.post(`/api/promotions/${promotion.id}/affectations`, {
+      data: { personneId: fiche.id, moduleId },
+    });
+    await page.goto(
+      `/emploi-du-temps?etablissement=${etablissementId}&vue=intervenant&id=${fiche.id}&semaine=${semaine}`,
+    );
+    await expect(
+      page
+        .getByRole('list', { name: 'Légende du fond de la grille' })
+        .getByText('Disponible', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator(`section[aria-labelledby="jour-${semaine}"]`)
+        .getByText('Disponible de 08:00 à 12:00'),
+    ).toBeAttached();
+    await expect(page.getByRole('region', { name: 'Modules à placer' })).toBeHidden();
+    await expectNoAccessibilityViolations(page);
+  });
+
   test('US-04-02 crée une série hebdomadaire, déplace une séance par glisser-déposer et en annule une (RG-04-04)', async ({
     page,
   }, testInfo) => {

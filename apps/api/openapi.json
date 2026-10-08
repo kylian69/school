@@ -8230,6 +8230,66 @@
         ],
         "additionalProperties": false
       },
+      "DisponibilitesEdt": {
+        "type": "object",
+        "properties": {
+          "creneaux": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "jourSemaine": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "heureDebut": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                "heureFin": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                }
+              },
+              "required": [
+                "jourSemaine",
+                "heureDebut",
+                "heureFin"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "indisponibilites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "debut": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "fin": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "required": [
+                "debut",
+                "fin"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "creneaux",
+          "indisponibilites"
+        ],
+        "additionalProperties": false
+      },
       "DuplicationFormation": {
         "type": "object",
         "properties": {
@@ -9173,6 +9233,29 @@
           "email",
           "ecole",
           "expireLe"
+        ],
+        "additionalProperties": false
+      },
+      "JourEdt": {
+        "type": "object",
+        "properties": {
+          "jour": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "fermeture": {
+            "nullable": true,
+            "type": "string"
+          },
+          "entreprise": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "jour",
+          "fermeture",
+          "entreprise"
         ],
         "additionalProperties": false
       },
@@ -11295,6 +11378,51 @@
             "maximum": 999
           }
         },
+        "additionalProperties": false
+      },
+      "ModuleAPlacer": {
+        "type": "object",
+        "properties": {
+          "moduleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string"
+          },
+          "intitule": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "cm",
+              "td",
+              "tp",
+              "projet",
+              "examen"
+            ]
+          },
+          "prevuMinutes": {
+            "type": "number"
+          },
+          "planifieMinutes": {
+            "type": "number"
+          },
+          "restantMinutes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "moduleId",
+          "code",
+          "intitule",
+          "type",
+          "prevuMinutes",
+          "planifieMinutes",
+          "restantMinutes"
+        ],
         "additionalProperties": false
       },
       "ModuleMaquette": {
@@ -15891,6 +16019,27 @@
           },
           "creation": {
             "type": "boolean"
+          },
+          "jours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourEdt"
+            }
+          },
+          "disponibilites": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DisponibilitesEdt"
+              }
+            ]
+          },
+          "aPlacer": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModuleAPlacer"
+            }
           }
         },
         "required": [
@@ -15899,7 +16048,10 @@
           "fuseau",
           "plage",
           "seances",
-          "creation"
+          "creation",
+          "jours",
+          "disponibilites",
+          "aPlacer"
         ],
         "additionalProperties": false
       },

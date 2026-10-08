@@ -136,3 +136,50 @@ export function disposer<T extends Placement>(
   clore();
   return resultat;
 }
+
+/** Durée lisible : « 12 h », « 1 h 30 », « 45 min ». */
+export function formatDuree(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${String(m)} min`;
+  return m === 0 ? `${String(h)} h` : `${String(h)} h ${String(m).padStart(2, '0')}`;
+}
+
+export interface BlocFond {
+  nature: 'disponible' | 'indisponible';
+  debut: number;
+  fin: number;
+}
+
+/**
+ * RG-04-18 : blocs de fond d'un jour, en minutes depuis minuit : créneaux récurrents de ce jour
+ * de la semaine, puis indisponibilités ponctuelles coupées au jour.
+ */
+export function fondDuJour(
+  jour: string,
+  disponibilites: {
+    creneaux: readonly { jourSemaine: number; heureDebut: string; heureFin: string }[];
+    indisponibilites: readonly { debut: string; fin: string }[];
+  },
+  fuseau: string,
+): BlocFond[] {
+  const blocs: BlocFond[] = disponibilites.creneaux
+    .filter((c) => c.jourSemaine === jourIso(jour))
+    .map((c) => ({
+      nature: 'disponible',
+      debut: minutesDe(c.heureDebut),
+      fin: minutesDe(c.heureFin),
+    }));
+  for (const i of disponibilites.indisponibilites) {
+    const debut = partiesLocales(i.debut, fuseau);
+    const fin = partiesLocales(i.fin, fuseau);
+    if (debut.jour > jour || fin.jour < jour) continue;
+    const bloc: BlocFond = {
+      nature: 'indisponible',
+      debut: debut.jour === jour ? debut.minutes : 0,
+      fin: fin.jour === jour ? fin.minutes : 24 * 60,
+    };
+    if (bloc.fin > bloc.debut) blocs.push(bloc);
+  }
+  return blocs;
+}

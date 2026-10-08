@@ -1616,6 +1616,29 @@ export const fr = {
     astuceClavier:
       'Au clavier : ouvrez une séance puis « Modifier » pour changer son jour ou son horaire.',
     horsSemaine: 'Séances le week-end',
+    fond: {
+      legende: 'Légende du fond de la grille',
+      entreprise: 'En entreprise',
+      ferme: 'Fermé',
+      fermeture: (libelle: string) => `Fermé : ${libelle}`,
+      disponible: 'Disponible',
+      indisponible: 'Indisponible',
+      resumeJour: (elements: string[]) => elements.join(' ; '),
+      creneau: (libelle: string, debut: string, fin: string) => `${libelle} de ${debut} à ${fin}`,
+    },
+    aPlacer: {
+      titre: 'Modules à placer',
+      aide: 'Volume de la maquette restant à planifier pour ce public, brouillons compris.',
+      vide: 'Aucun module dans la maquette de cette année.',
+      restant: (restant: string, prevu: string) => `${restant} à placer sur ${prevu}`,
+      complet: (prevu: string) => `${prevu} placées : volume atteint`,
+      depasse: (ecart: string, prevu: string) => `Dépassé de ${ecart} (prévu : ${prevu})`,
+      sansPrevu: (planifie: string) => `${planifie} placées, aucune heure prévue`,
+      placer: (libelle: string) => `Placer ${libelle}`,
+      placerCourt: 'Placer',
+      glisser:
+        'Glissez un module sur la grille, ou choisissez « Placer » : le formulaire s’ouvre prérempli.',
+    },
     types: { cm: 'Cours', td: 'TD', tp: 'TP', projet: 'Projet', examen: 'Examen' },
     sansType: 'Séance',
     statuts: {

@@ -18,9 +18,12 @@ import {
   anneeScolaire,
   attribution,
   auditEvenement,
+  calendrierAlternance,
   createDatabase,
+  disponibiliteIntervenant,
   etablissement,
   fermeture,
+  indisponibiliteIntervenant,
   initialiserRolesParDefaut,
   newId,
   organisation,
@@ -640,6 +643,138 @@ describe('RG-04-01 plusieurs intervenants', () => {
       intervenantIds: [intervenantId, newId()],
     });
     expect(reponse.statusCode).toBe(400);
+  });
+});
+
+describe('E-04-01 fond de la grille et modules à placer', () => {
+  const semaine = async (cookie: string, debut: string, filtre: string) => {
+    const reponse = await requete(
+      'GET',
+      `/api/edt/semaine?etablissementId=${campusId}&debut=${debut}&${filtre}`,
+      cookie,
+    );
+    expect(reponse.statusCode).toBe(200);
+    return reponse.json<SemaineEdt>();
+  };
+  const ligne = (s: SemaineEdt, type: string) =>
+    s.aPlacer?.find((m) => m.moduleId === moduleId && m.type === type);
+
+  it('RG-01-04 nomme les fermetures et les jours fériés de chaque jour', async () => {
+    const toussaint = await semaine(admin, '2026-10-19', `salleId=${salles.grande.id}`);
+    expect(toussaint.jours).toHaveLength(7);
+    expect(toussaint.jours.every((j) => j.fermeture === 'Toussaint')).toBe(true);
+    const armistice = await semaine(admin, '2026-11-09', `salleId=${salles.grande.id}`);
+    expect(armistice.jours[0]).toEqual({ jour: '2026-11-09', fermeture: null, entreprise: false });
+    expect(armistice.jours[2]?.fermeture).toBeTruthy();
+  });
+
+  it('RG-03-13 grise les jours en entreprise du rythme de la promotion et de ses groupes', async () => {
+    await owner.db.insert(calendrierAlternance).values({
+      organisationId: ecole,
+      promotionId: promo.id,
+      modele: 'Fictif',
+      jours: { '2026-11-16': 'entreprise', '2026-11-17': 'ecole' },
+    });
+    for (const filtre of [`promotionId=${promo.id}`, `groupeId=${groupe.id}`]) {
+      const s = await semaine(admin, '2026-11-16', filtre);
+      expect(s.jours.map((j) => j.entreprise)).toEqual([
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+      ]);
+    }
+    // Sans public affiché (vue par salle), aucun jour n'est grisé.
+    const parSalle = await semaine(admin, '2026-11-16', `salleId=${salles.grande.id}`);
+    expect(parSalle.jours.some((j) => j.entreprise)).toBe(false);
+  });
+
+  it('RG-04-16 donne le volume restant par type et le met à jour quand une séance est placée', async () => {
+    const avant = await semaine(admin, '2026-12-07', `promotionId=${promo.id}`);
+    expect(ligne(avant, 'cm')).toMatchObject({ code: 'M1', prevuMinutes: 600 });
+    expect(ligne(avant, 'td')?.prevuMinutes).toBe(120);
+    const groupeAvant = await semaine(admin, '2026-12-07', `groupeId=${groupe.id}`);
+    const cree = await requete('POST', '/api/edt/seances', admin, {
+      type: 'cm',
+      moduleId,
+      promotionIds: [promo.id],
+      debut: '2026-12-07T08:00:00Z',
+      fin: '2026-12-07T11:00:00Z',
+    });
+    expect(cree.statusCode).toBe(201);
+    const apres = await semaine(admin, '2026-12-07', `promotionId=${promo.id}`);
+    expect(ligne(apres, 'cm')?.planifieMinutes).toBe(
+      (ligne(avant, 'cm')?.planifieMinutes ?? 0) + 180,
+    );
+    expect(ligne(apres, 'cm')?.restantMinutes).toBe(
+      600 - (ligne(apres, 'cm')?.planifieMinutes ?? 0),
+    );
+    expect(ligne(apres, 'td')).toEqual(ligne(avant, 'td'));
+    // Un cours de la promotion entière compte aussi pour ses groupes.
+    const groupeApres = await semaine(admin, '2026-12-07', `groupeId=${groupe.id}`);
+    expect(ligne(groupeApres, 'cm')?.planifieMinutes).toBe(
+      (ligne(groupeAvant, 'cm')?.planifieMinutes ?? 0) + 180,
+    );
+  });
+
+  it('RG-04-18 montre les disponibilités de l’intervenant et les compte dans les conflits', async () => {
+    await owner.db.insert(disponibiliteIntervenant).values({
+      organisationId: ecole,
+      personneId: coIntervenantId,
+      jourSemaine: 1,
+      heureDebut: '08:00',
+      heureFin: '12:00',
+    });
+    await owner.db.insert(indisponibiliteIntervenant).values([
+      {
+        organisationId: ecole,
+        personneId: coIntervenantId,
+        debut: new Date('2026-12-15T08:00:00Z'),
+        fin: new Date('2026-12-15T12:00:00Z'),
+      },
+      {
+        organisationId: ecole,
+        personneId: coIntervenantId,
+        debut: new Date('2027-01-15T08:00:00Z'),
+        fin: new Date('2027-01-15T12:00:00Z'),
+      },
+    ]);
+    const s = await semaine(admin, '2026-12-14', `intervenantId=${coIntervenantId}`);
+    expect(s.disponibilites).toEqual({
+      creneaux: [{ jourSemaine: 1, heureDebut: '08:00', heureFin: '12:00' }],
+      indisponibilites: [{ debut: '2026-12-15T08:00:00.000Z', fin: '2026-12-15T12:00:00.000Z' }],
+    });
+    expect(s.aPlacer).toBeNull();
+    const verification = await requete('POST', '/api/edt/verification', admin, {
+      type: 'cm',
+      moduleId,
+      promotionIds: [promo.id],
+      intervenantIds: [coIntervenantId],
+      debut: '2026-12-15T13:00:00Z',
+      fin: '2026-12-15T14:00:00Z',
+    });
+    expect(verification.json<ResultatVerification>().conflits).toContainEqual({
+      code: 'intervenant-indisponible',
+      niveau: 'avertissement',
+      intervenantId: coIntervenantId,
+      raison: 'hors-disponibilites',
+    });
+  });
+
+  it('réserve disponibilités et modules à placer à qui construit l’emploi du temps', async () => {
+    const direction = await compte('direction');
+    const parIntervenant = await semaine(
+      direction,
+      '2026-12-14',
+      `intervenantId=${coIntervenantId}`,
+    );
+    expect(parIntervenant.disponibilites).toBeNull();
+    const parPromotion = await semaine(direction, '2026-12-07', `promotionId=${promo.id}`);
+    expect(parPromotion.aPlacer).toBeNull();
+    expect(parPromotion.jours).toHaveLength(7);
   });
 });
 

@@ -299,6 +299,58 @@ export const seanceIntervenant = pgTable(
 ).enableRLS();
 
 /**
+ * RG-04-18 : créneau récurrent où un intervenant se déclare disponible (jour 1, lundi, à 7,
+ * dimanche ; heures dans le fuseau de l'établissement de la séance). Sans créneau, l'intervenant
+ * n'a rien déclaré.
+ */
+export const disponibiliteIntervenant = pgTable(
+  'disponibilite_intervenant',
+  {
+    ...organisationScoped(),
+    personneId: uuid().notNull(),
+    jourSemaine: smallint().notNull(),
+    heureDebut: time().notNull(),
+    heureFin: time().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('disponibilite_intervenant', t),
+    index('disponibilite_intervenant_personne_idx').on(t.organisationId, t.personneId),
+    foreignKey({
+      name: 'disponibilite_intervenant_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check(
+      'disponibilite_intervenant_creneau_check',
+      sql`${t.jourSemaine} between 1 and 7 and ${t.heureFin} > ${t.heureDebut}`,
+    ),
+  ],
+).enableRLS();
+
+/** RG-04-18 : indisponibilité ponctuelle d'un intervenant, sans motif (minimisation). */
+export const indisponibiliteIntervenant = pgTable(
+  'indisponibilite_intervenant',
+  {
+    ...organisationScoped(),
+    personneId: uuid().notNull(),
+    debut: timestamp({ withTimezone: true }).notNull(),
+    fin: timestamp({ withTimezone: true }).notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('indisponibilite_intervenant', t),
+    index('indisponibilite_intervenant_personne_idx').on(t.organisationId, t.personneId, t.debut),
+    foreignKey({
+      name: 'indisponibilite_intervenant_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check('indisponibilite_intervenant_dates_check', sql`${t.fin} > ${t.debut}`),
+  ],
+).enableRLS();
+
+/**
  * Apprenants attendus à une séance, calculés (migration 0035, security_invoker : la RLS des tables
  * s'applique). Inscrits actifs le jour de la séance, de la promotion visée ou membres du groupe
  * visé ce jour-là, plus les lignes historiques de seance_attendu tant qu'elle existe.

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
   conventionStage,
+  disponibiliteIntervenant,
   fermeture,
   fermetureEtablissement,
   groupeMembre,
+  indisponibiliteIntervenant,
   inscription,
   maquetteModule,
   salle,
@@ -21,7 +23,7 @@ import {
   type TypeSeance,
 } from '@scolaly/domain';
 import type { Intervalle } from '@scolaly/domain';
-import { and, eq, gt, gte, inArray, isNull, lt, lte, ne, or } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, lt, lte, ne, or } from 'drizzle-orm';
 import { joursFeriesNationauxDe } from '../../shared/calendrier/jours-feries.js';
 import { RythmesService } from '../alternance/index.js';
 
@@ -60,6 +62,19 @@ export function versPlanifiee(l: LigneSeance): SeancePlanifiee {
   };
 }
 
+/** Fermeture ou jour férié, avec son libellé pour le fond de la grille. */
+export type Fermeture = Intervalle & { libelle: string };
+
+/** Volume de la maquette d'un module, en minutes par type planifiable. */
+export function volumeEnMinutes(m: typeof maquetteModule.$inferSelect) {
+  return {
+    cm: m.heuresCm * 60,
+    td: m.heuresTd * 60,
+    tp: m.heuresTp * 60,
+    projet: m.heuresProjet * 60,
+  };
+}
+
 export interface FenetreContexte {
   etablissementId: string;
   fuseau: string;
@@ -69,13 +84,15 @@ export interface FenetreContexte {
   moduleIds: readonly string[];
   /** Publics (promotions et groupes) des séances contrôlées, en plus de ceux des séances chargées. */
   publicIds: readonly string[];
+  /** Intervenants des séances contrôlées, en plus de ceux des séances chargées. */
+  intervenantIds?: readonly string[];
 }
 
 /**
  * Données du contrôle des conflits (RG-04-05) : séances de la période, brouillons compris, et
  * toutes celles des modules contrôlés ; apprenants des publics ; salles ; fermetures et jours
- * fériés ; jours en entreprise et stages ; volumes de la maquette. Les disponibilités des
- * intervenants (RG-04-18) seront branchées avec leur saisie.
+ * fériés ; jours en entreprise et stages ; disponibilités des intervenants (RG-04-18) ; volumes
+ * de la maquette.
  */
 @Injectable()
 export class ContexteService {
@@ -152,6 +169,10 @@ export class ContexteService {
       dernierJour,
     );
     const personnes = [...new Set(inscriptions.map((i) => i.personneId))];
+    const intervenantIds = new Set(fenetre.intervenantIds);
+    for (const s of seances)
+      if (s.debut < fenetre.fin && s.fin > fenetre.debut)
+        for (const id of s.intervenantIds) intervenantIds.add(id);
     return {
       fuseau: fenetre.fuseau,
       seances: seances.map(versPlanifiee),
@@ -160,8 +181,7 @@ export class ContexteService {
       fermetures: await this.fermetures(tx, fenetre.etablissementId, premierJour, dernierJour),
       joursEntreprise: await this.joursEntreprise(tx, inscriptions, premierJour, dernierJour),
       stages: await this.stages(tx, personnes, premierJour, dernierJour),
-      indisponibilites: [],
-      disponibilites: [],
+      ...(await this.disponibilites(tx, [...intervenantIds], fenetre.debut, fenetre.fin)),
       volumesModules: await this.volumes(tx, fenetre.moduleIds),
     };
   }
@@ -239,7 +259,7 @@ export class ContexteService {
     etablissementId: string,
     debut: string,
     fin: string,
-  ): Promise<Intervalle[]> {
+  ): Promise<Fermeture[]> {
     const lignes = await tx
       .select()
       .from(fermeture)
@@ -269,11 +289,63 @@ export class ContexteService {
       const siennes = cibles.filter((c) => c.fermetureId === f.id);
       return siennes.length === 0 || siennes.some((c) => c.etablissementId === etablissementId);
     });
-    const feries: Intervalle[] = [];
+    const feries: Fermeture[] = [];
     for (let annee = Number(debut.slice(0, 4)); annee <= Number(fin.slice(0, 4)); annee++)
-      for (const { date } of joursFeriesNationauxDe(annee))
-        if (date >= debut && date <= fin) feries.push({ dateDebut: date, dateFin: date });
-    return [...applicables.map((f) => ({ dateDebut: f.dateDebut, dateFin: f.dateFin })), ...feries];
+      for (const { date, libelle } of joursFeriesNationauxDe(annee))
+        if (date >= debut && date <= fin) feries.push({ dateDebut: date, dateFin: date, libelle });
+    return [
+      ...applicables.map((f) => ({
+        dateDebut: f.dateDebut,
+        dateFin: f.dateFin,
+        libelle: f.libelle,
+      })),
+      ...feries,
+    ];
+  }
+
+  /** RG-04-18 : créneaux de disponibilité et indisponibilités des intervenants sur la période. */
+  async disponibilites(
+    tx: Transaction,
+    intervenantIds: readonly string[],
+    debut: Date,
+    fin: Date,
+  ): Promise<Pick<ContexteConflits, 'disponibilites' | 'indisponibilites'>> {
+    if (intervenantIds.length === 0) return { disponibilites: [], indisponibilites: [] };
+    const creneaux = await tx
+      .select()
+      .from(disponibiliteIntervenant)
+      .where(
+        and(
+          inArray(disponibiliteIntervenant.personneId, [...intervenantIds]),
+          isNull(disponibiliteIntervenant.deletedAt),
+        ),
+      )
+      .orderBy(asc(disponibiliteIntervenant.jourSemaine), asc(disponibiliteIntervenant.heureDebut));
+    const ponctuelles = await tx
+      .select()
+      .from(indisponibiliteIntervenant)
+      .where(
+        and(
+          inArray(indisponibiliteIntervenant.personneId, [...intervenantIds]),
+          isNull(indisponibiliteIntervenant.deletedAt),
+          lt(indisponibiliteIntervenant.debut, fin),
+          gt(indisponibiliteIntervenant.fin, debut),
+        ),
+      )
+      .orderBy(asc(indisponibiliteIntervenant.debut));
+    return {
+      disponibilites: creneaux.map((c) => ({
+        intervenantId: c.personneId,
+        jourSemaine: c.jourSemaine,
+        heureDebut: c.heureDebut.slice(0, 5),
+        heureFin: c.heureFin.slice(0, 5),
+      })),
+      indisponibilites: ponctuelles.map((i) => ({
+        intervenantId: i.personneId,
+        debut: i.debut,
+        fin: i.fin,
+      })),
+    };
   }
 
   /** RG-03-13 : jours en entreprise de chaque apprenant, d'après son rythme et ses exceptions. */
@@ -332,16 +404,6 @@ export class ContexteService {
       .select()
       .from(maquetteModule)
       .where(inArray(maquetteModule.id, [...moduleIds]));
-    return Object.fromEntries(
-      lignes.map((m) => [
-        m.id,
-        {
-          cm: m.heuresCm * 60,
-          td: m.heuresTd * 60,
-          tp: m.heuresTp * 60,
-          projet: m.heuresProjet * 60,
-        },
-      ]),
-    );
+    return Object.fromEntries(lignes.map((m) => [m.id, volumeEnMinutes(m)]));
   }
 }

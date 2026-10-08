@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   auPas,
   disposer,
+  fondDuJour,
+  formatDuree,
   grilleAffichee,
   instantLocal,
   lundiDe,
@@ -56,5 +58,36 @@ describe('grille de l’emploi du temps', () => {
     ]);
     const parId = Object.fromEntries(places.map((p) => [p.id, [p.colonne, p.colonnes]]));
     expect(parId).toEqual({ a: [0, 2], b: [1, 2], c: [0, 1] });
+  });
+});
+
+describe('fond de la grille', () => {
+  const fuseau = 'Europe/Paris';
+  it('RG-04-18 place les créneaux du jour et coupe les indisponibilités au jour', () => {
+    const disponibilites = {
+      creneaux: [
+        { jourSemaine: 1, heureDebut: '08:00', heureFin: '12:00' },
+        { jourSemaine: 2, heureDebut: '14:00', heureFin: '18:00' },
+      ],
+      indisponibilites: [{ debut: '2026-10-05T14:00:00Z', fin: '2026-10-07T08:00:00Z' }],
+    };
+    expect(fondDuJour('2026-10-05', disponibilites, fuseau)).toEqual([
+      { nature: 'disponible', debut: 480, fin: 720 },
+      { nature: 'indisponible', debut: 960, fin: 1440 },
+    ]);
+    expect(fondDuJour('2026-10-06', disponibilites, fuseau)).toEqual([
+      { nature: 'disponible', debut: 840, fin: 1080 },
+      { nature: 'indisponible', debut: 0, fin: 1440 },
+    ]);
+    expect(fondDuJour('2026-10-07', disponibilites, fuseau)).toEqual([
+      { nature: 'indisponible', debut: 0, fin: 600 },
+    ]);
+    expect(fondDuJour('2026-10-08', disponibilites, fuseau)).toEqual([]);
+  });
+
+  it('écrit les durées en heures et minutes', () => {
+    expect(formatDuree(720)).toBe('12 h');
+    expect(formatDuree(90)).toBe('1 h 30');
+    expect(formatDuree(45)).toBe('45 min');
   });
 });
