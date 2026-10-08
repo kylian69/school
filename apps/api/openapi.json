@@ -1314,6 +1314,76 @@
         }
       }
     },
+    "/api/edt/seances/{id}/remplacement": {
+      "post": {
+        "operationId": "SeancesController.remplacer",
+        "summary": "Remplacer un intervenant de la séance, des suivantes ou de la série (US-04-11)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemplacementIntervenant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatSeances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/seances/{id}/report": {
+      "post": {
+        "operationId": "SeancesController.reporter",
+        "summary": "Reporter une séance publiée vers un nouveau créneau, avec un motif (US-04-11)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportSeance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatSeances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/edt/semaine": {
       "get": {
         "operationId": "SeancesController.semaine",
