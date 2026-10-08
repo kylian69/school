@@ -74,6 +74,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
   },
   {
+    label: fr.coquille.entrees.emploiDuTemps,
+    href: '/emploi-du-temps',
+    module: 'emplois-du-temps',
+    permissions: ['edt:lire', 'edt:gerer'],
+    icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  },
+  {
     label: fr.coquille.entrees.maFormation,
     href: '/ma-formation',
     module: 'referentiel',
