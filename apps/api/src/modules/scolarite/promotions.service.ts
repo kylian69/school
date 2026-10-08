@@ -43,8 +43,8 @@ import {
 } from '@scolaly/db';
 import {
   ajouterMois,
-  annulerRetourPrevu,
   changerPeriode,
+  changerStatut,
   couvre,
   inscriptionActive,
   ouvrirSansEmployeur,
@@ -93,7 +93,8 @@ const MESSAGES: Record<RefusPromotion | RefusInscription | RefusGroupe, string> 
 
 /**
  * Module 03, section 7 : un apprenti inscrit sans employeur a la durée légale de recherche (table
- * datée) pour signer son contrat ; à l'échéance, il repasse en initial.
+ * datée) pour signer son contrat ; à l'échéance, il garde ce statut jusqu'à ce que la scolarité
+ * décide (formation initiale ou désistement, RG-09-18).
  */
 const periodesDuStatut = (
   periodes: Parameters<typeof ouvrirSansEmployeur>[0],
@@ -362,6 +363,7 @@ export class PromotionsService {
         statut: p.valeur,
         debut: p.debut,
         fin: p.fin,
+        echeance: p.echeance ?? null,
         createdBy: access.userId,
       })),
     );
@@ -463,20 +465,22 @@ export class PromotionsService {
       .select()
       .from(inscriptionStatut)
       .where(and(eq(inscriptionStatut.inscriptionId, id), isNull(inscriptionStatut.deletedAt)));
-    const enregistrees = periodes.map((p) => ({ debut: p.debut, fin: p.fin, valeur: p.statut }));
-    const verdict = changerPeriode(
-      annulerRetourPrevu(enregistrees, changement.debut),
-      changement.statut,
-      changement.debut,
-    );
-    if (!verdict.ok) {
+    const enregistrees = periodes.map((p) => ({
+      debut: p.debut,
+      fin: p.fin,
+      valeur: p.statut,
+      echeance: p.echeance,
+    }));
+    if (!changerPeriode(enregistrees, changement.statut, changement.debut).ok) {
       throw invalide(
         'debut',
         'Le changement de statut ne peut pas précéder le début du statut en cours.',
       );
     }
     const nouvelles =
-      periodesDuStatut(enregistrees, changement.statut, changement.debut) ?? verdict.periodes;
+      periodesDuStatut(enregistrees, changement.statut, changement.debut) ??
+      changerStatut(enregistrees, changement.statut, changement.debut) ??
+      enregistrees;
     await tx.delete(inscriptionStatut).where(eq(inscriptionStatut.inscriptionId, id));
     await tx.insert(inscriptionStatut).values(
       nouvelles.map((p) => ({
@@ -485,6 +489,7 @@ export class PromotionsService {
         statut: p.valeur,
         debut: p.debut,
         fin: p.fin,
+        echeance: p.echeance ?? null,
         createdBy: access.userId,
       })),
     );
@@ -495,7 +500,7 @@ export class PromotionsService {
       'inscription.statut',
       avant.personneId,
       adresseIp,
-      { statuts: periodes.map((p) => [p.statut, p.debut, p.fin]) },
+      { statuts: periodes.map((p) => [p.statut, p.debut, p.fin, p.echeance]) },
       apres,
       'personne',
     );
@@ -950,7 +955,7 @@ export class PromotionsService {
     return lignes.map(({ inscription: i, personne: p }) => {
       const periodes = statuts
         .filter((s) => s.inscriptionId === i.id)
-        .map((s) => ({ debut: s.debut, fin: s.fin, statut: s.statut }));
+        .map((s) => ({ debut: s.debut, fin: s.fin, statut: s.statut, echeance: s.echeance }));
       return {
         id: i.id,
         promotionId: i.promotionId,

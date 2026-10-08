@@ -280,8 +280,8 @@ describe('E-02-04 et E-02-05 promotions, inscriptions et groupes', () => {
     });
     expect(reponse.statusCode, reponse.body).toBe(200);
     expect(reponse.json<Inscription>().statuts).toEqual([
-      { debut: '2026-09-01', fin: '2026-11-02', statut: 'initial' },
-      { debut: '2026-11-02', fin: null, statut: 'apprenti' },
+      { debut: '2026-09-01', fin: '2026-11-02', statut: 'initial', echeance: null },
+      { debut: '2026-11-02', fin: null, statut: 'apprenti', echeance: null },
     ]);
     const avant = await requete('POST', `/api/inscriptions/${petit?.id ?? ''}/statut`, admin, {
       statut: 'initial',
@@ -290,13 +290,17 @@ describe('E-02-04 et E-02-05 promotions, inscriptions et groupes', () => {
     expect(avant.statusCode).toBe(400);
   });
 
-  it('module 03 section 7 : un apprenti sans employeur a la durée légale de recherche, puis repasse en initial', async () => {
+  it('module 03 section 7 : un apprenti sans employeur a la durée légale de recherche, puis la scolarité décide', async () => {
     const moreau = inscriptions.find((i) => i.personne.nom === 'Moreau');
     const url = `/api/inscriptions/${moreau?.id ?? ''}/statut`;
     const attendu = [
-      { debut: '2026-09-01', fin: '2027-01-04', statut: 'initial' },
-      { debut: '2027-01-04', fin: '2027-04-04', statut: 'apprenti_sans_employeur' },
-      { debut: '2027-04-04', fin: null, statut: 'initial' },
+      { debut: '2026-09-01', fin: '2027-01-04', statut: 'initial', echeance: null },
+      {
+        debut: '2027-01-04',
+        fin: null,
+        statut: 'apprenti_sans_employeur',
+        echeance: '2027-04-04',
+      },
     ];
     const reponse = await requete('POST', url, admin, {
       statut: 'apprenti_sans_employeur',
@@ -310,6 +314,12 @@ describe('E-02-04 et E-02-05 promotions, inscriptions et groupes', () => {
       debut: '2027-02-01',
     });
     expect(encore.json<Inscription>().statuts).toEqual(attendu);
+    // RG-09-18 : après l'échéance, la scolarité le passe en formation initiale.
+    const initial = await requete('POST', url, admin, { statut: 'initial', debut: '2027-05-03' });
+    expect(initial.json<Inscription>().statuts.slice(1)).toEqual([
+      { ...attendu[1], fin: '2027-05-03' },
+      { debut: '2027-05-03', fin: null, statut: 'initial', echeance: null },
+    ]);
   });
 
   it('US-02-07 RG-02-16 répartit en deux TD équilibrés, d’abord en aperçu', async () => {

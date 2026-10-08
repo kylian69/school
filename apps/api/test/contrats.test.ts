@@ -103,7 +103,7 @@ const statuts = async (inscriptionId: string) =>
       .from(inscriptionStatut)
       .where(eq(inscriptionStatut.inscriptionId, inscriptionId))
       .orderBy(asc(inscriptionStatut.debut))
-  ).map((s) => [s.statut, s.debut, s.fin]);
+  ).map((s) => [s.statut, s.debut, s.fin, ...(s.echeance ? [s.echeance] : [])]);
 
 const contrat = (rang: number, tuteur: number, debut = '2026-10-01') => ({
   inscriptionId: inscriptions[rang]?.id,
@@ -379,11 +379,11 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
       .from(contratTuteur)
       .where(eq(contratTuteur.contratId, premier.id));
     expect(restants).toHaveLength(2);
+    // L'apprenti reste sans employeur après l'échéance, jusqu'à la décision de la scolarité.
     expect(await statuts(premier.apprenant.inscriptionId)).toEqual([
       ['initial', '2026-09-01', '2026-10-01'],
       ['apprenti', '2026-10-01', '2027-02-15'],
-      ['apprenti_sans_employeur', '2027-02-15', '2027-08-15'],
-      ['initial', '2027-08-15', null],
+      ['apprenti_sans_employeur', '2027-02-15', null, '2027-08-15'],
     ]);
     expect(
       (await requete('PATCH', `/api/contrats/${premier.id}`, admin, { numeroDepot: 'X' }))
@@ -399,7 +399,7 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
     ).toBe(409);
   });
 
-  it('section 7 apprenti sans employeur : pas de convention de stage ; un nouveau contrat à temps annule le retour en initial', async () => {
+  it('section 7 apprenti sans employeur : convention de stage possible ; un nouveau contrat met fin à la période', async () => {
     const stage = await requete('POST', '/api/conventions-stage', admin, {
       inscriptionId: premier.apprenant.inscriptionId,
       entrepriseId: lEntreprise.id,
@@ -410,8 +410,15 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
       heuresPresence: 100,
       missions: 'Découvrir le métier',
     });
-    expect(stage.statusCode).toBe(400);
-    expect(stage.json<{ details: string[] }>().details[0]).toContain('sans employeur');
+    // RG-03-22 : périodes en milieu professionnel pendant la recherche d'employeur ; le statut reste.
+    expect(stage.statusCode, stage.body).toBe(201);
+    expect(stage.json<ConventionStage>().statut).toBe('brouillon');
+    expect((await statuts(premier.apprenant.inscriptionId)).at(-1)).toEqual([
+      'apprenti_sans_employeur',
+      '2027-02-15',
+      null,
+      '2027-08-15',
+    ]);
     const nouveau = (
       await requete('POST', '/api/contrats', admin, contrat(0, 1, '2027-04-01'))
     ).json<Contrat>();
@@ -420,7 +427,7 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
     expect(await statuts(premier.apprenant.inscriptionId)).toEqual([
       ['initial', '2026-09-01', '2026-10-01'],
       ['apprenti', '2026-10-01', '2027-02-15'],
-      ['apprenti_sans_employeur', '2027-02-15', '2027-04-01'],
+      ['apprenti_sans_employeur', '2027-02-15', '2027-04-01', '2027-08-15'],
       ['apprenti', '2027-04-01', null],
     ]);
   });

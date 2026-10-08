@@ -184,6 +184,11 @@ export const inscriptionStatut = pgTable(
     statut: statutApprenant().notNull(),
     debut: date().notNull(),
     fin: date(),
+    /**
+     * Module 03, section 7 : fin de la durée légale d'une période « apprenti sans employeur ».
+     * Le statut ne change pas à cette date : la scolarité décide (RG-09-18).
+     */
+    echeance: date(),
     ...trackingColumns(),
   },
   (t) => [
