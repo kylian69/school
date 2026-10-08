@@ -27,7 +27,10 @@ export class MagasinDegrade implements Magasin {
         tx
           .select()
           .from(seance)
-          .where(and(eq(seance.id, seanceId), isNull(seance.deletedAt))),
+          // US-04-11 : une séance annulée ou reportée ne s'émarge plus, comme dans le cache.
+          .where(
+            and(eq(seance.id, seanceId), eq(seance.statut, 'publiee'), isNull(seance.deletedAt)),
+          ),
       );
       return ligne
         ? {

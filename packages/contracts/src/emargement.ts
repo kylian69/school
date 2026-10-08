@@ -149,6 +149,23 @@ export function commandesPrechargement(
   return commandes;
 }
 
+/**
+ * Retire une séance du cache (annulée, reportée ou changée) : le scan la voit fermée, et le
+ * préchargement planifié la relit à son prochain passage s'il y a lieu. Les présences déjà
+ * enregistrées restent, le worker les écrit en base.
+ */
+export function commandesRetraitSeance(seanceId: string): string[][] {
+  return [
+    [
+      'del',
+      CLES_EMARGEMENT.seance(seanceId),
+      CLES_EMARGEMENT.attendus(seanceId),
+      CLES_EMARGEMENT.attendusEnChargement(seanceId),
+      CLES_EMARGEMENT.prechargee(seanceId),
+    ],
+  ];
+}
+
 /** Relit une séance préchargée ; rien si elle ne l'est pas. */
 export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCache | null {
   if (!valeurs.organisationId) return null;

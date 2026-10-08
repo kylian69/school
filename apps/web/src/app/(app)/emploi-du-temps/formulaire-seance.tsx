@@ -28,7 +28,7 @@ type Portee = (typeof PORTEES_MODIFICATION)[number];
 const HORS_MAQUETTE = 'hors-maquette';
 const DELAI_VERIFICATION = 300;
 
-function Dialogue({
+export function Dialogue({
   titre,
   onFermer,
   children,

@@ -263,6 +263,66 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await expectNoAccessibilityViolations(page);
   });
 
+  test('US-04-11 remplace un intervenant puis reporte une séance publiée vers un nouveau créneau', async ({
+    page,
+  }) => {
+    const { semaine, promotion } = await preparerGrille(page, '2061', false);
+    const { modules } = (await (
+      await page.request.get(`/api/promotions/${promotion.id}/affectations`)
+    ).json()) as { modules: { id: string }[] };
+    const suffixe = Math.random().toString(36).slice(2, 6);
+    for (const prenom of ['Alix', 'Camille']) {
+      const fiche = (await (
+        await page.request.post('/api/personnes', {
+          data: {
+            ...FICHE_VIDE,
+            nom: `Relais${suffixe}`,
+            prenom,
+            email: `${prenom}.${suffixe}@exemple.test`,
+          },
+        })
+      ).json()) as { id: string };
+      await page.request.post(`/api/promotions/${promotion.id}/affectations`, {
+        data: { personneId: fiche.id, moduleId: modules[0]?.id },
+      });
+    }
+    await page.reload();
+    const dialogue = await nouvelleSeance(page, { jour: semaine, debut: '09:00', fin: '11:00' });
+    await dialogue
+      .getByRole('group', { name: 'Intervenants' })
+      .getByLabel(`Alix Relais${suffixe}`)
+      .check();
+    await dialogue.getByRole('button', { name: 'Enregistrer en brouillon' }).click();
+    await expect(dialogue).toBeHidden();
+    await page.getByRole('button', { name: /^Bois, 09:00 – 11:00, Brouillon/ }).click();
+    const fiche = page.getByRole('region', { name: 'Séance choisie' });
+    await fiche.getByRole('button', { name: 'Publier' }).click();
+    await expect(fiche.getByRole('button', { name: 'Reporter' })).toBeVisible();
+
+    await fiche.getByRole('button', { name: 'Remplacer un intervenant' }).click();
+    const remplacement = page.getByRole('dialog', { name: 'Remplacer un intervenant' });
+    await remplacement.getByLabel('Remplaçant').selectOption({ label: `Camille Relais${suffixe}` });
+    await expectNoAccessibilityViolations(page);
+    await remplacement.getByRole('button', { name: 'Confirmer le remplacement' }).click();
+    await expect(remplacement).toBeHidden();
+    await expect(fiche.getByText(`Camille Relais${suffixe}`)).toBeVisible();
+
+    await fiche.getByRole('button', { name: 'Reporter' }).click();
+    const report = page.getByRole('dialog', { name: 'Reporter la séance' });
+    await report.getByLabel('Nouvelle date').fill(plus(semaine, 2));
+    await report.getByLabel('Début', { exact: true }).fill('14:00');
+    await report.getByLabel('Fin', { exact: true }).fill('16:00');
+    await report.getByLabel('Motif du report').fill('Intervenant en formation');
+    await expectNoAccessibilityViolations(page);
+    await report.getByRole('button', { name: 'Confirmer le report' }).click();
+    await expect(report).toBeHidden();
+    await expect(fiche.getByText('Reportée : Intervenant en formation')).toBeVisible();
+    await expect(fiche.getByRole('button', { name: 'Reporter' })).toBeHidden();
+    await fiche.getByRole('button', { name: 'Voir la séance de remplacement' }).click();
+    await expect(fiche.getByText(/14:00 – 16:00|de 14:00 à 16:00/)).toBeVisible();
+    await expect(fiche.getByRole('button', { name: 'Reporter' })).toBeVisible();
+  });
+
   test('US-04-02 crée une série hebdomadaire, déplace une séance par glisser-déposer et en annule une (RG-04-04)', async ({
     page,
   }, testInfo) => {

@@ -1,4 +1,10 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   JETON_PERIODE_SECONDES,
   type AppelEnDirect,
@@ -64,6 +70,13 @@ export class AppelService {
   /** Précharge la séance dans Valkey (RG-00-17) et donne à l'écran de quoi calculer le QR. */
   async ouvrir(tx: Transaction, access: Access, seanceId: string): Promise<OuvertureAppel> {
     const { seance: ligne, attendus } = await this.charger(tx, access, seanceId);
+    // US-04-11, RG-04-13 : une séance annulée, reportée ou en brouillon n'a pas d'appel.
+    if (ligne.statut !== 'publiee')
+      throw new ConflictException(
+        ligne.statut === 'brouillon'
+          ? "Cette séance n'est pas encore publiée : son appel ne s'ouvre pas."
+          : "Cette séance est annulée ou reportée : son appel ne s'ouvre plus. Ouvrez celui de la séance de remplacement s'il y en a une.",
+      );
     // Sans Valkey, l'appel s'ouvre quand même : le scan passera en mode dégradé.
     await this.cache
       .precharger(

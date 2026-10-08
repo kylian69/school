@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CLES_EMARGEMENT, commandesPrechargement, commandesSessions } from './emargement.js';
+import {
+  CLES_EMARGEMENT,
+  commandesPrechargement,
+  commandesRetraitSeance,
+  commandesSessions,
+} from './emargement.js';
 
 const seance = {
   organisationId: 'ecole',
@@ -44,5 +49,19 @@ describe('RG-00-17 préchargement léger', () => {
       '60',
       'NX',
     ]);
+  });
+});
+
+describe('US-04-11 séance retirée du cache', () => {
+  it('US-04-11 efface la séance, ses attendus et son marqueur, sans toucher aux présences', () => {
+    const [commande] = commandesRetraitSeance('s1');
+    expect(commande).toEqual([
+      'del',
+      CLES_EMARGEMENT.seance('s1'),
+      CLES_EMARGEMENT.attendus('s1'),
+      CLES_EMARGEMENT.attendusEnChargement('s1'),
+      CLES_EMARGEMENT.prechargee('s1'),
+    ]);
+    expect(commande).not.toContain(CLES_EMARGEMENT.presences('s1'));
   });
 });

@@ -16,6 +16,8 @@ import {
   ModificationSeance,
   PublicationSeances,
   RechercheSemaine,
+  RemplacementIntervenant,
+  ReportSeance,
   ResultatSeances,
   ResultatVerification,
   SaisieSeance,
@@ -104,6 +106,38 @@ export class SeancesController {
     @Req() request: ScolalyRequest,
   ) {
     return this.seances.annuler(...ctx(), id, annulation, request.ip);
+  }
+
+  @Post('seances/:id/report')
+  @HttpCode(200)
+  @RequirePermission('edt:gerer', 'promotion')
+  @ApiContract({
+    summary: 'Reporter une séance publiée vers un nouveau créneau, avec un motif (US-04-11)',
+    body: ReportSeance,
+    response: ResultatSeances,
+  })
+  reporter(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() report: ReportSeance,
+    @Req() request: ScolalyRequest,
+  ) {
+    return this.seances.reporter(...ctx(), id, report, request.ip);
+  }
+
+  @Post('seances/:id/remplacement')
+  @HttpCode(200)
+  @RequirePermission('edt:gerer', 'promotion')
+  @ApiContract({
+    summary: 'Remplacer un intervenant de la séance, des suivantes ou de la série (US-04-11)',
+    body: RemplacementIntervenant,
+    response: ResultatSeances,
+  })
+  remplacer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() remplacement: RemplacementIntervenant,
+    @Req() request: ScolalyRequest,
+  ) {
+    return this.seances.remplacer(...ctx(), id, remplacement, request.ip);
   }
 
   @Post('publication')

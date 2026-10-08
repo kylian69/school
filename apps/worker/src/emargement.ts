@@ -41,7 +41,8 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
     const trouve = await withOrganisation(db, organisationId, (tx) =>
       seanceEtAttendus(tx, seanceId),
     );
-    if (!trouve) continue;
+    // Séance annulée ou reportée entre-temps : elle ne s'émarge plus (US-04-11).
+    if (trouve?.seance.statut !== 'publiee') continue;
     const attendus = new Map(
       trouve.attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : [])),
     );

@@ -103,8 +103,13 @@ export const Seance = z
     salleId: z.uuid().nullable(),
     lienVisio: z.string().nullable(),
     distanciel: z.boolean(),
+    /** Motif de l'annulation ou du report. */
     motifAnnulation: z.string().nullable(),
     serieId: z.uuid().nullable(),
+    /** US-04-11 : séance de remplacement d'une séance reportée. */
+    reporteeVersId: z.uuid().nullable(),
+    /** RG-04-14 : dernière modification significative d'une séance publiée. */
+    modifieeLe: instant.nullable(),
     conflits: z.array(ConflitSeance),
     forcages: z.array(ForcageConflit),
     modifiable: z.boolean(),
@@ -169,6 +174,31 @@ export const AnnulationSeance = z
   .object({ motif: texte(500), portee: z.enum(PORTEES_MODIFICATION).default('seance') })
   .meta({ id: 'AnnulationSeance' });
 export type AnnulationSeance = z.infer<typeof AnnulationSeance>;
+
+/**
+ * US-04-11 : report d'une séance publiée vers un nouveau créneau (et, au besoin, une autre
+ * salle) ; une séance de remplacement est créée, la séance d'origine passe « reportée ».
+ */
+export const ReportSeance = z
+  .object({
+    motif: texte(500),
+    debut: instant,
+    fin: instant,
+    salleId: z.uuid().nullable().optional(),
+    forcages: z.array(ForcageConflit).max(20).default([]),
+  })
+  .meta({ id: 'ReportSeance' });
+export type ReportSeance = z.infer<typeof ReportSeance>;
+
+/** US-04-11 : remplacement d'un intervenant par un autre ; les co-intervenants restent. */
+export const RemplacementIntervenant = z
+  .object({
+    ancienId: z.uuid(),
+    nouveauId: z.uuid(),
+    portee: z.enum(PORTEES_MODIFICATION).default('seance'),
+  })
+  .meta({ id: 'RemplacementIntervenant' });
+export type RemplacementIntervenant = z.infer<typeof RemplacementIntervenant>;
 
 export const ResultatSeances = z
   .object({ seances: z.array(Seance) })

@@ -8,6 +8,7 @@ import { fr } from '@/i18n/fr';
 import { formatHeure } from '@/lib/format';
 import { useEnvoi } from '../formations/envoi';
 import { cleForcage, ListeConflits, type Noms } from './conflits';
+import { RemplacementIntervenant, ReportSeance } from './changements-seance';
 import { AnnulationSeance, FormulaireSeance } from './formulaire-seance';
 import {
   auPas,
@@ -46,7 +47,9 @@ const libelleJour = new Intl.DateTimeFormat('fr-FR', {
 type Dialogue =
   | { mode: 'creation'; horaire?: Horaire; modele?: ModeleSeance }
   | { mode: 'modification'; seance: Seance; horaire?: Horaire }
-  | { mode: 'annulation'; seance: Seance };
+  | { mode: 'annulation'; seance: Seance }
+  | { mode: 'report'; seance: Seance }
+  | { mode: 'remplacement'; seance: Seance };
 
 /** E-04-01 · Grille de la semaine, fiche de la séance choisie et actions. */
 export function Planificateur({
@@ -368,7 +371,9 @@ export function Planificateur({
                                 className={`flex size-full flex-col overflow-hidden rounded-md px-1.5 py-1 text-left text-xs ${
                                   COULEURS_TYPE[s.type ?? 'projet'] ?? ''
                                 } ${s.statut === 'brouillon' ? 'border border-dashed border-current' : ''} ${
-                                  s.statut === 'annulee' ? 'line-through opacity-70' : ''
+                                  s.statut === 'annulee' || s.statut === 'reportee'
+                                    ? 'line-through opacity-70'
+                                    : ''
                                 } ${bloquants.length > 0 ? 'ring-2 ring-bad' : ''} ${
                                   choisie === s.id
                                     ? 'outline-2 outline-offset-1 outline-accent'
@@ -415,6 +420,13 @@ export function Planificateur({
                 onAnnuler={() => {
                   setDialogue({ mode: 'annulation', seance });
                 }}
+                onReporter={() => {
+                  setDialogue({ mode: 'report', seance });
+                }}
+                onRemplacer={() => {
+                  setDialogue({ mode: 'remplacement', seance });
+                }}
+                onVoir={setChoisie}
                 onPublier={() => void publier([seance.id])}
                 onFermer={() => {
                   setChoisie(null);
@@ -442,6 +454,24 @@ export function Planificateur({
       {dialogue?.mode === 'annulation' ? (
         <AnnulationSeance
           seance={dialogue.seance}
+          onFermer={() => {
+            setDialogue(null);
+          }}
+        />
+      ) : dialogue?.mode === 'report' ? (
+        <ReportSeance
+          seance={dialogue.seance}
+          fuseau={fuseau}
+          salles={referentiels.salles}
+          onFermer={() => {
+            setDialogue(null);
+          }}
+        />
+      ) : dialogue?.mode === 'remplacement' ? (
+        <RemplacementIntervenant
+          seance={dialogue.seance}
+          intervenants={referentiels.intervenants}
+          noms={noms}
           onFermer={() => {
             setDialogue(null);
           }}
@@ -475,6 +505,9 @@ function FicheSeance({
   envoi,
   onModifier,
   onAnnuler,
+  onReporter,
+  onRemplacer,
+  onVoir,
   onPublier,
   onFermer,
 }: {
@@ -486,6 +519,9 @@ function FicheSeance({
   envoi: boolean;
   onModifier: () => void;
   onAnnuler: () => void;
+  onReporter: () => void;
+  onRemplacer: () => void;
+  onVoir: (seanceId: string) => void;
   onPublier: () => void;
   onFermer: () => void;
 }) {
@@ -548,7 +584,23 @@ function FicheSeance({
       </dl>
       {seance.serieId ? <p className="text-xs text-muted">{t.fiche.serie}</p> : null}
       {seance.motifAnnulation ? (
-        <p className="text-sm">{t.fiche.motifAnnulation(seance.motifAnnulation)}</p>
+        <p className="text-sm">
+          {seance.statut === 'reportee'
+            ? t.fiche.motifReport(seance.motifAnnulation)
+            : t.fiche.motifAnnulation(seance.motifAnnulation)}
+        </p>
+      ) : null}
+      {seance.reporteeVersId ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="self-start"
+          onClick={() => {
+            if (seance.reporteeVersId) onVoir(seance.reporteeVersId);
+          }}
+        >
+          {t.fiche.voirRemplacement}
+        </Button>
       ) : null}
       <h3 className="text-sm font-semibold">{t.fiche.conflits}</h3>
       {seance.conflits.length === 0 ? (
@@ -571,9 +623,9 @@ function FicheSeance({
           </ul>
         </>
       ) : null}
-      {!seance.modifiable ? (
+      {!actif ? null : !seance.modifiable ? (
         <p className="text-xs text-muted">{t.fiche.lectureSeule}</p>
-      ) : droits.gerer && actif ? (
+      ) : droits.gerer ? (
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={onModifier}>
             {t.fiche.modifier}
@@ -581,6 +633,15 @@ function FicheSeance({
           {seance.statut === 'brouillon' ? (
             <Button type="button" disabled={envoi} onClick={onPublier}>
               {t.fiche.publier}
+            </Button>
+          ) : (
+            <Button type="button" variant="secondary" onClick={onReporter}>
+              {t.fiche.reporter}
+            </Button>
+          )}
+          {seance.intervenantIds.length > 0 ? (
+            <Button type="button" variant="secondary" onClick={onRemplacer}>
+              {t.fiche.remplacer}
             </Button>
           ) : null}
           <Button type="button" variant="ghost" onClick={onAnnuler}>

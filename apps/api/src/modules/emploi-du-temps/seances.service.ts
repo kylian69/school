@@ -2,25 +2,30 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import type {
-  AnnulationSeance,
-  ApercuSerie,
-  ModificationSeance,
-  Permission,
-  PlageEdt,
-  PublicationSeances,
-  RechercheSemaine,
-  ResultatSeances,
-  ResultatVerification,
-  SaisieSeance,
-  SaisieSerie,
-  Seance,
-  SemaineEdt,
-  SerieCreee,
-  VerificationSeance,
+import {
+  commandesRetraitSeance,
+  type AnnulationSeance,
+  type ApercuSerie,
+  type ModificationSeance,
+  type Permission,
+  type PlageEdt,
+  type PublicationSeances,
+  type RemplacementIntervenant,
+  type ReportSeance,
+  type RechercheSemaine,
+  type ResultatSeances,
+  type ResultatVerification,
+  type SaisieSeance,
+  type SaisieSerie,
+  type Seance,
+  type SemaineEdt,
+  type SerieCreee,
+  type VerificationSeance,
 } from '@scolaly/contracts';
 import {
   enregistrerAudit,
@@ -41,26 +46,33 @@ import {
   type Transaction,
 } from '@scolaly/db';
 import {
+  changementSignificatif,
   conflitsBloquants,
   creneauxLibres,
   detecterConflits,
   instantLocal,
   occurrencesSerie,
   PAS_GRILLE_MINUTES,
+  remplacerIntervenant,
   sallesLibres,
   seancesConcernees,
   verifierAnnulationSeance,
   verifierForcage,
+  verifierReport,
   verifierSerie,
   type Conflit,
   type ContexteConflits,
   type Forcage,
+  type RefusRemplacement,
+  type RefusReport,
   type RefusSerie,
   type SeancePlanifiee,
 } from '@scolaly/domain';
 import { and, count, eq, gt, inArray, isNull, lt } from 'drizzle-orm';
+import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import { plageEdt } from '../../shared/plage-edt.js';
+import { VALKEY } from '../../shared/tokens.js';
 import { promotionsCouvertes } from '../scolarite/index.js';
 import {
   ContexteService,
@@ -87,6 +99,27 @@ const REFUS_SERIE: Record<RefusSerie, [string, string]> = {
   heures: ['heureFin', 'L’heure de fin doit suivre l’heure de début.'],
   'pas-grille': ['heureDebut', 'Les heures suivent le pas de la grille (15 minutes).'],
   fuseau: ['etablissementId', 'Le fuseau horaire de l’établissement est invalide.'],
+};
+
+const REFUS_REPORT: Record<RefusReport, () => Error> = {
+  'motif-requis': () => invalide('motif', 'Donnez le motif du report.'),
+  'non-publiee': () =>
+    new ConflictException(
+      'Seule une séance publiée se reporte. Un brouillon se déplace directement dans la grille.',
+    ),
+  'appel-fait': () =>
+    new ConflictException(
+      'L’appel de cette séance est déjà fait : elle ne se reporte plus. Annulez-la puis créez une nouvelle séance ; ses présences sont conservées.',
+    ),
+  horaire: () => invalide('fin', 'La fin de la nouvelle séance doit suivre son début.'),
+  'meme-creneau': () => invalide('debut', 'Choisissez un créneau différent du créneau actuel.'),
+  passe: () => invalide('debut', 'Le nouveau créneau doit être à venir.'),
+};
+
+const REFUS_REMPLACEMENT: Record<RefusRemplacement, [string, string]> = {
+  identique: ['nouveauId', 'Choisissez un intervenant différent de celui à remplacer.'],
+  absent: ['ancienId', 'Cet intervenant n’anime pas cette séance.'],
+  'deja-present': ['nouveauId', 'Cet intervenant anime déjà cette séance.'],
 };
 
 const invalide = (champ: string, message: string) =>
@@ -122,9 +155,12 @@ type Contenu = Pick<
  */
 @Injectable()
 export class SeancesService {
+  private readonly logger = new Logger(SeancesService.name);
+
   constructor(
     private readonly contexte: ContexteService,
     private readonly grille: GrilleService,
+    @Inject(VALKEY) private readonly valkey: Redis,
   ) {}
 
   // ——— Lecture ———
@@ -313,6 +349,8 @@ export class SeancesService {
     const concernees = await this.concernees(tx, access, cible, m.portee);
     const avant = await this.versContrats(tx, access, concernees, null);
     let contenu: ContenuValide | null = null;
+    const maintenant = new Date();
+    const aRetirer: string[] = [];
     for (const l of concernees) {
       const moduleId = m.moduleId !== undefined ? m.moduleId : l.moduleId;
       const activite =
@@ -329,10 +367,26 @@ export class SeancesService {
       });
       const debut = m.debut ? new Date(m.debut) : l.debut;
       const fin = m.fin ? new Date(m.fin) : l.fin;
+      const salleId = m.salleId !== undefined ? m.salleId : l.salleId;
       if (debut.getTime() !== l.debut.getTime() || fin.getTime() !== l.fin.getTime()) {
         this.validerHoraire(debut, fin);
         await this.exigerSansAppel(tx, l.id);
       }
+      // L'émargement relit la séance si son horaire ou son public change.
+      if (
+        debut.getTime() !== l.debut.getTime() ||
+        fin.getTime() !== l.fin.getTime() ||
+        m.promotionIds !== undefined ||
+        m.groupeIds !== undefined
+      )
+        aRetirer.push(l.id);
+      const significatif = changementSignificatif(l, {
+        statut: l.statut,
+        debut,
+        fin,
+        salleId,
+        intervenantIds: contenu.intervenantIds,
+      });
       await tx
         .update(seance)
         .set({
@@ -342,10 +396,11 @@ export class SeancesService {
           type: m.type ?? l.type,
           moduleId,
           activite: moduleId ? null : activite,
-          salleId: m.salleId !== undefined ? m.salleId : l.salleId,
+          salleId,
           intervenantId: contenu.intervenantIds[0] ?? null,
           lienVisio: m.lienVisio !== undefined ? m.lienVisio : l.lienVisio,
           distanciel: m.distanciel ?? l.distanciel,
+          modifieeLe: significatif ? maintenant : l.modifieeLe,
           updatedBy: access.userId,
         })
         .where(eq(seance.id, l.id));
@@ -373,6 +428,7 @@ export class SeancesService {
     const resultat = await this.versContrats(tx, access, apres, contenu, ctx);
     // RG-04-06 : une séance publiée reste publiable ; sinon on la garde telle quelle.
     this.exigerPubliables(resultat.filter((s) => s.statut === 'publiee'));
+    await this.retirerDuCache(aRetirer);
     for (const s of resultat) {
       await enregistrerAudit(tx, {
         action: 'seance.modifier',
@@ -400,15 +456,22 @@ export class SeancesService {
     const cible = await this.seanceGeree(tx, access, id);
     const concernees = await this.concernees(tx, access, cible, a.portee);
     const avant = await this.versContrats(tx, access, concernees, null);
-    await tx
-      .update(seance)
-      .set({ statut: 'annulee', motifAnnulation: a.motif, updatedBy: access.userId })
-      .where(
-        inArray(
-          seance.id,
-          concernees.map((l) => l.id),
-        ),
-      );
+    const maintenant = new Date();
+    for (const publiees of [true, false]) {
+      const ids = concernees.filter((l) => (l.statut === 'publiee') === publiees).map((l) => l.id);
+      if (ids.length === 0) continue;
+      await tx
+        .update(seance)
+        .set({
+          statut: 'annulee',
+          motifAnnulation: a.motif,
+          // RG-04-14 : seule l'annulation d'une séance publiée est un changement à signaler.
+          ...(publiees ? { modifieeLe: maintenant } : {}),
+          updatedBy: access.userId,
+        })
+        .where(inArray(seance.id, ids));
+    }
+    await this.retirerDuCache(concernees.map((l) => l.id));
     const apres = await this.versContrats(
       tx,
       access,
@@ -433,6 +496,150 @@ export class SeancesService {
       });
     }
     return { seances: apres };
+  }
+
+  /**
+   * US-04-11 : report d'une séance publiée. Une séance de remplacement, publiée, est créée sur le
+   * nouveau créneau (même contenu, salle au choix), contrôlée comme une publication (RG-04-06) ;
+   * la séance d'origine passe « reportée », avec son motif et le lien vers la nouvelle.
+   */
+  async reporter(
+    tx: Transaction,
+    access: Access,
+    id: string,
+    r: ReportSeance,
+    adresseIp: string,
+  ): Promise<ResultatSeances> {
+    const cible = await this.seanceGeree(tx, access, id);
+    const nouveau = { debut: new Date(r.debut), fin: new Date(r.fin) };
+    const [usage] = await tx
+      .select({ n: count() })
+      .from(presence)
+      .where(and(eq(presence.seanceId, id), isNull(presence.deletedAt)));
+    const verdict = verifierReport({
+      motif: r.motif,
+      statut: cible.statut,
+      presences: usage?.n ?? 0,
+      ancien: cible,
+      nouveau,
+      maintenant: new Date(),
+    });
+    if (!verdict.ok) throw REFUS_REPORT[verdict.refus]();
+    this.validerHoraire(nouveau.debut, nouveau.fin);
+    const salleId = r.salleId !== undefined ? r.salleId : cible.salleId;
+    const contenu = await this.validerContenu(tx, access, { ...cible, salleId });
+    const [avant] = await this.versContrats(tx, access, [cible], null);
+    const nouvelId = newId();
+    const maintenant = new Date();
+    await tx.insert(seance).values({
+      id: nouvelId,
+      organisationId: access.organisationId,
+      libelle: contenu.libelle,
+      debut: nouveau.debut,
+      fin: nouveau.fin,
+      statut: 'publiee',
+      type: cible.type,
+      moduleId: cible.moduleId,
+      activite: cible.activite,
+      salleId,
+      intervenantId: contenu.intervenantIds[0] ?? null,
+      lienVisio: cible.lienVisio,
+      distanciel: cible.distanciel,
+      modifieeLe: maintenant,
+      createdBy: access.userId,
+    });
+    await this.ecrirePublic(tx, access, nouvelId, contenu);
+    await this.ecrireIntervenants(tx, access, nouvelId, [], contenu.intervenantIds);
+    await tx
+      .update(seance)
+      .set({
+        statut: 'reportee',
+        motifAnnulation: r.motif,
+        reporteeVersId: nouvelId,
+        modifieeLe: maintenant,
+        updatedBy: access.userId,
+      })
+      .where(eq(seance.id, id));
+    const lignes = await this.contexte.seances(tx, inArray(seance.id, [id, nouvelId]));
+    const nouvelle = lignes.find((l) => l.id === nouvelId);
+    if (!nouvelle) throw new Error('Report de la séance impossible.');
+    const ctx = await this.contexteDe(tx, [nouvelle], contenu);
+    await this.forcer(tx, access, nouvelle, contenu, ctx, r.forcages, adresseIp);
+    const seances = await this.versContrats(tx, access, lignes, contenu, ctx);
+    this.exigerPubliables(seances.filter((s) => s.id === nouvelId));
+    await this.retirerDuCache([id]);
+    await enregistrerAudit(tx, {
+      action: 'seance.reporter',
+      objetType: 'seance',
+      objetId: id,
+      auteurId: access.userId,
+      adresseIp,
+      avant: avant ?? null,
+      apres: {
+        seance: seances.find((s) => s.id === id),
+        remplacement: seances.find((s) => s.id === nouvelId),
+      },
+    });
+    return { seances };
+  }
+
+  /**
+   * US-04-11 : remplacement d'un intervenant par un autre, sur la séance, les suivantes ou toute
+   * la série ; les séances de la portée qu'il n'anime pas restent telles quelles. Une séance
+   * publiée doit rester sans conflit bloquant (le remplaçant doit être libre).
+   */
+  async remplacer(
+    tx: Transaction,
+    access: Access,
+    id: string,
+    r: RemplacementIntervenant,
+    adresseIp: string,
+  ): Promise<ResultatSeances> {
+    const cible = await this.seanceGeree(tx, access, id);
+    const verdict = remplacerIntervenant(cible.intervenantIds, r.ancienId, r.nouveauId);
+    if (!verdict.ok) throw invalide(...REFUS_REMPLACEMENT[verdict.refus]);
+    const concernees = (await this.concernees(tx, access, cible, r.portee)).filter(
+      (l) => remplacerIntervenant(l.intervenantIds, r.ancienId, r.nouveauId).ok,
+    );
+    const avant = await this.versContrats(tx, access, concernees, null);
+    const maintenant = new Date();
+    let contenu: ContenuValide | null = null;
+    for (const l of concernees) {
+      const v = remplacerIntervenant(l.intervenantIds, r.ancienId, r.nouveauId);
+      if (!v.ok) continue;
+      contenu = await this.validerContenu(tx, access, { ...l, intervenantIds: v.intervenantIds });
+      await tx
+        .update(seance)
+        .set({
+          intervenantId: v.intervenantIds[0] ?? null,
+          modifieeLe: l.statut === 'publiee' ? maintenant : l.modifieeLe,
+          updatedBy: access.userId,
+        })
+        .where(eq(seance.id, l.id));
+      await this.ecrireIntervenants(tx, access, l.id, l.intervenantIds, v.intervenantIds);
+    }
+    if (!contenu) throw new NotFoundException('Séance introuvable.');
+    const apres = await this.contexte.seances(
+      tx,
+      inArray(
+        seance.id,
+        concernees.map((l) => l.id),
+      ),
+    );
+    const resultat = await this.versContrats(tx, access, apres, contenu);
+    this.exigerPubliables(resultat.filter((s) => s.statut === 'publiee'));
+    for (const s of resultat) {
+      await enregistrerAudit(tx, {
+        action: 'seance.remplacer-intervenant',
+        objetType: 'seance',
+        objetId: s.id,
+        auteurId: access.userId,
+        adresseIp,
+        avant: avant.find((a) => a.id === s.id) ?? null,
+        apres: s,
+      });
+    }
+    return { seances: resultat };
   }
 
   /** RG-04-06, RG-04-13 : tout ou rien ; un conflit bloquant non forcé empêche la publication. */
@@ -841,7 +1048,25 @@ export class SeancesService {
       throw new ForbiddenException('Vous ne modifiez que les séances de votre périmètre.');
     if (ligne.statut === 'annulee')
       throw new ConflictException('Cette séance est annulée : elle ne se modifie plus.');
+    if (ligne.statut === 'reportee')
+      throw new ConflictException(
+        'Cette séance est reportée : elle ne se modifie plus. Modifiez sa séance de remplacement.',
+      );
     return ligne;
+  }
+
+  /**
+   * Retire les séances du cache de l'émargement (sans requête SQL sur le chemin du scan) : une
+   * séance annulée ou reportée ne s'émarge plus, une séance changée est rechargée à jour. Valkey
+   * indisponible : le scan passe en mode dégradé, qui relit la séance en base.
+   */
+  private async retirerDuCache(ids: readonly string[]) {
+    if (ids.length === 0) return;
+    try {
+      await this.valkey.pipeline(ids.flatMap((id) => commandesRetraitSeance(id))).exec();
+    } catch (erreur) {
+      this.logger.warn(`Cache de l’émargement non mis à jour : ${String(erreur)}`);
+    }
   }
 
   /** RG-04-03 : séances touchées selon la portée, hors séances annulées ou reportées. */
@@ -992,12 +1217,16 @@ export class SeancesService {
       distanciel: l.distanciel,
       motifAnnulation: l.motifAnnulation,
       serieId: l.serieId,
+      reporteeVersId: l.reporteeVersId,
+      modifieeLe: l.modifieeLe?.toISOString() ?? null,
       conflits:
         ctx && (l.statut === 'brouillon' || l.statut === 'publiee')
           ? detecterConflits(versPlanifiee(l), ctx)
           : [],
       forcages: forcages.get(l.id) ?? [],
-      modifiable: l.statut !== 'annulee' && this.couvre(gestion, promotionsDe.get(l.id) ?? []),
+      modifiable:
+        (l.statut === 'brouillon' || l.statut === 'publiee') &&
+        this.couvre(gestion, promotionsDe.get(l.id) ?? []),
     }));
   }
 }

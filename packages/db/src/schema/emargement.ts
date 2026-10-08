@@ -96,8 +96,16 @@ export const seance = pgTable(
     activite: text(),
     salleId: uuid(),
     lienVisio: text(),
+    /** Motif de l'annulation ou du report (RG-04-04, US-04-11). */
     motifAnnulation: text(),
     serieId: uuid(),
+    /** US-04-11 : séance de remplacement d'une séance reportée. */
+    reporteeVersId: uuid(),
+    /**
+     * RG-04-14 : dernière modification significative d'une séance publiée (horaire, salle,
+     * intervenant, annulation, report), pour les notifications et le badge « modifié ».
+     */
+    modifieeLe: timestamp({ withTimezone: true }),
     ...trackingColumns(),
   },
   (t) => [
@@ -124,7 +132,16 @@ export const seance = pgTable(
       columns: [t.organisationId, t.serieId],
       foreignColumns: [seanceSerie.organisationId, seanceSerie.id],
     }),
+    foreignKey({
+      name: 'seance_reportee_vers_fk',
+      columns: [t.organisationId, t.reporteeVersId],
+      foreignColumns: [t.organisationId, t.id],
+    }),
     check('seance_dates_check', sql`${t.fin} > ${t.debut}`),
+    check(
+      'seance_report_check',
+      sql`${t.statut} <> 'reportee' or (${t.reporteeVersId} is not null and ${t.motifAnnulation} is not null)`,
+    ),
     check(
       'seance_annulation_check',
       sql`${t.statut} <> 'annulee' or ${t.motifAnnulation} is not null`,
