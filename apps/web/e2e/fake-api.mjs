@@ -1374,6 +1374,249 @@ async function routeScolarite(path, request, json, response, url) {
   return json(200, detailPromotion(p));
 }
 
+// Emploi du temps (module 04) : séances en mémoire, conflits de salle et de groupe seulement.
+// La détection complète (RG-04-05), les séries et la publication sont testées par le domaine et
+// l'API ; la fausse API suit leurs contrats.
+const seancesEdt = [];
+const FUSEAU_EDT = 'Europe/Paris';
+const jourLocal = (iso) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU_EDT }).format(new Date(iso));
+const promotionsDeSeance = (s) => [
+  ...new Set([
+    ...s.promotionIds,
+    ...groupesScol.filter((g) => s.groupeIds.includes(g.id)).flatMap((g) => g.promotionIds),
+  ]),
+];
+const chevauche = (a, b) =>
+  a.id !== b.id &&
+  b.statut !== 'annulee' &&
+  Date.parse(a.debut) < Date.parse(b.fin) &&
+  Date.parse(b.debut) < Date.parse(a.fin);
+const conflitsEdt = (s) =>
+  seancesEdt
+    .filter((autre) => chevauche(s, autre))
+    .flatMap((autre) => {
+      const conflits = [];
+      if (s.salleId && s.salleId === autre.salleId)
+        conflits.push({ code: 'salle-occupee', niveau: 'bloquant', seanceId: autre.id });
+      const communs = promotionsDeSeance(s).filter((p) => promotionsDeSeance(autre).includes(p));
+      if (communs.length > 0)
+        conflits.push({
+          code: 'groupe-occupe',
+          niveau: 'bloquant',
+          seanceId: autre.id,
+          groupeIds: communs,
+          apprenantIds: [],
+        });
+      return conflits;
+    });
+const libelleSeance = (s) =>
+  s.moduleId
+    ? ([...maquettes.values()].flatMap((m) => m.modules).find((m) => m.id === s.moduleId)
+        ?.intitule ?? 'Module')
+    : (s.activite ?? 'Activité');
+const vueSeance = (s) => ({
+  ...s,
+  libelle: libelleSeance(s),
+  conflits: s.statut === 'annulee' ? [] : conflitsEdt(s),
+  modifiable: true,
+});
+const CHAMPS_SEANCE = [
+  'type',
+  'moduleId',
+  'activite',
+  'promotionIds',
+  'groupeIds',
+  'intervenantId',
+  'salleId',
+  'lienVisio',
+  'distanciel',
+];
+const contenuSeance = (body) => ({
+  type: body.type ?? 'cm',
+  moduleId: body.moduleId ?? null,
+  activite: body.activite ?? null,
+  promotionIds: body.promotionIds ?? [],
+  groupeIds: body.groupeIds ?? [],
+  intervenantId: body.intervenantId ?? null,
+  salleId: body.salleId ?? null,
+  lienVisio: body.lienVisio ?? null,
+  distanciel: body.distanciel ?? false,
+});
+/** RG-04-06 : un forçage vise un conflit présent et porte un motif. */
+const forcer = (s, forcages = []) => {
+  const conflits = conflitsEdt(s);
+  for (const f of forcages) {
+    if (!conflits.some((c) => c.code === f.code && c.seanceId === f.seanceId))
+      return 'Ce conflit n’existe pas (ou plus) pour cette séance.';
+    if (!f.motif?.trim()) return 'Donnez le motif du forçage.';
+  }
+  for (const f of forcages)
+    if (!s.forcages.some((d) => d.code === f.code && d.seanceId === f.seanceId))
+      s.forcages.push({ code: f.code, seanceId: f.seanceId, motif: f.motif.trim() });
+  return null;
+};
+const bloquee = (s) =>
+  vueSeance(s).conflits.some(
+    (c) => !s.forcages.some((f) => f.code === c.code && f.seanceId === c.seanceId),
+  );
+const occurrencesSerie = (body) => {
+  const occurrences = [];
+  const debut = Date.parse(`${body.dateDebut}T00:00:00Z`);
+  const lundi = debut - ((new Date(debut).getUTCDay() + 6) % 7) * 86_400_000;
+  for (let n = debut; n <= Date.parse(`${body.dateFin}T00:00:00Z`); n += 86_400_000) {
+    const jour = new Date(n).toISOString().slice(0, 10);
+    const iso = ((new Date(n).getUTCDay() + 6) % 7) + 1;
+    const semaine = Math.floor((n - lundi) / (7 * 86_400_000));
+    if (!body.joursSemaine.includes(iso) || semaine % (body.intervalleSemaines ?? 1) !== 0)
+      continue;
+    // Heure d'été de Paris approchée : la vraie conversion est testée par le domaine.
+    const decalage = new Date(`${jour}T12:00:00Z`).toLocaleString('en-GB', {
+      timeZone: FUSEAU_EDT,
+      hour: '2-digit',
+      hourCycle: 'h23',
+    });
+    const heures = Number(decalage) - 12;
+    const instant = (h) =>
+      new Date(Date.parse(`${jour}T${h}:00Z`) - heures * 3_600_000).toISOString();
+    occurrences.push({ jour, debut: instant(body.heureDebut), fin: instant(body.heureFin) });
+  }
+  return occurrences;
+};
+
+async function routeEdt(path, request, json, url) {
+  if (path === '/api/edt/semaine') {
+    const p = url.searchParams;
+    const debut = p.get('debut');
+    const fin = new Date(Date.parse(`${debut}T00:00:00Z`) + 6 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const retenues = seancesEdt.filter((s) => {
+      const jour = jourLocal(s.debut);
+      return (
+        jour >= debut &&
+        jour <= fin &&
+        (!p.get('promotionId') || promotionsDeSeance(s).includes(p.get('promotionId'))) &&
+        (!p.get('groupeId') || s.groupeIds.includes(p.get('groupeId'))) &&
+        (!p.get('salleId') || s.salleId === p.get('salleId')) &&
+        (!p.get('intervenantId') || s.intervenantId === p.get('intervenantId'))
+      );
+    });
+    return json(200, {
+      debut,
+      fin,
+      fuseau: FUSEAU_EDT,
+      seances: retenues.map(vueSeance),
+      creation: true,
+    });
+  }
+  if (path === '/api/edt/verification') {
+    const body = await readBody(request);
+    const candidate = {
+      ...contenuSeance(body),
+      id: body.id ?? '',
+      debut: body.debut,
+      fin: body.fin,
+    };
+    const conflits = conflitsEdt(candidate);
+    const occupees = new Set(
+      seancesEdt.filter((s) => chevauche(candidate, s)).map((s) => s.salleId),
+    );
+    const autres = seancesEdt.filter((s) => chevauche(candidate, s));
+    return json(200, {
+      conflits,
+      sallesLibres: conflits.some((c) => c.code === 'salle-occupee')
+        ? salles
+            .filter(
+              (s) => s.type !== 'virtuelle' && s.statut === 'disponible' && !occupees.has(s.id),
+            )
+            .map((s) => ({ id: s.id, nom: s.nom, capacite: s.capacite ?? 0, type: s.type }))
+        : [],
+      creneauxLibres: conflits.some((c) => c.code === 'groupe-occupe')
+        ? [
+            {
+              debut: new Date(Math.max(...autres.map((s) => Date.parse(s.fin)))).toISOString(),
+              fin: new Date(
+                Math.max(...autres.map((s) => Date.parse(s.fin))) +
+                  Date.parse(body.fin) -
+                  Date.parse(body.debut),
+              ).toISOString(),
+            },
+          ]
+        : [],
+    });
+  }
+  if (path === '/api/edt/seances' && request.method === 'POST') {
+    const body = await readBody(request);
+    const s = {
+      id: randomUUID(),
+      ...contenuSeance(body),
+      debut: body.debut,
+      fin: body.fin,
+      statut: 'brouillon',
+      motifAnnulation: null,
+      serieId: null,
+      forcages: [],
+    };
+    const refus = forcer(s, body.forcages);
+    if (refus) return json(400, invalideRef('forcages', refus));
+    seancesEdt.push(s);
+    return json(201, vueSeance(s));
+  }
+  const seanceRoute = path.match(/^\/api\/edt\/seances\/([^/]+)(\/annulation)?$/);
+  if (seanceRoute) {
+    const s = seancesEdt.find((x) => x.id === seanceRoute[1]);
+    if (!s) return json(404, { message: 'Séance introuvable.' });
+    const body = await readBody(request);
+    const portee =
+      s.serieId && body.portee === 'serie'
+        ? seancesEdt.filter((x) => x.serieId === s.serieId)
+        : s.serieId && body.portee === 'suivantes'
+          ? seancesEdt.filter((x) => x.serieId === s.serieId && x.debut >= s.debut)
+          : [s];
+    if (seanceRoute[2]) {
+      for (const x of portee) Object.assign(x, { statut: 'annulee', motifAnnulation: body.motif });
+    } else {
+      for (const x of portee)
+        for (const champ of CHAMPS_SEANCE) if (champ in body) x[champ] = body[champ];
+      if (body.debut) Object.assign(s, { debut: body.debut, fin: body.fin });
+      const refus = forcer(s, body.forcages);
+      if (refus) return json(400, invalideRef('forcages', refus));
+    }
+    return json(200, { seances: portee.map(vueSeance) });
+  }
+  if (path === '/api/edt/publication') {
+    const { seanceIds } = await readBody(request);
+    const choisies = seancesEdt.filter((s) => seanceIds.includes(s.id));
+    const bloquees = choisies.filter(bloquee);
+    if (bloquees.length > 0)
+      return json(409, {
+        message: `Publication impossible : ${bloquees.map(libelleSeance).join(', ')} ont un conflit bloquant non forcé. Résolvez-le ou forcez-le, puis publiez.`,
+      });
+    for (const s of choisies) s.statut = 'publiee';
+    return json(200, { seances: choisies.map(vueSeance) });
+  }
+  if (path === '/api/edt/series/apercu' || path === '/api/edt/series') {
+    const body = await readBody(request);
+    const occurrences = occurrencesSerie(body);
+    if (path.endsWith('/apercu')) return json(200, { occurrences, sautees: [] });
+    const serieId = randomUUID();
+    const creees = occurrences.map((o) => ({
+      id: randomUUID(),
+      ...contenuSeance(body),
+      debut: o.debut,
+      fin: o.fin,
+      statut: 'brouillon',
+      motifAnnulation: null,
+      serieId,
+      forcages: [],
+    }));
+    seancesEdt.push(...creees);
+    return json(201, { serieId, seances: creees.map(vueSeance), sautees: [] });
+  }
+  return false;
+}
+
 const readBody = (request) =>
   new Promise((resolve) => {
     let data = '';
@@ -1526,6 +1769,9 @@ createServer(async (request, response) => {
             'calendrier:gerer',
             'calendrier:lire',
             'emargement:animer',
+            'edt:forcer',
+            'edt:gerer',
+            'edt:lire',
             'organisation:lire',
             'organisation:modifier',
             'affectations:gerer',
@@ -1547,7 +1793,9 @@ createServer(async (request, response) => {
             'roles:gerer',
           ]
         : [],
-      modules: active ? ['socle', 'emargement', 'referentiel', 'alternance'] : [],
+      modules: active
+        ? ['socle', 'emargement', 'referentiel', 'alternance', 'emplois-du-temps']
+        : [],
       doubleAuthentificationExigee: user.doubleAuthentificationExigee === true,
       doubleAuthentificationActive: user.twoFactorEnabled === true,
       apparence: active ? detailApparence() : null,
@@ -2066,6 +2314,12 @@ createServer(async (request, response) => {
   ) {
     if (!user) return json(401, { message: 'Session absente' });
     const traite = await routeScolarite(path, request, json, response, url);
+    if (traite !== false) return traite;
+  }
+
+  if (path.startsWith('/api/edt/')) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const traite = await routeEdt(path, request, json, url);
     if (traite !== false) return traite;
   }
 
