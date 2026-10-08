@@ -1334,11 +1334,16 @@ async function routeScolarite(path, request, json, response, url) {
   if (sous === 'affectations') {
     if (request.method === 'POST') {
       const body = await readBody(request);
+      const fiche = personnes.find((x) => x.id === body.personneId);
       const a = {
         id: randomUUID(),
         promotionId: p.id,
         moduleId: body.moduleId,
-        intervenant: { id: body.personneId, nom: 'Fictive', prenom: 'Camille' },
+        intervenant: {
+          id: body.personneId,
+          nom: fiche?.nom ?? 'Fictive',
+          prenom: fiche?.prenom ?? 'Camille',
+        },
         groupeIds: body.groupeIds ?? [],
         heures: { ...heuresVides(), ...body.heures },
       };
@@ -1427,7 +1432,7 @@ const CHAMPS_SEANCE = [
   'activite',
   'promotionIds',
   'groupeIds',
-  'intervenantId',
+  'intervenantIds',
   'salleId',
   'lienVisio',
   'distanciel',
@@ -1438,7 +1443,7 @@ const contenuSeance = (body) => ({
   activite: body.activite ?? null,
   promotionIds: body.promotionIds ?? [],
   groupeIds: body.groupeIds ?? [],
-  intervenantId: body.intervenantId ?? null,
+  intervenantIds: body.intervenantIds ?? [],
   salleId: body.salleId ?? null,
   lienVisio: body.lienVisio ?? null,
   distanciel: body.distanciel ?? false,
@@ -1499,7 +1504,7 @@ async function routeEdt(path, request, json, url) {
         (!p.get('promotionId') || promotionsDeSeance(s).includes(p.get('promotionId'))) &&
         (!p.get('groupeId') || s.groupeIds.includes(p.get('groupeId'))) &&
         (!p.get('salleId') || s.salleId === p.get('salleId')) &&
-        (!p.get('intervenantId') || s.intervenantId === p.get('intervenantId'))
+        (!p.get('intervenantId') || s.intervenantIds.includes(p.get('intervenantId')))
       );
     });
     return json(200, {

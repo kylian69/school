@@ -84,6 +84,10 @@ export const seance = pgTable(
     fin: timestamp({ withTimezone: true }).notNull(),
     /** RG-06-08 : séance à distance, sans contrôle de localisation. */
     distanciel: boolean().notNull().default(false),
+    /**
+     * Obsolète : remplacée par seance_intervenant (RG-04-01). Écrite (premier intervenant) pour les
+     * versions précédentes pendant la bascule ; à retirer dans une version suivante.
+     */
     intervenantId: uuid(),
     statut: seanceStatut().notNull().default('publiee'),
     type: seanceType(),
@@ -259,6 +263,38 @@ export const seancePublic = pgTable(
       foreignColumns: [groupeEleves.organisationId, groupeEleves.id],
     }),
     check('seance_public_cible_check', sql`(${t.promotionId} is null) <> (${t.groupeId} is null)`),
+  ],
+).enableRLS();
+
+/**
+ * Intervenants d'une séance (RG-04-01), un ou plusieurs. Remplace la colonne seance.intervenant_id,
+ * encore écrite (premier intervenant) pendant la bascule puis retirée (« ajouter, basculer, retirer »).
+ */
+export const seanceIntervenant = pgTable(
+  'seance_intervenant',
+  {
+    ...organisationScoped(),
+    seanceId: uuid().notNull(),
+    personneId: uuid().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('seance_intervenant', t),
+    uniqueIndex('seance_intervenant_paire_key')
+      .on(t.organisationId, t.seanceId, t.personneId)
+      .where(sql`${t.deletedAt} is null`),
+    /** Séances d'un intervenant (US-06-01, vue par intervenant de l'emploi du temps). */
+    index('seance_intervenant_personne_idx').on(t.organisationId, t.personneId),
+    foreignKey({
+      name: 'seance_intervenant_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'seance_intervenant_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
   ],
 ).enableRLS();
 

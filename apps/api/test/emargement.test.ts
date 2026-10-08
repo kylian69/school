@@ -22,6 +22,7 @@ import {
   role,
   seance,
   seanceAttendu,
+  seanceIntervenant,
   type Database,
 } from '@scolaly/db';
 import { and, eq } from 'drizzle-orm';
@@ -45,6 +46,7 @@ const seanceId = newId();
 const autreSeanceId = newId();
 const seanceDegradeeId = newId();
 let intervenant: string;
+let igorId: string;
 let autreIntervenant: string;
 let lea: string;
 let noe: string;
@@ -107,7 +109,7 @@ beforeAll(async () => {
     .values({ id: ecole, nom: 'École de l’émargement', nomAffichage: 'EDE' });
   await initialiserRolesParDefaut(owner.db, ecole, ROLES_PAR_DEFAUT);
   const intervenantId = await compte('ines.intervenante@exemple.test', 'intervenant');
-  await compte('igor.intervenant@exemple.test', 'intervenant');
+  igorId = await compte('igor.intervenant@exemple.test', 'intervenant');
   const leaId = await compte('lea.apprenante@exemple.test', 'apprenant');
   const noeId = await compte('noe.apprenant@exemple.test', 'apprenant');
   await compte('hugo.apprenant@exemple.test', 'apprenant');
@@ -121,6 +123,9 @@ beforeAll(async () => {
       fin: new Date(debut.getTime() + 2 * 3600_000),
       intervenantId,
     });
+    await owner.db
+      .insert(seanceIntervenant)
+      .values({ organisationId: ecole, seanceId: id, personneId: intervenantId });
   }
   for (const personneId of [leaId, noeId]) {
     await owner.db.insert(seanceAttendu).values({ organisationId: ecole, seanceId, personneId });
@@ -271,6 +276,18 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
       [],
     );
     expect((await appeler('GET', '/api/seances', lea)).statusCode).toBe(403);
+  });
+
+  it('RG-04-01 chacun des intervenants d’une séance l’anime et en ouvre l’appel', async () => {
+    await owner.db
+      .insert(seanceIntervenant)
+      .values({ organisationId: ecole, seanceId: autreSeanceId, personneId: igorId });
+    const aAnimer = (await appeler('GET', '/api/seances', autreIntervenant)).json<SeanceProche[]>();
+    expect(aAnimer.map((s) => s.id)).toEqual([autreSeanceId]);
+    expect(aAnimer[0]?.intervenant).toBe('igor Fictif, ines Fictif');
+    expect((await ouvrir(autreSeanceId, autreIntervenant)).statut).toBe(200);
+    expect((await ouvrir(autreSeanceId, intervenant)).statut).toBe(200);
+    expect((await ouvrir(seanceId, autreIntervenant)).statut).toBe(403);
   });
 });
 

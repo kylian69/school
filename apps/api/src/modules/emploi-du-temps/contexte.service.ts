@@ -9,6 +9,7 @@ import {
   salle,
   seance,
   seanceForcage,
+  seanceIntervenant,
   seancePublic,
   type Transaction,
 } from '@scolaly/db';
@@ -25,7 +26,12 @@ import { joursFeriesNationauxDe } from '../../shared/calendrier/jours-feries.js'
 import { RythmesService } from '../alternance/index.js';
 
 type LigneSeanceBrute = typeof seance.$inferSelect;
-export type LigneSeance = LigneSeanceBrute & { promotionIds: string[]; groupeIds: string[] };
+export type LigneSeance = LigneSeanceBrute & {
+  promotionIds: string[];
+  groupeIds: string[];
+  /** RG-04-01 : intervenants de la séance (seance_intervenant), triés. */
+  intervenantIds: string[];
+};
 
 const JOUR_MS = 86_400_000;
 const STAGES = ['signee', 'en_cours', 'terminee'] as const;
@@ -48,7 +54,7 @@ export function versPlanifiee(l: LigneSeance): SeancePlanifiee {
     type: (l.type ?? 'cm') satisfies TypeSeance,
     moduleId: l.moduleId,
     salleId: l.salleId,
-    intervenantIds: l.intervenantId ? [l.intervenantId] : [],
+    intervenantIds: l.intervenantIds,
     // Le public d'une séance : une promotion entière se contrôle comme un groupe.
     groupeIds: [...l.promotionIds, ...l.groupeIds],
   };
@@ -75,7 +81,7 @@ export interface FenetreContexte {
 export class ContexteService {
   constructor(private readonly rythmes: RythmesService) {}
 
-  /** Séances non supprimées, avec leur public. */
+  /** Séances non supprimées, avec leur public et leurs intervenants. */
   async seances(tx: Transaction, filtre: ReturnType<typeof and>): Promise<LigneSeance[]> {
     const lignes = await tx
       .select()
@@ -86,24 +92,25 @@ export class ContexteService {
 
   async avecPublics(tx: Transaction, lignes: LigneSeanceBrute[]): Promise<LigneSeance[]> {
     if (lignes.length === 0) return [];
+    const ids = lignes.map((l) => l.id);
     const publics = await tx
       .select()
       .from(seancePublic)
-      .where(
-        and(
-          inArray(
-            seancePublic.seanceId,
-            lignes.map((l) => l.id),
-          ),
-          isNull(seancePublic.deletedAt),
-        ),
-      );
+      .where(and(inArray(seancePublic.seanceId, ids), isNull(seancePublic.deletedAt)));
+    const intervenants = await tx
+      .select({ seanceId: seanceIntervenant.seanceId, personneId: seanceIntervenant.personneId })
+      .from(seanceIntervenant)
+      .where(and(inArray(seanceIntervenant.seanceId, ids), isNull(seanceIntervenant.deletedAt)));
     return lignes.map((l) => {
       const siens = publics.filter((p) => p.seanceId === l.id);
       return {
         ...l,
         promotionIds: siens.flatMap((p) => (p.promotionId ? [p.promotionId] : [])).sort(),
         groupeIds: siens.flatMap((p) => (p.groupeId ? [p.groupeId] : [])).sort(),
+        intervenantIds: intervenants
+          .filter((i) => i.seanceId === l.id)
+          .map((i) => i.personneId)
+          .sort(),
       };
     });
   }

@@ -405,8 +405,11 @@ function FicheSeance({
     [t.fiche.public, publique || t.fiche.aucun],
     [
       t.fiche.intervenant,
-      seance.intervenantId
-        ? (noms.intervenant(seance.intervenantId) ?? t.conflits.unIntervenant)
+      seance.intervenantIds.length > 0
+        ? seance.intervenantIds
+            .map((id) => noms.intervenant(id) ?? t.conflits.unIntervenant)
+            .sort((a, b) => a.localeCompare(b, 'fr'))
+            .join(', ')
         : t.fiche.aucun,
     ],
     [t.fiche.salle, salle ?? (seance.distanciel ? t.distanciel : t.fiche.aucun)],

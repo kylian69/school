@@ -80,7 +80,6 @@ export function FormulaireSeance({
   const ids = {
     type: useId(),
     module: useId(),
-    intervenant: useId(),
     salle: useId(),
     portee: useId(),
     intervalle: useId(),
@@ -100,8 +99,8 @@ export function FormulaireSeance({
   const [activite, setActivite] = useState(seance?.activite ?? '');
   const [promotionIds, setPromotionIds] = useState(seance?.promotionIds ?? defaut.promotionIds);
   const [groupeIds, setGroupeIds] = useState(seance?.groupeIds ?? defaut.groupeIds);
-  const [intervenantId, setIntervenantId] = useState(
-    (seance ? seance.intervenantId : defaut.intervenantId) ?? '',
+  const [intervenantIds, setIntervenantIds] = useState(
+    seance ? seance.intervenantIds : defaut.intervenantIds,
   );
   const [salleId, setSalleId] = useState((seance ? seance.salleId : defaut.salleId) ?? '');
   const [lienVisio, setLienVisio] = useState(seance?.lienVisio ?? '');
@@ -129,6 +128,13 @@ export function FormulaireSeance({
   const modules = [
     ...new Map(promotionsDuPublic.flatMap((p) => p.modules.map((m) => [m.id, m]))).values(),
   ];
+  // Intervenants proposés, plus ceux déjà sur la séance s'ils ne sont plus affectés.
+  const listeIntervenants = [
+    ...referentiels.intervenants,
+    ...intervenantIds
+      .filter((id) => !referentiels.intervenants.some((i) => i.id === id))
+      .map((id) => ({ id, nom: noms.intervenant(id) ?? t.conflits.unIntervenant })),
+  ];
   const horaireChange = portee === 'seance';
   const debut = instantLocal(jour, heureDebut, fuseau);
   const fin = instantLocal(jour, heureFin, fuseau);
@@ -139,7 +145,7 @@ export function FormulaireSeance({
       activite: moduleId === HORS_MAQUETTE ? activite.trim() || null : null,
       promotionIds,
       groupeIds,
-      intervenantId: intervenantId || null,
+      intervenantIds: [...intervenantIds].sort(),
       salleId: salleId || null,
       lienVisio: lienVisio.trim() || null,
       distanciel,
@@ -150,7 +156,7 @@ export function FormulaireSeance({
       activite,
       promotionIds,
       groupeIds,
-      intervenantId,
+      intervenantIds,
       salleId,
       lienVisio,
       distanciel,
@@ -227,7 +233,7 @@ export function FormulaireSeance({
       activite: s.activite,
       promotionIds: s.promotionIds,
       groupeIds: s.groupeIds,
-      intervenantId: s.intervenantId,
+      intervenantIds: s.intervenantIds,
       salleId: s.salleId,
       lienVisio: s.lienVisio,
       distanciel: s.distanciel,
@@ -414,28 +420,29 @@ export function FormulaireSeance({
           </ul>
         </fieldset>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={ids.intervenant}>{f.intervenant}</Label>
-            <select
-              id={ids.intervenant}
-              className={SELECT}
-              value={intervenantId}
-              onChange={(e) => {
-                setIntervenantId(e.target.value);
-              }}
-            >
-              <option value="">{f.aucunIntervenant}</option>
-              {referentiels.intervenants.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.nom}
-                </option>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-semibold">{f.intervenants}</legend>
+          <p className="text-xs text-muted">{f.intervenantsAide}</p>
+          {listeIntervenants.length === 0 ? (
+            <p className="text-sm text-muted">{f.aucunIntervenant}</p>
+          ) : (
+            <ul className="flex max-h-40 flex-wrap gap-x-4 gap-y-1 overflow-y-auto">
+              {listeIntervenants.map((i) => (
+                <li key={i.id}>
+                  <Case
+                    label={i.nom}
+                    coche={intervenantIds.includes(i.id)}
+                    onChange={(coche) => {
+                      setIntervenantIds(basculer(intervenantIds, i.id, coche));
+                    }}
+                  />
+                </li>
               ))}
-              {intervenantId && !referentiels.intervenants.some((i) => i.id === intervenantId) ? (
-                <option value={intervenantId}>{t.conflits.unIntervenant}</option>
-              ) : null}
-            </select>
-          </div>
+            </ul>
+          )}
+        </fieldset>
+
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={ids.salle}>{f.salle}</Label>
             <select

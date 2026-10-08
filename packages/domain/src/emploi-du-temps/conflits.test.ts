@@ -267,6 +267,16 @@ describe('RG-04-18 intervenant indisponible', () => {
     expect(detecterConflits(cible, autre)).toEqual([]);
   });
 
+  it('RG-04-01 contrôle chacun des intervenants d’une séance co-animée', () => {
+    const coanimee = { ...cible, intervenantIds: ['I1', 'I2'] };
+    const ctx = contexte({
+      indisponibilites: [{ ...indispo('09:00', '10:00'), intervenantId: 'I2' }],
+    });
+    expect(detecterConflits(coanimee, ctx)).toEqual([
+      { ...avertissement('indisponibilite')[0], intervenantId: 'I2' },
+    ]);
+  });
+
   it('RG-04-18 accepte une séance comprise dans un créneau de disponibilité', () => {
     const disponibilites = [
       { intervenantId: 'I1', jourSemaine: 2, heureDebut: '08:00', heureFin: '13:00' },

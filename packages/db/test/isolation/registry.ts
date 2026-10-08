@@ -40,6 +40,7 @@ import {
   salle,
   seancePublic,
   seanceForcage,
+  seanceIntervenant,
   seanceSerie,
   contactEntreprise,
   entreprise,
@@ -435,6 +436,15 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         code: 'salle-occupee',
         autreSeanceId: await insertSeance(db, organisationId),
         motif: 'Cours commun fictif',
+      });
+    },
+  },
+  seance_intervenant: {
+    insert: async (db, organisationId) => {
+      await db.insert(seanceIntervenant).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        personneId: await insertPersonne(db, organisationId),
       });
     },
   },

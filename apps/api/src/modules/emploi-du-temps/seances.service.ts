@@ -34,6 +34,7 @@ import {
   salle,
   seance,
   seanceForcage,
+  seanceIntervenant,
   seancePublic,
   seanceSerie,
   type Transaction,
@@ -98,12 +99,14 @@ interface ContenuValide {
   groupeIds: string[];
   /** Promotions couvertes par le public (celles des groupes comprises). */
   promotions: string[];
+  /** RG-04-01 : intervenants, sans doublon, triés. */
+  intervenantIds: string[];
   libelle: string;
 }
 
 type Contenu = Pick<
   SaisieSeance,
-  'moduleId' | 'activite' | 'promotionIds' | 'groupeIds' | 'salleId' | 'intervenantId'
+  'moduleId' | 'activite' | 'promotionIds' | 'groupeIds' | 'salleId' | 'intervenantIds'
 >;
 
 /**
@@ -141,7 +144,7 @@ export class SeancesService {
         (!recherche.promotionId || promos.some((p) => p.id === recherche.promotionId)) &&
         (!recherche.groupeId || l.groupeIds.includes(recherche.groupeId)) &&
         (!recherche.salleId || l.salleId === recherche.salleId) &&
-        (!recherche.intervenantId || l.intervenantId === recherche.intervenantId)
+        (!recherche.intervenantId || l.intervenantIds.includes(recherche.intervenantId))
       );
     });
     const gestion = await this.gestion(tx, access);
@@ -173,7 +176,7 @@ export class SeancesService {
       type: v.type,
       moduleId: v.moduleId,
       salleId: v.salleId,
-      intervenantIds: v.intervenantId ? [v.intervenantId] : [],
+      intervenantIds: contenu.intervenantIds,
       groupeIds: [...contenu.promotionIds, ...contenu.groupeIds],
     };
     if (candidate.fin <= candidate.debut) throw invalide('fin', 'La fin doit suivre le début.');
@@ -249,12 +252,13 @@ export class SeancesService {
       moduleId: saisie.moduleId,
       activite: saisie.moduleId ? null : saisie.activite,
       salleId: saisie.salleId,
-      intervenantId: saisie.intervenantId,
+      intervenantId: contenu.intervenantIds[0] ?? null,
       lienVisio: saisie.lienVisio,
       distanciel: saisie.distanciel,
       createdBy: access.userId,
     });
     await this.ecrirePublic(tx, access, id, contenu);
+    await this.ecrireIntervenants(tx, access, id, [], contenu.intervenantIds);
     const [ligne] = await this.contexte.seances(tx, eq(seance.id, id));
     if (!ligne) throw new Error('Création de la séance impossible.');
     const ctx = await this.contexteDe(tx, [ligne], contenu);
@@ -301,7 +305,7 @@ export class SeancesService {
         promotionIds: m.promotionIds ?? l.promotionIds,
         groupeIds: m.groupeIds ?? l.groupeIds,
         salleId: m.salleId !== undefined ? m.salleId : l.salleId,
-        intervenantId: m.intervenantId !== undefined ? m.intervenantId : l.intervenantId,
+        intervenantIds: m.intervenantIds ?? l.intervenantIds,
       });
       const debut = m.debut ? new Date(m.debut) : l.debut;
       const fin = m.fin ? new Date(m.fin) : l.fin;
@@ -319,7 +323,7 @@ export class SeancesService {
           moduleId,
           activite: moduleId ? null : activite,
           salleId: m.salleId !== undefined ? m.salleId : l.salleId,
-          intervenantId: m.intervenantId !== undefined ? m.intervenantId : l.intervenantId,
+          intervenantId: contenu.intervenantIds[0] ?? null,
           lienVisio: m.lienVisio !== undefined ? m.lienVisio : l.lienVisio,
           distanciel: m.distanciel ?? l.distanciel,
           updatedBy: access.userId,
@@ -332,6 +336,8 @@ export class SeancesService {
           .where(and(eq(seancePublic.seanceId, l.id), isNull(seancePublic.deletedAt)));
         await this.ecrirePublic(tx, access, l.id, contenu);
       }
+      if (m.intervenantIds !== undefined)
+        await this.ecrireIntervenants(tx, access, l.id, l.intervenantIds, contenu.intervenantIds);
     }
     const apres = await this.contexte.seances(
       tx,
@@ -517,14 +523,17 @@ export class SeancesService {
         moduleId: saisie.moduleId,
         activite: saisie.moduleId ? null : saisie.activite,
         salleId: saisie.salleId,
-        intervenantId: saisie.intervenantId,
+        intervenantId: contenu.intervenantIds[0] ?? null,
         lienVisio: saisie.lienVisio,
         distanciel: saisie.distanciel,
         serieId,
         createdBy: access.userId,
       })),
     );
-    for (const id of ids) await this.ecrirePublic(tx, access, id, contenu);
+    for (const id of ids) {
+      await this.ecrirePublic(tx, access, id, contenu);
+      await this.ecrireIntervenants(tx, access, id, [], contenu.intervenantIds);
+    }
     const lignes = await this.contexte.seances(tx, eq(seance.serieId, serieId));
     const seances = await this.versContrats(tx, access, lignes, contenu);
     await enregistrerAudit(tx, {
@@ -638,7 +647,7 @@ export class SeancesService {
 
   /**
    * RG-04-01 : public (promotions et groupes d'un même établissement, tous dans le périmètre de
-   * gestion), module de la maquette suivie, salle ouverte du même établissement, intervenant.
+   * gestion), module de la maquette suivie, salle ouverte du même établissement, intervenants.
    */
   private async validerContenu(
     tx: Transaction,
@@ -705,12 +714,14 @@ export class SeancesService {
       if (laSalle.statut === 'fermee')
         throw invalide('salleId', 'Cette salle est fermée. Choisissez une autre salle.');
     }
-    if (c.intervenantId) {
-      const [fiche] = await tx
+    const intervenantIds = [...new Set(c.intervenantIds)].sort();
+    if (intervenantIds.length > 0) {
+      const fiches = await tx
         .select({ id: personne.id })
         .from(personne)
-        .where(and(eq(personne.id, c.intervenantId), isNull(personne.deletedAt)));
-      if (!fiche) throw invalide('intervenantId', 'Cet intervenant n’existe pas dans l’école.');
+        .where(and(inArray(personne.id, intervenantIds), isNull(personne.deletedAt)));
+      if (fiches.length !== intervenantIds.length)
+        throw invalide('intervenantIds', 'Un des intervenants n’existe pas dans l’école.');
     }
     return {
       etablissementId,
@@ -718,6 +729,7 @@ export class SeancesService {
       promotionIds,
       groupeIds,
       promotions: connues.map((p) => p.id),
+      intervenantIds,
       libelle,
     };
   }
@@ -762,6 +774,38 @@ export class SeancesService {
         createdBy: access.userId,
       })),
     ]);
+  }
+
+  /** RG-04-01 : retire les intervenants enlevés, ajoute les nouveaux. */
+  private async ecrireIntervenants(
+    tx: Transaction,
+    access: Access,
+    seanceId: string,
+    avant: readonly string[],
+    apres: readonly string[],
+  ) {
+    const retires = avant.filter((id) => !apres.includes(id));
+    const ajoutes = apres.filter((id) => !avant.includes(id));
+    if (retires.length > 0)
+      await tx
+        .update(seanceIntervenant)
+        .set({ deletedAt: new Date(), updatedBy: access.userId })
+        .where(
+          and(
+            eq(seanceIntervenant.seanceId, seanceId),
+            inArray(seanceIntervenant.personneId, retires),
+            isNull(seanceIntervenant.deletedAt),
+          ),
+        );
+    if (ajoutes.length > 0)
+      await tx.insert(seanceIntervenant).values(
+        ajoutes.map((personneId) => ({
+          organisationId: access.organisationId,
+          seanceId,
+          personneId,
+          createdBy: access.userId,
+        })),
+      );
   }
 
   /** Séance visible et gérée par la personne connectée (sinon 404 ou 403). */
@@ -921,7 +965,7 @@ export class SeancesService {
       activite: l.activite,
       promotionIds: l.promotionIds,
       groupeIds: l.groupeIds,
-      intervenantId: l.intervenantId,
+      intervenantIds: l.intervenantIds,
       salleId: l.salleId,
       lienVisio: l.lienVisio,
       distanciel: l.distanciel,

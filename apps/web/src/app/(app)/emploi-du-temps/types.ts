@@ -15,7 +15,7 @@ export interface Referentiels {
 export interface Defaut {
   promotionIds: string[];
   groupeIds: string[];
-  intervenantId: string | null;
+  intervenantIds: string[];
   salleId: string | null;
 }
 

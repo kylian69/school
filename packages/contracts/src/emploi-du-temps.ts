@@ -12,6 +12,8 @@ const texte = (max: number) => z.string().trim().min(1, 'Ce champ est obligatoir
 
 export const STATUTS_SEANCE = ['brouillon', 'publiee', 'annulee', 'reportee'] as const;
 export const TYPES_SEANCE = ['cm', 'td', 'tp', 'projet', 'examen'] as const;
+/** Garde-fou technique : intervenants d'une même séance (co-animation, jury). */
+export const INTERVENANTS_MAX = 10;
 export const CONFLITS_FORCABLES = ['salle-occupee', 'groupe-occupe'] as const;
 /** RG-04-03 : une modification s'applique à cette séance, aux suivantes ou à toute la série. */
 export const PORTEES_MODIFICATION = ['seance', 'suivantes', 'serie'] as const;
@@ -95,7 +97,8 @@ export const Seance = z
     activite: z.string().nullable(),
     promotionIds: z.array(z.uuid()),
     groupeIds: z.array(z.uuid()),
-    intervenantId: z.uuid().nullable(),
+    /** RG-04-01 : un ou plusieurs intervenants (co-animation). */
+    intervenantIds: z.array(z.uuid()),
     salleId: z.uuid().nullable(),
     lienVisio: z.string().nullable(),
     distanciel: z.boolean(),
@@ -116,7 +119,8 @@ const ContenuSeance = z.object({
   activite: texte(120).nullable().default(null),
   promotionIds: z.array(z.uuid()).max(20).default([]),
   groupeIds: z.array(z.uuid()).max(20).default([]),
-  intervenantId: z.uuid().nullable().default(null),
+  /** RG-04-01 : un ou plusieurs intervenants (co-animation). */
+  intervenantIds: z.array(z.uuid()).max(INTERVENANTS_MAX).default([]),
   salleId: z.uuid().nullable().default(null),
   lienVisio: z.url('Lien de visio attendu (https://…).').max(500).nullable().default(null),
   distanciel: z.boolean().default(false),
@@ -150,7 +154,7 @@ export const ModificationSeance = z
     activite: texte(120).nullable().optional(),
     promotionIds: z.array(z.uuid()).max(20).optional(),
     groupeIds: z.array(z.uuid()).max(20).optional(),
-    intervenantId: z.uuid().nullable().optional(),
+    intervenantIds: z.array(z.uuid()).max(INTERVENANTS_MAX).optional(),
     salleId: z.uuid().nullable().optional(),
     lienVisio: z.url('Lien de visio attendu (https://…).').max(500).nullable().optional(),
     distanciel: z.boolean().optional(),
