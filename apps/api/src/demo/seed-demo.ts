@@ -3,6 +3,7 @@ import { ROLES_PAR_DEFAUT } from '@scolaly/contracts';
 import { buildDemoDataset, seedDemoDataset, seedDemoDroits } from '@scolaly/db/demo';
 import { createPasswordAccount, type Auth } from '../auth/auth.js';
 import { creerSuperAdministrateur } from '../modules/plateforme/index.js';
+import { seedDemoEmploiDuTemps } from './emploi-du-temps-demo.js';
 
 export interface DemoSeedResult {
   donneesEcrites: boolean;
@@ -19,6 +20,8 @@ export async function seedDemo(options: {
   password: string;
   /** En mode SaaS : crée aussi le super-administrateur de démonstration de la console. */
   platformUrl?: string;
+  /** Jour de référence de l'emploi du temps de démonstration (maintenant par défaut). */
+  maintenant?: Date;
 }): Promise<DemoSeedResult> {
   const dataset = buildDemoDataset();
   const owner = createDatabase(options.migratorUrl, { max: 2 });
@@ -50,6 +53,8 @@ export async function seedDemo(options: {
   const proprietaire = createDatabase(options.migratorUrl, { max: 2 });
   try {
     await seedDemoDroits(proprietaire.db, dataset, ROLES_PAR_DEFAUT, userIds);
+    // Emploi du temps (I4.1), relatif au jour du chargement : après les comptes intervenants.
+    await seedDemoEmploiDuTemps(proprietaire.db, dataset, options.maintenant);
   } finally {
     await proprietaire.close();
   }
