@@ -136,7 +136,7 @@ describe('RG-00-17 préchargement des séances', () => {
       },
     ]);
     await prechargerSeances(app.db, valkey);
-    for (const id of ids) expect(await valkey.exists(CLES_EMARGEMENT.seance(id ?? ''))).toBe(0);
+    for (const id of ids) expect(await valkey.exists(CLES_EMARGEMENT.seance(id))).toBe(0);
   });
 });
 
