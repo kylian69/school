@@ -27,6 +27,8 @@ import {
   personne,
   presence,
   role,
+  seance,
+  seanceIntervenant,
 } from '@scolaly/db';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
@@ -46,6 +48,7 @@ let promo: DetailPromotion;
 let groupe: Groupe;
 let moduleId: string;
 let intervenantId: string;
+let coIntervenantId: string;
 const salles: Record<'grande' | 'petite' | 'amphi', Salle> = {} as never;
 const inscriptions: Inscription[] = [];
 
@@ -167,7 +170,7 @@ beforeAll(async () => {
   const fiches = await owner.db
     .insert(personne)
     .values(
-      ['Arnaud', 'Barbier', 'Intervenant'].map((nom) => ({
+      ['Arnaud', 'Barbier', 'Intervenant', 'Coanimateur'].map((nom) => ({
         organisationId: ecole,
         nom,
         prenom: 'Sacha',
@@ -176,6 +179,7 @@ beforeAll(async () => {
     )
     .returning();
   intervenantId = fiches[2]?.id ?? '';
+  coIntervenantId = fiches[3]?.id ?? '';
   for (const fiche of fiches.slice(0, 2)) {
     const reponse = await requete('POST', `/api/promotions/${promo.id}/inscriptions`, admin, {
       personneId: fiche.id,
@@ -233,7 +237,7 @@ describe('RG-04-01 création d’une séance en brouillon', () => {
       moduleId,
       groupeIds: [groupe.id],
       salleId: salles.grande.id,
-      intervenantId,
+      intervenantIds: [intervenantId],
     });
     expect(reponse.statusCode).toBe(201);
     s1 = reponse.json<Seance>();
@@ -286,7 +290,7 @@ describe('RG-04-05 conflits', () => {
       activite: 'Réunion de rentrée',
       promotionIds: [promo.id],
       salleId: salles.grande.id,
-      intervenantId,
+      intervenantIds: [intervenantId],
       debut: '2026-11-02T09:00:00Z',
       fin: '2026-11-02T11:00:00Z',
     });
@@ -348,7 +352,7 @@ describe('RG-04-07 solutions proposées', () => {
       moduleId,
       groupeIds: [groupe.id],
       salleId: salles.grande.id,
-      intervenantId,
+      intervenantIds: [intervenantId],
     });
     expect(reponse.statusCode).toBe(200);
     const resultat = reponse.json<ResultatVerification>();
@@ -390,7 +394,7 @@ describe('RG-04-06 publication et forçage', () => {
   it('trace le forçage avant et après, puis publie quand rien de bloquant ne reste', async () => {
     const motif = 'Réunion commune à toute la promotion';
     const reponse = await requete('PATCH', `/api/edt/seances/${s2.id}`, admin, {
-      intervenantId: null,
+      intervenantIds: [],
       forcages: [
         { code: 'salle-occupee', seanceId: s1.id, motif },
         { code: 'groupe-occupe', seanceId: s1.id, motif },
@@ -422,7 +426,7 @@ describe('RG-04-06 publication et forçage', () => {
 
   it('refuse une modification qui rend bloquante une séance publiée', async () => {
     const reponse = await requete('PATCH', `/api/edt/seances/${s2.id}`, admin, {
-      intervenantId,
+      intervenantIds: [intervenantId],
     });
     expect(reponse.statusCode).toBe(409);
   });
@@ -466,6 +470,7 @@ describe('RG-04-03 séries', () => {
       moduleId,
       groupeIds: [groupe.id],
       salleId: salles.amphi.id,
+      intervenantIds: [coIntervenantId, intervenantId],
     });
     expect(reponse.statusCode).toBe(201);
     creee = reponse.json<SerieCreee>();
@@ -473,6 +478,8 @@ describe('RG-04-03 séries', () => {
       ['brouillon', creee.serieId],
       ['brouillon', creee.serieId],
     ]);
+    const deux = [coIntervenantId, intervenantId].sort();
+    expect(creee.seances.map((s) => s.intervenantIds)).toEqual([deux, deux]);
     expect((await audits(creee.serieId)).map((a) => a.action)).toEqual(['seance.serie.creer']);
   });
 
@@ -519,6 +526,64 @@ describe('RG-04-03 séries', () => {
       salleId: null,
     });
     expect(modification.statusCode).toBe(409);
+  });
+});
+
+describe('RG-04-01 plusieurs intervenants', () => {
+  it('compte chaque intervenant dans les conflits', async () => {
+    const reponse = await requete('POST', '/api/edt/verification', scolarite, {
+      ...seanceTd,
+      activite: 'Jury fictif',
+      type: 'examen',
+      groupeIds: [groupe.id],
+      intervenantIds: [coIntervenantId, intervenantId],
+    });
+    expect(reponse.statusCode).toBe(200);
+    const occupe = reponse
+      .json<ResultatVerification>()
+      .conflits.find((c) => c.code === 'intervenant-occupe');
+    expect(occupe).toMatchObject({ seanceId: s1.id, intervenantIds: [intervenantId] });
+  });
+
+  it('ajoute et retire un intervenant, avec la trace avant et après', async () => {
+    const ajout = await requete('PATCH', `/api/edt/seances/${s1.id}`, admin, {
+      intervenantIds: [intervenantId, coIntervenantId],
+    });
+    expect(ajout.statusCode).toBe(200);
+    expect(ajout.json<ResultatSeances>().seances[0]?.intervenantIds).toEqual(
+      [coIntervenantId, intervenantId].sort(),
+    );
+    const trace = (await audits(s1.id)).filter((a) => a.action === 'seance.modifier').at(-1);
+    expect(trace?.avant).toMatchObject({ intervenantIds: [intervenantId] });
+    expect(trace?.apres).toMatchObject({
+      intervenantIds: [coIntervenantId, intervenantId].sort(),
+    });
+    const url = `/api/edt/semaine?etablissementId=${campusId}&debut=2026-11-02&intervenantId=${coIntervenantId}`;
+    const semaine = (await requete('GET', url, admin)).json<SemaineEdt>();
+    expect(semaine.seances.map((s) => s.id)).toEqual([s1.id]);
+    const retrait = await requete('PATCH', `/api/edt/seances/${s1.id}`, admin, {
+      intervenantIds: [intervenantId],
+    });
+    expect(retrait.json<ResultatSeances>().seances[0]?.intervenantIds).toEqual([intervenantId]);
+    const liens = await owner.db
+      .select()
+      .from(seanceIntervenant)
+      .where(
+        and(eq(seanceIntervenant.organisationId, ecole), eq(seanceIntervenant.seanceId, s1.id)),
+      );
+    expect(liens.filter((l) => l.deletedAt === null).map((l) => l.personneId)).toEqual([
+      intervenantId,
+    ]);
+    // Bascule : la colonne obsolète suit le premier intervenant pour les versions précédentes.
+    const [ligne] = await owner.db.select().from(seance).where(eq(seance.id, s1.id));
+    expect(ligne?.intervenantId).toBe(intervenantId);
+  });
+
+  it('refuse un intervenant inconnu', async () => {
+    const reponse = await requete('PATCH', `/api/edt/seances/${s1.id}`, admin, {
+      intervenantIds: [intervenantId, newId()],
+    });
+    expect(reponse.statusCode).toBe(400);
   });
 });
 

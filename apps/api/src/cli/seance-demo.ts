@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { createDatabase, newId, personne, promotion, seance, seancePublic } from '@scolaly/db';
+import {
+  createDatabase,
+  newId,
+  personne,
+  promotion,
+  seance,
+  seanceIntervenant,
+  seancePublic,
+} from '@scolaly/db';
 import { asc, eq } from 'drizzle-orm';
 
 /**
@@ -44,6 +52,9 @@ try {
     fin: new Date(debut.getTime() + 3 * 3600_000),
     intervenantId: intervenant.id,
   });
+  await db
+    .insert(seanceIntervenant)
+    .values({ organisationId, seanceId, personneId: intervenant.id });
   await db.insert(seancePublic).values({ organisationId, seanceId, promotionId: promo.id });
   console.warn(
     `Séance de démonstration créée (${seanceId}) : début ${debut.toLocaleTimeString('fr-FR')}, ` +

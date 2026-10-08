@@ -8,11 +8,12 @@ import {
 import {
   presence,
   seanceEtAttendus,
+  seanceIntervenant,
   sessionsDesComptes,
   type Database,
   type Transaction,
 } from '@scolaly/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
@@ -34,15 +35,28 @@ export class AppelService {
     this.cleMaitresse = Buffer.from(env.ENCRYPTION_MASTER_KEY_V1, 'base64');
   }
 
-  /** L'intervenant de la séance, ou une personne habilitée sur toute l'école. */
+  /** L'un des intervenants de la séance (RG-04-01), ou une personne habilitée sur toute l'école. */
   private async charger(tx: Transaction, access: Access, seanceId: string) {
     const trouve = await seanceEtAttendus(tx, seanceId);
     if (!trouve) throw new NotFoundException('Séance introuvable dans cette école.');
     const ecole = (access.perimetres.get('emargement:animer') ?? []).some(
       (p) => p.type === 'organisation',
     );
-    if (!ecole && trouve.seance.intervenantId !== access.personneId) {
-      throw new ForbiddenException("Seul l'intervenant de cette séance peut en ouvrir l'appel.");
+    if (!ecole) {
+      const [lien] = await tx
+        .select({ id: seanceIntervenant.id })
+        .from(seanceIntervenant)
+        .where(
+          and(
+            eq(seanceIntervenant.seanceId, seanceId),
+            eq(seanceIntervenant.personneId, access.personneId),
+            isNull(seanceIntervenant.deletedAt),
+          ),
+        );
+      if (!lien)
+        throw new ForbiddenException(
+          "Seuls les intervenants de cette séance peuvent en ouvrir l'appel.",
+        );
     }
     return trouve;
   }

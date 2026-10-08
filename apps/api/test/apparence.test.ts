@@ -143,7 +143,8 @@ describe('E-01-09 apparence', () => {
       .where(
         and(eq(auditEvenement.objetId, ecole), eq(auditEvenement.action, 'apparence.modifier')),
       );
-    expect(traces.at(-1)?.apres).toEqual({ nomAffichage: 'EDA', couleur: '#0B6B66' });
+    // Sans ordre garanti entre les traces : celle de cette modification doit y figurer.
+    expect(traces.map((t) => t.apres)).toContainEqual({ nomAffichage: 'EDA', couleur: '#0B6B66' });
 
     // L'apparence suit la session : l'interface l'applique dès la requête suivante.
     const contexte = (

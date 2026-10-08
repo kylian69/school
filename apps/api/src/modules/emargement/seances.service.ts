@@ -1,10 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import type { SeanceProche } from '@scolaly/contracts';
-import { personne, seance, seanceAttenduCalcule, type Transaction } from '@scolaly/db';
-import { and, asc, eq, gt, isNull, lt, type SQL } from 'drizzle-orm';
+import {
+  personne,
+  seance,
+  seanceAttenduCalcule,
+  seanceIntervenant,
+  type Transaction,
+} from '@scolaly/db';
+import { and, asc, eq, gt, inArray, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 
 const HEURE = 3600_000;
+
+/** RG-04-01 : séances dont la personne est l'un des intervenants. */
+function seancesDe(tx: Transaction, personneId: string) {
+  return tx
+    .select({ id: seanceIntervenant.seanceId })
+    .from(seanceIntervenant)
+    .where(and(eq(seanceIntervenant.personneId, personneId), isNull(seanceIntervenant.deletedAt)));
+}
 
 /** Séances proches : celles de l'intervenant, de toute l'école, ou où l'apprenant est attendu. */
 @Injectable()
@@ -18,17 +32,8 @@ export class SeancesService {
         debut: seance.debut,
         fin: seance.fin,
         distanciel: seance.distanciel,
-        prenom: personne.prenom,
-        nom: personne.nom,
       })
       .from(seance)
-      .leftJoin(
-        personne,
-        and(
-          eq(personne.organisationId, seance.organisationId),
-          eq(personne.id, seance.intervenantId),
-        ),
-      )
       .leftJoin(
         seanceAttenduCalcule,
         and(
@@ -47,14 +52,48 @@ export class SeancesService {
         ),
       )
       .orderBy(asc(seance.debut));
+    const noms = await this.intervenants(
+      tx,
+      lignes.map((l) => l.id),
+    );
     return lignes.map((l) => ({
       id: l.id,
       libelle: l.libelle,
       debut: l.debut.toISOString(),
       fin: l.fin.toISOString(),
       distanciel: l.distanciel,
-      intervenant: l.nom ? `${l.prenom} ${l.nom}` : null,
+      intervenant: noms.get(l.id)?.join(', ') ?? null,
     }));
+  }
+
+  /** RG-04-01 : noms des intervenants de chaque séance, par ordre alphabétique. */
+  private async intervenants(tx: Transaction, seanceIds: readonly string[]) {
+    const noms = new Map<string, string[]>();
+    if (seanceIds.length === 0) return noms;
+    const lignes = await tx
+      .select({
+        seanceId: seanceIntervenant.seanceId,
+        prenom: personne.prenom,
+        nom: personne.nom,
+      })
+      .from(seanceIntervenant)
+      .innerJoin(
+        personne,
+        and(
+          eq(personne.organisationId, seanceIntervenant.organisationId),
+          eq(personne.id, seanceIntervenant.personneId),
+        ),
+      )
+      .where(
+        and(
+          inArray(seanceIntervenant.seanceId, [...seanceIds]),
+          isNull(seanceIntervenant.deletedAt),
+        ),
+      )
+      .orderBy(asc(personne.nom), asc(personne.prenom));
+    for (const l of lignes)
+      noms.set(l.seanceId, [...(noms.get(l.seanceId) ?? []), `${l.prenom} ${l.nom}`]);
+    return noms;
   }
 
   /** Pour l'intervenant : ses séances ; avec un périmètre « toute l'école » : toutes. */
@@ -62,7 +101,10 @@ export class SeancesService {
     const ecole = (access.perimetres.get('emargement:animer') ?? []).some(
       (p) => p.type === 'organisation',
     );
-    return this.proches(tx, ecole ? undefined : eq(seance.intervenantId, access.personneId));
+    return this.proches(
+      tx,
+      ecole ? undefined : inArray(seance.id, seancesDe(tx, access.personneId)),
+    );
   }
 
   /** Pour l'apprenant : les séances où il est attendu. */

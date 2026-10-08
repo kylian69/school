@@ -213,7 +213,7 @@ export default async function EmploiDuTempsPage({
           defaut={{
             promotionIds: vue === 'promotion' ? [ressource.id] : [],
             groupeIds: vue === 'groupe' ? [ressource.id] : [],
-            intervenantId: vue === 'intervenant' ? ressource.id : null,
+            intervenantIds: vue === 'intervenant' ? [ressource.id] : [],
             salleId: vue === 'salle' ? ressource.id : null,
           }}
           droits={{

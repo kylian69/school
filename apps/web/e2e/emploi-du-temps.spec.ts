@@ -3,6 +3,21 @@ import { expectNoAccessibilityViolations } from './accessibilite';
 import { preparerAlternance } from './preparation-alternance';
 import { seConnecter } from './session';
 
+/** Champs facultatifs d'une fiche personne, vides. */
+const FICHE_VIDE = Object.fromEntries(
+  [
+    'civilite',
+    'nomUsage',
+    'telephone',
+    'adresseLigne1',
+    'codePostal',
+    'ville',
+    'dateNaissance',
+    'lieuNaissance',
+    'ine',
+  ].map((champ) => [champ, null]),
+);
+
 /** Lundi de la semaine d'un jour AAAA-MM-JJ. */
 const lundi = (jour: string) => {
   const date = new Date(`${jour}T00:00:00Z`);
@@ -13,14 +28,15 @@ const plus = (jour: string, n: number) =>
   new Date(Date.parse(`${jour}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 /** Promotion préparée, deux salles, et la grille de sa semaine du 8 septembre (année choisie). */
-async function preparerGrille(page: Page, annee: string) {
+async function preparerGrille(page: Page, annee: string, avecSalles = true) {
   const { promotion } = await preparerAlternance(page, annee);
   const organisation = (await (await page.request.get('/api/organisation')).json()) as {
     etablissements: { id: string }[];
   };
   const etablissementId = organisation.etablissements[0]?.id ?? '';
   const suffixe = Math.random().toString(36).slice(2, 6);
-  const salles = ['A', 'B'].map((lettre) => `Salle ${lettre}${suffixe}`);
+  // La fausse API ne propose que les premières salles libres : n'en créer que si besoin.
+  const salles = avecSalles ? ['A', 'B'].map((lettre) => `Salle ${lettre}${suffixe}`) : [];
   for (const nom of salles)
     await page.request.post('/api/salles', {
       data: { etablissementId, nom, capacite: 30, type: 'cours' },
@@ -29,7 +45,7 @@ async function preparerGrille(page: Page, annee: string) {
   await page.goto(
     `/emploi-du-temps?etablissement=${etablissementId}&vue=promotion&id=${promotion.id}&semaine=${semaine}`,
   );
-  return { semaine, salles };
+  return { semaine, salles, promotion, etablissementId };
 }
 
 async function nouvelleSeance(
@@ -121,6 +137,40 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await publier.click();
     await expect(page.getByRole('status')).toHaveText('2 séances publiées.');
     await expect(page.getByRole('button', { name: /^Bois, 09:00 – 12:00, Publiée/ })).toBeVisible();
+  });
+
+  test('RG-04-01 place une séance co-animée par deux intervenants', async ({ page }) => {
+    const { semaine, promotion } = await preparerGrille(page, '2060', false);
+    const { modules } = (await (
+      await page.request.get(`/api/promotions/${promotion.id}/affectations`)
+    ).json()) as { modules: { id: string }[] };
+    const suffixe = Math.random().toString(36).slice(2, 6);
+    for (const prenom of ['Alix', 'Basile']) {
+      const fiche = (await (
+        await page.request.post('/api/personnes', {
+          data: {
+            ...FICHE_VIDE,
+            nom: `Duo${suffixe}`,
+            prenom,
+            email: `${prenom}.${suffixe}@exemple.test`,
+          },
+        })
+      ).json()) as { id: string };
+      await page.request.post(`/api/promotions/${promotion.id}/affectations`, {
+        data: { personneId: fiche.id, moduleId: modules[0]?.id },
+      });
+    }
+    await page.reload();
+    const dialogue = await nouvelleSeance(page, { jour: semaine, debut: '09:00', fin: '11:00' });
+    const intervenants = dialogue.getByRole('group', { name: 'Intervenants' });
+    await intervenants.getByLabel(`Alix Duo${suffixe}`).check();
+    await intervenants.getByLabel(`Basile Duo${suffixe}`).check();
+    await expectNoAccessibilityViolations(page);
+    await dialogue.getByRole('button', { name: 'Enregistrer en brouillon' }).click();
+    await expect(dialogue).toBeHidden();
+    await page.getByRole('button', { name: /^Bois, 09:00 – 11:00/ }).click();
+    const fiche = page.getByRole('region', { name: 'Séance choisie' });
+    await expect(fiche.getByText(`Alix Duo${suffixe}, Basile Duo${suffixe}`)).toBeVisible();
   });
 
   test('US-04-02 crée une série hebdomadaire, déplace une séance par glisser-déposer et en annule une (RG-04-04)', async ({
