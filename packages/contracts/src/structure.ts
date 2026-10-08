@@ -21,6 +21,46 @@ const fuseauHoraire = z
     'Fuseau horaire inconnu. Choisissez-en un dans la liste.',
   );
 
+/** Heure locale HH:MM sur le pas de 15 minutes de la grille (RG-04-02). */
+const heureGrille = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):(00|15|30|45)$/, 'Heure au format HH:MM, par quart d’heure.');
+
+/** RG-04-02 : valeurs en place avant le paramétrage par établissement. */
+export const PLAGE_EDT_PAR_DEFAUT = {
+  debut: '08:00',
+  fin: '19:00',
+  limiteMidi: '13:00',
+  joursOuvres: [1, 2, 3, 4, 5],
+};
+
+/**
+ * RG-04-02 : plage horaire et jours ouvrés de l'emploi du temps d'un établissement, et limite
+ * matin / après-midi des demi-journées d'assiduité (RG-06-18).
+ */
+export const PlageEdt = z
+  .object({
+    debut: heureGrille,
+    fin: heureGrille,
+    limiteMidi: heureGrille,
+    /** Jours ISO : lundi = 1 … dimanche = 7, sans doublon (l'API les trie). */
+    joursOuvres: z
+      .array(z.int().min(1).max(7))
+      .min(1, 'Choisissez au moins un jour ouvré.')
+      .max(7)
+      .refine((jours) => new Set(jours).size === jours.length, 'Un jour est en double.'),
+  })
+  .refine((p) => p.fin > p.debut, {
+    message: 'La fin de journée doit suivre le début.',
+    path: ['fin'],
+  })
+  .refine((p) => p.limiteMidi > p.debut && p.limiteMidi < p.fin, {
+    message: 'La limite matin / après-midi doit se trouver dans la plage horaire.',
+    path: ['limiteMidi'],
+  })
+  .meta({ id: 'PlageEdt' });
+export type PlageEdt = z.infer<typeof PlageEdt>;
+
 export const INFORMATIONS_MANQUANTES = ['adresse', 'uai', 'siret', 'nda'] as const;
 
 export const Etablissement = z
@@ -38,6 +78,7 @@ export const Etablissement = z
     telephone: z.string().nullable(),
     email: z.string().nullable(),
     statut: z.enum(['actif', 'archive']),
+    edt: PlageEdt,
     /** RG-01-02 : informations reprises par les documents officiels, encore absentes. */
     manquantes: z.array(z.enum(INFORMATIONS_MANQUANTES)),
   })
@@ -99,7 +140,7 @@ export const NouvelEtablissement = z
 export type NouvelEtablissement = z.infer<typeof NouvelEtablissement>;
 
 export const ModificationEtablissement = z
-  .object(champsEtablissement)
+  .object({ ...champsEtablissement, edt: PlageEdt })
   .partial()
   .meta({ id: 'ModificationEtablissement' });
 export type ModificationEtablissement = z.infer<typeof ModificationEtablissement>;

@@ -34,6 +34,7 @@ import {
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { anneeDeReference } from '../../shared/matricule.js';
+import { colonnesPlageEdt, plageEdt } from '../../shared/plage-edt.js';
 
 type LigneEtablissement = typeof etablissement.$inferSelect;
 
@@ -310,6 +311,7 @@ export class OrganisationService {
       uai,
       siret,
       nda,
+      ...(saisie.edt ? colonnesPlageEdt(saisie.edt) : {}),
     };
     return Object.fromEntries(Object.entries(champs).filter(([, v]) => v !== undefined));
   }
@@ -327,6 +329,7 @@ export class OrganisationService {
       fuseauHoraire: e.fuseauHoraire,
       telephone: e.telephone,
       email: e.email,
+      edt: plageEdt(e),
     };
   }
 
@@ -345,6 +348,7 @@ export class OrganisationService {
       telephone: e.telephone,
       email: e.email,
       statut: e.statut,
+      edt: plageEdt(e),
       manquantes: informationsManquantes(e),
     };
   }

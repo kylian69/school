@@ -10,6 +10,7 @@ import type {
   ApercuSerie,
   ModificationSeance,
   Permission,
+  PlageEdt,
   PublicationSeances,
   RechercheSemaine,
   ResultatSeances,
@@ -59,6 +60,7 @@ import {
 } from '@scolaly/domain';
 import { and, count, eq, gt, inArray, isNull, lt } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
+import { plageEdt } from '../../shared/plage-edt.js';
 import { promotionsCouvertes } from '../scolarite/index.js';
 import {
   ContexteService,
@@ -95,6 +97,8 @@ const invalide = (champ: string, message: string) =>
 interface ContenuValide {
   etablissementId: string;
   fuseau: string;
+  /** RG-04-02 : plage horaire et jours ouvrés de l'établissement. */
+  plage: PlageEdt;
   promotionIds: string[];
   groupeIds: string[];
   /** Promotions couvertes par le public (celles des groupes comprises). */
@@ -152,6 +156,7 @@ export class SeancesService {
       debut: recherche.debut,
       fin,
       fuseau: campus.fuseauHoraire,
+      plage: plageEdt(campus),
       seances: await this.versContrats(tx, access, retenues, {
         etablissementId: campus.id,
         fuseau: campus.fuseauHoraire,
@@ -205,9 +210,9 @@ export class SeancesService {
     const creneaux =
       codes.has('intervenant-occupe') || codes.has('groupe-occupe')
         ? creneauxLibres(candidate, ctx, {
-            plageDebut: v.plageDebut,
-            plageFin: v.plageFin,
-            joursOuverts: v.joursOuverts,
+            plageDebut: v.plageDebut ?? contenu.plage.debut,
+            plageFin: v.plageFin ?? contenu.plage.fin,
+            joursOuverts: v.joursOuverts ?? contenu.plage.joursOuvres,
             joursRecherche: JOURS_RECHERCHE,
             nombre: CRENEAUX_PROPOSES,
             apres: new Date(),
@@ -726,6 +731,7 @@ export class SeancesService {
     return {
       etablissementId,
       fuseau: campus.fuseauHoraire,
+      plage: plageEdt(campus),
       promotionIds,
       groupeIds,
       promotions: connues.map((p) => p.id),

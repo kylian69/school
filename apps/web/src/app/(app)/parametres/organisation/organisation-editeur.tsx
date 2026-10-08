@@ -11,7 +11,7 @@ import {
   type Erreurs,
 } from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
-import { envoyer } from '@/lib/requete';
+import { envoyer, erreurDuChamp } from '@/lib/requete';
 
 const t = fr.organisation;
 
@@ -100,6 +100,16 @@ export function OrganisationEditeur({
                   )}
                 </div>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                  <dt className="text-muted">{t.edt.titre}</dt>
+                  <dd className="num">
+                    {t.edt.resume(
+                      etablissement.edt.debut,
+                      etablissement.edt.fin,
+                      etablissement.edt.joursOuvres
+                        .map((j) => t.edt.joursCourts[j - 1] ?? '')
+                        .join(' '),
+                    )}
+                  </dd>
                   {(['uai', 'siret', 'nda'] as const).map((champ) =>
                     etablissement[champ] ? (
                       <div key={champ} className="contents">
@@ -301,10 +311,24 @@ function EtablissementDialog({
 
   async function onSubmit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
+    const formulaire = event.currentTarget;
+    const saisie = valeurs(formulaire);
+    const champs = Object.fromEntries(
+      Object.entries(saisie).filter(([cle]) => !cle.startsWith('edt.')),
+    );
+    // RG-04-02 : la plage de l'emploi du temps se règle sur un établissement existant.
+    const edt = existant
+      ? {
+          debut: saisie['edt.debut'] ?? '',
+          fin: saisie['edt.fin'] ?? '',
+          limiteMidi: saisie['edt.limiteMidi'] ?? '',
+          joursOuvres: new FormData(formulaire).getAll('edt.joursOuvres').map(Number),
+        }
+      : undefined;
     const resultat = await envoyer(
       existant ? `/api/etablissements/${existant.id}` : '/api/etablissements',
       existant ? 'PATCH' : 'POST',
-      valeurs(event.currentTarget),
+      edt ? { ...champs, edt } : champs,
       t.erreur,
     );
     if (!resultat.ok) {
@@ -441,6 +465,7 @@ function EtablissementDialog({
               autoComplete="email"
             />
           </div>
+          <PlageEdtChamps existant={existant} erreurs={erreurs} />
           <p role="alert" aria-live="polite" className="min-h-5 text-sm text-bad">
             {erreurs.message}
           </p>
@@ -453,5 +478,86 @@ function EtablissementDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** RG-04-02 : plage horaire, limite matin / après-midi et jours ouvrés de l'emploi du temps. */
+function PlageEdtChamps({
+  existant,
+  erreurs,
+}: {
+  existant: Etablissement | null;
+  erreurs: Erreurs;
+}) {
+  const erreurJours = erreurDuChamp(erreurs.details, 'edt.joursOuvres');
+  return (
+    <fieldset className="flex flex-col gap-3 rounded-control border border-line p-4">
+      <legend className="px-1 text-sm font-semibold">{t.edt.titre}</legend>
+      {existant ? (
+        <>
+          <p className="text-xs text-muted">{t.edt.aide}</p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Champ
+              nom="edt.debut"
+              label={t.edt.debut}
+              erreurs={erreurs}
+              type="time"
+              step={900}
+              required
+              defaultValue={existant.edt.debut}
+            />
+            <Champ
+              nom="edt.fin"
+              label={t.edt.fin}
+              erreurs={erreurs}
+              type="time"
+              step={900}
+              required
+              defaultValue={existant.edt.fin}
+            />
+            <Champ
+              nom="edt.limiteMidi"
+              label={t.edt.limiteMidi}
+              erreurs={erreurs}
+              type="time"
+              step={900}
+              required
+              aide={t.edt.aideLimiteMidi}
+              defaultValue={existant.edt.limiteMidi}
+            />
+          </div>
+          <fieldset
+            className="flex flex-col gap-2"
+            aria-describedby={erreurJours ? 'edt-jours-erreur' : undefined}
+          >
+            <legend className="text-sm font-medium">{t.edt.joursOuvres}</legend>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {t.edt.jours.map((libelle, index) => (
+                <label
+                  key={libelle}
+                  className="flex min-h-11 items-center gap-2 text-sm md:min-h-0"
+                >
+                  <input
+                    type="checkbox"
+                    name="edt.joursOuvres"
+                    value={index + 1}
+                    defaultChecked={existant.edt.joursOuvres.includes(index + 1)}
+                    className="size-4"
+                  />
+                  {libelle}
+                </label>
+              ))}
+            </div>
+            {erreurJours ? (
+              <p id="edt-jours-erreur" className="text-sm text-bad">
+                {erreurJours}
+              </p>
+            ) : null}
+          </fieldset>
+        </>
+      ) : (
+        <p className="text-xs text-muted">{t.edt.aideNouveau}</p>
+      )}
+    </fieldset>
   );
 }

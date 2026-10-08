@@ -657,6 +657,20 @@ export const fr = {
     },
     aideIdentifiants:
       'L’UAI, le SIRET et le NDA peuvent être complétés plus tard ; ils sont contrôlés à la saisie.',
+    edt: {
+      titre: 'Emploi du temps',
+      aide: 'Heures et jours affichés par la grille et utilisés pour proposer des créneaux libres, par quart d’heure. Une séance placée en dehors reste visible.',
+      aideNouveau:
+        'Par défaut : de 08:00 à 19:00, du lundi au vendredi, limite matin / après-midi à 13:00. Modifiable une fois l’établissement créé.',
+      debut: 'Début de journée',
+      fin: 'Fin de journée',
+      limiteMidi: 'Limite matin / après-midi',
+      aideLimiteMidi: 'Sépare les deux demi-journées comptées pour l’assiduité.',
+      joursOuvres: 'Jours ouvrés',
+      jours: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
+      joursCourts: ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'],
+      resume: (debut: string, fin: string, jours: string) => `${debut} – ${fin}, ${jours}`,
+    },
     confirmerArchivage: (nom: string) =>
       `Archiver « ${nom} » ? Il n’apparaîtra plus dans les choix, mais ses données sont conservées. Vous pourrez le réactiver.`,
     annuler: 'Annuler',

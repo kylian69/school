@@ -8473,6 +8473,9 @@
               "archive"
             ]
           },
+          "edt": {
+            "$ref": "#/components/schemas/PlageEdt"
+          },
           "manquantes": {
             "type": "array",
             "items": {
@@ -8500,6 +8503,7 @@
           "telephone",
           "email",
           "statut",
+          "edt",
           "manquantes"
         ],
         "additionalProperties": false
@@ -10645,6 +10649,13 @@
                 ]
               }
             ]
+          },
+          "edt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlageEdt"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -12787,6 +12798,40 @@
           "attenteUrl",
           "statut",
           "motif"
+        ],
+        "additionalProperties": false
+      },
+      "PlageEdt": {
+        "type": "object",
+        "properties": {
+          "debut": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$"
+          },
+          "fin": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$"
+          },
+          "limiteMidi": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$"
+          },
+          "joursOuvres": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            }
+          }
+        },
+        "required": [
+          "debut",
+          "fin",
+          "limiteMidi",
+          "joursOuvres"
         ],
         "additionalProperties": false
       },
@@ -15835,6 +15880,9 @@
           "fuseau": {
             "type": "string"
           },
+          "plage": {
+            "$ref": "#/components/schemas/PlageEdt"
+          },
           "seances": {
             "type": "array",
             "items": {
@@ -15849,6 +15897,7 @@
           "debut",
           "fin",
           "fuseau",
+          "plage",
           "seances",
           "creation"
         ],
@@ -16340,23 +16389,14 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "plageDebut": {
-            "default": "08:00",
             "type": "string",
             "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
           },
           "plageFin": {
-            "default": "19:00",
             "type": "string",
             "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
           },
           "joursOuverts": {
-            "default": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ],
             "minItems": 1,
             "maxItems": 7,
             "type": "array",
@@ -16398,9 +16438,6 @@
           "distanciel",
           "debut",
           "fin",
-          "plageDebut",
-          "plageFin",
-          "joursOuverts",
           "equipements"
         ],
         "additionalProperties": false

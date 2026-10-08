@@ -10,14 +10,13 @@ import { useEnvoi } from '../formations/envoi';
 import { cleForcage, ListeConflits, type Noms } from './conflits';
 import { AnnulationSeance, FormulaireSeance } from './formulaire-seance';
 import {
-  ajouterJours,
   auPas,
   disposer,
+  grilleAffichee,
   HAUTEUR_HEURE,
   heureDe,
   instantLocal,
   partiesLocales,
-  PLAGE_DEFAUT,
 } from './semaine';
 import type { Defaut, Droits, Horaire, Referentiels } from './types';
 
@@ -95,13 +94,7 @@ export function Planificateur({
       fin: fin.jour === debut.jour ? fin.minutes : 24 * 60,
     };
   });
-  const jours = [0, 1, 2, 3, 4, 5, 6]
-    .map((n) => ajouterJours(semaine.debut, n))
-    .filter((jour, n) => n < 5 || placees.some((p) => p.jour === jour));
-  const plage = {
-    debut: Math.min(PLAGE_DEFAUT.debut, ...placees.map((p) => Math.floor(p.debut / 60) * 60)),
-    fin: Math.max(PLAGE_DEFAUT.fin, ...placees.map((p) => Math.ceil(p.fin / 60) * 60)),
-  };
+  const { jours, ...plage } = grilleAffichee(semaine.debut, semaine.plage, placees);
   const heures = Array.from(
     { length: (plage.fin - plage.debut) / 60 },
     (_, n) => plage.debut + n * 60,

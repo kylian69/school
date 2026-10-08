@@ -7,8 +7,6 @@ const JOUR_MS = 86_400_000;
 
 /** RG-04-02 : pas de la grille, en minutes. */
 export const PAS_MINUTES = 15;
-/** RG-04-02 : plage horaire affichée par défaut (celle que l'API utilise pour ses propositions). */
-export const PLAGE_DEFAUT = { debut: 8 * 60, fin: 19 * 60 };
 /** Hauteur d'une heure dans la grille, en pixels (maquette « Emploi du temps — semaine »). */
 export const HAUTEUR_HEURE = 56;
 
@@ -76,6 +74,30 @@ export const minutesDe = (heure: string) => {
   const [h, m] = heure.split(':').map(Number);
   return (h ?? 0) * 60 + (m ?? 0);
 };
+
+/**
+ * RG-04-02 : jours et heures pleines affichés par la grille. La plage de l'établissement est
+ * élargie à l'heure entière, et aux séances placées en dehors (jour non ouvré compris), pour
+ * qu'aucune ne soit masquée.
+ */
+export function grilleAffichee(
+  lundi: string,
+  plage: { debut: string; fin: string; joursOuvres: readonly number[] },
+  placees: readonly { jour: string; debut: number; fin: number }[],
+) {
+  const jours = [0, 1, 2, 3, 4, 5, 6]
+    .map((n) => ajouterJours(lundi, n))
+    .filter(
+      (jour) => plage.joursOuvres.includes(jourIso(jour)) || placees.some((p) => p.jour === jour),
+    );
+  const debut = Math.min(minutesDe(plage.debut), ...placees.map((p) => p.debut));
+  const fin = Math.max(minutesDe(plage.fin), ...placees.map((p) => p.fin));
+  return {
+    jours,
+    debut: Math.floor(debut / 60) * 60,
+    fin: Math.min(24 * 60, Math.ceil(fin / 60) * 60),
+  };
+}
 
 /** Arrondi au pas de la grille (RG-04-02). */
 export const auPas = (minutes: number) => Math.round(minutes / PAS_MINUTES) * PAS_MINUTES;

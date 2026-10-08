@@ -364,6 +364,62 @@ describe('RG-04-07 solutions proposées', () => {
       expect(libre).toBe(true);
     }
   });
+
+  it('RG-04-02 propose les créneaux et affiche la grille dans la plage de l’établissement', async () => {
+    await owner.db
+      .update(etablissement)
+      .set({ edtDebut: '13:00', edtFin: '18:00', edtLimiteMidi: '15:00', edtJoursOuvres: [4] })
+      .where(eq(etablissement.id, campusId));
+    try {
+      const semaine = (
+        await requete(
+          'GET',
+          `/api/edt/semaine?etablissementId=${campusId}&debut=2026-11-02`,
+          scolarite,
+        )
+      ).json<SemaineEdt>();
+      expect(semaine.plage).toEqual({
+        debut: '13:00',
+        fin: '18:00',
+        limiteMidi: '15:00',
+        joursOuvres: [4],
+      });
+      const verification = {
+        ...seanceTd,
+        moduleId,
+        groupeIds: [groupe.id],
+        salleId: salles.grande.id,
+        intervenantIds: [intervenantId],
+      };
+      const resultat = (
+        await requete('POST', '/api/edt/verification', scolarite, verification)
+      ).json<ResultatVerification>();
+      expect(resultat.creneauxLibres.length).toBeGreaterThan(0);
+      for (const c of resultat.creneauxLibres) {
+        // Novembre : Paris = UTC+1, jeudi seulement, entre 13 h et 18 h locales.
+        expect(new Date(c.debut).getUTCDay()).toBe(4);
+        expect(c.debut.slice(11, 16) >= '12:00' && c.fin.slice(11, 16) <= '17:00').toBe(true);
+      }
+      // Une plage fournie par la requête l'emporte sur celle de l'établissement.
+      const imposee = (
+        await requete('POST', '/api/edt/verification', scolarite, {
+          ...verification,
+          joursOuverts: [5],
+        })
+      ).json<ResultatVerification>();
+      for (const c of imposee.creneauxLibres) expect(new Date(c.debut).getUTCDay()).toBe(5);
+    } finally {
+      await owner.db
+        .update(etablissement)
+        .set({
+          edtDebut: '08:00',
+          edtFin: '19:00',
+          edtLimiteMidi: '13:00',
+          edtJoursOuvres: [1, 2, 3, 4, 5],
+        })
+        .where(eq(etablissement.id, campusId));
+    }
+  });
 });
 
 describe('RG-04-06 publication et forçage', () => {

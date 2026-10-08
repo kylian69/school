@@ -11,7 +11,7 @@ import {
   personne,
   role,
 } from '@scolaly/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
 import { AUTH } from '../src/shared/tokens.js';
@@ -137,6 +137,45 @@ describe('E-01-02 organisation et établissements', () => {
       });
       expect(refus.statusCode).toBe(400);
       expect(refus.json<{ details: string[] }>().details[0]).toMatch(message);
+    }
+  });
+
+  it('RG-04-02 paramètre la plage horaire et les jours ouvrés, avant et après tracés', async () => {
+    expect(campus.edt).toEqual({
+      debut: '08:00',
+      fin: '19:00',
+      limiteMidi: '13:00',
+      joursOuvres: [1, 2, 3, 4, 5],
+    });
+    const edt = { debut: '07:30', fin: '20:00', limiteMidi: '12:30', joursOuvres: [6, 1, 2] };
+    const reponse = await requete('PATCH', `/api/etablissements/${campus.id}`, admin, { edt });
+    expect(reponse.statusCode).toBe(200);
+    expect(reponse.json<Etablissement>().edt).toEqual({ ...edt, joursOuvres: [1, 2, 6] });
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, campus.id),
+          eq(auditEvenement.action, 'etablissement.modifier'),
+          sql`${auditEvenement.apres}->'edt'->>'debut' = '07:30'`,
+        ),
+      );
+    expect(trace?.avant).toMatchObject({ edt: { debut: '08:00', fin: '19:00' } });
+    expect(trace?.apres).toMatchObject({ edt: { fin: '20:00', joursOuvres: [1, 2, 6] } });
+
+    for (const [refus, champ] of [
+      [{ ...edt, fin: '07:00' }, /^edt\.fin : /],
+      [{ ...edt, limiteMidi: '21:00' }, /^edt\.limiteMidi : /],
+      [{ ...edt, debut: '08:10' }, /^edt\.debut : .*quart d’heure/],
+      [{ ...edt, joursOuvres: [] }, /^edt\.joursOuvres : /],
+      [{ ...edt, joursOuvres: [1, 1] }, /^edt\.joursOuvres : /],
+    ] as const) {
+      const reponseRefus = await requete('PATCH', `/api/etablissements/${campus.id}`, admin, {
+        edt: refus,
+      });
+      expect(reponseRefus.statusCode).toBe(400);
+      expect(reponseRefus.json<{ details: string[] }>().details[0]).toMatch(champ);
     }
   });
 
