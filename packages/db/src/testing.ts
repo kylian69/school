@@ -50,6 +50,7 @@ async function adminQuery(url: string, query: string): Promise<void> {
 
 export async function createTestDatabase(
   serverUrl = process.env.TEST_ADMIN_DATABASE_URL ?? DEFAULT_ADMIN_URL,
+  options: { migrationsFolder?: string } = {},
 ): Promise<TestDatabase> {
   const database = `scolaly_test_${randomBytes(4).toString('hex')}`;
   const migratorPassword = TEST_MIGRATOR_PASSWORD;
@@ -72,7 +73,7 @@ export async function createTestDatabase(
     await lock.end();
   }
   const migratorUrl = withDatabase(serverUrl, database, MIGRATOR_ROLE, migratorPassword);
-  await runMigrations(migratorUrl);
+  await runMigrations(migratorUrl, options.migrationsFolder);
 
   return {
     adminUrl,
