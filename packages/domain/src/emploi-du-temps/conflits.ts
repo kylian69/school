@@ -1,5 +1,5 @@
 import type { Intervalle } from '../calendrier/annee.js';
-import { instantLocal } from './recurrence.js';
+import { instantLocal, PAS_GRILLE_MINUTES } from './recurrence.js';
 
 /**
  * Conflits de l'emploi du temps (US-04-03 ; RG-04-05 à RG-04-07, RG-03-13, RG-03-24). Les
@@ -380,8 +380,8 @@ export interface OptionsCreneaux {
   apres: Date;
 }
 
-/** Pas de la grille, en minutes (RG-04-02). */
-const PAS_MS = 15 * 60_000;
+/** Pas de la grille (RG-04-02), en millisecondes. */
+const PAS_MS = PAS_GRILLE_MINUTES * 60_000;
 
 /**
  * RG-04-07 : créneaux de même durée, les plus proches de la séance, où ses groupes et ses
