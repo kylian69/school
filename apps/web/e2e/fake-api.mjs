@@ -1296,7 +1296,9 @@ async function routeScolarite(path, request, json, response, url) {
       motifSortie: null,
       option: body.option ?? null,
       statut: body.statut,
-      statuts: [{ debut: body.dateEntree ?? p.dateDebut, fin: null, statut: body.statut }],
+      statuts: [
+        { debut: body.dateEntree ?? p.dateDebut, fin: null, statut: body.statut, echeance: null },
+      ],
       groupes: [],
     };
     p.inscriptions.push(inscription);

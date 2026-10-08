@@ -155,6 +155,11 @@ export function OngletApprenants({
                           {ta.depuis(formatDate(i.statuts.at(-1)?.debut))}
                         </span>
                       ) : null}
+                      {i.statut === 'apprenti_sans_employeur' && i.statuts.at(-1)?.echeance ? (
+                        <span className="block text-xs text-muted">
+                          {ta.echeance(formatDate(i.statuts.at(-1)?.echeance))}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-2">
                       <Badge tone={TONS[i.etat]}>{t.etats[i.etat]}</Badge>

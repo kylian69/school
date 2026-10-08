@@ -1173,6 +1173,7 @@ export const fr = {
       motif: 'Motif',
       nouvelEtat: 'Motif de sortie',
       depuis: (date: string) => `depuis le ${date}`,
+      echeance: (date: string) => `échéance légale le ${date}, puis décision de la scolarité`,
       sortiLe: (date: string) => `sorti le ${date}`,
       passage: 'Passer en année supérieure',
       aidePassage:
@@ -1411,7 +1412,7 @@ export const fr = {
       oui: 'Oui',
       non: 'Non',
       rupture: (date: string, motif: string) => `Rompu le ${date} · ${motif}`,
-      sansEmployeur: (date: string) => `Poursuite sans employeur jusqu’au ${date}`,
+      sansEmployeur: (date: string) => `Poursuite sans employeur, échéance légale le ${date}`,
       tuteurs: 'Tuteurs',
       tuteur: 'Tuteur en entreprise',
       depuis: (debut: string, fin: string | null) =>
@@ -1448,7 +1449,7 @@ export const fr = {
       motif: 'Motif',
       sansEmployeur: 'L’apprenti poursuit sa formation sans employeur',
       sansEmployeurAide:
-        'Il reste apprenti pendant la durée légale, puis repasse en formation initiale.',
+        'Il garde ce statut, et peut faire un stage. À l’échéance légale, la scolarité décide de son passage en formation initiale ou de son désistement.',
       aide: 'Les tuteurs perdent l’accès le jour de la rupture.',
     },
     changement: {

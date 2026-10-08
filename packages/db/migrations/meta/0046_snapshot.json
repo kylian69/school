@@ -1,5 +1,5 @@
 {
-  "id": "8131e725-a534-49e6-8dbf-703b6ea1d24e",
+  "id": "3b978889-5048-44da-97fb-6c9766420441",
   "prevId": "7da55e85-d0b7-49e8-9eb3-2cf6463dcea8",
   "version": "7",
   "dialect": "postgresql",
@@ -4294,189 +4294,6 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
-    "public.seance_intervenant": {
-      "name": "seance_intervenant",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organisation_id": {
-          "name": "organisation_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "seance_id": {
-          "name": "seance_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "personne_id": {
-          "name": "personne_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "seance_intervenant_paire_key": {
-          "name": "seance_intervenant_paire_key",
-          "columns": [
-            {
-              "expression": "organisation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "seance_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "personne_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"seance_intervenant\".\"deleted_at\" is null",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "seance_intervenant_personne_idx": {
-          "name": "seance_intervenant_personne_idx",
-          "columns": [
-            {
-              "expression": "organisation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "personne_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "seance_intervenant_organisation_id_organisation_id_fk": {
-          "name": "seance_intervenant_organisation_id_organisation_id_fk",
-          "tableFrom": "seance_intervenant",
-          "tableTo": "organisation",
-          "columnsFrom": [
-            "organisation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "seance_intervenant_seance_fk": {
-          "name": "seance_intervenant_seance_fk",
-          "tableFrom": "seance_intervenant",
-          "tableTo": "seance",
-          "columnsFrom": [
-            "organisation_id",
-            "seance_id"
-          ],
-          "columnsTo": [
-            "organisation_id",
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "seance_intervenant_personne_fk": {
-          "name": "seance_intervenant_personne_fk",
-          "tableFrom": "seance_intervenant",
-          "tableTo": "personne",
-          "columnsFrom": [
-            "organisation_id",
-            "personne_id"
-          ],
-          "columnsTo": [
-            "organisation_id",
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "seance_intervenant_organisation_id_id_key": {
-          "name": "seance_intervenant_organisation_id_id_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "organisation_id",
-            "id"
-          ]
-        }
-      },
-      "policies": {
-        "seance_intervenant_isolation": {
-          "name": "seance_intervenant_isolation",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "scolaly_app"
-          ],
-          "using": "organisation_id = app_current_organisation_id()",
-          "withCheck": "organisation_id = app_current_organisation_id()"
-        }
-      },
-      "checkConstraints": {},
-      "isRLSEnabled": true
-    },
     "public.seance_public": {
       "name": "seance_public",
       "schema": "",
@@ -7871,6 +7688,12 @@
         },
         "fin": {
           "name": "fin",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "echeance": {
+          "name": "echeance",
           "type": "date",
           "primaryKey": false,
           "notNull": false

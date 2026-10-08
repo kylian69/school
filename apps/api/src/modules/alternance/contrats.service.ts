@@ -361,8 +361,8 @@ export class ContratsService {
 
   /**
    * US-03-12 et RG-03-07 : rupture datée et motivée. Le tuteur perd l'accès le jour de la
-   * rupture ; l'inscription repasse en initial, ou passe « apprenti sans employeur » jusqu'à
-   * l'échéance légale puis en initial si l'apprenti poursuit sa formation.
+   * rupture ; l'inscription repasse en initial, ou passe « apprenti sans employeur » avec
+   * l'échéance légale si l'apprenti poursuit sa formation.
    */
   async rompre(
     tx: Transaction,
@@ -439,17 +439,13 @@ export class ContratsService {
   ): Promise<ConventionStage> {
     const cible = await this.inscriptionGeree(tx, access, entree.inscriptionId);
     await this.entreprises.charger(tx, entree.entrepriseId);
+    // RG-03-22 et RG-03-24 : convention en formation initiale, et pour l'apprenti sans employeur
+    // (périodes en milieu professionnel du Code du travail) ; le contrat d'un alternant en tient lieu.
     const statut = valeurA(cible.statuts, entree.debut);
     if (statut === 'apprenti' || statut === 'professionnalisation') {
       throw invalide(
         'inscriptionId',
         'Cet apprenant est alternant à cette date : son contrat tient lieu de convention (RG-03-24).',
-      );
-    }
-    if (statut === 'apprenti_sans_employeur') {
-      throw invalide(
-        'inscriptionId',
-        'Cet apprenti est sans employeur à cette date : enregistrez son contrat d’apprentissage, ou passez-le en initial avant de saisir une convention de stage (RG-03-22).',
       );
     }
     const valeurs = {
@@ -1011,7 +1007,7 @@ export class ContratsService {
    * RG-03-06 et section 7 : nouvelle période de statut de l'inscription à la date d'effet ; la
    * période précédente reste inchangée. Une date antérieure au statut en cours prend effet au
    * début de celui-ci. Avec `finSansEmployeur` (RG-03-07), l'apprenti est « sans employeur »
-   * de la date d'effet à cette échéance, puis repasse au statut demandé (initial).
+   * à la date d'effet, avec cette échéance ; il le reste jusqu'à ce que la scolarité décide.
    */
   private async appliquerStatut(
     tx: Transaction,
@@ -1030,7 +1026,12 @@ export class ContratsService {
           isNull(inscriptionStatut.deletedAt),
         ),
       );
-    const actuelles = periodes.map((p) => ({ debut: p.debut, fin: p.fin, valeur: p.statut }));
+    const actuelles = periodes.map((p) => ({
+      debut: p.debut,
+      fin: p.fin,
+      valeur: p.statut,
+      echeance: p.echeance,
+    }));
     const nouvelles = finSansEmployeur
       ? ouvrirSansEmployeur(actuelles, date, finSansEmployeur)
       : changerStatut(actuelles, statut, date);
@@ -1043,6 +1044,7 @@ export class ContratsService {
         statut: p.valeur,
         debut: p.debut,
         fin: p.fin,
+        echeance: p.echeance ?? null,
         createdBy: access.userId,
       })),
     );
