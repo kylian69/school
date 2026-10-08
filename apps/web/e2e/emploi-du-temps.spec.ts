@@ -3,6 +3,21 @@ import { expectNoAccessibilityViolations } from './accessibilite';
 import { preparerAlternance } from './preparation-alternance';
 import { seConnecter } from './session';
 
+/** Champs facultatifs d'une fiche personne, vides. */
+const FICHE_VIDE = Object.fromEntries(
+  [
+    'civilite',
+    'nomUsage',
+    'telephone',
+    'adresseLigne1',
+    'codePostal',
+    'ville',
+    'dateNaissance',
+    'lieuNaissance',
+    'ine',
+  ].map((champ) => [champ, null]),
+);
+
 /** Lundi de la semaine d'un jour AAAA-MM-JJ. */
 const lundi = (jour: string) => {
   const date = new Date(`${jour}T00:00:00Z`);
@@ -133,7 +148,12 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     for (const prenom of ['Alix', 'Basile']) {
       const fiche = (await (
         await page.request.post('/api/personnes', {
-          data: { nom: `Duo${suffixe}`, prenom, email: `${prenom}.${suffixe}@exemple.test` },
+          data: {
+            ...FICHE_VIDE,
+            nom: `Duo${suffixe}`,
+            prenom,
+            email: `${prenom}.${suffixe}@exemple.test`,
+          },
         })
       ).json()) as { id: string };
       await page.request.post(`/api/promotions/${promotion.id}/affectations`, {
