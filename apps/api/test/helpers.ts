@@ -32,6 +32,7 @@ export function testEnv(overrides: Partial<Env> = {}): Env {
     ANTIVIRUS_DISABLED: true,
     ANNUAIRE_ENTREPRISES_URL: 'http://127.0.0.1:9',
     ANNUAIRE_ENTREPRISES_DISABLED: true,
+    EDT_BADGE_MODIFIE_JOURS: 7,
     ...overrides,
   };
 }

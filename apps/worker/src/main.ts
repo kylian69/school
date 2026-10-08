@@ -16,6 +16,7 @@ const database = createDatabase(env.DATABASE_URL);
 const mailer = createSmtpMailer(env.SMTP_URL, env.MAIL_FROM);
 const maintenance = new Queue(QUEUES.maintenance, { connection });
 const evenements = new Queue(QUEUES.evenements, { connection });
+const emails = new Queue(QUEUES.emails, { connection });
 const valkey = new Redis(env.VALKEY_URL, { maxRetriesPerRequest: null });
 
 await registerSchedules(maintenance);
@@ -24,6 +25,7 @@ const workers = startWorkers({
   db: database.db,
   valkey,
   mailer,
+  emails,
   logger,
   publicUrl: env.PUBLIC_URL,
 });
@@ -41,7 +43,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   await publisher.stop();
   await persistance.stop();
   await Promise.all(workers.map((w) => w.close()));
-  await Promise.all([maintenance.close(), evenements.close()]);
+  await Promise.all([maintenance.close(), evenements.close(), emails.close()]);
   mailer.close();
   valkey.disconnect();
   await database.close();

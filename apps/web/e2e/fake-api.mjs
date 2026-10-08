@@ -217,6 +217,7 @@ const seanceFictive = () => {
     fin: new Date(debut.getTime() + 3 * 3600_000).toISOString(),
     distanciel: false,
     intervenant: 'Sophie Arnaud',
+    modifiee: true,
   };
 };
 
@@ -1437,6 +1438,8 @@ const vueSeance = (s) => ({
   reporteeVersId: null,
   modifieeLe: null,
   ...s,
+  // RG-04-14 : l'API calcule le badge sur 7 jours ; la fausse API le montre dès qu'il y a une date.
+  modifiee: Boolean(s.modifieeLe),
   libelle: libelleSeance(s),
   conflits: actifEdt(s) ? conflitsEdt(s) : [],
   modifiable: actifEdt(s),

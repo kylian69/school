@@ -37,3 +37,4 @@ export * from './emploi-du-temps/recurrence.js';
 export * from './emploi-du-temps/conflits.js';
 export * from './emploi-du-temps/volumes.js';
 export * from './emploi-du-temps/changements.js';
+export * from './emploi-du-temps/notifications.js';

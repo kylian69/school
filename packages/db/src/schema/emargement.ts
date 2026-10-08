@@ -185,6 +185,55 @@ export const seanceForcage = pgTable(
   ],
 ).enableRLS();
 
+export const notificationEdtNature = pgEnum('notification_edt_nature', [
+  'publication',
+  'modification',
+  'annulation',
+  'report',
+  'retrait',
+]);
+
+/**
+ * RG-04-14 : changement d'une séance à signaler à une personne concernée (apprenant attendu ou
+ * intervenant). Une ligne par événement, personne et séance : le traitement d'un événement rejoué
+ * ne crée pas de doublon. Les lignes d'une personne partent en un seul email (immédiat si urgente,
+ * sinon au récapitulatif quotidien), puis sont supprimées : rien n'est conservé après l'envoi.
+ */
+export const notificationEdt = pgTable(
+  'notification_edt',
+  {
+    ...organisationScoped(),
+    /** Événement de la boîte d'envoi d'origine. */
+    evenementId: uuid().notNull(),
+    personneId: uuid().notNull(),
+    seanceId: uuid().notNull(),
+    nature: notificationEdtNature().notNull(),
+    /** RG-04-14 : la séance a lieu dans les 48 heures, envoi immédiat. */
+    urgente: boolean().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('notification_edt', t),
+    uniqueIndex('notification_edt_evenement_key').on(
+      t.organisationId,
+      t.evenementId,
+      t.personneId,
+      t.seanceId,
+    ),
+    index('notification_edt_personne_idx').on(t.organisationId, t.personneId),
+    foreignKey({
+      name: 'notification_edt_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    foreignKey({
+      name: 'notification_edt_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }),
+  ],
+).enableRLS();
+
 /**
  * Apprenants attendus à une séance, saisis un à un (P2). Remplacée en I3.2 par le public de la
  * séance (seance_public) : plus aucune écriture ; la vue seance_attendu_calcule la lit encore

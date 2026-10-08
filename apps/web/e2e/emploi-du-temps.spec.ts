@@ -321,6 +321,13 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await fiche.getByRole('button', { name: 'Voir la séance de remplacement' }).click();
     await expect(fiche.getByText(/14:00 – 16:00|de 14:00 à 16:00/)).toBeVisible();
     await expect(fiche.getByRole('button', { name: 'Reporter' })).toBeVisible();
+    // RG-04-14 : badge « modifié » sur la grille et dans la fiche, personnes concernées prévenues.
+    await expect(
+      fiche.getByText('Publiée, modifiée récemment (personnes concernées prévenues)'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /14:00 – 16:00, Publiée, modifiée récemment/ }),
+    ).toContainText('Modifiée');
   });
 
   test('US-04-02 crée une série hebdomadaire, déplace une séance par glisser-déposer et en annule une (RG-04-04)', async ({

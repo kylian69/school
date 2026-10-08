@@ -91,6 +91,7 @@ describe('Tâches planifiées et workers', () => {
     connection,
     db: app.db,
     mailer,
+    emails,
     logger,
     prefix,
     publicUrl: 'http://localhost:3000',
@@ -122,9 +123,11 @@ describe('Tâches planifiées et workers', () => {
     await registerSchedules(maintenance);
     const schedulers = await maintenance.getJobSchedulers();
     expect(schedulers.map((s) => [s.key, s.pattern]).sort()).toEqual([
+      [MAINTENANCE_JOBS.notificationsEdt, undefined],
       [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],
       [MAINTENANCE_JOBS.prechargementEmargement, undefined],
       [MAINTENANCE_JOBS.purgeCorbeille, '0 3 * * *'],
+      [MAINTENANCE_JOBS.recapitulatifEdt, '0 18 * * *'],
       [MAINTENANCE_JOBS.relancesInvitations, '0 9 * * *'],
     ]);
   });

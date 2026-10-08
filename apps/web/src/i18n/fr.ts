@@ -777,6 +777,8 @@ export const fr = {
     aucuneSeance: 'Aucune séance en cours ou à venir dans les 12 prochaines heures.',
     ouvrirAppel: 'Ouvrir l’appel',
     distanciel: 'À distance',
+    modifiee: 'Modifiée',
+    modifieeAide: 'Horaire, salle ou intervenant changé récemment',
     horaire: (debut: string, fin: string) => `${debut} – ${fin}`,
     appelEnCours: 'Appel en cours',
     scannez: 'Scannez pour émarger',
@@ -1647,6 +1649,10 @@ export const fr = {
       annulee: 'Annulée',
       reportee: 'Reportée',
     },
+    /** RG-04-14 : badge des séances modifiées depuis peu ; apprenants et intervenants prévenus. */
+    modifiee: 'Modifiée',
+    modifieeFiche: (statut: string) =>
+      `${statut}, modifiée récemment (personnes concernées prévenues)`,
     conflit: 'Conflit',
     avertissement: 'À vérifier',
     distanciel: 'À distance',
@@ -1656,11 +1662,13 @@ export const fr = {
       statut: string,
       salle: string | null,
       conflits: number,
+      modifiee = false,
     ) =>
       [
         libelle,
         horaire,
         statut,
+        modifiee ? 'modifiée récemment' : null,
         salle,
         conflits > 0 ? `${conflits} conflit${conflits > 1 ? 's' : ''}` : null,
       ]

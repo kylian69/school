@@ -26,3 +26,17 @@ export const EvenementJob = z.object({
   survenuLe: z.iso.datetime(),
 });
 export type EvenementJob = z.infer<typeof EvenementJob>;
+
+/** RG-04-14 : type de l'événement émis à la publication ou au changement d'une séance publiée. */
+export const EVENEMENT_CHANGEMENT_EDT = 'edt.changement';
+
+/**
+ * Charge de l'événement `edt.changement` : uniquement des identifiants. Les personnes concernées
+ * sont celles des séances au moment du traitement, plus les intervenants retirés (`retraits`).
+ */
+export const ChargeChangementEdt = z.object({
+  nature: z.enum(['publication', 'modification', 'annulation', 'report']),
+  seanceIds: z.array(z.uuid()).min(1),
+  retraits: z.array(z.object({ seanceId: z.uuid(), personneId: z.uuid() })).default([]),
+});
+export type ChargeChangementEdt = z.infer<typeof ChargeChangementEdt>;

@@ -110,6 +110,8 @@ export const Seance = z
     reporteeVersId: z.uuid().nullable(),
     /** RG-04-14 : dernière modification significative d'une séance publiée. */
     modifieeLe: instant.nullable(),
+    /** RG-04-14 : badge « modifié », affiché quelques jours après la dernière modification. */
+    modifiee: z.boolean(),
     conflits: z.array(ConflitSeance),
     forcages: z.array(ForcageConflit),
     modifiable: z.boolean(),

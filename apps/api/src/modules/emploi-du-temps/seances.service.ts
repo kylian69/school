@@ -26,8 +26,11 @@ import {
   type SemaineEdt,
   type SerieCreee,
   type VerificationSeance,
+  EVENEMENT_CHANGEMENT_EDT,
+  type ChargeChangementEdt,
 } from '@scolaly/contracts';
 import {
+  ajouterEvenement,
   enregistrerAudit,
   etablissement,
   groupeEleves,
@@ -46,6 +49,7 @@ import {
   type Transaction,
 } from '@scolaly/db';
 import {
+  badgeModifie,
   changementSignificatif,
   conflitsBloquants,
   creneauxLibres,
@@ -72,7 +76,8 @@ import { and, count, eq, gt, inArray, isNull, lt } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import { plageEdt } from '../../shared/plage-edt.js';
-import { VALKEY } from '../../shared/tokens.js';
+import type { Env } from '../../config/env.js';
+import { ENV, VALKEY } from '../../shared/tokens.js';
 import { promotionsCouvertes } from '../scolarite/index.js';
 import {
   ContexteService,
@@ -161,7 +166,17 @@ export class SeancesService {
     private readonly contexte: ContexteService,
     private readonly grille: GrilleService,
     @Inject(VALKEY) private readonly valkey: Redis,
+    @Inject(ENV) private readonly env: Env,
   ) {}
+
+  /**
+   * RG-04-14 : publication ou changement significatif de séances publiées, signalé aux personnes
+   * concernées par le worker (boîte d'envoi : l'événement part avec la transaction ou pas du tout).
+   */
+  private async signaler(tx: Transaction, charge: ChargeChangementEdt): Promise<void> {
+    if (charge.seanceIds.length === 0) return;
+    await ajouterEvenement(tx, EVENEMENT_CHANGEMENT_EDT, charge);
+  }
 
   // ——— Lecture ———
 
@@ -351,6 +366,8 @@ export class SeancesService {
     let contenu: ContenuValide | null = null;
     const maintenant = new Date();
     const aRetirer: string[] = [];
+    const signalees: string[] = [];
+    const retraits: ChargeChangementEdt['retraits'] = [];
     for (const l of concernees) {
       const moduleId = m.moduleId !== undefined ? m.moduleId : l.moduleId;
       const activite =
@@ -387,6 +404,12 @@ export class SeancesService {
         salleId,
         intervenantIds: contenu.intervenantIds,
       });
+      if (significatif) {
+        signalees.push(l.id);
+        for (const personneId of l.intervenantIds)
+          if (!contenu.intervenantIds.includes(personneId))
+            retraits.push({ seanceId: l.id, personneId });
+      }
       await tx
         .update(seance)
         .set({
@@ -429,6 +452,7 @@ export class SeancesService {
     // RG-04-06 : une séance publiée reste publiable ; sinon on la garde telle quelle.
     this.exigerPubliables(resultat.filter((s) => s.statut === 'publiee'));
     await this.retirerDuCache(aRetirer);
+    await this.signaler(tx, { nature: 'modification', seanceIds: signalees, retraits });
     for (const s of resultat) {
       await enregistrerAudit(tx, {
         action: 'seance.modifier',
@@ -457,6 +481,11 @@ export class SeancesService {
     const concernees = await this.concernees(tx, access, cible, a.portee);
     const avant = await this.versContrats(tx, access, concernees, null);
     const maintenant = new Date();
+    await this.signaler(tx, {
+      nature: 'annulation',
+      seanceIds: concernees.filter((l) => l.statut === 'publiee').map((l) => l.id),
+      retraits: [],
+    });
     for (const publiees of [true, false]) {
       const ids = concernees.filter((l) => (l.statut === 'publiee') === publiees).map((l) => l.id);
       if (ids.length === 0) continue;
@@ -568,6 +597,7 @@ export class SeancesService {
     const seances = await this.versContrats(tx, access, lignes, contenu, ctx);
     this.exigerPubliables(seances.filter((s) => s.id === nouvelId));
     await this.retirerDuCache([id]);
+    await this.signaler(tx, { nature: 'report', seanceIds: [id], retraits: [] });
     await enregistrerAudit(tx, {
       action: 'seance.reporter',
       objetType: 'seance',
@@ -628,6 +658,12 @@ export class SeancesService {
     );
     const resultat = await this.versContrats(tx, access, apres, contenu);
     this.exigerPubliables(resultat.filter((s) => s.statut === 'publiee'));
+    const publiees = concernees.filter((l) => l.statut === 'publiee').map((l) => l.id);
+    await this.signaler(tx, {
+      nature: 'modification',
+      seanceIds: publiees,
+      retraits: publiees.map((seanceId) => ({ seanceId, personneId: r.ancienId })),
+    });
     for (const s of resultat) {
       await enregistrerAudit(tx, {
         action: 'seance.remplacer-intervenant',
@@ -683,6 +719,7 @@ export class SeancesService {
         .update(seance)
         .set({ statut: 'publiee', updatedBy: access.userId })
         .where(inArray(seance.id, aPublier));
+    await this.signaler(tx, { nature: 'publication', seanceIds: aPublier, retraits: [] });
     for (const id of aPublier) {
       await enregistrerAudit(tx, {
         action: 'seance.publier',
@@ -1200,6 +1237,7 @@ export class SeancesService {
     );
     const promotionsDe = await this.promotionsDesSeances(tx, lignes);
     const gestion = await this.gestion(tx, access);
+    const maintenant = new Date();
     return lignes.map((l) => ({
       id: l.id,
       libelle: l.libelle,
@@ -1219,6 +1257,7 @@ export class SeancesService {
       serieId: l.serieId,
       reporteeVersId: l.reporteeVersId,
       modifieeLe: l.modifieeLe?.toISOString() ?? null,
+      modifiee: badgeModifie(l.modifieeLe, maintenant, this.env.EDT_BADGE_MODIFIE_JOURS),
       conflits:
         ctx && (l.statut === 'brouillon' || l.statut === 'publiee')
           ? detecterConflits(versPlanifiee(l), ctx)

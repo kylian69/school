@@ -28,13 +28,14 @@ import {
   initialiserRolesParDefaut,
   newId,
   organisation,
+  outboxEvenement,
   personne,
   presence,
   role,
   seance,
   seanceIntervenant,
 } from '@scolaly/db';
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
@@ -989,5 +990,42 @@ describe('US-04-11 annulation, report et remplacement', () => {
     // Les présences déjà scannées restent, le worker les écrit en base.
     expect(await valkey.exists(CLES_EMARGEMENT.presences(remplacement.id))).toBe(1);
     await valkey.del(CLES_EMARGEMENT.presences(remplacement.id));
+  });
+
+  it('RG-04-14 signale la publication et chaque changement significatif, avec le badge « modifié »', async () => {
+    const signalee = await publiee('27');
+    expect(signalee.modifiee).toBe(false);
+    const changee = await requete('PATCH', `/api/edt/seances/${signalee.id}`, admin, {
+      salleId: salles.grande.id,
+      intervenantIds: [coIntervenantId],
+    });
+    expect(changee.json<ResultatSeances>().seances[0]?.modifiee).toBe(true);
+    // Un changement mineur (lien de visio) n'est pas signalé.
+    await requete('PATCH', `/api/edt/seances/${signalee.id}`, admin, {
+      lienVisio: 'https://visio.example.test/autre',
+    });
+    await requete('POST', `/api/edt/seances/${signalee.id}/annulation`, admin, {
+      motif: 'Fermeture exceptionnelle',
+    });
+    const evenements = await owner.db
+      .select({ charge: outboxEvenement.charge })
+      .from(outboxEvenement)
+      .where(
+        and(eq(outboxEvenement.organisationId, ecole), eq(outboxEvenement.type, 'edt.changement')),
+      )
+      .orderBy(asc(outboxEvenement.survenuLe));
+    expect(
+      evenements
+        .map((e) => e.charge as { seanceIds: string[] })
+        .filter((c) => c.seanceIds.includes(signalee.id)),
+    ).toEqual([
+      { nature: 'publication', seanceIds: [signalee.id], retraits: [] },
+      {
+        nature: 'modification',
+        seanceIds: [signalee.id],
+        retraits: [{ seanceId: signalee.id, personneId: intervenantId }],
+      },
+      { nature: 'annulation', seanceIds: [signalee.id], retraits: [] },
+    ]);
   });
 });

@@ -6,7 +6,7 @@ import {
   type ResultatScan as Resultat,
   type SeanceProche,
 } from '@scolaly/contracts';
-import { Button, Card } from '@scolaly/ui';
+import { Badge, Button, Card } from '@scolaly/ui';
 import jsQR from 'jsqr';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { fr } from '@/i18n/fr';
@@ -169,7 +169,14 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
           <Card className="flex flex-col gap-3">
             {seances.map((s) => (
               <div key={s.id}>
-                <h2 className="text-base font-semibold">{s.libelle}</h2>
+                <h2 className="flex items-center gap-2 text-base font-semibold">
+                  {s.libelle}
+                  {s.modifiee ? (
+                    <Badge tone="warn" title={t.modifieeAide}>
+                      {t.modifiee}
+                    </Badge>
+                  ) : null}
+                </h2>
                 <p className="text-sm text-muted">
                   {t.horaire(formatHeure(s.debut), formatHeure(s.fin))}
                   {s.intervenant ? ` · ${s.intervenant}` : ''}

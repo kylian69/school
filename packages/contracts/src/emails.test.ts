@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cheminLogo, emailInvitation, emailLienMagique, miseEnPageEmail } from './emails.js';
+import {
+  cheminLogo,
+  emailChangementsEdt,
+  emailInvitation,
+  emailLienMagique,
+  miseEnPageEmail,
+} from './emails.js';
 
 const LIEN = 'https://ecole.exemple.test/activation/abc';
 const EXPIRE = new Date('2026-10-20T10:00:00Z');
@@ -71,5 +77,61 @@ describe('US-01-14 emails aux couleurs de l’école', () => {
 
   it('construit l’adresse versionnée du logo', () => {
     expect(cheminLogo('org', 'a'.repeat(64))).toBe(`/api/ecoles/org/logo?v=${'a'.repeat(16)}`);
+  });
+});
+
+describe('RG-04-14 email des changements de l’emploi du temps', () => {
+  const base = {
+    to: 'lea@exemple.test',
+    prenom: 'Léa',
+    ecole: 'École de gestion de Lumerac',
+    lien: 'https://ecole.exemple.test/',
+  };
+  const seance = {
+    libelle: 'Comptabilité générale',
+    debut: new Date('2026-11-03T08:00:00Z'),
+    fin: new Date('2026-11-03T10:00:00Z'),
+    fuseau: 'Europe/Paris',
+    salle: 'B12',
+    reporteeVers: null,
+  };
+
+  it('RG-04-14 regroupe les changements urgents dans un seul email, à l’heure de l’établissement', () => {
+    const email = emailChangementsEdt({
+      ...base,
+      recapitulatif: false,
+      changements: [
+        { ...seance, nature: 'modification' },
+        { ...seance, nature: 'annulation', libelle: 'Droit social' },
+      ],
+    });
+    expect(email.subject).toBe('Changement de votre emploi du temps · École de gestion de Lumerac');
+    expect(email.text).toContain(
+      '- Séance modifiée · Comptabilité générale · mardi 03/11/2026, 09:00 – 11:00 · salle B12',
+    );
+    expect(email.text).toContain(
+      '- Séance annulée · Droit social · mardi 03/11/2026, 09:00 – 11:00',
+    );
+    expect(email.text).not.toContain('Droit social · mardi 03/11/2026, 09:00 – 11:00 · salle');
+    expect(email.html).toContain('Ouvrir Scolaly');
+  });
+
+  it('RG-04-14 annonce le nouveau créneau d’un report dans le récapitulatif', () => {
+    const email = emailChangementsEdt({
+      ...base,
+      recapitulatif: true,
+      changements: [
+        {
+          ...seance,
+          nature: 'report',
+          reporteeVers: {
+            debut: new Date('2026-11-10T13:00:00Z'),
+            fin: new Date('2026-11-10T15:00:00Z'),
+          },
+        },
+      ],
+    });
+    expect(email.subject).toContain('Récapitulatif');
+    expect(email.text).toContain('reportée au mardi 10/11/2026, 14:00 – 16:00');
   });
 });

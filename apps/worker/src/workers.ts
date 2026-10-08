@@ -1,4 +1,4 @@
-import { EmailJob, QUEUES } from '@scolaly/contracts';
+import { EmailJob, EVENEMENT_CHANGEMENT_EDT, EvenementJob, QUEUES } from '@scolaly/contracts';
 import { creerPartitionsAudit, purgerCorbeille, type Database } from '@scolaly/db';
 import { DELAI_CORBEILLE_JOURS } from '@scolaly/domain';
 import type { Queue } from 'bullmq';
@@ -7,6 +7,7 @@ import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
 import { prechargerSeances } from './emargement.js';
 import type { Mailer } from './mailer.js';
+import { enregistrerChangementEdt, envoyerNotificationsEdt } from './notifications-edt.js';
 import { relancerInvitations } from './relances.js';
 
 export const MAINTENANCE_JOBS = {
@@ -14,6 +15,8 @@ export const MAINTENANCE_JOBS = {
   relancesInvitations: 'relances-invitations',
   purgeCorbeille: 'purge-corbeille',
   prechargementEmargement: 'prechargement-emargement',
+  notificationsEdt: 'notifications-edt',
+  recapitulatifEdt: 'recapitulatif-edt',
 } as const;
 
 /** Tâches planifiées (architecture section 6). Idempotent : à appeler à chaque démarrage. */
@@ -48,6 +51,18 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
       opts: { removeOnComplete: 10, removeOnFail: 100 },
     },
   );
+  // Chaque minute : changements d'EDT des 48 prochaines heures, rafales regroupées (RG-04-14).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.notificationsEdt,
+    { every: 60_000 },
+    { name: MAINTENANCE_JOBS.notificationsEdt, opts: { removeOnComplete: 10, removeOnFail: 100 } },
+  );
+  // Chaque jour à 18 h (Paris) : récapitulatif des autres changements d'EDT (RG-04-14).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.recapitulatifEdt,
+    { pattern: '0 18 * * *', tz: 'Europe/Paris' },
+    { name: MAINTENANCE_JOBS.recapitulatifEdt, opts: { removeOnComplete: 30, removeOnFail: 100 } },
+  );
 }
 
 export function startWorkers(options: {
@@ -56,6 +71,8 @@ export function startWorkers(options: {
   /** Cache de l'émargement (préchargement des séances). */
   valkey: Redis;
   mailer: Mailer;
+  /** File des emails, où partent les notifications (nouvelles tentatives, clé d'idempotence). */
+  emails: Queue;
   logger: Logger;
   /** Préfixe des clés BullMQ (isolement des tests). */
   prefix?: string;
@@ -64,6 +81,15 @@ export function startWorkers(options: {
 }): Worker[] {
   const { connection, db, mailer, logger } = options;
   const common = { connection, ...(options.prefix ? { prefix: options.prefix } : {}) };
+  const confier = async (email: EmailJob, cle: string) => {
+    await options.emails.add('envoi', email, {
+      jobId: cle,
+      attempts: 5,
+      backoff: { type: 'exponential', delay: 30_000 },
+      removeOnComplete: 1000,
+      removeOnFail: 5000,
+    });
+  };
   const maintenance = new Worker(
     QUEUES.maintenance,
     async (job) => {
@@ -78,6 +104,10 @@ export function startWorkers(options: {
         logger.info({ bilan }, 'Corbeille purgée');
       } else if (job.name === MAINTENANCE_JOBS.prechargementEmargement) {
         await prechargerSeances(db, options.valkey);
+      } else if (job.name === MAINTENANCE_JOBS.notificationsEdt) {
+        await envoyerNotificationsEdt(db, confier, options.publicUrl, 'immediat');
+      } else if (job.name === MAINTENANCE_JOBS.recapitulatifEdt) {
+        await envoyerNotificationsEdt(db, confier, options.publicUrl, 'recapitulatif');
       } else throw new Error(`Tâche de maintenance inconnue : ${job.name}`);
     },
     common,
@@ -89,10 +119,20 @@ export function startWorkers(options: {
     },
     { ...common, concurrency: 5 },
   );
-  for (const worker of [maintenance, emails]) {
+  // Événements internes : seuls ceux qui ont un traitement sont consommés, les autres ignorés.
+  const evenements = new Worker(
+    QUEUES.evenements,
+    async (job) => {
+      const evenement = EvenementJob.parse(job.data);
+      if (evenement.type === EVENEMENT_CHANGEMENT_EDT)
+        await enregistrerChangementEdt(db, evenement);
+    },
+    { ...common, concurrency: 5 },
+  );
+  for (const worker of [maintenance, emails, evenements]) {
     worker.on('failed', (job, error) => {
       logger.warn({ queue: worker.name, jobId: job?.id, err: error.message }, 'Tâche en échec');
     });
   }
-  return [maintenance, emails];
+  return [maintenance, emails, evenements];
 }

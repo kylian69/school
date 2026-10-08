@@ -358,6 +358,13 @@
       "when": 1791481888316,
       "tag": "0050_report_seance",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1791495961823,
+      "tag": "0051_notifications_edt",
+      "breakpoints": true
     }
   ]
 }
