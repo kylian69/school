@@ -946,7 +946,7 @@ describe('US-04-11 annulation, report et remplacement', () => {
     const trace = (await audits(remplacement.id)).find(
       (a) => a.action === 'seance.remplacer-intervenant',
     );
-    expect(trace?.avant).toMatchObject({ intervenantIds: expect.arrayContaining([intervenantId]) });
+    expect((trace?.avant as Seance | undefined)?.intervenantIds).toContain(intervenantId);
     expect(trace?.apres).toMatchObject({ intervenantIds: apres?.intervenantIds });
   });
 
