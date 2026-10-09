@@ -187,6 +187,11 @@ function identifiantCalcule(s: Omit<SeanceImportee, 'ligne' | 'identifiant'>): s
   return `auto:${s.debut.toISOString()}|${s.fin.toISOString()}|${normaliserNom(s.module)}|${publics}`;
 }
 
+const tropDeSeances = (n: number): MessageImport => ({
+  ligne: null,
+  message: `Le fichier contient ${String(n)} séances : ${String(IMPORT_EDT_SEANCES_MAX)} au plus. Découpez-le par période.`,
+});
+
 /** Retire les identifiants en double (la seconde ligne est une erreur). */
 function sansDoublon(lecture: LectureImportEdt): LectureImportEdt {
   const vus = new Map<string, number>();
@@ -203,11 +208,7 @@ function sansDoublon(lecture: LectureImportEdt): LectureImportEdt {
       });
     }
   }
-  if (seances.length > IMPORT_EDT_SEANCES_MAX)
-    lecture.erreurs.push({
-      ligne: null,
-      message: `Le fichier contient ${String(seances.length)} séances : ${String(IMPORT_EDT_SEANCES_MAX)} au plus. Découpez-le par période.`,
-    });
+  if (seances.length > IMPORT_EDT_SEANCES_MAX) lecture.erreurs.push(tropDeSeances(seances.length));
   return { ...lecture, seances };
 }
 
@@ -230,6 +231,10 @@ export function lireImportEdt(tableau: TableauLu, fuseau: string): LectureImport
       ligne: 1,
       message: `Colonne${noms.length > 1 ? 's' : ''} absente${noms.length > 1 ? 's' : ''} : ${noms.join(', ')}. Reprenez le modèle à télécharger.`,
     });
+    return lecture;
+  }
+  if (tableau.lignes.length > IMPORT_EDT_SEANCES_MAX) {
+    lecture.erreurs.push(tropDeSeances(tableau.lignes.length));
     return lecture;
   }
   tableau.lignes.forEach((cellules, index) => {
@@ -328,19 +333,19 @@ interface DateIcal {
 function lireDateIcal(p: Propriete): DateIcal | null {
   const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/.exec(p.valeur.trim());
   if (!m) return null;
-  const jour = `${m[1] ?? ''}-${m[2] ?? ''}-${m[3] ?? ''}`;
+  const jour = `${String(m[1])}-${String(m[2])}-${String(m[3])}`;
   if (m[4] === undefined) return { jour, heure: '00:00', fuseau: null, journee: true };
   return {
     jour,
-    heure: `${m[4]}:${m[5] ?? '00'}`,
+    heure: `${m[4]}:${String(m[5])}`,
     fuseau: m[7] ? 'UTC' : (p.parametres.TZID ?? null),
     journee: false,
   };
 }
 
-function instantIcal(d: DateIcal, fuseauDefaut: string): Date | null {
+function instantIcal(d: DateIcal, fuseau: string): Date | null {
   try {
-    return instantLocal(d.jour, d.heure, d.fuseau ?? fuseauDefaut);
+    return instantLocal(d.jour, d.heure, fuseau);
   } catch {
     return null;
   }
@@ -350,8 +355,8 @@ function instantIcal(d: DateIcal, fuseauDefaut: string): Date | null {
 function dureeIcal(valeur: string): number | null {
   const m = /^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:\d+S)?)?$/.exec(valeur.trim());
   if (!m) return null;
-  const [, w, d, h, mi] = m.map((x: string | undefined) => Number(x ?? '0'));
-  return (((w ?? 0) * 7 + (d ?? 0)) * 24 + (h ?? 0)) * 60 + (mi ?? 0);
+  const n = (rang: number) => Number(m[rang] ?? '0');
+  return ((n(1) * 7 + n(2)) * 24 + n(3)) * 60 + n(4);
 }
 
 const JOURS_ICAL = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
@@ -461,14 +466,17 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
       return;
     }
     const pFin = lire('DTEND');
+    const pDuree = lire('DURATION');
     const finLue = pFin ? lireDateIcal(pFin) : null;
-    const debutInstant = instantIcal(debut, fuseau);
-    if (!debutInstant) return erreur(`fuseau horaire inconnu : ${debut.fuseau ?? ''}.`);
+    // Heure flottante : fuseau de l'établissement.
+    const fuseauEvenement = debut.fuseau ?? fuseau;
+    const debutInstant = instantIcal(debut, fuseauEvenement);
+    if (!debutInstant) return erreur(`fuseau horaire inconnu : ${fuseauEvenement}.`);
     let duree: number | null = null;
     if (finLue) {
-      const finInstant = instantIcal(finLue, fuseau);
+      const finInstant = instantIcal(finLue, finLue.fuseau ?? fuseau);
       duree = finInstant ? (finInstant.getTime() - debutInstant.getTime()) / 60_000 : null;
-    } else if (lire('DURATION')) duree = dureeIcal(lire('DURATION')?.valeur ?? '');
+    } else if (pDuree) duree = dureeIcal(pDuree.valeur);
     if (duree === null || duree <= 0) return erreur('fin absente ou antérieure au début.');
 
     const champs: Record<'publics' | 'intervenants' | 'type', string[]> = {
@@ -478,7 +486,7 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
     };
     for (const l of texteIcal(lire('DESCRIPTION')?.valeur ?? '').split('\n')) {
       const m = /^\s*([^:]+?)\s*:\s*(.+)$/.exec(l);
-      const cle = m ? normaliserNom(m[1] ?? '') : '';
+      const cle = m ? normaliserNom(String(m[1])) : '';
       const champ = ALIAS.publics.includes(cle)
         ? 'publics'
         : ALIAS.intervenants.includes(cle)
@@ -488,8 +496,9 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
             : null;
       if (champ && m?.[2]) champs[champ].push(...decouper(m[2]));
     }
-    const type = lireTypeSeance(champs.type[0] ?? '');
-    if (!type) return erreur(`type inconnu : « ${champs.type[0] ?? ''} ».`);
+    const typeLu = champs.type[0] ?? '';
+    const type = lireTypeSeance(typeLu);
+    if (!type) return erreur(`type inconnu : « ${typeLu} ».`);
     const contenu = {
       module: resume,
       publics: champs.publics,
@@ -526,8 +535,7 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
     for (const jour of jours) {
       const cle = `${uid}/${jour}T${debut.heure}`;
       if (exclus.has(jour) || exceptions.has(cle)) continue;
-      const instant = instantIcal({ ...debut, jour }, fuseau);
-      if (!instant) continue;
+      const instant = instantLocal(jour, debut.heure, fuseauEvenement);
       lecture.seances.push({
         ligne,
         identifiant: cle,
@@ -554,7 +562,8 @@ export function rapprocher(libelle: string, candidats: readonly Candidat[]): str
   const trouves = new Set(
     candidats.filter((c) => c.libelles.some((l) => normaliserNom(l) === forme)).map((c) => c.id),
   );
-  return trouves.size === 1 ? ([...trouves][0] ?? null) : null;
+  for (const id of trouves) return trouves.size === 1 ? id : null;
+  return null;
 }
 
 export interface ContenuEmpreinte {

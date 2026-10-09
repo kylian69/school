@@ -116,6 +116,30 @@ describe('RG-04-08 lecture d’un tableur d’emploi du temps', () => {
     expect(lu.erreurs[0]?.message).toContain(message);
   });
 
+  it('RG-01-18 signale une seule colonne absente', () => {
+    const lu = lireImportEdt(tableau([], ['Date', 'Début', 'Fin', 'Module']), PARIS);
+    expect(lu.erreurs[0]?.message).toBe(
+      'Colonne absente : Groupes. Reprenez le modèle à télécharger.',
+    );
+  });
+
+  it('RG-04-08 accepte une ligne plus courte que l’en-tête (salle absente)', () => {
+    const lu = lireImportEdt(tableau([['12/10/2026', '08:00', '10:00', 'M', 'G']]), PARIS);
+    expect(lu.erreurs).toEqual([]);
+    expect(lu.seances[0]).toMatchObject({ salle: null, intervenants: [], type: 'cm' });
+  });
+
+  it.each([
+    [['12/10/2026', '', 'abc', 'M', 'G'], 'Heure de début illisible : «  »'],
+    [['12/10/2026', '08:00', 'abc', 'M', 'G'], 'Heure de fin ou durée illisible : « abc »'],
+  ])('RG-01-18 explique une durée illisible (%j)', (cellules, message) => {
+    const lu = lireImportEdt(
+      tableau([cellules], ['Date', 'Début', 'Durée', 'Module', 'Groupe']),
+      PARIS,
+    );
+    expect(lu.erreurs[0]?.message).toBe(`${message}.`);
+  });
+
   it('RG-04-11 refuse un identifiant en double dans le fichier', () => {
     const lu = lireImportEdt(tableau([ligneModele, ligneModele]), PARIS);
     expect(lu.seances).toHaveLength(1);
@@ -130,7 +154,10 @@ describe('RG-04-08 lecture d’un tableur d’emploi du temps', () => {
       `id-${String(i)}`,
     ]);
     const lu = lireImportEdt(tableau(lignes), PARIS);
-    expect(lu.erreurs.at(-1)?.ligne).toBeNull();
+    expect(lu.seances).toEqual([]);
+    expect(lu.erreurs).toEqual([
+      { ligne: null, message: expect.stringContaining('5000 au plus') as string },
+    ]);
   });
 });
 
@@ -141,6 +168,7 @@ describe('RG-04-08 lecture des valeurs', () => {
     ['8h', 480],
     ['08:30:00', 510],
     ['0,375', 540],
+    ['0,99999', null],
     ['25:00', null],
     ['', null],
   ])('lit l’heure %j', (saisie, minutes) => {
@@ -217,6 +245,7 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
   it('RG-04-09 lit une heure UTC, une heure flottante et une durée', () => {
     const lu = lireIcal(
       ics(
+        '',
         evenement('UID:1', 'DTSTART:20261012T080000Z', 'DURATION:PT1H30M', 'SUMMARY:M'),
         evenement('UID:2', 'DTSTART:20261012T080000', 'DTEND:20261012T090000', 'SUMMARY:M'),
       ),
@@ -278,7 +307,29 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
     ]);
   });
 
+  it('RG-04-09 ne retient pas les jours d’une semaine antérieurs au premier cours', () => {
+    const lu = lireIcal(
+      ics(
+        evenement(
+          'UID:me',
+          'DTSTART:20261014T080000',
+          'DTEND:20261014T090000',
+          'RRULE:FREQ=WEEKLY;BYDAY=MO,WE;COUNT=3',
+          'SUMMARY:M',
+        ),
+      ),
+      PARIS,
+    );
+    expect(lu.seances.map((s) => s.identifiant)).toEqual([
+      'me/2026-10-14T08:00',
+      'me/2026-10-19T08:00',
+      'me/2026-10-21T08:00',
+    ]);
+  });
+
   it.each([
+    ['RRULE:COUNT=3', 'répétition non prise en charge'],
+    ['RRULE:FREQ=WEEKLY;BYDAY=XX;COUNT=2', 'répétition non prise en charge'],
     ['RRULE:FREQ=MONTHLY;COUNT=3', 'répétition non prise en charge'],
     ['RRULE:FREQ=WEEKLY', 'répétition non prise en charge'],
   ])('RG-04-09 refuse une répétition %j', (regle, message) => {
@@ -321,6 +372,12 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
   it.each([
     [['DTSTART:20261012T080000Z', 'DTEND:20261012T090000Z', 'SUMMARY:M'], 'sans UID'],
     [['UID:1', 'DTSTART:demain', 'SUMMARY:M'], 'date de début illisible'],
+    [['UID:1', 'SUMMARY:M'], 'date de début illisible'],
+    [['UID:1', 'DTSTART:20261012T080000Z', 'DURATION:bientôt', 'SUMMARY:M'], 'fin absente'],
+    [
+      ['UID:1', 'DTSTART:20261012T080000Z', 'DTEND;TZID=Mars/Olympe:20261012T090000', 'SUMMARY:M'],
+      'fin absente',
+    ],
     [['UID:1', 'DTSTART;TZID=Mars/Olympe:20261012T080000', 'SUMMARY:M'], 'fuseau horaire inconnu'],
     [['UID:1', 'DTSTART:20261012T080000Z', 'SUMMARY:M'], 'fin absente'],
     [['UID:1', 'DTSTART:20261012T080000Z', 'DTEND:20261012T090000Z'], 'titre absent'],
@@ -338,6 +395,24 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
     const lu = lireIcal(ics(evenement(...lignes)), PARIS);
     expect(lu.seances).toEqual([]);
     expect(lu.erreurs[0]?.message).toContain(message);
+  });
+
+  it('RG-01-17 limite le nombre d’occurrences d’un fichier iCal', () => {
+    const lu = lireIcal(
+      ics(
+        ...Array.from({ length: 14 }, (_, i) =>
+          evenement(
+            `UID:r${String(i)}`,
+            'DTSTART:20261012T080000Z',
+            'DTEND:20261012T090000Z',
+            'RRULE:FREQ=DAILY;COUNT=366',
+            'SUMMARY:M',
+          ),
+        ),
+      ),
+      PARIS,
+    );
+    expect(lu.erreurs.at(-1)?.message).toContain('au plus');
   });
 
   it('RG-04-09 signale un fichier sans événement', () => {
@@ -378,6 +453,12 @@ describe('RG-04-11 et RG-04-12 réimport', () => {
 
   it('l’empreinte ne dépend pas de l’ordre des listes', () => {
     expect(empreinteSeance({ ...contenu, promotionIds: ['p1', 'p2'] })).toBe(fichier);
+  });
+
+  it('l’empreinte distingue une activité hors maquette sans type', () => {
+    expect(
+      empreinteSeance({ ...contenu, type: null, moduleId: null, activite: 'Réunion' }),
+    ).not.toBe(fichier);
   });
 
   it('RG-04-11 crée une séance inconnue', () => {
