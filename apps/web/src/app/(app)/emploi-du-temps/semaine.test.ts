@@ -85,6 +85,17 @@ describe('fond de la grille', () => {
     expect(fondDuJour('2026-10-08', disponibilites, fuseau)).toEqual([]);
   });
 
+  it('RG-04-18 garde le motif d’une indisponibilité lu par un gestionnaire', () => {
+    const indisponibilites = [
+      { debut: '2026-10-05T08:00:00Z', fin: '2026-10-05T10:00:00Z', motif: 'Jury' },
+      { debut: '2026-10-05T12:00:00Z', fin: '2026-10-05T13:00:00Z', motif: null },
+    ];
+    expect(fondDuJour('2026-10-05', { creneaux: [], indisponibilites }, fuseau)).toEqual([
+      { nature: 'indisponible', debut: 600, fin: 720, motif: 'Jury' },
+      { nature: 'indisponible', debut: 840, fin: 900 },
+    ]);
+  });
+
   it('écrit les durées en heures et minutes', () => {
     expect(formatDuree(720)).toBe('12 h');
     expect(formatDuree(90)).toBe('1 h 30');

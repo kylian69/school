@@ -149,17 +149,19 @@ export interface BlocFond {
   nature: 'disponible' | 'indisponible';
   debut: number;
   fin: number;
+  /** Motif d'une indisponibilité, transmis aux seuls gestionnaires de l'intervenant. */
+  motif?: string;
 }
 
 /**
  * RG-04-18 : blocs de fond d'un jour, en minutes depuis minuit : créneaux récurrents de ce jour
- * de la semaine, puis indisponibilités ponctuelles coupées au jour.
+ * de la semaine, puis indisponibilités ponctuelles coupées au jour, avec leur motif s'il est lu.
  */
 export function fondDuJour(
   jour: string,
   disponibilites: {
     creneaux: readonly { jourSemaine: number; heureDebut: string; heureFin: string }[];
-    indisponibilites: readonly { debut: string; fin: string }[];
+    indisponibilites: readonly { debut: string; fin: string; motif?: string | null }[];
   },
   fuseau: string,
 ): BlocFond[] {
@@ -178,6 +180,7 @@ export function fondDuJour(
       nature: 'indisponible',
       debut: debut.jour === jour ? debut.minutes : 0,
       fin: fin.jour === jour ? fin.minutes : 24 * 60,
+      ...(i.motif ? { motif: i.motif } : {}),
     };
     if (bloc.fin > bloc.debut) blocs.push(bloc);
   }

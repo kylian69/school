@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { RechercheSemaine, SemaineEdt } from '@scolaly/contracts';
 import {
+  affectation,
   calendrierAlternance,
+  indisponibiliteIntervenant,
   groupePromotion,
   maquetteModule,
   maquetteUe,
@@ -10,12 +12,16 @@ import {
   type Transaction,
 } from '@scolaly/db';
 import { creneauApplicable, volumesAPlacer } from '@scolaly/domain';
-import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, lt, or } from 'drizzle-orm';
+import { FieldEncryption } from '../../shared/crypto/field-encryption.js';
+import { FIELD_ENCRYPTION } from '../../shared/tokens.js';
 import { ContexteService, joursEntre, versPlanifiee, volumeEnMinutes } from './contexte.service.js';
+import { lireMotifIndisponibilite } from './disponibilites.service.js';
 
 type Fond = Pick<SemaineEdt, 'jours' | 'disponibilites' | 'aPlacer'>;
 
 export interface DemandeFond {
+  organisationId: string;
   etablissementId: string;
   /** Premier et dernier jours de la semaine, et la même semaine en instants UTC. */
   debut: string;
@@ -36,7 +42,10 @@ export interface DemandeFond {
  */
 @Injectable()
 export class GrilleService {
-  constructor(private readonly contexte: ContexteService) {}
+  constructor(
+    private readonly contexte: ContexteService,
+    @Inject(FIELD_ENCRYPTION) private readonly chiffrement: FieldEncryption,
+  ) {}
 
   async fond(tx: Transaction, d: DemandeFond): Promise<Fond> {
     const promos = await this.promotionsDuPublic(tx, d);
@@ -123,12 +132,35 @@ export class GrilleService {
     intervenantId: string,
     d: DemandeFond,
   ): Promise<NonNullable<Fond['disponibilites']>> {
-    const { disponibilites, indisponibilites } = await this.contexte.disponibilites(
+    const { disponibilites } = await this.contexte.disponibilites(
       tx,
       [intervenantId],
       d.debutFenetre,
       d.finFenetre,
     );
+    const indisponibilites = await tx
+      .select({
+        id: indisponibiliteIntervenant.id,
+        debut: indisponibiliteIntervenant.debut,
+        fin: indisponibiliteIntervenant.fin,
+        motifChiffre: indisponibiliteIntervenant.motifChiffre,
+      })
+      .from(indisponibiliteIntervenant)
+      .where(
+        and(
+          eq(indisponibiliteIntervenant.personneId, intervenantId),
+          isNull(indisponibiliteIntervenant.deletedAt),
+          lt(indisponibiliteIntervenant.debut, d.finFenetre),
+          gt(indisponibiliteIntervenant.fin, d.debutFenetre),
+        ),
+      )
+      .orderBy(asc(indisponibiliteIntervenant.debut));
+    // Le motif (donnée personnelle chiffrée) ne va qu'aux gestionnaires de l'intervenant : toute
+    // l'école, ou une promotion gérée où il est affecté. Aucune trace : les lectures ne sont pas
+    // journalisées.
+    const motifVisible =
+      indisponibilites.some((i) => i.motifChiffre !== null) &&
+      (await this.gereIntervenant(tx, intervenantId, d.gestion));
     // Un créneau ne figure que s'il est valable le jour de la semaine affichée qui lui correspond
     // (période de validité) ; jour ISO : lundi = 1 … dimanche = 7.
     const jourIso = (jour: string) => ((new Date(`${jour}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
@@ -147,8 +179,34 @@ export class GrilleService {
       indisponibilites: indisponibilites.map((i) => ({
         debut: i.debut.toISOString(),
         fin: i.fin.toISOString(),
+        motif: motifVisible
+          ? lireMotifIndisponibilite(this.chiffrement, d.organisationId, i)
+          : null,
       })),
     };
+  }
+
+  /** L'intervenant est dans le périmètre de gestion : toute l'école, ou affecté à une promotion gérée. */
+  private async gereIntervenant(
+    tx: Transaction,
+    intervenantId: string,
+    gestion: DemandeFond['gestion'],
+  ): Promise<boolean> {
+    if (gestion === false) return false;
+    if (gestion === null) return true;
+    if (gestion.size === 0) return false;
+    const [lien] = await tx
+      .select({ id: affectation.id })
+      .from(affectation)
+      .where(
+        and(
+          eq(affectation.personneId, intervenantId),
+          inArray(affectation.promotionId, [...gestion]),
+          isNull(affectation.deletedAt),
+        ),
+      )
+      .limit(1);
+    return lien !== undefined;
   }
 
   /**

@@ -443,8 +443,9 @@ export const disponibiliteIntervenant = pgTable(
 
 /**
  * RG-04-18 : indisponibilité ponctuelle d'un intervenant. Le motif, facultatif, est une donnée
- * personnelle : chiffré par champ (contexte `indisponibilite_intervenant.motif`), lu par le seul
- * intervenant, jamais dans les journaux ni dans la grille.
+ * personnelle : chiffré par champ (contexte `indisponibilite_intervenant.motif`), lu par
+ * l'intervenant et par les gestionnaires de son périmètre (`edt:gerer`), jamais dans les journaux.
+ * Conservation (packages/referentials) : motif effacé à la fin, ligne supprimée ensuite.
  */
 export const indisponibiliteIntervenant = pgTable(
   'indisponibilite_intervenant',

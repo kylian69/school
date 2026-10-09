@@ -307,7 +307,14 @@ export const DisponibilitesEdt = z
     creneaux: z.array(
       z.object({ jourSemaine: z.int().min(1).max(7), heureDebut: heure, heureFin: heure }),
     ),
-    indisponibilites: z.array(z.object({ debut: instant, fin: instant })),
+    indisponibilites: z.array(
+      z.object({
+        debut: instant,
+        fin: instant,
+        /** Pour un gestionnaire de l'intervenant (edt:gerer, périmètre) ; sinon null. */
+        motif: z.string().nullable(),
+      }),
+    ),
   })
   .meta({ id: 'DisponibilitesEdt' });
 export type DisponibilitesEdt = z.infer<typeof DisponibilitesEdt>;
@@ -552,7 +559,7 @@ export const IndisponibiliteDeclaree = z
     id: z.uuid(),
     debut: instant,
     fin: instant,
-    /** Lu par le seul intervenant ; null si absent ou illisible. */
+    /** Lu par l'intervenant (et ses gestionnaires dans la grille) ; null si absent ou illisible. */
     motif: z.string().nullable(),
   })
   .meta({ id: 'IndisponibiliteDeclaree' });

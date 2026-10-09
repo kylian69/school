@@ -5,6 +5,7 @@ import type { Queue } from 'bullmq';
 import { Worker, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
+import { purgerIndisponibilitesPassees } from './conservation.js';
 import { prechargerSeances } from './emargement.js';
 import type { Mailer } from './mailer.js';
 import { enregistrerChangementEdt, envoyerNotificationsEdt } from './notifications-edt.js';
@@ -17,6 +18,7 @@ export const MAINTENANCE_JOBS = {
   prechargementEmargement: 'prechargement-emargement',
   notificationsEdt: 'notifications-edt',
   recapitulatifEdt: 'recapitulatif-edt',
+  conservationIndisponibilites: 'conservation-indisponibilites',
 } as const;
 
 /** Tâches planifiées (architecture section 6). Idempotent : à appeler à chaque démarrage. */
@@ -41,6 +43,16 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
     MAINTENANCE_JOBS.purgeCorbeille,
     { pattern: '0 3 * * *', tz: 'Europe/Paris' },
     { name: MAINTENANCE_JOBS.purgeCorbeille, opts: { removeOnComplete: 30, removeOnFail: 100 } },
+  );
+  // Chaque jour à 3 h 30 (Paris) : motifs des indisponibilités terminées effacés, indisponibilités
+  // anciennes supprimées (RG-04-18 ; durées dans packages/referentials).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.conservationIndisponibilites,
+    { pattern: '30 3 * * *', tz: 'Europe/Paris' },
+    {
+      name: MAINTENANCE_JOBS.conservationIndisponibilites,
+      opts: { removeOnComplete: 30, removeOnFail: 100 },
+    },
   );
   // Chaque minute : séances des 15 prochaines minutes chargées dans Valkey (RG-00-17).
   await maintenance.upsertJobScheduler(
@@ -103,6 +115,9 @@ export function startWorkers(options: {
           new Date(Date.now() - DELAI_CORBEILLE_JOURS * 86_400_000),
         );
         logger.info({ bilan }, 'Corbeille purgée');
+      } else if (job.name === MAINTENANCE_JOBS.conservationIndisponibilites) {
+        const bilan = await purgerIndisponibilitesPassees(db);
+        logger.info({ bilan }, 'Indisponibilités passées purgées');
       } else if (job.name === MAINTENANCE_JOBS.prechargementEmargement) {
         await prechargerSeances(db, options.valkey);
       } else if (job.name === MAINTENANCE_JOBS.notificationsEdt) {

@@ -26,6 +26,7 @@
     "@scolaly/contracts": "workspace:*",
     "@scolaly/db": "workspace:*",
     "@scolaly/domain": "workspace:*",
+    "@scolaly/referentials": "workspace:*",
     "bullmq": "catalog:",
     "ioredis": "catalog:",
     "nodemailer": "catalog:",
