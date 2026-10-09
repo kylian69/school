@@ -4,6 +4,7 @@ import { newId } from '../../src/ids.js';
 import {
   anneeScolaire,
   attribution,
+  correspondanceEdt,
   invitation,
   role,
   rolePermission,
@@ -469,6 +470,16 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         personneId: await insertPersonne(db, organisationId),
         debut: new Date('2026-10-12T08:00:00Z'),
         fin: new Date('2026-10-12T12:00:00Z'),
+      });
+    },
+  },
+  correspondance_edt: {
+    insert: async (db, organisationId) => {
+      await db.insert(correspondanceEdt).values({
+        organisationId,
+        nature: 'salle',
+        libelle: 'Amphi fictif',
+        cle: 'amphi fictif',
       });
     },
   },

@@ -133,7 +133,7 @@ const invalide = (champ: string, message: string) =>
     details: [`${champ} : ${message}`],
   });
 
-interface ContenuValide {
+export interface ContenuValide {
   etablissementId: string;
   fuseau: string;
   /** RG-04-02 : plage horaire et jours ouvrés de l'établissement. */
@@ -344,6 +344,79 @@ export class SeancesService {
       apres: resultat,
     });
     return resultat as Seance;
+  }
+
+  /**
+   * Brouillon enregistré et tracé sans calcul de ses conflits, pour un import en lot (US-04-04) :
+   * les conflits du lot se calculent ensuite une seule fois (contrats). Le cache évite de
+   * revalider un même contenu (public, module, salle, intervenants) d'une ligne à l'autre.
+   */
+  async creerBrouillon(
+    tx: Transaction,
+    access: Access,
+    saisie: SaisieSeance,
+    adresseIp: string,
+    cache: Map<string, ContenuValide>,
+  ): Promise<string> {
+    const cle = JSON.stringify([
+      saisie.moduleId,
+      saisie.activite,
+      saisie.promotionIds,
+      saisie.groupeIds,
+      saisie.salleId,
+      saisie.intervenantIds,
+    ]);
+    const contenu = cache.get(cle) ?? (await this.validerContenu(tx, access, saisie));
+    cache.set(cle, contenu);
+    const debut = new Date(saisie.debut);
+    const fin = new Date(saisie.fin);
+    this.validerHoraire(debut, fin);
+    const id = newId();
+    const valeurs = {
+      id,
+      organisationId: access.organisationId,
+      libelle: contenu.libelle,
+      debut,
+      fin,
+      statut: 'brouillon' as const,
+      type: saisie.type,
+      moduleId: saisie.moduleId,
+      activite: saisie.moduleId ? null : saisie.activite,
+      salleId: saisie.salleId,
+      intervenantId: contenu.intervenantIds[0] ?? null,
+      lienVisio: saisie.lienVisio,
+      distanciel: saisie.distanciel,
+      createdBy: access.userId,
+    };
+    await tx.insert(seance).values(valeurs);
+    await this.ecrirePublic(tx, access, id, contenu);
+    await this.ecrireIntervenants(tx, access, id, [], contenu.intervenantIds);
+    await enregistrerAudit(tx, {
+      action: 'seance.creer',
+      objetType: 'seance',
+      objetId: id,
+      auteurId: access.userId,
+      adresseIp,
+      apres: {
+        ...valeurs,
+        promotionIds: contenu.promotionIds,
+        groupeIds: contenu.groupeIds,
+        intervenantIds: contenu.intervenantIds,
+      },
+    });
+    return id;
+  }
+
+  /** Contrats de séances d'un établissement, conflits calculés en une fois (import en lot). */
+  async contrats(
+    tx: Transaction,
+    access: Access,
+    ids: readonly string[],
+    lieu: { etablissementId: string; fuseau: string },
+  ): Promise<Seance[]> {
+    if (ids.length === 0) return [];
+    const lignes = await this.contexte.seances(tx, inArray(seance.id, [...ids]));
+    return this.versContrats(tx, access, lignes, lieu);
   }
 
   async modifier(
@@ -855,7 +928,7 @@ export class SeancesService {
 
   // ——— Outils ———
 
-  private async etablissement(tx: Transaction, id: string) {
+  async etablissement(tx: Transaction, id: string) {
     const [campus] = await tx
       .select()
       .from(etablissement)
@@ -865,19 +938,19 @@ export class SeancesService {
   }
 
   /** Promotions gérées : null pour toute l'école, false sans droit de gestion. */
-  private async gestion(tx: Transaction, access: Access): Promise<Set<string> | null | false> {
+  async gestion(tx: Transaction, access: Access): Promise<Set<string> | null | false> {
     if (!access.permissions.has('edt:gerer')) return false;
     const couvertes = await promotionsCouvertes(tx, access, ['edt:gerer']);
     return couvertes !== null && couvertes.size === 0 ? false : couvertes;
   }
 
-  private couvre(gestion: Set<string> | null | false, promotions: readonly { id: string }[]) {
+  couvre(gestion: Set<string> | null | false, promotions: readonly { id: string }[]) {
     if (gestion === false || promotions.length === 0) return false;
     return gestion === null || promotions.every((p) => gestion.has(p.id));
   }
 
   /** Promotions et établissement de chaque séance, d'après son public (groupes compris). */
-  private async promotionsDesSeances(tx: Transaction, lignes: readonly LigneSeance[]) {
+  async promotionsDesSeances(tx: Transaction, lignes: readonly LigneSeance[]) {
     const groupeIds = [...new Set(lignes.flatMap((l) => l.groupeIds))];
     const liens =
       groupeIds.length === 0

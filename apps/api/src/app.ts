@@ -9,6 +9,7 @@ import {
   LOGO_TAILLE_MAX,
   TYPES_ARCHIVE_PHOTOS,
   TYPES_FICHIER_IMPORT,
+  TYPE_FICHIER_ICAL,
   TYPES_LOGO,
 } from '@scolaly/contracts';
 import { createDatabase } from '@scolaly/db';
@@ -119,9 +120,10 @@ export async function createApp(
       done(null, body);
     },
   );
-  // Fichiers d'import (RG-01-17) : même principe, limite métier de 10 Mo contrôlée par le service.
+  // Fichiers d’import (RG-01-17, iCal RG-04-09) : même principe, limite métier de 10 Mo contrôlée
+  // par le service.
   fastify.addContentTypeParser(
-    Object.keys(TYPES_FICHIER_IMPORT),
+    [...Object.keys(TYPES_FICHIER_IMPORT), TYPE_FICHIER_ICAL],
     { parseAs: 'buffer', bodyLimit: 2 * IMPORT_TAILLE_MAX },
     (_request, body, done) => {
       done(null, body);

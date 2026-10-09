@@ -1174,6 +1174,89 @@
         }
       }
     },
+    "/api/edt/import": {
+      "post": {
+        "operationId": "ImportEdtController.importer",
+        "summary": "Importer un emploi du temps (corps text/csv, .xlsx ou text/calendar) : aperçu sans écriture, puis import (RG-04-08 à RG-04-12)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultatImportEdt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edt/import/correspondances": {
+      "get": {
+        "operationId": "ImportEdtController.correspondances",
+        "summary": "Correspondances mémorisées entre libellés importés et objets (RG-04-09)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeCorrespondancesEdt"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "ImportEdtController.enregistrer",
+        "summary": "Mémoriser des correspondances de libellés importés (RG-04-09)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "edt:gerer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieCorrespondancesEdt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListeCorrespondancesEdt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/edt/publication": {
       "post": {
         "operationId": "SeancesController.publier",
@@ -7978,6 +8061,37 @@
         ],
         "additionalProperties": false
       },
+      "CorrespondanceEdt": {
+        "type": "object",
+        "properties": {
+          "nature": {
+            "type": "string",
+            "enum": [
+              "module",
+              "public",
+              "salle",
+              "intervenant"
+            ]
+          },
+          "libelle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "objetId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "nature",
+          "libelle",
+          "objetId"
+        ],
+        "additionalProperties": false
+      },
       "DecisionPhoto": {
         "type": "object",
         "properties": {
@@ -9730,6 +9844,21 @@
           "conventions",
           "inscriptions",
           "creation"
+        ],
+        "additionalProperties": false
+      },
+      "ListeCorrespondancesEdt": {
+        "type": "object",
+        "properties": {
+          "correspondances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorrespondanceEdt"
+            }
+          }
+        },
+        "required": [
+          "correspondances"
         ],
         "additionalProperties": false
       },
@@ -14056,6 +14185,236 @@
         ],
         "additionalProperties": false
       },
+      "ResultatImportEdt": {
+        "type": "object",
+        "properties": {
+          "apercu": {
+            "type": "boolean"
+          },
+          "importe": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "xlsx",
+              "ics"
+            ]
+          },
+          "compteurs": {
+            "type": "object",
+            "properties": {
+              "lues": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "creees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "modifiees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "inchangees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "conservees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "ignorees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "rejetees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "disparues": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "lues",
+              "creees",
+              "modifiees",
+              "inchangees",
+              "conservees",
+              "ignorees",
+              "rejetees",
+              "disparues"
+            ],
+            "additionalProperties": false
+          },
+          "erreurs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ligne": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ligne",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "avertissements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ligne": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ligne",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "inconnus": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nature": {
+                  "type": "string",
+                  "enum": [
+                    "module",
+                    "public",
+                    "salle",
+                    "intervenant"
+                  ]
+                },
+                "libelle": {
+                  "type": "string"
+                },
+                "lignes": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                }
+              },
+              "required": [
+                "nature",
+                "libelle",
+                "lignes"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "choix": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nature": {
+                  "type": "string",
+                  "enum": [
+                    "module",
+                    "public",
+                    "salle",
+                    "intervenant"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nature",
+                "id",
+                "libelle"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "seances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeanceImportee"
+            }
+          },
+          "disparues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string"
+                },
+                "debut": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                }
+              },
+              "required": [
+                "id",
+                "libelle",
+                "debut"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "apercu",
+          "importe",
+          "format",
+          "compteurs",
+          "erreurs",
+          "avertissements",
+          "inconnus",
+          "choix",
+          "seances",
+          "disparues"
+        ],
+        "additionalProperties": false
+      },
       "ResultatImportMaquette": {
         "type": "object",
         "properties": {
@@ -14971,6 +15330,23 @@
           "intitule",
           "criteres",
           "moduleIds"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieCorrespondancesEdt": {
+        "type": "object",
+        "properties": {
+          "correspondances": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorrespondanceEdt"
+            }
+          }
+        },
+        "required": [
+          "correspondances"
         ],
         "additionalProperties": false
       },
@@ -16117,6 +16493,65 @@
           "conflits",
           "forcages",
           "modifiable"
+        ],
+        "additionalProperties": false
+      },
+      "SeanceImportee": {
+        "type": "object",
+        "properties": {
+          "ligne": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "identifiant": {
+            "type": "string"
+          },
+          "seanceId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "creee",
+              "modifiee",
+              "inchangee",
+              "conservee",
+              "ignoree"
+            ]
+          },
+          "conflits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConflitSeance"
+            }
+          }
+        },
+        "required": [
+          "ligne",
+          "identifiant",
+          "seanceId",
+          "libelle",
+          "debut",
+          "fin",
+          "action",
+          "conflits"
         ],
         "additionalProperties": false
       },
