@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, sql, type AnyColumn } from 'drizzle-orm';
 import type { Database } from './client.js';
 import { withOrganisation, type Transaction } from './organisation-context.js';
 import { presence, seance, seanceAttenduCalcule } from './schema/emargement.js';
@@ -54,6 +54,40 @@ export async function notificationsEdtEnAttente(
     dernier: new Date(r.dernier),
   }));
 }
+
+export interface NotificationsEdtParFuseau {
+  organisationId: string;
+  personneId: string;
+  /** Fuseau de l'établissement des séances ; null : séance sans public. */
+  fuseau: string | null;
+  /** Plus ancien changement en attente. */
+  premier: Date;
+}
+
+/**
+ * RG-04-14 : personnes ayant des changements d'EDT à recevoir, par fuseau de séance, toutes
+ * organisations (récapitulatif du worker).
+ */
+export async function notificationsEdtParFuseau(
+  db: Database,
+): Promise<NotificationsEdtParFuseau[]> {
+  const resultat = await db.execute<{
+    organisation_id: string;
+    personne_id: string;
+    fuseau: string | null;
+    premier: string | Date;
+  }>(sql`select * from notifications_edt_par_fuseau()`);
+  return resultat.rows.map((r) => ({
+    organisationId: r.organisation_id,
+    personneId: r.personne_id,
+    fuseau: r.fuseau,
+    premier: new Date(r.premier),
+  }));
+}
+
+/** Fuseau de l'établissement d'une séance (null sans public), sous la RLS de son école. */
+export const fuseauDeSeance = (seanceId: AnyColumn) =>
+  sql<string | null>`seance_fuseau_horaire(app_current_organisation_id(), ${seanceId})`;
 
 /** La séance et ses apprenants attendus (avec leur compte), dans le contexte de son école. */
 export async function seanceEtAttendus(tx: Transaction, seanceId: string) {

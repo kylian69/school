@@ -11,6 +11,7 @@ import { badgeModifie } from '@scolaly/domain';
 import { and, asc, eq, gt, inArray, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
+import { dureeBadgeModifie } from '../../shared/badge-modifie.js';
 import { ENV } from '../../shared/tokens.js';
 
 const HEURE = 3600_000;
@@ -62,6 +63,7 @@ export class SeancesService {
       tx,
       lignes.map((l) => l.id),
     );
+    const dureeBadge = await dureeBadgeModifie(tx, this.env);
     return lignes.map((l) => ({
       id: l.id,
       libelle: l.libelle,
@@ -69,7 +71,7 @@ export class SeancesService {
       fin: l.fin.toISOString(),
       distanciel: l.distanciel,
       intervenant: noms.get(l.id)?.join(', ') ?? null,
-      modifiee: badgeModifie(l.modifieeLe, new Date(maintenant), this.env.EDT_BADGE_MODIFIE_JOURS),
+      modifiee: badgeModifie(l.modifieeLe, new Date(maintenant), dureeBadge),
     }));
   }
 

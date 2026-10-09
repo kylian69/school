@@ -215,6 +215,35 @@ describe('E-01-02 organisation et établissements', () => {
     ).toBe(400);
   });
 
+  it('RG-04-14 règle la durée du badge « modifié » de l’école, avant et après tracés', async () => {
+    const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
+    expect(initial).toMatchObject({ edtBadgeModifieJours: null, edtBadgeModifieJoursDefaut: 7 });
+    const reponse = await requete('PATCH', '/api/organisation', admin, {
+      edtBadgeModifieJours: 3,
+    });
+    expect(reponse.json<OrganisationDetail>().edtBadgeModifieJours).toBe(3);
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, ecole),
+          eq(auditEvenement.action, 'organisation.modifier'),
+          sql`${auditEvenement.apres}->>'edtBadgeModifieJours' = '3'`,
+        ),
+      );
+    expect(trace?.avant).toMatchObject({ edtBadgeModifieJours: null });
+    for (const refus of [-1, 61, 2.5, '7'])
+      expect(
+        (await requete('PATCH', '/api/organisation', admin, { edtBadgeModifieJours: refus }))
+          .statusCode,
+      ).toBe(400);
+    const retour = await requete('PATCH', '/api/organisation', admin, {
+      edtBadgeModifieJours: null,
+    });
+    expect(retour.json<OrganisationDetail>().edtBadgeModifieJours).toBeNull();
+  });
+
   it('RG-01-06 paramètre le modèle de matricule, avec un exemple du prochain', async () => {
     const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
     expect(initial).toMatchObject({ modeleMatricule: '{NUM:6}', exempleMatricule: '000001' });

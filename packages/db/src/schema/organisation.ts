@@ -1,8 +1,10 @@
 import { sql } from 'drizzle-orm';
 import {
   char,
+  check,
   pgEnum,
   integer,
+  smallint,
   pgPolicy,
   pgTable,
   text,
@@ -53,9 +55,18 @@ export const organisation = pgTable(
     modeleMatricule: text(),
     /** Dernier numéro de matricule attribué : il ne recule jamais. */
     matriculeCompteur: integer().notNull().default(0),
+    /**
+     * RG-04-14 : jours d'affichage du badge « modifié » sur une séance ; null : valeur par défaut
+     * de l'instance (variable EDT_BADGE_MODIFIE_JOURS de l'API).
+     */
+    edtBadgeModifieJours: smallint(),
     ...trackingColumns(),
   },
-  () => [
+  (t) => [
+    check(
+      'organisation_edt_badge_modifie_jours_check',
+      sql`${t.edtBadgeModifieJours} between 0 and 60`,
+    ),
     isolationPolicy('organisation', 'id'),
     // Console de la plateforme (ADR 0004) : toutes les organisations, cette table seulement.
     pgPolicy('organisation_plateforme', {

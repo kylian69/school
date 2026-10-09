@@ -40,7 +40,8 @@ export class OrganisationController {
   @Patch('organisation')
   @RequirePermission('organisation:modifier')
   @ApiContract({
-    summary: 'Modifier le nom, le nom affiché ou le SIREN de l’école',
+    summary:
+      'Modifier le nom, le nom affiché, le SIREN, le modèle de matricule ou la durée du badge « modifié » de l’école',
     body: ModificationOrganisation,
     response: OrganisationDetail,
   })

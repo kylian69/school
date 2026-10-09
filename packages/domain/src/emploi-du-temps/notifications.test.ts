@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   badgeModifie,
   changementUrgent,
+  dernierRecapitulatif,
   envoiImmediatDu,
   natureAnnoncee,
 } from './notifications.js';
@@ -98,6 +99,42 @@ describe('RG-04-14 nature annoncée', () => {
   it('RG-04-14 annonce une modification', () => {
     expect(natureAnnoncee({ statut: 'publiee', natures: ['modification'], concernee: true })).toBe(
       'modification',
+    );
+  });
+});
+
+describe('RG-04-14 récapitulatif à 18 h dans le fuseau de l’établissement', () => {
+  it('RG-04-14 retient 18 h aujourd’hui après 18 h, 18 h la veille avant', () => {
+    // 2 novembre 2026 : Paris en UTC+1.
+    expect(dernierRecapitulatif('Europe/Paris', new Date('2026-11-02T17:00:00Z'))).toEqual(
+      new Date('2026-11-02T17:00:00Z'),
+    );
+    expect(dernierRecapitulatif('Europe/Paris', new Date('2026-11-02T16:59:59Z'))).toEqual(
+      new Date('2026-11-01T17:00:00Z'),
+    );
+  });
+
+  it('RG-04-14 suit le fuseau de chaque établissement, outre-mer compris', () => {
+    // 22 h à Paris : 17 h en Martinique (UTC-4), récapitulatif de la veille encore.
+    expect(dernierRecapitulatif('America/Martinique', new Date('2026-11-02T21:00:00Z'))).toEqual(
+      new Date('2026-11-01T22:00:00Z'),
+    );
+    expect(dernierRecapitulatif('America/Martinique', new Date('2026-11-02T22:00:00Z'))).toEqual(
+      new Date('2026-11-02T22:00:00Z'),
+    );
+    // La Réunion (UTC+4) : 18 h locales = 14 h UTC.
+    expect(dernierRecapitulatif('Indian/Reunion', new Date('2026-11-02T15:00:00Z'))).toEqual(
+      new Date('2026-11-02T14:00:00Z'),
+    );
+  });
+
+  it('RG-04-14 garde 18 h locales au changement d’heure', () => {
+    // Paris passe à l'heure d'été le 29 mars 2026 : 18 h = 16 h UTC ce jour, 17 h UTC la veille.
+    expect(dernierRecapitulatif('Europe/Paris', new Date('2026-03-29T16:30:00Z'))).toEqual(
+      new Date('2026-03-29T16:00:00Z'),
+    );
+    expect(dernierRecapitulatif('Europe/Paris', new Date('2026-03-29T15:00:00Z'))).toEqual(
+      new Date('2026-03-28T17:00:00Z'),
     );
   });
 });

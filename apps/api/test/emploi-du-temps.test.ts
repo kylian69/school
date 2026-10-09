@@ -1028,4 +1028,21 @@ describe('US-04-11 annulation, report et remplacement', () => {
       { nature: 'annulation', seanceIds: [signalee.id], retraits: [] },
     ]);
   });
+
+  it('RG-04-14 suit la durée du badge « modifié » choisie par l’école', async () => {
+    const s = await publiee('28');
+    const modifier = async (changement: Record<string, unknown>) =>
+      (
+        await requete('PATCH', `/api/edt/seances/${s.id}`, admin, changement)
+      ).json<ResultatSeances>().seances[0]?.modifiee;
+    const badge = async (jours: number | null) =>
+      (await requete('PATCH', '/api/organisation', admin, { edtBadgeModifieJours: jours }))
+        .statusCode;
+    expect(await modifier({ salleId: salles.grande.id })).toBe(true);
+    expect(await badge(0)).toBe(200);
+    expect(await modifier({ lienVisio: 'https://visio.example.test/zero' })).toBe(false);
+    // Retour à la valeur par défaut de l'instance (7 jours).
+    expect(await badge(null)).toBe(200);
+    expect(await modifier({ lienVisio: 'https://visio.example.test/defaut' })).toBe(true);
+  });
 });
