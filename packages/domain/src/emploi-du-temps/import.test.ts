@@ -10,6 +10,7 @@ import {
   lireImportEdt,
   lireTypeSeance,
   rapprocher,
+  refusAnnulationDisparue,
 } from './import.js';
 
 const PARIS = 'Europe/Paris';
@@ -508,4 +509,21 @@ describe('RG-04-11 et RG-04-12 réimport', () => {
       ).toBe(decision);
     },
   );
+});
+
+describe('RG-04-11 annulation des séances disparues du fichier', () => {
+  const maintenant = new Date('2026-10-09T10:00:00Z');
+  const demain = new Date('2026-10-10T08:00:00Z');
+
+  it('RG-04-11 une séance à venir sans appel est annulable', () => {
+    expect(refusAnnulationDisparue({ debut: demain, presences: 0, maintenant })).toBeNull();
+  });
+
+  it('RG-04-11 une séance dont l’appel est fait ne s’annule pas', () => {
+    expect(refusAnnulationDisparue({ debut: demain, presences: 3, maintenant })).toBe('appel-fait');
+  });
+
+  it('RG-04-11 une séance commencée ou passée ne s’annule pas', () => {
+    expect(refusAnnulationDisparue({ debut: maintenant, presences: 0, maintenant })).toBe('passee');
+  });
 });

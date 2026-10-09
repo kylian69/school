@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
+  EVENEMENT_CHANGEMENT_EDT,
   ROLES_PAR_DEFAUT,
   type DetailPromotion,
   type ElementCree,
@@ -18,7 +19,9 @@ import {
   initialiserRolesParDefaut,
   newId,
   organisation,
+  outboxEvenement,
   personne,
+  presence,
   role,
   seance,
 } from '@scolaly/db';
@@ -393,5 +396,111 @@ describe('US-04-04 import d’un emploi du temps', () => {
     expect(json.statusCode).toBe(400);
     const interdit = await importer(csv(ligne1()), {}, 'text/csv', intervenantCompte);
     expect(interdit.statusCode).toBe(403);
+  });
+});
+
+describe('RG-04-11 annulation proposée des séances disparues du fichier', () => {
+  const avant = [
+    `04/10/2026;08:00;10:00;M1;TD A;;;TD;AN-DEBUT`,
+    `05/10/2026;08:00;10:00;M1;TD A;;;TD;AN-PASSEE`,
+    `11/01/2027;08:00;10:00;M1;TD A;;;TD;AN-1`,
+    `12/01/2027;08:00;10:00;M1;TD A;;;TD;AN-2`,
+    `13/01/2027;08:00;10:00;M1;TD A;;;TD;AN-3`,
+    `20/01/2027;08:00;10:00;M1;TD A;;;TD;AN-FIN`,
+  ];
+  const reimport = csv(avant[0] ?? '', avant[5] ?? '');
+  const ids: Record<string, string> = {};
+  const etat = async (code: string) =>
+    (await importees()).find((s) => s.identifiantExterne === code);
+  const annulations = async (id: string) =>
+    owner.db
+      .select()
+      .from(auditEvenement)
+      .where(and(eq(auditEvenement.objetId, id), eq(auditEvenement.action, 'seance.annuler')));
+
+  beforeAll(async () => {
+    const r = (
+      await importer(csv(...avant), { apercu: 'false', publier: 'true' })
+    ).json<ResultatImportEdt>();
+    expect(r.importe).toBe(true);
+    for (const s of await importees())
+      if (s.identifiantExterne?.startsWith('AN-')) ids[s.identifiantExterne] = s.id;
+    expect(Object.keys(ids)).toHaveLength(6);
+    await owner.db.insert(presence).values({
+      organisationId: ecole,
+      seanceId: ids['AN-2'] ?? '',
+      personneId: intervenantId,
+      scanneLe: new Date(),
+      mode: 'manuel',
+    });
+  });
+
+  it('RG-04-11 l’aperçu propose les disparues, signale les non annulables et n’annule rien', async () => {
+    const r = (await importer(reimport, { annuler: ids['AN-1'] ?? '' })).json<ResultatImportEdt>();
+    expect(r.importe).toBe(false);
+    const disparues = new Map(r.disparues.map((d) => [d.id, d]));
+    expect(disparues.get(ids['AN-PASSEE'] ?? '')).toMatchObject({ refus: 'passee' });
+    expect(disparues.get(ids['AN-1'] ?? '')).toMatchObject({ refus: null, annulee: false });
+    expect(disparues.get(ids['AN-2'] ?? '')).toMatchObject({ refus: 'appel-fait' });
+    expect(disparues.get(ids['AN-3'] ?? '')).toMatchObject({ refus: null, annulee: false });
+    expect(r.compteurs.annulees).toBe(0);
+    expect((await etat('AN-1'))?.statut).toBe('publiee');
+  });
+
+  it('RG-04-11 sans case cochée, la validation n’annule aucune disparue', async () => {
+    const r = (await importer(reimport, { apercu: 'false' })).json<ResultatImportEdt>();
+    expect(r.importe).toBe(true);
+    expect(r.compteurs.annulees).toBe(0);
+    expect(r.disparues.every((d) => !d.annulee)).toBe(true);
+    for (const code of ['AN-1', 'AN-2', 'AN-3']) expect((await etat(code))?.statut).toBe('publiee');
+  });
+
+  it('RG-04-11 annule seulement les disparues cochées et annulables, notifiées et tracées', async () => {
+    const cochees = [ids['AN-1'], ids['AN-2'], ids['AN-PASSEE'], newId()].join(',');
+    const r = (
+      await importer(reimport, { apercu: 'false', annuler: cochees })
+    ).json<ResultatImportEdt>();
+    expect(r.importe).toBe(true);
+    expect(r.compteurs.annulees).toBe(1);
+    expect(r.disparues.filter((d) => d.annulee).map((d) => d.id)).toEqual([ids['AN-1']]);
+    expect(r.avertissements.map((a) => a.message).join(' ')).toContain(
+      '3 séance(s) cochée(s) non annulée(s)',
+    );
+    expect(await etat('AN-1')).toMatchObject({
+      statut: 'annulee',
+      motifAnnulation: 'Retirée du fichier importé',
+    });
+    expect((await etat('AN-2'))?.statut).toBe('publiee');
+    expect((await etat('AN-3'))?.statut).toBe('publiee');
+    expect((await etat('AN-PASSEE'))?.statut).toBe('publiee');
+    const [trace] = await annulations(ids['AN-1'] ?? '');
+    expect(trace?.avant).toMatchObject({ statut: 'publiee' });
+    expect(trace?.apres).toMatchObject({ statut: 'annulee' });
+    const evenements = await owner.db
+      .select()
+      .from(outboxEvenement)
+      .where(eq(outboxEvenement.type, EVENEMENT_CHANGEMENT_EDT));
+    expect(
+      evenements.some(
+        (e) =>
+          (e.charge as { nature?: string; seanceIds?: string[] }).nature === 'annulation' &&
+          (e.charge as { seanceIds?: string[] }).seanceIds?.includes(ids['AN-1'] ?? ''),
+      ),
+    ).toBe(true);
+  });
+
+  it('RG-04-11 une validation rejouée n’annule pas deux fois', async () => {
+    const r = (
+      await importer(reimport, { apercu: 'false', annuler: ids['AN-1'] ?? '' })
+    ).json<ResultatImportEdt>();
+    expect(r.importe).toBe(true);
+    expect(r.compteurs.annulees).toBe(0);
+    expect(r.disparues.map((d) => d.id)).not.toContain(ids['AN-1']);
+    expect(await annulations(ids['AN-1'] ?? '')).toHaveLength(1);
+  });
+
+  it('RG-04-11 refuse une liste de séances à annuler mal formée', async () => {
+    const r = await importer(reimport, { apercu: 'false', annuler: 'pas-un-identifiant' });
+    expect(r.statusCode).toBe(400);
   });
 });

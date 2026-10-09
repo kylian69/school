@@ -1,6 +1,10 @@
 'use client';
 
-import type { CorrespondanceEdt, ResultatImportEdt } from '@scolaly/contracts';
+import {
+  IMPORT_ANNULATIONS_MAX,
+  type CorrespondanceEdt,
+  type ResultatImportEdt,
+} from '@scolaly/contracts';
 import { Button, Card, Label } from '@scolaly/ui';
 import Link from 'next/link';
 import { useId, useState, type SyntheticEvent } from 'react';
@@ -45,11 +49,14 @@ export function ImportEdt({
   const [version, setVersion] = useState<Version>('scolaly');
   const [resultat, setResultat] = useState<ResultatImportEdt | null>(null);
   const [choisis, setChoisis] = useState<Record<string, string>>({});
+  /** RG-04-11 : séances disparues à annuler ; aucune cochée par défaut. */
+  const [aAnnuler, setAAnnuler] = useState<ReadonlySet<string>>(new Set());
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
 
   const oublier = () => {
     setResultat(null);
+    setAAnnuler(new Set());
     setErreur(null);
   };
 
@@ -68,6 +75,13 @@ export function ImportEdt({
       versionConservee: version,
     });
     if (promotionId) params.set('promotionId', promotionId);
+    if (!apercu && aAnnuler.size > 0) {
+      if (aAnnuler.size > IMPORT_ANNULATIONS_MAX) {
+        setErreur(t.disparuesTrop(IMPORT_ANNULATIONS_MAX));
+        return;
+      }
+      params.set('annuler', [...aAnnuler].join(','));
+    }
     setEnvoi(true);
     const reponse = await envoyer(
       `/api/edt/import?${params.toString()}`,
@@ -81,8 +95,14 @@ export function ImportEdt({
       setResultat(null);
       return;
     }
+    const recu = reponse.body as ResultatImportEdt;
     setErreur(null);
-    setResultat(reponse.body as ResultatImportEdt);
+    setResultat(recu);
+    // Un nouvel aperçu ne garde que les cases encore proposées ; l'import les a traitées.
+    const proposees = new Set(recu.disparues.filter((d) => d.refus === null).map((d) => d.id));
+    setAAnnuler(
+      recu.importe ? new Set() : new Set([...aAnnuler].filter((id) => proposees.has(id))),
+    );
   }
 
   async function enregistrerCorrespondances() {
@@ -124,6 +144,8 @@ export function ImportEdt({
       ...rejetees.map((e) => `${String(e.ligne ?? '')};"${e.message.replaceAll('"', '""')}"`),
     ].join('\r\n'),
   )}`;
+  const annulables = (resultat?.disparues ?? []).filter((d) => d.refus === null).map((d) => d.id);
+  const toutesCochees = annulables.length > 0 && annulables.every((id) => aAnnuler.has(id));
   const importable =
     resultat !== null &&
     !resultat.importe &&
@@ -407,14 +429,61 @@ export function ImportEdt({
         {resultat && resultat.disparues.length > 0 ? (
           <Card>
             <h2 className="text-base font-semibold">{t.disparues}</h2>
-            <p className="mb-2 text-muted">{t.disparuesAide}</p>
-            <ul className="list-disc pl-5">
-              {resultat.disparues.map((d) => (
-                <li key={d.id}>
-                  {formatDateHeure(d.debut)} · {d.libelle}
-                </li>
-              ))}
+            <p className="mb-2 text-muted">
+              {resultat.importe ? t.disparuesApresImport : t.disparuesAide}
+            </p>
+            {!resultat.importe && annulables.length > 0 ? (
+              <label className="mb-2 flex min-h-11 items-center gap-2 font-medium md:min-h-0">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[var(--accent)]"
+                  checked={toutesCochees}
+                  onChange={(e) => {
+                    setAAnnuler(new Set(e.target.checked ? annulables : []));
+                  }}
+                />
+                {t.disparuesToutCocher(annulables.length)}
+              </label>
+            ) : null}
+            <ul className="flex flex-col gap-1">
+              {resultat.disparues.map((d) => {
+                const libelle = `${formatDateHeure(d.debut)} · ${d.libelle}`;
+                if (resultat.importe || d.refus !== null)
+                  return (
+                    <li key={d.id} className="flex min-h-11 items-center gap-2 md:min-h-0">
+                      <span>{libelle}</span>
+                      <span className={d.annulee ? 'text-bad' : 'text-muted'}>
+                        {d.annulee
+                          ? t.disparueAnnulee
+                          : d.refus !== null
+                            ? t.disparueNonAnnulable[d.refus]
+                            : t.disparueConservee}
+                      </span>
+                    </li>
+                  );
+                return (
+                  <li key={d.id}>
+                    <label className="flex min-h-11 items-center gap-2 md:min-h-0">
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-[var(--accent)]"
+                        checked={aAnnuler.has(d.id)}
+                        onChange={(e) => {
+                          const suivant = new Set(aAnnuler);
+                          if (e.target.checked) suivant.add(d.id);
+                          else suivant.delete(d.id);
+                          setAAnnuler(suivant);
+                        }}
+                      />
+                      {t.disparueAAnnuler(libelle)}
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
+            {!resultat.importe && aAnnuler.size > 0 ? (
+              <p className="mt-2 text-warn">{t.disparuesCochees(aAnnuler.size)}</p>
+            ) : null}
           </Card>
         ) : null}
       </div>

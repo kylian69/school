@@ -1879,8 +1879,9 @@ export const fr = {
         conservees: number;
         ignorees: number;
         rejetees: number;
+        annulees: number;
       }) =>
-        `${String(c.lues)} séance(s) lue(s) : ${String(c.creees)} à créer, ${String(c.modifiees)} à mettre à jour, ${String(c.inchangees)} inchangée(s), ${String(c.conservees)} conservée(s), ${String(c.ignorees)} ignorée(s), ${String(c.rejetees)} rejetée(s).`,
+        `${String(c.lues)} séance(s) lue(s) : ${String(c.creees)} à créer, ${String(c.modifiees)} à mettre à jour, ${String(c.inchangees)} inchangée(s), ${String(c.conservees)} conservée(s), ${String(c.ignorees)} ignorée(s), ${String(c.rejetees)} rejetée(s).${c.annulees > 0 ? ` ${String(c.annulees)} séance(s) disparue(s) annulée(s).` : ''}`,
     },
     ligne: (ligne: number, message: string) => `Ligne ${String(ligne)} : ${message}`,
     rapport: 'Télécharger le rapport des lignes rejetées',
@@ -1905,7 +1906,21 @@ export const fr = {
         : `${String(bloquants)} bloquant(s), ${String(avertissements)} avertissement(s)`,
     disparues: 'Séances importées précédemment, absentes du fichier',
     disparuesAide:
-      'Elles ne sont pas supprimées : annulez-les depuis le planificateur si elles n’ont plus lieu.',
+      'Aucune n’est annulée sans votre accord. Cochez celles qui n’ont plus lieu : elles seront annulées à l’import, avec le motif « Retirée du fichier importé », et les personnes concernées prévenues. Les autres restent telles quelles.',
+    disparuesApresImport:
+      'Les séances cochées ont été annulées ; les autres restent au planning. Vous pouvez encore les annuler depuis le planificateur.',
+    disparuesToutCocher: (n: number) => `Tout cocher (${String(n)} séance(s) annulable(s))`,
+    disparueAAnnuler: (libelle: string) => `Annuler ${libelle}`,
+    disparuesCochees: (n: number) =>
+      `${String(n)} séance(s) seront annulées à l’import. Vérifiez la sélection avant d’importer.`,
+    disparuesTrop: (max: number) =>
+      `Cochez au plus ${String(max)} séances par import. Importez, puis réimportez le même fichier pour annuler les suivantes.`,
+    disparueAnnulee: 'Annulée',
+    disparueConservee: 'Conservée',
+    disparueNonAnnulable: {
+      'appel-fait': 'Non annulable : l’appel est fait, ses présences font foi.',
+      passee: 'Non annulable : la séance a commencé ou est passée.',
+    },
     voirPlanificateur: 'Voir dans le planificateur',
   },
   maFormation: {
