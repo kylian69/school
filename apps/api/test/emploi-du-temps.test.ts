@@ -33,7 +33,6 @@ import {
   personne,
   presence,
   role,
-  seance,
   seanceIntervenant,
 } from '@scolaly/db';
 import { and, asc, eq } from 'drizzle-orm';
