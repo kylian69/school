@@ -95,6 +95,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M4 5h16v11H4zM8 20h8M12 16v4',
   },
   {
+    label: fr.coquille.entrees.mesDisponibilites,
+    href: '/mes-disponibilites',
+    module: 'emplois-du-temps',
+    permissions: ['disponibilites:declarer'],
+    icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M9 15l2 2 4-4',
+  },
+  {
     label: fr.coquille.entrees.seances,
     href: '/seances',
     module: 'emargement',

@@ -339,6 +339,8 @@ export class ContexteService {
         jourSemaine: c.jourSemaine,
         heureDebut: c.heureDebut.slice(0, 5),
         heureFin: c.heureFin.slice(0, 5),
+        valableDu: c.valableDu,
+        valableAu: c.valableAu,
       })),
       indisponibilites: ponctuelles.map((i) => ({
         intervenantId: i.personneId,

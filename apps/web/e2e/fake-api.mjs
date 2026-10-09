@@ -209,6 +209,14 @@ const detailPersonne = (p) => ({
 // Ma photo (US-01-20) : celle de Camille, déposée par elle-même et en attente de validation.
 const maPhoto = { contenu: null, statut: null };
 const monAgenda = { regenereLe: null, version: 0 };
+// E-04-07 : disponibilités de l'utilisateur connecté (RG-04-18), indisponibilités en heure de Paris.
+const mesDisponibilites = { creneaux: [], indisponibilites: [] };
+const plageDisponibilites = {
+  debut: '08:00',
+  fin: '19:00',
+  limiteMidi: '13:00',
+  joursOuvres: [1, 2, 3, 4, 5],
+};
 const SEANCE_ID = '0192f0a4-1b2c-7d3e-8f40-0000000000aa';
 let emargementLea = null;
 const seanceFictive = () => {
@@ -1999,6 +2007,7 @@ createServer(async (request, response) => {
             'edt:forcer',
             'edt:gerer',
             'edt:lire',
+            'disponibilites:declarer',
             'organisation:lire',
             'organisation:modifier',
             'affectations:gerer',
@@ -2235,6 +2244,70 @@ createServer(async (request, response) => {
     }
     if (request.method === 'DELETE') monAgenda.regenereLe = null;
     return json(200, etat());
+  }
+  if (path.startsWith('/api/moi/disponibilites')) {
+    if (!user) return json(401, { message: 'Session absente' });
+    const etat = (statut = 200) =>
+      json(statut, {
+        fuseau: 'Europe/Paris',
+        plage: plageDisponibilites,
+        creneaux: [...mesDisponibilites.creneaux].sort(
+          (a, b) => a.jourSemaine - b.jourSemaine || a.heureDebut.localeCompare(b.heureDebut),
+        ),
+        indisponibilites: [...mesDisponibilites.indisponibilites].sort((a, b) =>
+          a.debut.localeCompare(b.debut),
+        ),
+      });
+    const invalide = (details) =>
+      json(400, {
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details,
+      });
+    const [, , , , type, id] = path.split('/');
+    if (request.method === 'POST' && type === 'creneaux') {
+      const c = await readBody(request);
+      if (c.heureFin <= c.heureDebut)
+        return invalide(['heureFin : L’heure de fin doit suivre l’heure de début.']);
+      const chevauche = mesDisponibilites.creneaux.some(
+        (e) =>
+          e.jourSemaine === c.jourSemaine && e.heureDebut < c.heureFin && c.heureDebut < e.heureFin,
+      );
+      if (chevauche)
+        return invalide([
+          'heureDebut : Ce créneau chevauche un créneau déjà déclaré ce jour-là : modifiez l’un des deux.',
+        ]);
+      mesDisponibilites.creneaux.push({
+        id: randomUUID(),
+        jourSemaine: c.jourSemaine,
+        heureDebut: c.heureDebut,
+        heureFin: c.heureFin,
+        valableDu: c.valableDu ?? null,
+        valableAu: c.valableAu ?? null,
+      });
+      return etat(201);
+    }
+    if (request.method === 'POST' && type === 'indisponibilites') {
+      const i = await readBody(request);
+      // Heure de Paris approchée (UTC+1/+2) : suffisant pour la fausse API.
+      const instant = (local) => new Date(`${local}:00+02:00`).toISOString();
+      const debut = instant(i.debut);
+      const fin = instant(i.fin);
+      if (fin <= debut) return invalide(['fin : La fin doit suivre le début.']);
+      mesDisponibilites.indisponibilites.push({
+        id: randomUUID(),
+        debut,
+        fin,
+        motif: i.motif ?? null,
+      });
+      return etat(201);
+    }
+    if (request.method === 'DELETE') {
+      const liste = mesDisponibilites[type];
+      const index = liste ? liste.findIndex((e) => e.id === id) : -1;
+      if (index < 0) return json(404, { message: 'Introuvable : rechargez la page.' });
+      liste.splice(index, 1);
+    }
+    return etat();
   }
   if (path === '/api/moi/photo') {
     if (!user) return json(401, { message: 'Session absente' });

@@ -407,7 +407,8 @@ export const seanceIntervenant = pgTable(
 /**
  * RG-04-18 : créneau récurrent où un intervenant se déclare disponible (jour 1, lundi, à 7,
  * dimanche ; heures dans le fuseau de l'établissement de la séance). Sans créneau, l'intervenant
- * n'a rien déclaré.
+ * n'a rien déclaré. Période de validité facultative (dates comprises) : hors d'elle, le créneau ne
+ * s'applique pas.
  */
 export const disponibiliteIntervenant = pgTable(
   'disponibilite_intervenant',
@@ -417,6 +418,8 @@ export const disponibiliteIntervenant = pgTable(
     jourSemaine: smallint().notNull(),
     heureDebut: time().notNull(),
     heureFin: time().notNull(),
+    valableDu: date(),
+    valableAu: date(),
     ...trackingColumns(),
   },
   (t) => [
@@ -431,10 +434,18 @@ export const disponibiliteIntervenant = pgTable(
       'disponibilite_intervenant_creneau_check',
       sql`${t.jourSemaine} between 1 and 7 and ${t.heureFin} > ${t.heureDebut}`,
     ),
+    check(
+      'disponibilite_intervenant_validite_check',
+      sql`${t.valableDu} is null or ${t.valableAu} is null or ${t.valableAu} >= ${t.valableDu}`,
+    ),
   ],
 ).enableRLS();
 
-/** RG-04-18 : indisponibilité ponctuelle d'un intervenant, sans motif (minimisation). */
+/**
+ * RG-04-18 : indisponibilité ponctuelle d'un intervenant. Le motif, facultatif, est une donnée
+ * personnelle : chiffré par champ (contexte `indisponibilite_intervenant.motif`), lu par le seul
+ * intervenant, jamais dans les journaux ni dans la grille.
+ */
 export const indisponibiliteIntervenant = pgTable(
   'indisponibilite_intervenant',
   {
@@ -442,6 +453,7 @@ export const indisponibiliteIntervenant = pgTable(
     personneId: uuid().notNull(),
     debut: timestamp({ withTimezone: true }).notNull(),
     fin: timestamp({ withTimezone: true }).notNull(),
+    motifChiffre: text(),
     ...trackingColumns(),
   },
   (t) => [
