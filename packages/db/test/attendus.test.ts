@@ -9,7 +9,7 @@ import {
   inscription,
   personne,
   seance,
-  seanceAttendu,
+  seanceAttenduCalcule,
   seancePublic,
 } from '../src/schema/index.js';
 import { inscrireManquants, promotionTechnique } from '../src/scolarite.js';
@@ -127,18 +127,22 @@ describe('RG-06-04 apprenants attendus calculés à partir des inscriptions (I3.
     ]);
   });
 
-  it('bascule : les attendus historiques saisis un à un restent lus', async () => {
-    const id = newId();
-    await owner.db.insert(seance).values({
-      id,
-      organisationId: ecole,
-      libelle: 'Historique',
-      debut: new Date('2026-10-05T08:00:00Z'),
-      fin: new Date('2026-10-05T10:00:00Z'),
-    });
+  it('un apprenant visé par la promotion et par un groupe de la séance n’est attendu qu’une fois', async () => {
+    const [td] = await owner.db
+      .select({ id: groupeEleves.id })
+      .from(groupeEleves)
+      .where(eq(groupeEleves.organisationId, ecole));
+    const id = await seanceLe('2026-11-30', { promotionId });
     await owner.db
-      .insert(seanceAttendu)
-      .values({ organisationId: ecole, seanceId: id, personneId: fiches[0] ?? '' });
-    expect(await attendus(id)).toEqual(['Ada']);
+      .insert(seancePublic)
+      .values({ organisationId: ecole, seanceId: id, groupeId: td?.id ?? '' });
+    const lignes = await withOrganisation(app.db, ecole, (tx) =>
+      tx
+        .select({ personneId: seanceAttenduCalcule.personneId })
+        .from(seanceAttenduCalcule)
+        .where(eq(seanceAttenduCalcule.seanceId, id)),
+    );
+    expect(lignes).toHaveLength(new Set(lignes.map((l) => l.personneId)).size);
+    expect(await attendus(id)).toEqual(['Ada', 'Blaise', 'Claude']);
   });
 });

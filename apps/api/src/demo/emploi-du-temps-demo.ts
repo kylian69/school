@@ -510,7 +510,6 @@ async function planifierEcole(
           moduleId: planifiee.moduleId,
           activite: module ? null : (g.activite ?? null),
           salleId: choisie.id,
-          intervenantId: titulaire,
           distanciel: g.distanciel ?? false,
           lienVisio: g.distanciel ? `https://visio.${domaine}/${planifiee.id.slice(-8)}` : null,
           serieId,

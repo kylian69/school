@@ -15,14 +15,16 @@ import {
   attribution,
   createDatabase,
   initialiserRolesParDefaut,
+  inscrireManquants,
   newId,
   organisation,
   personne,
   presence,
+  promotionTechnique,
   role,
   seance,
-  seanceAttendu,
   seanceIntervenant,
+  seancePublic,
   type Database,
 } from '@scolaly/db';
 import { and, eq } from 'drizzle-orm';
@@ -121,18 +123,20 @@ beforeAll(async () => {
       libelle: 'Comptabilité générale',
       debut,
       fin: new Date(debut.getTime() + 2 * 3600_000),
-      intervenantId,
     });
     await owner.db
       .insert(seanceIntervenant)
       .values({ organisationId: ecole, seanceId: id, personneId: intervenantId });
   }
-  for (const personneId of [leaId, noeId]) {
-    await owner.db.insert(seanceAttendu).values({ organisationId: ecole, seanceId, personneId });
-  }
-  await owner.db
-    .insert(seanceAttendu)
-    .values({ organisationId: ecole, seanceId: seanceDegradeeId, personneId: leaId });
+  // Attendus calculés : Léa et Noé inscrits à la séance principale, Léa seule à la séance dégradée.
+  const lesDeux = await promotionTechnique(owner.db, ecole, 'Promotion Léa et Noé');
+  const leaSeule = await promotionTechnique(owner.db, ecole, 'Promotion Léa');
+  await inscrireManquants(owner.db, ecole, lesDeux, [leaId, noeId]);
+  await inscrireManquants(owner.db, ecole, leaSeule, [leaId]);
+  await owner.db.insert(seancePublic).values([
+    { organisationId: ecole, seanceId, promotionId: lesDeux },
+    { organisationId: ecole, seanceId: seanceDegradeeId, promotionId: leaSeule },
+  ]);
   intervenant = await connexion('ines.intervenante@exemple.test');
   autreIntervenant = await connexion('igor.intervenant@exemple.test');
   lea = await connexion('lea.apprenante@exemple.test');

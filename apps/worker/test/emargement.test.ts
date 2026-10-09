@@ -8,12 +8,14 @@ import {
   authSession,
   authUser,
   createDatabase,
+  inscrireManquants,
   newId,
   organisation,
   personne,
   presence,
+  promotionTechnique,
   seance,
-  seanceAttendu,
+  seancePublic,
 } from '@scolaly/db';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
@@ -71,9 +73,9 @@ beforeAll(async () => {
     debut,
     fin: new Date(debut.getTime() + 3600_000),
   });
-  for (const personneId of fiches) {
-    await owner.db.insert(seanceAttendu).values({ organisationId: ecole, seanceId, personneId });
-  }
+  const promotionId = await promotionTechnique(owner.db, ecole, 'Promotion du préchargement');
+  await inscrireManquants(owner.db, ecole, promotionId, fiches);
+  await owner.db.insert(seancePublic).values({ organisationId: ecole, seanceId, promotionId });
 });
 
 afterAll(async () => {

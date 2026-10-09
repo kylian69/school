@@ -84,6 +84,81 @@ describe('Migrations depuis une version antérieure', () => {
     expect(await appliedMigrations(database.migratorUrl)).toHaveLength(tags.length);
   });
 
+  describe('0058 retrait de seance.intervenant_id et de seance_attendu', () => {
+    const index = tags.indexOf('0058_retrait_intervenant_seance_attendu');
+
+    /** Base arrêtée juste avant 0058, avec une école, une fiche et une séance sans liaison. */
+    async function baseAvant0058(): Promise<{ database: TestDatabase; client: pg.Client }> {
+      const database = await createTestDatabase(undefined, {
+        migrationsFolder: migrationsUpTo(index),
+      });
+      databases.push(database);
+      const client = new pg.Client({ connectionString: database.migratorUrl });
+      await client.connect();
+      await client.query(`
+        insert into organisation (id, nom, nom_affichage)
+          values ('00000000-0000-7000-8000-000000000001', 'École', 'EC');
+        insert into personne (id, organisation_id, nom, prenom, email)
+          values ('00000000-0000-7000-8000-000000000002', '00000000-0000-7000-8000-000000000001',
+                  'Fictif', 'Ines', 'ines@exemple.test');
+        insert into seance (id, organisation_id, libelle, debut, fin, intervenant_id)
+          values ('00000000-0000-7000-8000-000000000003', '00000000-0000-7000-8000-000000000001',
+                  'Séance d’une version antérieure', now(), now() + interval '1 hour',
+                  '00000000-0000-7000-8000-000000000002')`);
+      return { database, client };
+    }
+
+    it('reporte l’intervenant des séances sans liaison, une seule fois, puis retire la table', async () => {
+      expect(index).toBeGreaterThan(0);
+      const { database, client } = await baseAvant0058();
+      try {
+        // Séance déjà reportée en 0047 (liaison existante) : rien n'est ajouté.
+        await client.query(`
+          insert into seance (id, organisation_id, libelle, debut, fin, intervenant_id)
+            values ('00000000-0000-7000-8000-000000000005', '00000000-0000-7000-8000-000000000001',
+                    'Séance déjà reportée', now(), now() + interval '1 hour',
+                    '00000000-0000-7000-8000-000000000002');
+          insert into seance_intervenant (id, organisation_id, seance_id, personne_id)
+            values ('00000000-0000-7000-8000-000000000006', '00000000-0000-7000-8000-000000000001',
+                    '00000000-0000-7000-8000-000000000005', '00000000-0000-7000-8000-000000000002')`);
+        await runMigrations(database.migratorUrl);
+        const liens = await client.query<{ seance_id: string }>(
+          `select seance_id from seance_intervenant order by seance_id`,
+        );
+        expect(liens.rows.map((r) => r.seance_id)).toEqual([
+          '00000000-0000-7000-8000-000000000003',
+          '00000000-0000-7000-8000-000000000005',
+        ]);
+        const restes = await client.query<{ table_name: string | null }>(
+          `select to_regclass('public.seance_attendu')::text as table_name`,
+        );
+        expect(restes.rows[0]?.table_name).toBeNull();
+        const vue = await client.query('select count(*) from seance_attendu_calcule');
+        expect(vue.rowCount).toBe(1);
+      } finally {
+        await client.end();
+      }
+    });
+
+    it('s’arrête sans rien modifier si un attendu saisi un à un serait perdu', async () => {
+      const { database, client } = await baseAvant0058();
+      try {
+        await client.query(`
+          insert into seance_attendu (id, organisation_id, seance_id, personne_id)
+            values ('00000000-0000-7000-8000-000000000004', '00000000-0000-7000-8000-000000000001',
+                    '00000000-0000-7000-8000-000000000003', '00000000-0000-7000-8000-000000000002')`);
+        await expect(runMigrations(database.migratorUrl)).rejects.toThrow(/Migration 0058 arrêtée/);
+        expect(await appliedMigrations(database.migratorUrl)).toHaveLength(index);
+        const table = await client.query<{ table_name: string | null }>(
+          `select to_regclass('public.seance_attendu')::text as table_name`,
+        );
+        expect(table.rows[0]?.table_name).toBe('seance_attendu');
+      } finally {
+        await client.end();
+      }
+    });
+  });
+
   it('une base à jour ne rejoue aucune migration', async () => {
     const database = await upgradeFrom(tags.length);
     await runMigrations(database.migratorUrl);

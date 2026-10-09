@@ -8,14 +8,16 @@ import {
   etablissement,
   fluxIcal,
   initialiserRolesParDefaut,
+  inscrireManquants,
   newId,
   organisation,
   personne,
+  promotionTechnique,
   role,
   salle,
   seance,
-  seanceAttendu,
   seanceIntervenant,
+  seancePublic,
 } from '@scolaly/db';
 import { and, eq, like } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
@@ -100,10 +102,14 @@ async function creerSeance(
     .returning();
   const id = s?.id ?? '';
   seances[cle] = id;
-  if (liens.attendu)
+  if (liens.attendu) {
+    // Attendu calculé : l'apprenant est inscrit à une promotion propre, public de la séance.
+    const promotionId = await promotionTechnique(owner.db, ecole, `Promotion ${liens.attendu}`);
+    await inscrireManquants(owner.db, ecole, promotionId, [liens.attendu]);
     await owner.db
-      .insert(seanceAttendu)
-      .values({ organisationId: ecole, seanceId: id, personneId: liens.attendu });
+      .insert(seancePublic)
+      .values({ organisationId: ecole, seanceId: id, promotionId });
+  }
   if (liens.intervenant)
     await owner.db
       .insert(seanceIntervenant)

@@ -33,7 +33,6 @@ import {
   personne,
   presence,
   role,
-  seance,
   seanceIntervenant,
 } from '@scolaly/db';
 import { and, asc, eq } from 'drizzle-orm';
@@ -638,9 +637,6 @@ describe('RG-04-01 plusieurs intervenants', () => {
     expect(liens.filter((l) => l.deletedAt === null).map((l) => l.personneId)).toEqual([
       intervenantId,
     ]);
-    // Bascule : la colonne obsolète suit le premier intervenant pour les versions précédentes.
-    const [ligne] = await owner.db.select().from(seance).where(eq(seance.id, s1.id));
-    expect(ligne?.intervenantId).toBe(intervenantId);
   });
 
   it('refuse un intervenant inconnu', async () => {
