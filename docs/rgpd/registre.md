@@ -41,7 +41,7 @@ Le référentiel pédagogique (module 02, I3.1 : formations, maquettes, compéte
 - Console de la plateforme : rôle de base de données dédié, **sans aucun accès aux données des écoles** (ADR 0004) ; l'accès du support aux données d'une école passera par une autorisation datée de l'école (RG-19-09).
 
 - Cloisonnement par organisation dans la base (RLS), vérifié table par table par un test automatique ; contrôle des permissions à chaque route.
-- Chiffrement en transit (HTTPS, HSTS) ; chiffrement par champ des données sensibles avec une clé par organisation (ADR 0002).
+- Chiffrement en transit (HTTPS, HSTS) ; chiffrement par champ des données sensibles avec une clé par organisation (ADR 0002), clé maîtresse renouvelable sans arrêt de service : ré-chiffrement par le worker, tracé au journal d’audit sans aucune valeur, ancienne clé retirée seulement quand plus rien ne l’utilise (ADR 0006).
 - Mots de passe hachés (Argon2id), 12 caractères au moins, refusés s'ils figurent dans la liste embarquée des mots de passe divulgués ; sessions côté serveur ; cookies `HttpOnly`, `Secure`, `SameSite=Lax` ; limitation des tentatives par adresse IP et verrouillage progressif par compte.
 - Double authentification (TOTP et codes de secours) obligatoire pour les rôles qui l'exigent et pour l'équipe Scolaly ; réinitialisation par un administrateur tracée dans le journal d'audit.
 - Fichiers : type réel contrôlé, taille limitée, antivirus, liens signés de courte durée.

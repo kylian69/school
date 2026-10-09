@@ -1,5 +1,5 @@
 import { QUEUES } from '@scolaly/contracts';
-import { createDatabase } from '@scolaly/db';
+import { createDatabase, FieldEncryption } from '@scolaly/db';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { loadWorkerEnv } from './config/env.js';
@@ -28,6 +28,7 @@ const workers = startWorkers({
   emails,
   logger,
   publicUrl: env.PUBLIC_URL,
+  chiffrement: new FieldEncryption(env.chiffrement),
 });
 const publisher = startOutboxPublisher({
   db: database.db,

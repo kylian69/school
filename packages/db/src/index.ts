@@ -1,4 +1,13 @@
 export { bootstrapRoles, type BootstrapOptions } from './bootstrap.js';
+export {
+  cleMaitresseCourante,
+  clesMaitressesParPriorite,
+  FieldEncryption,
+  FieldEncryptionError,
+  lireClesDeChiffrement,
+  type FieldEncryptionKeys,
+  type LectureCles,
+} from './chiffrement.js';
 export { createDatabase, type Database, type DatabaseHandle } from './client.js';
 export {
   administrateursActifs,
@@ -40,6 +49,17 @@ export {
 } from './journal.js';
 export { MIGRATIONS_FOLDER, runMigrations } from './migrate.js';
 export { withOrganisation, type Transaction } from './organisation-context.js';
+export {
+  CHAMPS_CHIFFRES,
+  compterValeursChiffrees,
+  contexteChiffrement,
+  rechiffrerValeurs,
+  retraitPossible,
+  type BilanRechiffrement,
+  type ChampChiffre,
+  type ComptageChiffrement,
+  type OptionsRechiffrement,
+} from './rechiffrement.js';
 export { initialiserRolesParDefaut, type DefinitionRole } from './roles-par-defaut.js';
 export { APP_ROLE, MIGRATOR_ROLE, PLATFORM_ROLE } from './roles.js';
 export * from './schema/index.js';

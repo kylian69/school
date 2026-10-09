@@ -39,7 +39,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
-import type { FieldEncryption } from '../src/shared/crypto/field-encryption.js';
+import type { FieldEncryption } from '@scolaly/db';
 import { AUTH, FIELD_ENCRYPTION, VALKEY } from '../src/shared/tokens.js';
 import { signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
 

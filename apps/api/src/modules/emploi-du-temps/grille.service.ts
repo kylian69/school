@@ -9,11 +9,11 @@ import {
   maquetteUe,
   promotion,
   seance,
+  FieldEncryption,
   type Transaction,
 } from '@scolaly/db';
 import { creneauApplicable, volumesAPlacer } from '@scolaly/domain';
 import { and, asc, eq, gt, inArray, isNull, lt, or } from 'drizzle-orm';
-import { FieldEncryption } from '../../shared/crypto/field-encryption.js';
 import { FIELD_ENCRYPTION } from '../../shared/tokens.js';
 import { ContexteService, joursEntre, versPlanifiee, volumeEnMinutes } from './contexte.service.js';
 import { lireMotifIndisponibilite } from './disponibilites.service.js';

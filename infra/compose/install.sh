@@ -23,6 +23,7 @@ if [ ! -f .env ]; then
   cat > .env <<CONFIG
 # Configuration de cette installation de Scolaly. Contient des secrets : ne pas diffuser,
 # sauvegarder avec les données (sans ENCRYPTION_MASTER_KEY_V1, les champs chiffrés sont perdus).
+# Rotation de la clé maîtresse : sh rotation-cle.sh ajouter, basculer, retirer (ADR 0006).
 SCOLALY_DOMAIN=${SCOLALY_DOMAIN}
 SCOLALY_VERSION=${SCOLALY_VERSION:-main}
 # local_certs : certificats de l'autorité interne de Caddy (réseau local, SCOLALY_TLS=internal).

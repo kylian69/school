@@ -87,9 +87,19 @@ export class FieldEncryption {
     }
   }
 
+  /** Version de la clé maîtresse utilisée pour chiffrer. */
+  get currentVersion(): number {
+    return this.keys.currentVersion;
+  }
+
   /** Vrai si la valeur a été chiffrée avec une version antérieure (à rechiffrer). */
   needsReencryption(payload: string): boolean {
     return !payload.startsWith(`v${this.keys.currentVersion}.`);
+  }
+
+  /** Même valeur, chiffrée avec la version courante (rotation de la clé maîtresse). */
+  reencrypt(payload: string, organisationId: string, context: string): string {
+    return this.encrypt(this.decrypt(payload, organisationId, context), organisationId, context);
   }
 
   private key(version: number, organisationId: string): Buffer {
@@ -110,22 +120,79 @@ export class FieldEncryption {
 const aad = (organisationId: string, context: string) =>
   Buffer.from(`${organisationId}|${context}`, 'utf8');
 
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const GENERER = 'générer avec `head -c 32 /dev/urandom | base64`';
+
+export type LectureCles =
+  { ok: true; keys: FieldEncryptionKeys } | { ok: false; erreurs: string[] };
+
 /**
- * Lit les clés depuis l'environnement (injectées par le coffre de secrets) :
- * `ENCRYPTION_MASTER_KEY_V1`, `_V2`… en base64 (32 octets), et `ENCRYPTION_KEY_VERSION`.
+ * Lit et valide les clés injectées au démarrage (ADR 0002, ADR 0006) : toutes les variables
+ * `ENCRYPTION_MASTER_KEY_V<n>` non vides (base64, 32 octets) et `ENCRYPTION_KEY_VERSION`, la
+ * version utilisée pour chiffrer. Celle-ci est obligatoire dès qu'il y a plusieurs clés : la
+ * bascule est toujours explicite. Les erreurs nomment la variable, jamais sa valeur.
  */
-export function keysFromEnv(env: Readonly<Record<string, unknown>>): FieldEncryptionKeys {
+export function lireClesDeChiffrement(env: Readonly<Record<string, unknown>>): LectureCles {
+  const erreurs: string[] = [];
   const masterKeys = new Map<number, Buffer>();
   for (const [name, value] of Object.entries(env)) {
-    const match = /^ENCRYPTION_MASTER_KEY_V(\d+)$/.exec(name);
-    if (match?.[1] && typeof value === 'string' && value) {
-      masterKeys.set(Number(match[1]), Buffer.from(value, 'base64'));
+    if (!name.startsWith('ENCRYPTION_MASTER_KEY_')) continue;
+    if (typeof value !== 'string' || value === '') continue;
+    const match = /^ENCRYPTION_MASTER_KEY_V([1-9]\d{0,5})$/.exec(name);
+    if (!match?.[1]) {
+      erreurs.push(`${name} : nom attendu ENCRYPTION_MASTER_KEY_V1, _V2… (version entière ≥ 1)`);
+      continue;
     }
+    const key = BASE64.test(value) ? Buffer.from(value, 'base64') : undefined;
+    if (key?.length !== KEY_BYTES) {
+      erreurs.push(`${name} : ${KEY_BYTES} octets en base64 attendus (${GENERER})`);
+      continue;
+    }
+    masterKeys.set(Number(match[1]), key);
   }
-  const version = env.ENCRYPTION_KEY_VERSION;
-  const currentVersion =
-    typeof version === 'string' || typeof version === 'number'
-      ? Number(version)
-      : Math.max(0, ...masterKeys.keys());
-  return { masterKeys, currentVersion };
+  if (masterKeys.size === 0 && erreurs.length === 0) {
+    erreurs.push(`ENCRYPTION_MASTER_KEY_V1 : obligatoire (${GENERER})`);
+  }
+  const brute = env.ENCRYPTION_KEY_VERSION;
+  let currentVersion: number | undefined;
+  if (brute === undefined || brute === '') {
+    if (masterKeys.size === 1) [currentVersion] = masterKeys.keys();
+    else if (masterKeys.size > 1) {
+      erreurs.push(
+        'ENCRYPTION_KEY_VERSION : obligatoire quand plusieurs clés maîtresses sont présentes (version utilisée pour chiffrer)',
+      );
+    }
+  } else if (typeof brute === 'string' && /^[1-9]\d{0,5}$/.test(brute)) {
+    currentVersion = Number(brute);
+    if (!masterKeys.has(currentVersion)) {
+      erreurs.push(
+        `ENCRYPTION_KEY_VERSION : aucune clé ENCRYPTION_MASTER_KEY_V${currentVersion} pour la version courante`,
+      );
+    }
+  } else {
+    erreurs.push('ENCRYPTION_KEY_VERSION : version entière ≥ 1 attendue');
+  }
+  if (erreurs.length > 0 || currentVersion === undefined) return { ok: false, erreurs };
+  return { ok: true, keys: { masterKeys, currentVersion } };
+}
+
+/** Clé maîtresse de la version courante (dérivation des clés de séance de l'émargement). */
+export function cleMaitresseCourante(keys: FieldEncryptionKeys): Buffer {
+  const key = keys.masterKeys.get(keys.currentVersion);
+  if (!key) throw new FieldEncryptionError(`Clé maîtresse v${keys.currentVersion} absente.`);
+  return key;
+}
+
+/**
+ * Clés maîtresses, la version courante d'abord puis les autres de la plus récente à la plus
+ * ancienne : on dérive avec la première, on vérifie avec chacune (clés de séance de l'émargement).
+ */
+export function clesMaitressesParPriorite(keys: FieldEncryptionKeys): Buffer[] {
+  const autres = [...keys.masterKeys.keys()]
+    .filter((version) => version !== keys.currentVersion)
+    .sort((a, b) => b - a);
+  return [keys.currentVersion, ...autres].flatMap((version) => {
+    const key = keys.masterKeys.get(version);
+    return key ? [key] : [];
+  });
 }

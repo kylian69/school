@@ -8,8 +8,11 @@ import type {
   SaisieIndisponibilite,
 } from '@scolaly/contracts';
 import {
+  contexteChiffrement,
   disponibiliteIntervenant,
   enregistrerAudit,
+  FieldEncryption,
+  FieldEncryptionError,
   etablissement,
   indisponibiliteIntervenant,
   newId,
@@ -24,7 +27,6 @@ import {
 } from '@scolaly/domain';
 import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
-import { FieldEncryption, FieldEncryptionError } from '../../shared/crypto/field-encryption.js';
 import { plageEdt } from '../../shared/plage-edt.js';
 import { FIELD_ENCRYPTION } from '../../shared/tokens.js';
 
@@ -34,7 +36,7 @@ const CRENEAUX_MAX = 70;
 const INDISPONIBILITES_MAX = 200;
 
 /** Données associées du chiffrement : le motif n'est lisible que sur sa ligne. */
-const contexteMotif = (id: string) => `indisponibilite_intervenant.motif:${id}`;
+const contexteMotif = (id: string) => contexteChiffrement('indisponibilite_intervenant.motif', id);
 
 /**
  * Motif d'une indisponibilité, lu par l'intervenant ou par un gestionnaire de son périmètre ;

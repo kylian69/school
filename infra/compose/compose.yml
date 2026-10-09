@@ -8,6 +8,16 @@ x-app-env: &app-env
   DATABASE_URL: postgres://scolaly_app:${APP_DATABASE_PASSWORD}@pgbouncer:5432/scolaly
   VALKEY_URL: redis://valkey:6379/0
 
+# Clés maîtresses du chiffrement par champ (ADR 0002, ADR 0006), pour l'API et le worker ; une
+# variable vide est ignorée. Rotation (ajouter, basculer, retirer) : sh infra/compose/rotation-cle.sh
+x-cles-chiffrement: &cles-chiffrement
+  ENCRYPTION_KEY_VERSION: ${ENCRYPTION_KEY_VERSION:-}
+  ENCRYPTION_MASTER_KEY_V1: ${ENCRYPTION_MASTER_KEY_V1:-}
+  ENCRYPTION_MASTER_KEY_V2: ${ENCRYPTION_MASTER_KEY_V2:-}
+  ENCRYPTION_MASTER_KEY_V3: ${ENCRYPTION_MASTER_KEY_V3:-}
+  ENCRYPTION_MASTER_KEY_V4: ${ENCRYPTION_MASTER_KEY_V4:-}
+  ENCRYPTION_MASTER_KEY_V5: ${ENCRYPTION_MASTER_KEY_V5:-}
+
 services:
   caddy:
     image: caddy:2.10
@@ -100,7 +110,7 @@ services:
     image: ghcr.io/kylian69/scolaly-api:${SCOLALY_VERSION:-main}
     restart: unless-stopped
     environment:
-      <<: *app-env
+      <<: [*app-env, *cles-chiffrement]
       PUBLIC_URL: https://${SCOLALY_DOMAIN}
       WEB_ORIGIN: https://${SCOLALY_DOMAIN}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
@@ -112,7 +122,6 @@ services:
       ANTIVIRUS_DISABLED: ${ANTIVIRUS_DISABLED:-false}
       ANNUAIRE_ENTREPRISES_DISABLED: ${ANNUAIRE_ENTREPRISES_DISABLED:-false}
       EDT_BADGE_MODIFIE_JOURS: ${EDT_BADGE_MODIFIE_JOURS:-7}
-      ENCRYPTION_MASTER_KEY_V1: ${ENCRYPTION_MASTER_KEY_V1}
     healthcheck:
       test:
         [
@@ -132,7 +141,7 @@ services:
     image: ghcr.io/kylian69/scolaly-worker:${SCOLALY_VERSION:-main}
     restart: unless-stopped
     environment:
-      <<: *app-env
+      <<: [*app-env, *cles-chiffrement]
       SMTP_URL: ${SMTP_URL}
       MAIL_FROM: ${MAIL_FROM}
       PUBLIC_URL: https://${SCOLALY_DOMAIN}

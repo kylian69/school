@@ -12,6 +12,7 @@ import {
   type OuvertureAppel,
 } from '@scolaly/contracts';
 import {
+  cleMaitresseCourante,
   presence,
   seanceEtAttendus,
   seanceIntervenant,
@@ -38,7 +39,8 @@ export class AppelService {
     @Inject(DATABASE) private readonly db: Database,
   ) {
     this.cache = new CacheEmargement(valkey);
-    this.cleMaitresse = Buffer.from(env.ENCRYPTION_MASTER_KEY_V1, 'base64');
+    // Clé de séance dérivée de la clé maîtresse courante (ADR 0006).
+    this.cleMaitresse = cleMaitresseCourante(env.chiffrement);
   }
 
   /** L'un des intervenants de la séance (RG-04-01), ou une personne habilitée sur toute l'école. */

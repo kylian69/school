@@ -12,7 +12,8 @@
     "start": "node --enable-source-maps dist/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "chiffrement": "node --enable-source-maps --env-file-if-exists=../../.env dist/cli/chiffrement.js"
   },
   "devDependencies": {
     "@scolaly/config": "workspace:*",

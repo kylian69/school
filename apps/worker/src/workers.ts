@@ -1,5 +1,11 @@
 import { EmailJob, EVENEMENT_CHANGEMENT_EDT, EvenementJob, QUEUES } from '@scolaly/contracts';
-import { creerPartitionsAudit, purgerCorbeille, type Database } from '@scolaly/db';
+import {
+  creerPartitionsAudit,
+  purgerCorbeille,
+  rechiffrerValeurs,
+  type Database,
+  type FieldEncryption,
+} from '@scolaly/db';
 import { DELAI_CORBEILLE_JOURS } from '@scolaly/domain';
 import type { Queue } from 'bullmq';
 import { Worker, type ConnectionOptions } from 'bullmq';
@@ -19,6 +25,7 @@ export const MAINTENANCE_JOBS = {
   notificationsEdt: 'notifications-edt',
   recapitulatifEdt: 'recapitulatif-edt',
   conservationIndisponibilites: 'conservation-indisponibilites',
+  rechiffrement: 'rechiffrement',
 } as const;
 
 /** Tâches planifiées (architecture section 6). Idempotent : à appeler à chaque démarrage. */
@@ -53,6 +60,13 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
       name: MAINTENANCE_JOBS.conservationIndisponibilites,
       opts: { removeOnComplete: 30, removeOnFail: 100 },
     },
+  );
+  // Chaque heure à 45 : valeurs chiffrées avec une ancienne clé maîtresse rechiffrées avec la
+  // version courante, par lots et transactions courtes (ADR 0006 ; rien à faire hors rotation).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.rechiffrement,
+    { pattern: '45 * * * *', tz: 'UTC' },
+    { name: MAINTENANCE_JOBS.rechiffrement, opts: { removeOnComplete: 30, removeOnFail: 100 } },
   );
   // Chaque minute : séances des 15 prochaines minutes chargées dans Valkey (RG-00-17).
   await maintenance.upsertJobScheduler(
@@ -91,6 +105,8 @@ export function startWorkers(options: {
   prefix?: string;
   /** Adresse publique, pour les liens des relances. */
   publicUrl: string;
+  /** Chiffrement par champ, pour rechiffrer après une rotation de la clé maîtresse. */
+  chiffrement: FieldEncryption;
 }): Worker[] {
   const { connection, db, mailer, logger } = options;
   const common = { connection, ...(options.prefix ? { prefix: options.prefix } : {}) };
@@ -118,6 +134,12 @@ export function startWorkers(options: {
       } else if (job.name === MAINTENANCE_JOBS.conservationIndisponibilites) {
         const bilan = await purgerIndisponibilitesPassees(db);
         logger.info({ bilan }, 'Indisponibilités passées purgées');
+      } else if (job.name === MAINTENANCE_JOBS.rechiffrement) {
+        // Comptes seulement : ni valeur ni clé dans les journaux.
+        const bilan = await rechiffrerValeurs(db, options.chiffrement);
+        if (bilan.echecs > 0)
+          logger.warn({ bilan }, 'Valeurs chiffrées illisibles laissées en place');
+        else if (bilan.rechiffrees > 0) logger.info({ bilan }, 'Valeurs rechiffrées');
       } else if (job.name === MAINTENANCE_JOBS.prechargementEmargement) {
         await prechargerSeances(db, options.valkey);
       } else if (job.name === MAINTENANCE_JOBS.notificationsEdt) {
