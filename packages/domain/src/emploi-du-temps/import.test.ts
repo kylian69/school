@@ -280,10 +280,10 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
     );
     expect(lu.erreurs).toEqual([]);
     expect(lu.seances.map((s) => [s.identifiant, s.debut.toISOString()])).toEqual([
+      ['serie/2026-10-26T09:00', '2026-10-26T13:00:00.000Z'],
       ['serie/2026-10-19T09:00', '2026-10-19T07:00:00.000Z'],
       ['serie/2026-10-28T09:00', '2026-10-28T08:00:00.000Z'],
       ['serie/2026-11-02T09:00', '2026-11-02T08:00:00.000Z'],
-      ['serie/2026-10-26T09:00', '2026-10-26T13:00:00.000Z'],
     ]);
   });
 
@@ -412,7 +412,10 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
       ),
       PARIS,
     );
-    expect(lu.erreurs.at(-1)?.message).toContain('au plus');
+    expect(lu.seances).toEqual([]);
+    expect(lu.erreurs).toEqual([
+      { ligne: null, message: expect.stringContaining('5124 séances') as string },
+    ]);
   });
 
   it('RG-04-09 signale un fichier sans événement', () => {

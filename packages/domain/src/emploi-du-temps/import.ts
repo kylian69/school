@@ -208,7 +208,6 @@ function sansDoublon(lecture: LectureImportEdt): LectureImportEdt {
       });
     }
   }
-  if (seances.length > IMPORT_EDT_SEANCES_MAX) lecture.erreurs.push(tropDeSeances(seances.length));
   return { ...lecture, seances };
 }
 
@@ -432,6 +431,8 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
     return lecture;
   }
   // Exceptions d'une série (RECURRENCE-ID) : elles remplacent l'occurrence d'origine.
+  // Occurrences des répétitions, converties en instants une fois la limite contrôlée.
+  const occurrences: (() => SeanceImportee)[] = [];
   const exceptions = new Set<string>();
   for (const ev of evenements) {
     const uid = ev.find((p) => p.nom === 'UID')?.valeur;
@@ -535,16 +536,24 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
     for (const jour of jours) {
       const cle = `${uid}/${jour}T${debut.heure}`;
       if (exclus.has(jour) || exceptions.has(cle)) continue;
-      const instant = instantLocal(jour, debut.heure, fuseauEvenement);
-      lecture.seances.push({
-        ligne,
-        identifiant: cle,
-        debut: instant,
-        fin: new Date(instant.getTime() + duree * 60_000),
-        ...contenu,
+      occurrences.push(() => {
+        const instant = instantLocal(jour, debut.heure, fuseauEvenement);
+        return {
+          ligne,
+          identifiant: cle,
+          debut: instant,
+          fin: new Date(instant.getTime() + duree * 60_000),
+          ...contenu,
+        };
       });
     }
   });
+  const total = lecture.seances.length + occurrences.length;
+  if (total > IMPORT_EDT_SEANCES_MAX) {
+    lecture.erreurs.push(tropDeSeances(total));
+    return { ...lecture, seances: [] };
+  }
+  lecture.seances.push(...occurrences.map((occurrence) => occurrence()));
   return sansDoublon(lecture);
 }
 
