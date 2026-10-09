@@ -67,6 +67,27 @@
         }
       }
     },
+    "/api/agenda/{fichier}": {
+      "get": {
+        "operationId": "FluxIcalPublicController.lire",
+        "summary": "Flux iCal personnel (adresse secrète d’abonnement)",
+        "x-scolaly-access": {
+          "kind": "public"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/annees": {
       "get": {
         "operationId": "CalendrierController.lister",
@@ -3224,6 +3245,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Maquette"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/agenda": {
+      "get": {
+        "operationId": "FluxIcalController.etat",
+        "summary": "État de mon flux iCal",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxIcal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "FluxIcalController.regenerer",
+        "summary": "Créer ou régénérer mon flux iCal (l’adresse précédente cesse de répondre)",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxIcal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "FluxIcalController.revoquer",
+        "summary": "Révoquer mon flux iCal",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FluxIcal"
                 }
               }
             }
@@ -8996,6 +9076,31 @@
           "dateFin",
           "type",
           "etablissementIds"
+        ],
+        "additionalProperties": false
+      },
+      "FluxIcal": {
+        "type": "object",
+        "properties": {
+          "actif": {
+            "type": "boolean"
+          },
+          "regenereLe": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "url": {
+            "nullable": true,
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "actif",
+          "regenereLe",
+          "url"
         ],
         "additionalProperties": false
       },

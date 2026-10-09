@@ -457,6 +457,34 @@ export const indisponibiliteIntervenant = pgTable(
 ).enableRLS();
 
 /**
+ * RG-04-15 : flux iCal personnel (adresse secrète, régénérable). Une ligne par personne ; seule
+ * l'empreinte SHA-256 du secret est stockée. Sans empreinte : flux révoqué.
+ */
+export const fluxIcal = pgTable(
+  'flux_ical',
+  {
+    ...organisationScoped(),
+    personneId: uuid().notNull(),
+    jetonEmpreinte: text(),
+    regenereLe: timestamp({ withTimezone: true }),
+    revoqueLe: timestamp({ withTimezone: true }),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('flux_ical', t),
+    uniqueIndex('flux_ical_personne_key').on(t.organisationId, t.personneId),
+    uniqueIndex('flux_ical_jeton_empreinte_key')
+      .on(t.organisationId, t.jetonEmpreinte)
+      .where(sql`${t.jetonEmpreinte} is not null`),
+    foreignKey({
+      name: 'flux_ical_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+  ],
+).enableRLS();
+
+/**
  * Apprenants attendus à une séance, calculés (migration 0035, security_invoker : la RLS des tables
  * s'applique). Inscrits actifs le jour de la séance, de la promotion visée ou membres du groupe
  * visé ce jour-là, plus les lignes historiques de seance_attendu tant qu'elle existe.

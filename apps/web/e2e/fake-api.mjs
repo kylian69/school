@@ -206,6 +206,7 @@ const detailPersonne = (p) => ({
 });
 // Ma photo (US-01-20) : celle de Camille, déposée par elle-même et en attente de validation.
 const maPhoto = { contenu: null, statut: null };
+const monAgenda = { regenereLe: null, version: 0 };
 const SEANCE_ID = '0192f0a4-1b2c-7d3e-8f40-0000000000aa';
 let emargementLea = null;
 const seanceFictive = () => {
@@ -2180,6 +2181,25 @@ createServer(async (request, response) => {
       scanneLe: emargementLea,
       retardMinutes: 0,
       rejoue: false,
+    });
+  }
+  // Flux iCal personnel (RG-04-15) : l'adresse n'est renvoyée qu'à sa création.
+  if (path === '/api/moi/agenda') {
+    if (!user) return json(401, { message: 'Session absente' });
+    if (request.method === 'POST') {
+      monAgenda.regenereLe = new Date().toISOString();
+      monAgenda.version += 1;
+      return json(201, {
+        actif: true,
+        regenereLe: monAgenda.regenereLe,
+        url: `http://localhost:3000/api/agenda/fictif.secret${monAgenda.version}.ics`,
+      });
+    }
+    if (request.method === 'DELETE') monAgenda.regenereLe = null;
+    return json(200, {
+      actif: monAgenda.regenereLe !== null,
+      regenereLe: monAgenda.regenereLe,
+      url: null,
     });
   }
   if (path === '/api/moi/photo') {

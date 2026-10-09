@@ -5,6 +5,7 @@ import {
   anneeScolaire,
   attribution,
   correspondanceEdt,
+  fluxIcal,
   invitation,
   role,
   rolePermission,
@@ -481,6 +482,12 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         libelle: 'Amphi fictif',
         cle: 'amphi fictif',
       });
+    },
+  },
+  flux_ical: {
+    insert: async (db, organisationId) => {
+      const personneId = await insertPersonne(db, organisationId);
+      await db.insert(fluxIcal).values({ organisationId, personneId, jetonEmpreinte: newId() });
     },
   },
   notification_edt: {
