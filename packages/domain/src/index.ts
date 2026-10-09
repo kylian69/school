@@ -39,3 +39,4 @@ export * from './emploi-du-temps/volumes.js';
 export * from './emploi-du-temps/changements.js';
 export * from './emploi-du-temps/notifications.js';
 export * from './emploi-du-temps/import.js';
+export * from './emploi-du-temps/flux-ical.js';

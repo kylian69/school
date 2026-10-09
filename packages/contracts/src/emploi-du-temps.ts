@@ -451,3 +451,16 @@ export const SaisieCorrespondancesEdt = z
   .object({ correspondances: z.array(CorrespondanceEdt).min(1).max(500) })
   .meta({ id: 'SaisieCorrespondancesEdt' });
 export type SaisieCorrespondancesEdt = z.infer<typeof SaisieCorrespondancesEdt>;
+
+/**
+ * RG-04-15 : flux iCal personnel. L'adresse secrète n'est connue qu'à sa création : seule son
+ * empreinte est conservée, elle n'est donc renvoyée qu'après une création ou une régénération.
+ */
+export const FluxIcal = z
+  .object({
+    actif: z.boolean(),
+    regenereLe: instant.nullable(),
+    url: z.url().nullable(),
+  })
+  .meta({ id: 'FluxIcal' });
+export type FluxIcal = z.infer<typeof FluxIcal>;

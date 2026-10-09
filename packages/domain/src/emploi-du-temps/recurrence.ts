@@ -95,18 +95,30 @@ export function verifierSerie(regle: RegleRecurrence): VerdictSerie {
   return { ok: true };
 }
 
+/** Formateurs par fuseau : leur création coûte bien plus cher que leur usage. */
+const formateurs = new Map<string, Intl.DateTimeFormat>();
+
+function formateur(fuseau: string): Intl.DateTimeFormat {
+  let f = formateurs.get(fuseau);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone: fuseau,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    });
+    formateurs.set(fuseau, f);
+  }
+  return f;
+}
+
 /** Écart (en ms) entre l'heure locale du fuseau et l'heure UTC, à un instant donné. */
-function decalage(instant: number, fuseau: string): number {
-  const parties = new Intl.DateTimeFormat('en-US', {
-    timeZone: fuseau,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-  }).formatToParts(new Date(instant));
+export function decalage(instant: number, fuseau: string): number {
+  const parties = formateur(fuseau).formatToParts(new Date(instant));
   const v = Object.fromEntries(parties.map((p) => [p.type, p.value]));
   const local = Date.UTC(
     Number(v.year),

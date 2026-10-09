@@ -13,6 +13,7 @@ import {
   TYPES_LOGO,
 } from '@scolaly/contracts';
 import { createDatabase } from '@scolaly/db';
+import type { FastifyRequest } from 'fastify';
 import { PHOTO_TAILLE_MAX } from '@scolaly/domain';
 import { createAuth } from './auth/auth.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
@@ -33,6 +34,23 @@ export const REDACTED_LOG_PATHS = [
   '*.token',
   '*.secret',
 ];
+
+/** Adresses secrètes jamais écrites dans les journaux : le jeton du flux iCal (RG-04-15). */
+export function masquerJetonsUrl(url: string): string {
+  return url.replace(/^\/api\/agenda\/[^/?#]+/, '/api/agenda/[masqué]');
+}
+
+/** Reprend la sérialisation par défaut de Fastify, adresse masquée. */
+function serialiserRequete(requete: FastifyRequest) {
+  const port = requete.socket.remotePort;
+  return {
+    method: requete.method,
+    url: masquerJetonsUrl(requete.url),
+    host: requete.host,
+    remoteAddress: requete.ip,
+    ...(port === undefined ? {} : { remotePort: port }),
+  };
+}
 
 export interface CreateAppOptions {
   /** Flux de sortie des journaux (tests). Par défaut : sortie standard. */
@@ -69,6 +87,7 @@ export async function createApp(
     logger: {
       level: env.LOG_LEVEL,
       redact: { paths: REDACTED_LOG_PATHS, censor: '[masqué]' },
+      serializers: { req: serialiserRequete },
       ...(options.logStream ? { stream: options.logStream } : {}),
     },
   });

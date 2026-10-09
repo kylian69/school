@@ -1936,6 +1936,41 @@ export const fr = {
     touteLaPromotion: 'Toute la promotion',
     realisees: 'Heures réalisées : avec l’emploi du temps.',
   },
+  connexions: {
+    titre: 'Mes connexions',
+    lien: 'Mes connexions',
+    agenda: 'Agenda',
+    agendaTitre: 'Mes cours dans mon agenda',
+    agendaAide:
+      'Abonnez votre agenda (Google, Outlook, Apple) à votre emploi du temps : les séances publiées y apparaissent et se mettent à jour d’elles-mêmes, annulations comprises.',
+    actif: 'Activé',
+    inactif: 'Désactivé',
+    depuis: (date: string) => `Adresse créée le ${date}.`,
+    activer: 'Activer l’abonnement',
+    regenerer: 'Régénérer l’adresse',
+    revoquer: 'Désactiver l’abonnement',
+    enCours: 'Patientez…',
+    adresse: 'Adresse d’abonnement',
+    copier: 'Copier l’adresse',
+    copiee: 'Adresse copiée',
+    uneFois:
+      'Copiez cette adresse maintenant : par sécurité, elle ne sera plus affichée. Si vous la perdez, régénérez-en une nouvelle.',
+    cachee:
+      'L’adresse n’est affichée qu’au moment de sa création. Pour l’ajouter à un autre agenda, régénérez-la : l’ancienne cessera de fonctionner.',
+    confidentialite:
+      'Cette adresse est personnelle : quiconque la connaît voit vos cours. Ne la partagez pas ; en cas de doute, régénérez-la.',
+    regeneree: 'Nouvelle adresse créée : l’ancienne ne fonctionne plus.',
+    revoque: 'Abonnement désactivé : votre agenda ne reçoit plus vos cours.',
+    commentFaire: 'Comment l’ajouter à mon agenda ?',
+    google:
+      'Google Agenda : « Autres agendas » › « + » › « À partir de l’URL », puis collez l’adresse.',
+    outlook:
+      'Outlook : « Ajouter un calendrier » › « S’abonner à partir du web », puis collez l’adresse.',
+    apple:
+      'Apple Calendrier : « Fichier » › « Nouvel abonnement à un calendrier » (ou Réglages › Calendrier › Comptes sur iPhone), puis collez l’adresse.',
+    delai:
+      'Les agendas relisent l’adresse à leur rythme : quelques minutes à quelques heures selon le service.',
+  },
   securite: {
     titre: 'Sécurité de mon compte',
     lien: 'Sécurité de mon compte',
