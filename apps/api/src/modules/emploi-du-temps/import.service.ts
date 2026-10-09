@@ -15,6 +15,7 @@ import {
   groupePromotion,
   maquetteModule,
   personne,
+  presence,
   promotion,
   salle,
   seance,
@@ -26,11 +27,12 @@ import {
   empreinteSeance,
   normaliserNom,
   rapprocher,
+  refusAnnulationDisparue,
   type Candidat,
   type LectureImportEdt,
   type SeanceImportee as LigneLue,
 } from '@scolaly/domain';
-import { and, eq, gte, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { and, count, eq, gte, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { LigneSeance } from './contexte.service.js';
 import { ContexteService } from './contexte.service.js';
@@ -42,6 +44,9 @@ type Action = Resultat['seances'][number]['action'];
 
 /** Sortie volontaire d'un savepoint : rien n'est écrit (aperçu, ou import tout ou rien refusé). */
 class Abandon extends Error {}
+
+/** RG-04-11 : motif d'annulation d'une séance disparue du fichier, montré aux personnes notifiées. */
+const MOTIF_DISPARUE = 'Retirée du fichier importé';
 
 const PAR_LOT = 1000;
 const lots = <T>(liste: readonly T[]) =>
@@ -89,7 +94,8 @@ interface Preparee {
  * fichier sont rapprochés des objets de l'établissement, d'office ou par une correspondance
  * mémorisée. L'aperçu exécute l'import dans un savepoint annulé : erreurs ligne par ligne et
  * conflits sont ceux de l'import réel, et rien n'est écrit. Chaque séance garde son identifiant
- * externe ; un réimport met à jour sans doublon, et signale les séances disparues sans les annuler.
+ * externe ; un réimport met à jour sans doublon, et propose d'annuler les séances disparues :
+ * seules celles cochées à la validation le sont.
  */
 @Injectable()
 export class ImportEdtService {
@@ -120,6 +126,7 @@ export class ImportEdtService {
         ignorees: 0,
         rejetees: 0,
         disparues: 0,
+        annulees: 0,
       },
       erreurs: [...lecture.erreurs],
       avertissements: [...lecture.avertissements],
@@ -236,6 +243,7 @@ export class ImportEdtService {
           }
         }
         if (refuse || p.apercu) throw new Abandon();
+        await this.annulerDisparues(sp, access, p.annuler, resultat, adresseIp);
         await enregistrerAudit(sp, {
           action: 'edt.importer',
           objetType: 'etablissement',
@@ -594,8 +602,54 @@ export class ImportEdtService {
   }
 
   /**
+   * RG-04-11 : annulation des séances disparues cochées, par le chemin d'annulation ordinaire
+   * (motif, notifications RG-04-14, cache de l'émargement, audit avant/après). Seules les
+   * disparues de ce réimport s'annulent : une séance cochée déjà annulée (validation rejouée),
+   * revenue dans le fichier ou hors du périmètre est ignorée, comme une séance non annulable.
+   */
+  private async annulerDisparues(
+    tx: Transaction,
+    access: Access,
+    cochees: readonly string[],
+    resultat: Resultat,
+    adresseIp: string,
+  ) {
+    const demandees = new Set(cochees);
+    for (const d of resultat.disparues) {
+      if (!demandees.has(d.id) || d.refus !== null) continue;
+      try {
+        await tx.transaction(async (s) => {
+          await this.seances.annuler(
+            s,
+            access,
+            d.id,
+            { motif: MOTIF_DISPARUE, portee: 'seance' },
+            adresseIp,
+          );
+        });
+        d.annulee = true;
+        resultat.compteurs.annulees++;
+      } catch (erreur) {
+        if (!(erreur instanceof HttpException)) throw erreur;
+        resultat.avertissements.push({
+          ligne: null,
+          message: `Séance « ${d.libelle} » non annulée : ${messageDe(erreur)}`,
+        });
+      }
+    }
+    const proposees = new Set(resultat.disparues.filter((d) => d.refus === null).map((d) => d.id));
+    const ignorees = [...demandees].filter((id) => !proposees.has(id)).length;
+    if (ignorees > 0)
+      resultat.avertissements.push({
+        ligne: null,
+        message: `${String(ignorees)} séance(s) cochée(s) non annulée(s) : déjà annulée(s), revenue(s) dans le fichier, commencée(s), à l’appel fait ou hors de votre périmètre.`,
+      });
+  }
+
+  /**
    * RG-04-11 : séances déjà importées, sur la période du fichier et pour les mêmes promotions,
-   * qui n'y figurent plus. Elles sont signalées ; leur annulation reste une décision humaine.
+   * qui n'y figurent plus. Elles sont proposées à l'annulation, sauf si leur appel est fait ou si
+   * elles ont commencé (`refus`).
    */
   private async disparues(
     tx: Transaction,
@@ -634,15 +688,34 @@ export class ImportEdtService {
       traitees.flatMap((t) => (promotionsDe.get(t.id) ?? []).map((x) => x.id)),
     );
     const gestion = await this.seances.gestion(tx, access);
-    return candidates
-      .filter((l) => {
-        const promos = promotionsDe.get(l.id) ?? [];
-        return (
-          promos.some((x) => x.etablissementId === etablissementId && duFichier.has(x.id)) &&
-          this.seances.couvre(gestion, promos)
-        );
-      })
-      .map((l) => ({ id: l.id, libelle: l.libelle, debut: l.debut.toISOString() }))
+    const retenues = candidates.filter((l) => {
+      const promos = promotionsDe.get(l.id) ?? [];
+      return (
+        promos.some((x) => x.etablissementId === etablissementId && duFichier.has(x.id)) &&
+        this.seances.couvre(gestion, promos)
+      );
+    });
+    const presences = new Map<string, number>();
+    for (const lot of lots(retenues.map((l) => l.id)))
+      for (const r of await tx
+        .select({ seanceId: presence.seanceId, n: count() })
+        .from(presence)
+        .where(and(inArray(presence.seanceId, lot), isNull(presence.deletedAt)))
+        .groupBy(presence.seanceId))
+        presences.set(r.seanceId, r.n);
+    const maintenant = new Date();
+    return retenues
+      .map((l) => ({
+        id: l.id,
+        libelle: l.libelle,
+        debut: l.debut.toISOString(),
+        refus: refusAnnulationDisparue({
+          debut: l.debut,
+          presences: presences.get(l.id) ?? 0,
+          maintenant,
+        }),
+        annulee: false,
+      }))
       .sort((a, b) => a.debut.localeCompare(b.debut));
   }
 

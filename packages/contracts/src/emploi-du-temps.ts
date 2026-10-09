@@ -360,6 +360,10 @@ export const ACTIONS_IMPORT_SEANCE = [
   'conservee',
   'ignoree',
 ] as const;
+/** RG-04-11 : séance disparue du fichier qui ne s'annule pas (appel fait, séance commencée). */
+export const REFUS_ANNULATION_DISPARUE = ['appel-fait', 'passee'] as const;
+/** RG-04-11 : séances disparues annulées en une validation, au plus (longueur de l'adresse). */
+export const IMPORT_ANNULATIONS_MAX = 300;
 
 export const ParametresImportEdt = z.object({
   etablissementId: z.uuid(),
@@ -373,6 +377,15 @@ export const ParametresImportEdt = z.object({
   /** Public des séances dont le fichier n'indique aucun groupe (agenda d'une promotion). */
   promotionId: z.uuid().optional(),
   groupeId: z.uuid().optional(),
+  /**
+   * RG-04-11 : séances disparues du fichier à annuler à la validation, identifiants séparés par
+   * des virgules (aucune par défaut). Ignoré pendant l'aperçu.
+   */
+  annuler: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(',') : []))
+    .pipe(z.array(z.uuid()).max(IMPORT_ANNULATIONS_MAX)),
 });
 export type ParametresImportEdt = z.infer<typeof ParametresImportEdt>;
 
@@ -408,6 +421,7 @@ export const ResultatImportEdt = z
       ignorees: z.int(),
       rejetees: z.int(),
       disparues: z.int(),
+      annulees: z.int(),
     }),
     /** Erreurs ligne par ligne (null : erreur qui ne tient pas à une ligne). */
     erreurs: z.array(MessageImportEdt),
@@ -426,8 +440,19 @@ export const ResultatImportEdt = z
     ),
     /** Séances du fichier, hors séances inchangées. */
     seances: z.array(SeanceImportee),
-    /** RG-04-11 : séances importées absentes du fichier sur sa période, signalées seulement. */
-    disparues: z.array(z.object({ id: z.uuid(), libelle: z.string(), debut: instant })),
+    /**
+     * RG-04-11 : séances importées absentes du fichier sur sa période. Annulées seulement si
+     * cochées (`annuler`) ; `refus` dit pourquoi l'une d'elles ne s'annule pas.
+     */
+    disparues: z.array(
+      z.object({
+        id: z.uuid(),
+        libelle: z.string(),
+        debut: instant,
+        refus: z.enum(REFUS_ANNULATION_DISPARUE).nullable(),
+        annulee: z.boolean(),
+      }),
+    ),
   })
   .meta({ id: 'ResultatImportEdt' });
 export type ResultatImportEdt = z.infer<typeof ResultatImportEdt>;

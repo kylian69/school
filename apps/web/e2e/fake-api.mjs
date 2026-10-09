@@ -1399,6 +1399,12 @@ async function routeScolarite(path, request, json, response, url) {
 // l'API ; la fausse API suit leurs contrats.
 const seancesEdt = [];
 const correspondancesEdt = new Map();
+/**
+ * RG-04-11 : séances importées, par identifiant externe. Une séance absente d'un réimport de même
+ * préfixe d'identifiant est « disparue » ; un identifiant finissant par -APPEL a son appel fait.
+ */
+const importeesEdt = new Map();
+const prefixeImport = (identifiant) => identifiant.replace(/-[^-]*$/, '');
 const FUSEAU_EDT = 'Europe/Paris';
 const jourLocal = (iso) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU_EDT }).format(new Date(iso));
@@ -1607,10 +1613,42 @@ async function routeEdt(path, request, json, url) {
       ignorees: 0,
       rejetees: 0,
       disparues: 0,
+      annulees: 0,
     };
+    const lues = lignes.map((l) => {
+      const [j, m, a] = (l.cellules[0] ?? '').split('/');
+      return {
+        ligne: l.ligne,
+        identifiant: l.cellules[8] || `auto:${String(l.ligne)}`,
+        debut: new Date(`${a}-${m}-${j}T${l.cellules[1]}:00+01:00`).toISOString(),
+        fin: new Date(`${a}-${m}-${j}T${l.cellules[2]}:00+01:00`).toISOString(),
+      };
+    });
+    const importe = inconnus.length === 0 && !apercu;
+    const prefixes = new Set(lues.map((l) => prefixeImport(l.identifiant)));
+    const presents = new Set(lues.map((l) => l.identifiant));
+    const cochees = new Set((url.searchParams.get('annuler') ?? '').split(',').filter(Boolean));
+    const disparues =
+      inconnus.length > 0
+        ? []
+        : [...importeesEdt.entries()]
+            .filter(([identifiant]) => prefixes.has(prefixeImport(identifiant)))
+            .filter(([identifiant]) => !presents.has(identifiant))
+            .map(([identifiant, d]) => {
+              const refus = identifiant.endsWith('-APPEL') ? 'appel-fait' : null;
+              const annulee = importe && refus === null && cochees.has(d.id);
+              if (annulee) importeesEdt.delete(identifiant);
+              return { id: d.id, libelle: 'Bois', debut: d.debut, refus, annulee };
+            });
+    if (importe)
+      for (const l of lues)
+        if (!importeesEdt.has(l.identifiant))
+          importeesEdt.set(l.identifiant, { id: randomUUID(), debut: l.debut });
+    compteurs.disparues = disparues.length;
+    compteurs.annulees = disparues.filter((d) => d.annulee).length;
     return json(200, {
       apercu,
-      importe: inconnus.length === 0 && !apercu,
+      importe,
       format: 'csv',
       compteurs,
       erreurs: [],
@@ -1621,21 +1659,14 @@ async function routeEdt(path, request, json, url) {
       seances:
         inconnus.length > 0
           ? []
-          : lignes.map((l) => {
-              const [j, m, a] = (l.cellules[0] ?? '').split('/');
-              const debut = new Date(`${a}-${m}-${j}T${l.cellules[1]}:00+01:00`).toISOString();
-              return {
-                ligne: l.ligne,
-                identifiant: l.cellules[8] || `auto:${String(l.ligne)}`,
-                seanceId: null,
-                libelle: 'Bois',
-                debut,
-                fin: new Date(`${a}-${m}-${j}T${l.cellules[2]}:00+01:00`).toISOString(),
-                action: 'creee',
-                conflits: [],
-              };
-            }),
-      disparues: [],
+          : lues.map((l) => ({
+              ...l,
+              seanceId: null,
+              libelle: 'Bois',
+              action: 'creee',
+              conflits: [],
+            })),
+      disparues,
     });
   }
   if (path === '/api/edt/semaine') {

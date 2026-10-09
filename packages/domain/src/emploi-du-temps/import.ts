@@ -627,3 +627,21 @@ export function deciderReimport(options: {
     ? 'conserver'
     : 'mettre-a-jour';
 }
+
+/** RG-04-11 : raisons pour lesquelles une séance disparue du fichier ne s'annule pas. */
+export const REFUS_ANNULATION_DISPARUE = ['appel-fait', 'passee'] as const;
+export type RefusAnnulationDisparue = (typeof REFUS_ANNULATION_DISPARUE)[number];
+
+/**
+ * RG-04-11 : une séance disparue du fichier peut être annulée à la demande, sauf si son appel est
+ * fait (ses présences font foi) ou si elle a commencé : par prudence, le passé ne se réécrit pas.
+ */
+export function refusAnnulationDisparue(s: {
+  debut: Date;
+  presences: number;
+  maintenant: Date;
+}): RefusAnnulationDisparue | null {
+  if (s.presences > 0) return 'appel-fait';
+  if (s.debut <= s.maintenant) return 'passee';
+  return null;
+}
