@@ -5,13 +5,14 @@ import {
   etablissement,
   formation,
   maquetteVersion,
+  inscrireManquants,
   newId,
   notificationEdt,
   organisation,
   personne,
   promotion,
+  promotionTechnique,
   seance,
-  seanceAttendu,
   seanceIntervenant,
   seancePublic,
 } from '@scolaly/db';
@@ -87,10 +88,13 @@ beforeAll(async () => {
       ...creneau(plus(10 * 24 * HEURE)),
     },
   ]);
+  // Lou est attendue à chaque séance (inscrite à la promotion qui en est le public).
+  const promotionLou = await promotionTechnique(owner.db, ecole, 'Promotion de Lou');
+  await inscrireManquants(owner.db, ecole, promotionLou, [fiches.lou]);
   for (const seanceId of [seances.proche, seances.lointaine, seances.passee, seances.nouvelle]) {
     await owner.db
-      .insert(seanceAttendu)
-      .values({ organisationId: ecole, seanceId, personneId: fiches.lou });
+      .insert(seancePublic)
+      .values({ organisationId: ecole, seanceId, promotionId: promotionLou });
     await owner.db
       .insert(seanceIntervenant)
       .values({ organisationId: ecole, seanceId, personneId: fiches.sam });

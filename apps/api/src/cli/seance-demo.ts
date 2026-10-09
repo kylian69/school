@@ -50,7 +50,6 @@ try {
     libelle: `Droit des affaires (démonstration ${randomUUID().slice(0, 4)})`,
     debut,
     fin: new Date(debut.getTime() + 3 * 3600_000),
-    intervenantId: intervenant.id,
   });
   await db
     .insert(seanceIntervenant)

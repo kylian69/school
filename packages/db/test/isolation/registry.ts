@@ -19,7 +19,6 @@ import {
   personne,
   presence,
   seance,
-  seanceAttendu,
   competence,
   competenceModule,
   formation,
@@ -632,15 +631,6 @@ export const sampleRows: Record<string, ScopedTableSample> = {
   seance: {
     insert: async (db, organisationId) => {
       await insertSeance(db, organisationId);
-    },
-  },
-  seance_attendu: {
-    insert: async (db, organisationId) => {
-      await db.insert(seanceAttendu).values({
-        organisationId,
-        seanceId: await insertSeance(db, organisationId),
-        personneId: await insertPersonne(db, organisationId),
-      });
     },
   },
   presence: {

@@ -325,7 +325,6 @@ export class SeancesService {
       moduleId: saisie.moduleId,
       activite: saisie.moduleId ? null : saisie.activite,
       salleId: saisie.salleId,
-      intervenantId: contenu.intervenantIds[0] ?? null,
       lienVisio: saisie.lienVisio,
       distanciel: saisie.distanciel,
       createdBy: access.userId,
@@ -385,7 +384,6 @@ export class SeancesService {
       moduleId: saisie.moduleId,
       activite: saisie.moduleId ? null : saisie.activite,
       salleId: saisie.salleId,
-      intervenantId: contenu.intervenantIds[0] ?? null,
       lienVisio: saisie.lienVisio,
       distanciel: saisie.distanciel,
       createdBy: access.userId,
@@ -495,7 +493,6 @@ export class SeancesService {
           moduleId,
           activite: moduleId ? null : activite,
           salleId,
-          intervenantId: contenu.intervenantIds[0] ?? null,
           lienVisio: m.lienVisio !== undefined ? m.lienVisio : l.lienVisio,
           distanciel: m.distanciel ?? l.distanciel,
           modifieeLe: significatif ? maintenant : l.modifieeLe,
@@ -646,7 +643,6 @@ export class SeancesService {
       moduleId: cible.moduleId,
       activite: cible.activite,
       salleId,
-      intervenantId: contenu.intervenantIds[0] ?? null,
       lienVisio: cible.lienVisio,
       distanciel: cible.distanciel,
       modifieeLe: maintenant,
@@ -716,7 +712,6 @@ export class SeancesService {
       await tx
         .update(seance)
         .set({
-          intervenantId: v.intervenantIds[0] ?? null,
           modifieeLe: l.statut === 'publiee' ? maintenant : l.modifieeLe,
           updatedBy: access.userId,
         })
@@ -862,7 +857,6 @@ export class SeancesService {
         moduleId: saisie.moduleId,
         activite: saisie.moduleId ? null : saisie.activite,
         salleId: saisie.salleId,
-        intervenantId: contenu.intervenantIds[0] ?? null,
         lienVisio: saisie.lienVisio,
         distanciel: saisie.distanciel,
         serieId,

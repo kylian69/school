@@ -84,11 +84,6 @@ export const seance = pgTable(
     fin: timestamp({ withTimezone: true }).notNull(),
     /** RG-06-08 : séance à distance, sans contrôle de localisation. */
     distanciel: boolean().notNull().default(false),
-    /**
-     * Obsolète : remplacée par seance_intervenant (RG-04-01). Écrite (premier intervenant) pour les
-     * versions précédentes pendant la bascule ; à retirer dans une version suivante.
-     */
-    intervenantId: uuid(),
     statut: seanceStatut().notNull().default('publiee'),
     type: seanceType(),
     moduleId: uuid(),
@@ -119,11 +114,6 @@ export const seance = pgTable(
     uniqueIndex('seance_identifiant_externe_key')
       .on(t.organisationId, t.identifiantExterne)
       .where(sql`${t.identifiantExterne} is not null and ${t.deletedAt} is null`),
-    foreignKey({
-      name: 'seance_intervenant_fk',
-      columns: [t.organisationId, t.intervenantId],
-      foreignColumns: [personne.organisationId, personne.id],
-    }),
     foreignKey({
       name: 'seance_module_fk',
       columns: [t.organisationId, t.moduleId],
@@ -274,35 +264,6 @@ export const notificationEdt = pgTable(
   ],
 ).enableRLS();
 
-/**
- * Apprenants attendus à une séance, saisis un à un (P2). Remplacée en I3.2 par le public de la
- * séance (seance_public) : plus aucune écriture ; la vue seance_attendu_calcule la lit encore
- * pendant la bascule, puis la table sera retirée (« ajouter, basculer, retirer »).
- */
-export const seanceAttendu = pgTable(
-  'seance_attendu',
-  {
-    ...organisationScoped(),
-    seanceId: uuid().notNull(),
-    personneId: uuid().notNull(),
-    ...trackingColumns(),
-  },
-  (t) => [
-    ...organisationConstraints('seance_attendu', t),
-    uniqueIndex('seance_attendu_paire_key').on(t.organisationId, t.seanceId, t.personneId),
-    foreignKey({
-      name: 'seance_attendu_seance_fk',
-      columns: [t.organisationId, t.seanceId],
-      foreignColumns: [seance.organisationId, seance.id],
-    }),
-    foreignKey({
-      name: 'seance_attendu_personne_fk',
-      columns: [t.organisationId, t.personneId],
-      foreignColumns: [personne.organisationId, personne.id],
-    }),
-  ],
-).enableRLS();
-
 export const presenceMode = pgEnum('presence_mode', ['qr', 'code', 'manuel']);
 
 /**
@@ -372,10 +333,7 @@ export const seancePublic = pgTable(
   ],
 ).enableRLS();
 
-/**
- * Intervenants d'une séance (RG-04-01), un ou plusieurs. Remplace la colonne seance.intervenant_id,
- * encore écrite (premier intervenant) pendant la bascule puis retirée (« ajouter, basculer, retirer »).
- */
+/** Intervenants d'une séance (RG-04-01), un ou plusieurs (remplace l'ancienne colonne seance.intervenant_id). */
 export const seanceIntervenant = pgTable(
   'seance_intervenant',
   {
@@ -503,8 +461,8 @@ export const fluxIcal = pgTable(
 
 /**
  * Apprenants attendus à une séance, calculés (migration 0035, security_invoker : la RLS des tables
- * s'applique). Inscrits actifs le jour de la séance, de la promotion visée ou membres du groupe
- * visé ce jour-là, plus les lignes historiques de seance_attendu tant qu'elle existe.
+ * s'applique ; recréée sans l'ancienne table seance_attendu en 0058). Inscrits actifs le jour de la
+ * séance, de la promotion visée ou membres du groupe visé ce jour-là.
  */
 export const seanceAttenduCalcule = pgView('seance_attendu_calcule', {
   organisationId: uuid().notNull(),
