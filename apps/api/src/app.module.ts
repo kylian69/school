@@ -7,7 +7,7 @@ import {
   type Type,
 } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import type { DatabaseHandle } from '@scolaly/db';
+import { FieldEncryption, type DatabaseHandle } from '@scolaly/db';
 import type { Redis } from 'ioredis';
 import { AccessModule } from './access/access.module.js';
 import type { Auth } from './auth/auth.js';
@@ -30,7 +30,6 @@ import { PlateformeModule } from './modules/plateforme/index.js';
 import type { ObjectStorage } from './shared/storage/object-storage.js';
 import type { UploadService } from './shared/storage/uploads.js';
 import type { EmailsQueue } from './shared/emails.js';
-import { FieldEncryption, keysFromEnv } from './shared/crypto/field-encryption.js';
 import {
   AUTH,
   DATABASE,
@@ -107,7 +106,7 @@ export class AppModule {
         { provide: EMAILS, useValue: resources.emails },
         {
           provide: FIELD_ENCRYPTION,
-          useFactory: () => new FieldEncryption(keysFromEnv(resources.env)),
+          useFactory: () => new FieldEncryption(resources.env.chiffrement),
         },
         ResourcesLifecycle,
         { provide: APP_INTERCEPTOR, useClass: ContractValidationInterceptor },

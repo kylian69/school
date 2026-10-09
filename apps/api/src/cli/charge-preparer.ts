@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { CLES_EMARGEMENT, commandesPrechargement, commandesSessions } from '@scolaly/contracts';
 import {
   authAccount,
+  cleMaitresseCourante,
   authUser,
   createDatabase,
   newId,
@@ -182,7 +183,7 @@ try {
     JSON.stringify({
       seanceId,
       cle: Buffer.from(
-        cleDeSeance(Buffer.from(env.ENCRYPTION_MASTER_KEY_V1, 'base64'), organisationId, seanceId),
+        cleDeSeance(cleMaitresseCourante(env.chiffrement), organisationId, seanceId),
       ).toString('base64'),
       cookies,
     }),

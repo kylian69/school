@@ -4,6 +4,7 @@ import { QUEUES } from '@scolaly/contracts';
 import {
   ajouterEvenement,
   createDatabase,
+  FieldEncryption,
   newId,
   organisation,
   outboxEvenement,
@@ -95,6 +96,10 @@ describe('Tâches planifiées et workers', () => {
     logger,
     prefix,
     publicUrl: 'http://localhost:3000',
+    chiffrement: new FieldEncryption({
+      masterKeys: new Map([[1, Buffer.alloc(32, 1)]]),
+      currentVersion: 1,
+    }),
   });
 
   afterAll(async () => {
@@ -129,6 +134,7 @@ describe('Tâches planifiées et workers', () => {
       [MAINTENANCE_JOBS.prechargementEmargement, undefined],
       [MAINTENANCE_JOBS.purgeCorbeille, '0 3 * * *'],
       [MAINTENANCE_JOBS.recapitulatifEdt, '*/15 * * * *'],
+      [MAINTENANCE_JOBS.rechiffrement, '45 * * * *'],
       [MAINTENANCE_JOBS.relancesInvitations, '0 9 * * *'],
     ]);
   });
@@ -139,6 +145,10 @@ describe('Tâches planifiées et workers', () => {
 
   it('RG-04-18 la tâche de conservation des indisponibilités s’exécute', async () => {
     await terminer(maintenance, MAINTENANCE_JOBS.conservationIndisponibilites, {});
+  });
+
+  it('ADR 0006 la tâche de rechiffrement s’exécute', async () => {
+    await terminer(maintenance, MAINTENANCE_JOBS.rechiffrement, {});
   });
 
   it('la tâche de maintenance crée les partitions à venir', async () => {

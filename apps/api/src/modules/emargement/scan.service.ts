@@ -23,7 +23,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import type { Auth } from '../../auth/auth.js';
 import type { Env } from '../../config/env.js';
 import { AUTH, DATABASE, ENV, VALKEY } from '../../shared/tokens.js';
-import type { Database } from '@scolaly/db';
+import { clesMaitressesParPriorite, type Database } from '@scolaly/db';
 import type { Redis } from 'ioredis';
 import {
   CacheEmargement,
@@ -47,7 +47,8 @@ const pasOuvert = () =>
 @Injectable()
 export class ScanService {
   private readonly cache: CacheEmargement;
-  private readonly cleMaitresse: Buffer;
+  /** Clé maîtresse courante d'abord : un QR dérivé d'une autre version reste valable (ADR 0006). */
+  private readonly clesMaitresses: Buffer[];
   private readonly logger = new Logger('Emargement');
 
   constructor(
@@ -57,7 +58,7 @@ export class ScanService {
     @Inject(ENV) env: Env,
   ) {
     this.cache = new CacheEmargement(valkey);
-    this.cleMaitresse = Buffer.from(env.ENCRYPTION_MASTER_KEY_V1, 'base64');
+    this.clesMaitresses = clesMaitressesParPriorite(env.chiffrement);
   }
 
   scanner(headers: IncomingHttpHeaders, corps: ScanEmargement): Promise<ResultatScan> {
@@ -113,11 +114,11 @@ export class ScanService {
     ]);
     if (!seance) throw pasOuvert();
     const maintenant = Date.now();
-    const verification = await verifierJeton(
-      cleDeSeance(this.cleMaitresse, seance.organisationId, lu.seanceId),
-      lu,
-      maintenant,
-      { horsLigne: corps.horsLigne ?? false },
+    const verification = await this.avecChaqueCle(
+      seance.organisationId,
+      lu.seanceId,
+      (cle) => verifierJeton(cle, lu, maintenant, { horsLigne: corps.horsLigne ?? false }),
+      (resultat) => resultat.ok || resultat.refus !== 'signature',
     );
     if (!verification.ok) {
       throw new BadRequestException(
@@ -141,6 +142,26 @@ export class ScanService {
     );
   }
 
+  /**
+   * Vérifie avec la clé de séance dérivée de la clé maîtresse courante, puis, pendant une rotation,
+   * avec les autres versions présentes : un appel ouvert avant la bascule reste valable (calcul en
+   * mémoire seulement, aucune requête).
+   */
+  private async avecChaqueCle<T>(
+    organisationId: string,
+    seanceId: string,
+    verifier: (cle: Uint8Array) => Promise<T>,
+    concluant: (resultat: T) => boolean,
+  ): Promise<T> {
+    let resultat: T | undefined;
+    for (const cleMaitresse of this.clesMaitresses) {
+      resultat = await verifier(cleDeSeance(cleMaitresse, organisationId, seanceId));
+      if (concluant(resultat)) return resultat;
+    }
+    if (resultat === undefined) throw new Error('Aucune clé maîtresse.');
+    return resultat;
+  }
+
   private async saisirCodeAvec(
     magasin: Magasin,
     headers: IncomingHttpHeaders,
@@ -152,11 +173,11 @@ export class ScanService {
     ]);
     if (!seance) throw pasOuvert();
     const maintenant = Date.now();
-    const valide = await verifierCode(
-      cleDeSeance(this.cleMaitresse, seance.organisationId, corps.seanceId),
+    const valide = await this.avecChaqueCle(
+      seance.organisationId,
       corps.seanceId,
-      corps.code,
-      maintenant,
+      (cle) => verifierCode(cle, corps.seanceId, corps.code, maintenant),
+      (resultat) => resultat,
     );
     if (!valide) {
       throw new BadRequestException(

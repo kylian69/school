@@ -414,6 +414,13 @@
       "when": 1791584116350,
       "tag": "0058_retrait_intervenant_seance_attendu",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791586384329,
+      "tag": "0059_rotation_cle_chiffrement",
+      "breakpoints": true
     }
   ]
 }

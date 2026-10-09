@@ -16,6 +16,9 @@ import {
   seancePublic,
   seanceIntervenant,
   withOrganisation,
+  contexteChiffrement,
+  FieldEncryption,
+  FieldEncryptionError,
   type Database,
   type Transaction,
 } from '@scolaly/db';
@@ -23,7 +26,6 @@ import { ecrireFluxIcal, fenetreFluxIcal, type EvenementFluxIcal } from '@scolal
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
-import { FieldEncryption, FieldEncryptionError } from '../../shared/crypto/field-encryption.js';
 import { DATABASE, ENV, FIELD_ENCRYPTION } from '../../shared/tokens.js';
 
 /** Au-delà, le flux est tronqué (une personne a rarement plus de 30 séances par semaine). */
@@ -38,7 +40,7 @@ export interface FluxIcalGenere {
 const INACTIF: FluxIcal = { actif: false, regenereLe: null, url: null, regenerationRequise: false };
 
 /** Données associées du chiffrement : le jeton n'est lisible que sur la ligne de sa personne. */
-const contexteJeton = (personneId: string) => `flux_ical.jeton:${personneId}`;
+const contexteJeton = (personneId: string) => contexteChiffrement('flux_ical.jeton', personneId);
 
 /**
  * RG-04-15 : flux iCal personnel. Le jeton porte l'identifiant de l'école (transaction RLS) et un

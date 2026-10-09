@@ -1,4 +1,5 @@
 import { DUREE_BADGE_MODIFIE_JOURS, DUREE_BADGE_MODIFIE_MAX_JOURS } from '@scolaly/domain';
+import { lireClesDeChiffrement, type FieldEncryptionKeys } from '@scolaly/db';
 import { z } from 'zod';
 
 /** Configuration de l'API, lue dans l'environnement et validée au démarrage. */
@@ -19,10 +20,6 @@ const EnvSchema = z
     /** Origine de l'interface web, seule autorisée à appeler l'authentification. */
     WEB_ORIGIN: z.url(),
     BETTER_AUTH_SECRET: z.string().min(32, 'au moins 32 caractères'),
-    /** Clé maîtresse (base64, 32 octets) : chiffrement par champ et clés des QR d'émargement. */
-    ENCRYPTION_MASTER_KEY_V1: z
-      .base64('attendue en base64')
-      .refine((v) => Buffer.from(v, 'base64').length === 32, '32 octets attendus'),
     /** Stockage compatible S3 (Garage en auto-hébergement, ADR 0003 ; passerelle S3 de Ceph en SaaS). */
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().default('garage'),
@@ -64,7 +61,13 @@ const EnvSchema = z
     message: 'obligatoire en mode SaaS (console de la plateforme)',
   });
 
-export type Env = z.infer<typeof EnvSchema>;
+export type Env = z.infer<typeof EnvSchema> & {
+  /**
+   * Clés maîtresses (`ENCRYPTION_MASTER_KEY_V1`, `_V2`…) et version courante
+   * (`ENCRYPTION_KEY_VERSION`) : chiffrement par champ et clés des QR d'émargement (ADR 0006).
+   */
+  chiffrement: FieldEncryptionKeys;
+};
 
 export class ConfigurationError extends Error {
   override name = 'ConfigurationError';
@@ -72,13 +75,17 @@ export class ConfigurationError extends Error {
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const result = EnvSchema.safeParse(source);
-  if (!result.success) {
-    const details = result.error.issues
-      .map((issue) => `- ${issue.path.join('.')} : ${issue.message}`)
-      .join('\n');
+  const cles = lireClesDeChiffrement(source);
+  if (!result.success || !cles.ok) {
+    const details = [
+      ...(result.success ? [] : result.error.issues).map(
+        (issue) => `- ${issue.path.join('.')} : ${issue.message}`,
+      ),
+      ...(cles.ok ? [] : cles.erreurs).map((erreur) => `- ${erreur}`),
+    ].join('\n');
     throw new ConfigurationError(
       `Configuration de l'API invalide. Corriger ces variables d'environnement puis relancer :\n${details}`,
     );
   }
-  return result.data;
+  return { ...result.data, chiffrement: cles.keys };
 }

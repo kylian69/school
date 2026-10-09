@@ -234,6 +234,55 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
     expect(reponse.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
   });
 
+  it('ADR 0006 après la bascule de clé maîtresse, un appel ouvert avant reste valable', async () => {
+    const { ouverture: avant } = await ouvrir();
+    const apres = await startApp({
+      chiffrement: {
+        masterKeys: new Map([
+          [1, Buffer.alloc(32, 1)],
+          [2, Buffer.alloc(32, 2)],
+        ]),
+        currentVersion: 2,
+      },
+    });
+    try {
+      const scanner = (payload: Record<string, unknown>, url = '/api/emargement/scan') =>
+        apres.inject({
+          method: 'POST',
+          url,
+          headers: { cookie: lea, origin: WEB_ORIGIN },
+          payload,
+        });
+      // QR et code issus de la clé v1 : vérifiés avec la v2 puis avec la v1.
+      const scan = await scanner({ jeton: await jetonDe(avant) });
+      expect(scan.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
+      const code = await codeDeFenetre(
+        Buffer.from(avant.cle, 'base64url'),
+        seanceId,
+        fenetreDe(Date.now()),
+      );
+      const parCode = await scanner({ seanceId, code }, '/api/emargement/code');
+      expect(parCode.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
+      // Les nouveaux appels utilisent la clé courante (v2).
+      const nouvelle = await apres.inject({
+        method: 'POST',
+        url: `/api/seances/${seanceId}/appel/ouverture`,
+        headers: { cookie: intervenant, origin: WEB_ORIGIN },
+      });
+      const cle = nouvelle.json<OuvertureAppel>().cle;
+      expect(cle).not.toBe(avant.cle);
+      const scanV2 = await scanner({
+        jeton: await jetonDe({ ...avant, cle }),
+      });
+      expect(scanV2.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
+      // Un QR signé d'une clé inconnue reste refusé.
+      const inconnu = await genererJeton(new Uint8Array(32).fill(9), seanceId, Date.now());
+      expect((await scanner({ jeton: inconnu.jeton })).statusCode).toBe(400);
+    } finally {
+      await apres.close();
+    }
+  });
+
   it('refuse un apprenant non attendu, un QR falsifié ou périmé, et une session absente', async () => {
     const { ouverture } = await ouvrir();
     const jeton = await jetonDe(ouverture);

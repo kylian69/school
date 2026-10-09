@@ -1,3 +1,4 @@
+import { lireClesDeChiffrement, type FieldEncryptionKeys } from '@scolaly/db';
 import { z } from 'zod';
 
 const EnvSchema = z.object({
@@ -14,17 +15,24 @@ const EnvSchema = z.object({
   OUTBOX_POLL_MS: z.coerce.number().int().min(100).default(1000),
 });
 
-export type WorkerEnv = z.infer<typeof EnvSchema>;
+export type WorkerEnv = z.infer<typeof EnvSchema> & {
+  /** Clés maîtresses et version courante : rechiffrement après une rotation (ADR 0006). */
+  chiffrement: FieldEncryptionKeys;
+};
 
 export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEnv {
   const result = EnvSchema.safeParse(source);
-  if (!result.success) {
-    const details = result.error.issues
-      .map((issue) => `- ${issue.path.join('.')} : ${issue.message}`)
-      .join('\n');
+  const cles = lireClesDeChiffrement(source);
+  if (!result.success || !cles.ok) {
+    const details = [
+      ...(result.success ? [] : result.error.issues).map(
+        (issue) => `- ${issue.path.join('.')} : ${issue.message}`,
+      ),
+      ...(cles.ok ? [] : cles.erreurs).map((erreur) => `- ${erreur}`),
+    ].join('\n');
     throw new Error(
       `Configuration du worker invalide. Corriger ces variables d'environnement puis relancer :\n${details}`,
     );
   }
-  return result.data;
+  return { ...result.data, chiffrement: cles.keys };
 }
