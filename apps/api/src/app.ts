@@ -35,9 +35,53 @@ export const REDACTED_LOG_PATHS = [
   '*.secret',
 ];
 
-/** Adresses secrètes jamais écrites dans les journaux : le jeton du flux iCal (RG-04-15). */
+/**
+ * Débuts d'adresse suivis d'un jeton secret : flux iCal (RG-04-15), invitation et activation du
+ * compte (US-01-07), réinitialisation du mot de passe de Better Auth. Toute nouvelle route qui
+ * porte un secret dans son chemin s'ajoute ici.
+ */
+export const CHEMINS_A_JETON = ['/api/agenda/', '/api/invitations/', '/api/auth/reset-password/'];
+
+/**
+ * Paramètres de requête secrets, quelle que soit la route : lien magique et vérification de
+ * l'adresse email de Better Auth (`token`), et noms voisins par prudence.
+ */
+export const PARAMETRES_SECRETS = ['token', 'jeton', 'secret', 'code', 'otp', 'signature'];
+
+const MASQUE = '[masqué]';
+
+function decoder(brut: string): string {
+  try {
+    return decodeURIComponent(brut);
+  } catch {
+    return brut;
+  }
+}
+
+/** Adresse telle qu'écrite dans les journaux : jetons du chemin et paramètres secrets masqués. */
 export function masquerJetonsUrl(url: string): string {
-  return url.replace(/^\/api\/agenda\/[^/?#]+/, '/api/agenda/[masqué]');
+  const separateur = url.indexOf('?');
+  let chemin = separateur === -1 ? url : url.slice(0, separateur);
+  // Comparaison sur l'adresse décodée : un caractère encodé (%61genda) ne contourne pas le masque.
+  const decode = decoder(chemin);
+  const prefixe = CHEMINS_A_JETON.find((debut) => decode.toLowerCase().startsWith(debut));
+  if (prefixe) {
+    // Le reste brut garde un « / » encodé (%2F) dans le segment masqué.
+    const reste = chemin.toLowerCase().startsWith(prefixe) ? chemin : decode;
+    chemin = prefixe + reste.slice(prefixe.length).replace(/^[^/]+/, MASQUE);
+  }
+  if (separateur === -1) return chemin;
+  const requete = url
+    .slice(separateur + 1)
+    .split('&')
+    .map((paire) => {
+      const egal = paire.indexOf('=');
+      const nom = egal === -1 ? paire : paire.slice(0, egal);
+      const secret = PARAMETRES_SECRETS.includes(decoder(nom.replace(/\+/g, ' ')).toLowerCase());
+      return secret ? `${nom}=${MASQUE}` : paire;
+    })
+    .join('&');
+  return `${chemin}?${requete}`;
 }
 
 /** Reprend la sérialisation par défaut de Fastify, adresse masquée. */
