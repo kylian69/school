@@ -27,7 +27,6 @@ import {
   normaliserNom,
   rapprocher,
   type Candidat,
-  type Conflit,
   type LectureImportEdt,
   type SeanceImportee as LigneLue,
 } from '@scolaly/domain';
@@ -218,7 +217,7 @@ export class ImportEdtService {
           for (const t of traitees) {
             const contrat = contrats.get(t.id);
             if (t.statut !== 'brouillon' || !contrat) continue;
-            if (conflitsBloquants(contrat.conflits as Conflit[], contrat.forcages).length === 0)
+            if (conflitsBloquants(contrat.conflits, contrat.forcages).length === 0)
               brouillons.push(t.id);
             else
               resultat.avertissements.push({
@@ -388,9 +387,9 @@ export class ImportEdtService {
     inconnus: Map<string, Resultat['inconnus'][number]>,
     erreurs: Resultat['erreurs'],
   ): Preparee | null {
-    let complete = true;
+    const absents: string[] = [];
     const inconnu = (nature: Nature, libelle: string) => {
-      complete = false;
+      absents.push(libelle);
       const cle = cleDe(nature, libelle);
       const deja = inconnus.get(cle) ?? { nature, libelle, lignes: [] };
       if (!deja.lignes.includes(lue.ligne)) deja.lignes.push(lue.ligne);
@@ -453,7 +452,7 @@ export class ImportEdtService {
       if (id === undefined) inconnu('intervenant', libelle);
       else if (id) intervenantIds.push(id);
     }
-    if (!complete || moduleId === undefined) return null;
+    if (absents.length > 0 || moduleId === undefined) return null;
     return {
       lue,
       contenu: {
