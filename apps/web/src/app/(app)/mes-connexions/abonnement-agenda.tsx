@@ -10,8 +10,8 @@ import { envoyer } from '@/lib/requete';
 const t = fr.connexions;
 
 /**
- * Abonnement de l'agenda au flux iCal personnel (RG-04-15). L'adresse n'est connue qu'à sa
- * création (seule son empreinte est conservée) : elle est affichée une fois, à copier aussitôt.
+ * Abonnement de l'agenda au flux iCal personnel (RG-04-15). L'adresse est réaffichée à son
+ * propriétaire ; une adresse créée avant son chiffrement doit être régénérée une fois.
  */
 export function AbonnementAgenda({ initial }: { initial: FluxIcal }) {
   const [flux, setFlux] = useState(initial);
@@ -55,7 +55,10 @@ export function AbonnementAgenda({ initial }: { initial: FluxIcal }) {
               e.currentTarget.select();
             }}
           />
-          <p className="text-sm">{t.uneFois}</p>
+          <p className="text-sm">
+            {flux.regenereLe ? `${t.depuis(formatDate(flux.regenereLe))} ` : ''}
+            {t.retrouver}
+          </p>
           <Button
             type="button"
             className="self-start"
@@ -71,10 +74,10 @@ export function AbonnementAgenda({ initial }: { initial: FluxIcal }) {
             {copiee ? t.copiee : t.copier}
           </Button>
         </div>
-      ) : flux.actif ? (
-        <p className="text-sm text-muted">
+      ) : flux.actif && flux.regenerationRequise ? (
+        <p role="note" className="rounded-control bg-warn-soft p-3 text-sm">
           {flux.regenereLe ? `${t.depuis(formatDate(flux.regenereLe))} ` : ''}
-          {t.cachee}
+          {t.aRegenerer}
         </p>
       ) : null}
 

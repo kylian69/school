@@ -114,12 +114,18 @@ const aad = (organisationId: string, context: string) =>
  * Lit les clés depuis l'environnement (injectées par le coffre de secrets) :
  * `ENCRYPTION_MASTER_KEY_V1`, `_V2`… en base64 (32 octets), et `ENCRYPTION_KEY_VERSION`.
  */
-export function keysFromEnv(env: NodeJS.ProcessEnv): FieldEncryptionKeys {
+export function keysFromEnv(env: Readonly<Record<string, unknown>>): FieldEncryptionKeys {
   const masterKeys = new Map<number, Buffer>();
   for (const [name, value] of Object.entries(env)) {
     const match = /^ENCRYPTION_MASTER_KEY_V(\d+)$/.exec(name);
-    if (match?.[1] && value) masterKeys.set(Number(match[1]), Buffer.from(value, 'base64'));
+    if (match?.[1] && typeof value === 'string' && value) {
+      masterKeys.set(Number(match[1]), Buffer.from(value, 'base64'));
+    }
   }
-  const currentVersion = Number(env.ENCRYPTION_KEY_VERSION ?? Math.max(0, ...masterKeys.keys()));
+  const version = env.ENCRYPTION_KEY_VERSION;
+  const currentVersion =
+    typeof version === 'string' || typeof version === 'number'
+      ? Number(version)
+      : Math.max(0, ...masterKeys.keys());
   return { masterKeys, currentVersion };
 }

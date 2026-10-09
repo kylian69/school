@@ -13,7 +13,9 @@ export default async function MesConnexionsPage() {
   return (
     <>
       <h1 className="text-[26px] font-[650] tracking-[-0.035em] md:text-[30px]">{t.titre}</h1>
-      <AbonnementAgenda initial={flux ?? { actif: false, regenereLe: null, url: null }} />
+      <AbonnementAgenda
+        initial={flux ?? { actif: false, regenereLe: null, url: null, regenerationRequise: false }}
+      />
     </>
   );
 }

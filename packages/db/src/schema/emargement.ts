@@ -457,8 +457,11 @@ export const indisponibiliteIntervenant = pgTable(
 ).enableRLS();
 
 /**
- * RG-04-15 : flux iCal personnel (adresse secrète, régénérable). Une ligne par personne ; seule
- * l'empreinte SHA-256 du secret est stockée. Sans empreinte : flux révoqué.
+ * RG-04-15 : flux iCal personnel (adresse secrète, régénérable). Une ligne par personne. La lecture
+ * publique cherche par l'empreinte SHA-256 du secret ; le jeton complet n'est conservé que chiffré
+ * par champ (`jeton_chiffre`, contexte `flux_ical.jeton`) pour être réaffiché à son seul
+ * propriétaire. Sans empreinte : flux révoqué. Empreinte sans jeton chiffré : flux créé avant la
+ * migration 0055, à régénérer une fois pour réafficher l'adresse.
  */
 export const fluxIcal = pgTable(
   'flux_ical',
@@ -466,6 +469,7 @@ export const fluxIcal = pgTable(
     ...organisationScoped(),
     personneId: uuid().notNull(),
     jetonEmpreinte: text(),
+    jetonChiffre: text(),
     regenereLe: timestamp({ withTimezone: true }),
     revoqueLe: timestamp({ withTimezone: true }),
     ...trackingColumns(),

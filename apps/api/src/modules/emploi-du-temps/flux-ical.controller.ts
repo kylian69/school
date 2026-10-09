@@ -3,6 +3,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  Header,
   Headers,
   Inject,
   Param,
@@ -81,7 +82,10 @@ export class FluxIcalPublicController {
   }
 }
 
-/** Écran « Mes connexions » (E-18-07) : l'adresse de son propre flux, sans permission. */
+/**
+ * Écran « Mes connexions » (E-18-07) : l'adresse de son propre flux, sans permission. Réponses
+ * jamais mises en cache : elles portent l'adresse secrète.
+ */
 @Controller('api/moi/agenda')
 export class FluxIcalController {
   constructor(
@@ -92,13 +96,15 @@ export class FluxIcalController {
 
   @Get()
   @Authenticated()
-  @ApiContract({ summary: 'État de mon flux iCal', response: FluxIcal })
+  @Header('Cache-Control', 'no-store')
+  @ApiContract({ summary: 'État de mon flux iCal, adresse comprise', response: FluxIcal })
   etat(@Req() request: ScolalyRequest) {
     return this.dansMonEcole(request, false, (tx, access) => this.flux.etat(tx, access));
   }
 
   @Post()
   @Authenticated()
+  @Header('Cache-Control', 'no-store')
   @ApiContract({
     summary: 'Créer ou régénérer mon flux iCal (l’adresse précédente cesse de répondre)',
     response: FluxIcal,
@@ -112,6 +118,7 @@ export class FluxIcalController {
   /** La révocation reste possible même quand l'école est en lecture seule. */
   @Delete()
   @Authenticated()
+  @Header('Cache-Control', 'no-store')
   @ApiContract({ summary: 'Révoquer mon flux iCal', response: FluxIcal })
   revoquer(@Req() request: ScolalyRequest) {
     return this.dansMonEcole(request, false, (tx, access) =>

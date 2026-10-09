@@ -1,0 +1,1 @@
+ALTER TABLE "flux_ical" ADD COLUMN "jeton_chiffre" text;

@@ -1956,10 +1956,10 @@ export const fr = {
     adresse: 'Adresse d’abonnement',
     copier: 'Copier l’adresse',
     copiee: 'Adresse copiée',
-    uneFois:
-      'Copiez cette adresse maintenant : par sécurité, elle ne sera plus affichée. Si vous la perdez, régénérez-en une nouvelle.',
-    cachee:
-      'L’adresse n’est affichée qu’au moment de sa création. Pour l’ajouter à un autre agenda, régénérez-la : l’ancienne cessera de fonctionner.',
+    retrouver:
+      'Vous retrouverez cette adresse ici à tout moment, pour l’ajouter à un autre agenda.',
+    aRegenerer:
+      'Votre abonnement fonctionne, mais son adresse a été créée avant une mise à jour de sécurité et ne peut plus être affichée. Pour la retrouver ici, régénérez-la une fois, puis remplacez l’ancienne adresse dans votre agenda : elle cessera de fonctionner.',
     confidentialite:
       'Cette adresse est personnelle : quiconque la connaît voit vos cours. Ne la partagez pas ; en cas de doute, régénérez-la.',
     regeneree: 'Nouvelle adresse créée : l’ancienne ne fonctionne plus.',
