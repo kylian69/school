@@ -106,12 +106,19 @@ export const seance = pgTable(
      * intervenant, annulation, report), pour les notifications et le badge « modifié ».
      */
     modifieeLe: timestamp({ withTimezone: true }),
+    /** RG-04-11 : identifiant dans l'outil d'origine (colonne dédiée, UID iCal ou calculé). */
+    identifiantExterne: text(),
+    /** RG-04-12 : empreinte du contenu au dernier import ; différente : modifiée dans Scolaly. */
+    empreinteImport: text(),
     ...trackingColumns(),
   },
   (t) => [
     ...organisationConstraints('seance', t),
     index('seance_organisation_id_debut_idx').on(t.organisationId, t.debut),
     index('seance_serie_idx').on(t.organisationId, t.serieId),
+    uniqueIndex('seance_identifiant_externe_key')
+      .on(t.organisationId, t.identifiantExterne)
+      .where(sql`${t.identifiantExterne} is not null and ${t.deletedAt} is null`),
     foreignKey({
       name: 'seance_intervenant_fk',
       columns: [t.organisationId, t.intervenantId],
@@ -182,6 +189,39 @@ export const seanceForcage = pgTable(
       columns: [t.organisationId, t.autreSeanceId],
       foreignColumns: [seance.organisationId, seance.id],
     }),
+  ],
+).enableRLS();
+
+/** RG-04-09 : nature d'un libellé d'import d'EDT. */
+export const correspondanceEdtNature = pgEnum('correspondance_edt_nature', [
+  'module',
+  'public',
+  'salle',
+  'intervenant',
+]);
+
+/**
+ * RG-04-09 : correspondance mémorisée entre un libellé d'un fichier importé et un objet de
+ * Scolaly (module, promotion ou groupe, salle, intervenant). Sans objet : activité hors maquette
+ * pour un module, séance sans salle ou sans intervenant (module 04, section 7).
+ */
+export const correspondanceEdt = pgTable(
+  'correspondance_edt',
+  {
+    ...organisationScoped(),
+    nature: correspondanceEdtNature().notNull(),
+    /** Libellé tel qu'il figure dans le fichier. */
+    libelle: text().notNull(),
+    /** Forme comparable du libellé (sans accents ni casse). */
+    cle: text().notNull(),
+    objetId: uuid(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('correspondance_edt', t),
+    uniqueIndex('correspondance_edt_cle_key')
+      .on(t.organisationId, t.nature, t.cle)
+      .where(sql`${t.deletedAt} is null`),
   ],
 ).enableRLS();
 

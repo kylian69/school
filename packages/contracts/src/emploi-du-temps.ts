@@ -344,3 +344,110 @@ export const SemaineEdt = z
   })
   .meta({ id: 'SemaineEdt' });
 export type SemaineEdt = z.infer<typeof SemaineEdt>;
+
+// ——— Import (US-04-04, US-04-05 ; RG-04-08 à RG-04-12) ———
+
+/** RG-04-08 : un fichier iCal s'envoie avec ce type ; CSV et Excel comme les autres imports. */
+export const TYPE_FICHIER_ICAL = 'text/calendar';
+/** RG-04-12 : version gardée pour une séance modifiée dans Scolaly depuis le dernier import. */
+export const VERSIONS_REIMPORT = ['scolaly', 'fichier'] as const;
+/** RG-04-09 : libellés rapprochés des objets de Scolaly. */
+export const NATURES_CORRESPONDANCE = ['module', 'public', 'salle', 'intervenant'] as const;
+export const ACTIONS_IMPORT_SEANCE = [
+  'creee',
+  'modifiee',
+  'inchangee',
+  'conservee',
+  'ignoree',
+] as const;
+
+export const ParametresImportEdt = z.object({
+  etablissementId: z.uuid(),
+  /** RG-01-18 : vérifier sans rien enregistrer (par défaut). */
+  apercu: z.stringbool().default(true),
+  /** RG-04-10 : publier directement plutôt qu'importer en brouillon. */
+  publier: z.stringbool().default(false),
+  /** RG-01-19 : importer seulement les lignes valides plutôt que tout ou rien. */
+  lignesValides: z.stringbool().default(false),
+  versionConservee: z.enum(VERSIONS_REIMPORT).default('scolaly'),
+  /** Public des séances dont le fichier n'indique aucun groupe (agenda d'une promotion). */
+  promotionId: z.uuid().optional(),
+  groupeId: z.uuid().optional(),
+});
+export type ParametresImportEdt = z.infer<typeof ParametresImportEdt>;
+
+const MessageImportEdt = z.object({ ligne: z.int().nullable(), message: z.string() });
+
+export const SeanceImportee = z
+  .object({
+    /** Ligne du tableur (en-tête = 1) ou rang de l'événement iCal. */
+    ligne: z.int(),
+    identifiant: z.string(),
+    seanceId: z.uuid().nullable(),
+    libelle: z.string(),
+    debut: instant,
+    fin: instant,
+    action: z.enum(ACTIONS_IMPORT_SEANCE),
+    conflits: z.array(ConflitSeance),
+  })
+  .meta({ id: 'SeanceImportee' });
+export type SeanceImportee = z.infer<typeof SeanceImportee>;
+
+export const ResultatImportEdt = z
+  .object({
+    apercu: z.boolean(),
+    /** Vrai si les séances ont été enregistrées. */
+    importe: z.boolean(),
+    format: z.enum(['csv', 'xlsx', 'ics']),
+    compteurs: z.object({
+      lues: z.int(),
+      creees: z.int(),
+      modifiees: z.int(),
+      inchangees: z.int(),
+      conservees: z.int(),
+      ignorees: z.int(),
+      rejetees: z.int(),
+      disparues: z.int(),
+    }),
+    /** Erreurs ligne par ligne (null : erreur qui ne tient pas à une ligne). */
+    erreurs: z.array(MessageImportEdt),
+    avertissements: z.array(MessageImportEdt),
+    /** RG-04-09 : libellés à rapprocher avant l'aperçu des séances. */
+    inconnus: z.array(
+      z.object({
+        nature: z.enum(NATURES_CORRESPONDANCE),
+        libelle: z.string(),
+        lignes: z.array(z.int()),
+      }),
+    ),
+    /** Objets proposés pour les correspondances (vide si aucun libellé inconnu). */
+    choix: z.array(
+      z.object({ nature: z.enum(NATURES_CORRESPONDANCE), id: z.uuid(), libelle: z.string() }),
+    ),
+    /** Séances du fichier, hors séances inchangées. */
+    seances: z.array(SeanceImportee),
+    /** RG-04-11 : séances importées absentes du fichier sur sa période, signalées seulement. */
+    disparues: z.array(z.object({ id: z.uuid(), libelle: z.string(), debut: instant })),
+  })
+  .meta({ id: 'ResultatImportEdt' });
+export type ResultatImportEdt = z.infer<typeof ResultatImportEdt>;
+
+/** RG-04-09 : sans objet, activité hors maquette (module), sans salle ou sans intervenant. */
+export const CorrespondanceEdt = z
+  .object({
+    nature: z.enum(NATURES_CORRESPONDANCE),
+    libelle: texte(200),
+    objetId: z.uuid().nullable(),
+  })
+  .meta({ id: 'CorrespondanceEdt' });
+export type CorrespondanceEdt = z.infer<typeof CorrespondanceEdt>;
+
+export const ListeCorrespondancesEdt = z
+  .object({ correspondances: z.array(CorrespondanceEdt) })
+  .meta({ id: 'ListeCorrespondancesEdt' });
+export type ListeCorrespondancesEdt = z.infer<typeof ListeCorrespondancesEdt>;
+
+export const SaisieCorrespondancesEdt = z
+  .object({ correspondances: z.array(CorrespondanceEdt).min(1).max(500) })
+  .meta({ id: 'SaisieCorrespondancesEdt' });
+export type SaisieCorrespondancesEdt = z.infer<typeof SaisieCorrespondancesEdt>;

@@ -197,6 +197,11 @@ export default async function EmploiDuTempsPage({
             {t.cetteSemaine}
           </Link>
         </Button>
+        {permissions.includes('edt:gerer') ? (
+          <Button asChild variant="ghost" className="md:ml-auto">
+            <Link href="/emploi-du-temps/import">{t.lienImport}</Link>
+          </Button>
+        ) : null}
       </nav>
       {!ressource ? (
         <Card>

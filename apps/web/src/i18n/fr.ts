@@ -1818,6 +1818,92 @@ export const fr = {
       retour: 'Retour',
     },
     erreur: 'L’enregistrement a échoué. Vérifiez votre connexion puis réessayez.',
+    lienImport: 'Importer un emploi du temps',
+  },
+  importEdt: {
+    titre: 'Importer un emploi du temps',
+    aide: 'Reprenez l’emploi du temps exporté d’Hyperplanning, de Celcat, d’ADE, d’un tableur ou d’un agenda (.ics). Rien n’est enregistré avant la validation ; un nouvel import du même fichier met à jour les séances sans doublon.',
+    retour: 'Retour à l’emploi du temps',
+    modele: 'Date;Début;Fin;Module;Groupes;Intervenants;Salle;Type;Identifiant',
+    exemple:
+      '07/12/2026;08:30;10:30;M101;Groupe A, Groupe B;camille.martin@exemple.test;Salle 101;TD;EXT-0001',
+    telecharger: 'Télécharger le modèle (CSV)',
+    colonnes: 'Colonnes du modèle :',
+    noteModele:
+      'Groupes et intervenants se séparent par une virgule. Type : CM (par défaut), TD, TP, projet ou examen. L’identifiant, facultatif, évite les doublons quand le créneau change.',
+    etablissement: 'Établissement',
+    fichier: 'Fichier CSV, Excel (.xlsx) ou iCal (.ics), 10 Mo au plus',
+    publicDefaut: 'Public des séances sans groupe (agenda d’une promotion)',
+    aucunPublic: 'Aucun',
+    publier: 'Publier directement (sinon, les séances arrivent en brouillon)',
+    lignesValides: 'Importer seulement les lignes valides',
+    versionConservee: 'Séance modifiée dans Scolaly depuis le dernier import',
+    versions: { scolaly: 'Garder la version de Scolaly', fichier: 'Prendre celle du fichier' },
+    formatInconnu: 'Déposez un fichier .csv, .xlsx ou .ics.',
+    verifier: 'Vérifier le fichier',
+    importer: 'Importer',
+    enCours: 'Traitement en cours…',
+    erreur: 'L’import a échoué. Vérifiez votre connexion puis réessayez.',
+    correspondances: {
+      titre: 'Libellés à rapprocher',
+      aide: 'Ces libellés du fichier ne correspondent à rien de connu. Associez-les une fois : Scolaly s’en souviendra aux prochains imports.',
+      natures: {
+        module: 'Module',
+        public: 'Groupe ou promotion',
+        salle: 'Salle',
+        intervenant: 'Intervenant',
+      },
+      choisir: 'Choisir…',
+      sansObjet: {
+        module: 'Activité hors maquette (garder le libellé)',
+        salle: 'Sans salle',
+        intervenant: 'Sans intervenant',
+      },
+      lignes: (lignes: string) => `ligne(s) ${lignes}`,
+      enregistrer: 'Enregistrer et vérifier de nouveau',
+      incompletes: 'Associez chaque libellé avant d’enregistrer.',
+    },
+    resume: {
+      pret: 'Le fichier est prêt à être importé.',
+      importe: 'Import terminé.',
+      aCorriger: (n: number) =>
+        `${String(n)} erreur${n > 1 ? 's' : ''} à corriger. Corrigez le fichier, ou importez seulement les lignes valides.`,
+      compteurs: (c: {
+        lues: number;
+        creees: number;
+        modifiees: number;
+        inchangees: number;
+        conservees: number;
+        ignorees: number;
+        rejetees: number;
+      }) =>
+        `${String(c.lues)} séance(s) lue(s) : ${String(c.creees)} à créer, ${String(c.modifiees)} à mettre à jour, ${String(c.inchangees)} inchangée(s), ${String(c.conservees)} conservée(s), ${String(c.ignorees)} ignorée(s), ${String(c.rejetees)} rejetée(s).`,
+    },
+    ligne: (ligne: number, message: string) => `Ligne ${String(ligne)} : ${message}`,
+    rapport: 'Télécharger le rapport des lignes rejetées',
+    seances: 'Séances du fichier',
+    colonnesTableau: {
+      ligne: 'Ligne',
+      date: 'Date',
+      seance: 'Séance',
+      action: 'Action',
+      conflits: 'Conflits',
+    },
+    actions: {
+      creee: 'Création',
+      modifiee: 'Mise à jour',
+      inchangee: 'Inchangée',
+      conservee: 'Version de Scolaly gardée',
+      ignoree: 'Ignorée',
+    },
+    conflits: (bloquants: number, avertissements: number) =>
+      bloquants + avertissements === 0
+        ? 'Aucun'
+        : `${String(bloquants)} bloquant(s), ${String(avertissements)} avertissement(s)`,
+    disparues: 'Séances importées précédemment, absentes du fichier',
+    disparuesAide:
+      'Elles ne sont pas supprimées : annulez-les depuis le planificateur si elles n’ont plus lieu.',
+    voirPlanificateur: 'Voir dans le planificateur',
   },
   maFormation: {
     titre: 'Ma formation',

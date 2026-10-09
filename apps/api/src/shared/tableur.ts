@@ -24,10 +24,20 @@ function decoder(contenu: Buffer): string {
   }
 }
 
-/** Valeur d'une cellule Excel en texte ; une date devient AAAA-MM-JJ. */
+/**
+ * Valeur d'une cellule Excel en texte ; une date devient AAAA-MM-JJ, une date avec heure
+ * AAAA-MM-JJTHH:MM et une heure seule (jour 0 d'Excel) HH:MM.
+ */
 function cellule(valeur: unknown): string {
   if (valeur === null || valeur === undefined) return '';
-  if (valeur instanceof Date) return valeur.toISOString().slice(0, 10);
+  if (valeur instanceof Date) {
+    // Arrondi à la minute : Excel stocke l'heure en fraction de jour.
+    const arrondie = new Date(Math.round(valeur.getTime() / 60_000) * 60_000);
+    const iso = arrondie.toISOString();
+    const heure = iso.slice(11, 16);
+    if (arrondie.getUTCFullYear() < 1900) return heure;
+    return heure === '00:00' ? iso.slice(0, 10) : `${iso.slice(0, 10)}T${heure}`;
+  }
   if (typeof valeur === 'boolean') return valeur ? 'oui' : 'non';
   if (typeof valeur === 'number' || typeof valeur === 'string') return String(valeur);
   return '';
@@ -51,6 +61,9 @@ export async function lireTableau(contenu: Buffer, format: string): Promise<Tabl
   const [colonnes = [], ...donnees] = texte;
   return { colonnes: colonnes.map((c) => c.trim()), lignes: donnees };
 }
+
+/** Texte d'un fichier déposé (UTF-8 ou Windows-1252), par exemple un fichier iCal. */
+export const decoderTexte = decoder;
 
 /** Contrôle et lecture d'un fichier déposé tel quel (10 Mo au plus). */
 export async function lireFichierTableur(

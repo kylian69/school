@@ -1395,6 +1395,7 @@ async function routeScolarite(path, request, json, response, url) {
 // La détection complète (RG-04-05), les séries et la publication sont testées par le domaine et
 // l'API ; la fausse API suit leurs contrats.
 const seancesEdt = [];
+const correspondancesEdt = new Map();
 const FUSEAU_EDT = 'Europe/Paris';
 const jourLocal = (iso) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU_EDT }).format(new Date(iso));
@@ -1571,6 +1572,69 @@ function fondEdt(p, debut) {
 }
 
 async function routeEdt(path, request, json, url) {
+  // RG-04-09 : correspondances mémorisées ; l'import ne connaît que le module « M1 ».
+  if (path === '/api/edt/import/correspondances') {
+    if (request.method === 'PUT')
+      for (const c of (await readBody(request)).correspondances)
+        correspondancesEdt.set(`${c.nature}|${c.libelle}`, c);
+    return json(200, { correspondances: [...correspondancesEdt.values()] });
+  }
+  if (path === '/api/edt/import') {
+    const texte = await new Promise((resolve) => {
+      let data = '';
+      request.on('data', (chunk) => (data += chunk));
+      request.on('end', () => resolve(data));
+    });
+    const lignes = texte
+      .replace(/^\uFEFF/, '')
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .slice(1)
+      .map((l, i) => ({ ligne: i + 2, cellules: l.split(';') }));
+    const inconnus = lignes
+      .filter((l) => l.cellules[3] !== 'M1' && !correspondancesEdt.has(`module|${l.cellules[3]}`))
+      .map((l) => ({ nature: 'module', libelle: l.cellules[3], lignes: [l.ligne] }));
+    const apercu = url.searchParams.get('apercu') !== 'false';
+    const compteurs = {
+      lues: lignes.length,
+      creees: inconnus.length > 0 ? 0 : lignes.length,
+      modifiees: 0,
+      inchangees: 0,
+      conservees: 0,
+      ignorees: 0,
+      rejetees: 0,
+      disparues: 0,
+    };
+    return json(200, {
+      apercu,
+      importe: inconnus.length === 0 && !apercu,
+      format: 'csv',
+      compteurs,
+      erreurs: [],
+      avertissements: [],
+      inconnus,
+      choix:
+        inconnus.length > 0 ? [{ nature: 'module', id: randomUUID(), libelle: 'M1 · Bois' }] : [],
+      seances:
+        inconnus.length > 0
+          ? []
+          : lignes.map((l) => {
+              const [j, m, a] = (l.cellules[0] ?? '').split('/');
+              const debut = new Date(`${a}-${m}-${j}T${l.cellules[1]}:00+01:00`).toISOString();
+              return {
+                ligne: l.ligne,
+                identifiant: l.cellules[8] || `auto:${String(l.ligne)}`,
+                seanceId: null,
+                libelle: 'Bois',
+                debut,
+                fin: new Date(`${a}-${m}-${j}T${l.cellules[2]}:00+01:00`).toISOString(),
+                action: 'creee',
+                conflits: [],
+              };
+            }),
+      disparues: [],
+    });
+  }
   if (path === '/api/edt/semaine') {
     const p = url.searchParams;
     const debut = p.get('debut');
