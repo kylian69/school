@@ -172,10 +172,15 @@ describe('RG-04-15 flux iCal personnel', () => {
   it('RG-04-15 n’a pas de flux tant que la personne ne l’a pas activé', async () => {
     const reponse = await moi('GET', apprenant.cookie);
     expect(reponse.statusCode).toBe(200);
-    expect(reponse.json()).toEqual({ actif: false, regenereLe: null, url: null });
+    expect(reponse.json()).toEqual({
+      actif: false,
+      regenereLe: null,
+      url: null,
+      regenerationRequise: false,
+    });
   });
 
-  it('RG-04-15 donne une adresse secrète, stockée hachée, et trace l’activation', async () => {
+  it('RG-04-15 donne une adresse secrète, stockée hachée et chiffrée, et trace l’activation', async () => {
     const url = await activer(apprenant);
     expect(url).toMatch(
       new RegExp(`^http://localhost:3001/api/agenda/${ecole}\\.[\\w-]{43}\\.ics$`),
@@ -187,8 +192,10 @@ describe('RG-04-15 flux iCal personnel', () => {
       .where(eq(fluxIcal.personneId, apprenant.personneId));
     expect(ligne?.jetonEmpreinte).toMatch(/^[0-9a-f]{64}$/);
     expect(ligne?.jetonEmpreinte).not.toContain(secret);
-    const etat = await moi('GET', apprenant.cookie);
-    expect(etat.json<FluxIcal>()).toMatchObject({ actif: true, url: null });
+    // Chiffré par champ (AES-256-GCM, version de clé en tête), jamais en clair.
+    expect(ligne?.jetonChiffre).toMatch(/^v1\.[\w-]+\.[\w-]+\.[\w-]+$/);
+    expect(ligne?.jetonChiffre).not.toContain(secret);
+    expect(JSON.stringify(ligne)).not.toContain(secret);
     const [trace] = await owner.db
       .select()
       .from(auditEvenement)
@@ -201,6 +208,72 @@ describe('RG-04-15 flux iCal personnel', () => {
       );
     expect(trace?.apres).toMatchObject({ actif: true });
     expect(JSON.stringify(trace)).not.toContain(secret);
+    expect(JSON.stringify(trace)).not.toContain(ligne?.jetonChiffre ?? '-');
+    expect(JSON.stringify(trace)).not.toContain(ligne?.jetonEmpreinte ?? '-');
+  });
+
+  it('US-04-09 réaffiche l’adresse à son propriétaire seulement, sans cache', async () => {
+    const url = await activer(apprenant);
+    const etat = await moi('GET', apprenant.cookie);
+    expect(etat.headers['cache-control']).toBe('no-store');
+    expect(etat.json<FluxIcal>()).toMatchObject({ actif: true, url, regenerationRequise: false });
+    // Une autre personne de la même école ne voit que son propre flux.
+    const autre = await moi('GET', intervenant.cookie);
+    expect(JSON.stringify(autre.json())).not.toContain(url.split('.')[1] ?? '-');
+  });
+
+  it('US-04-09 demande de régénérer un flux créé avant le chiffrement', async () => {
+    const url = await activer(apprenant);
+    await owner.db
+      .update(fluxIcal)
+      .set({ jetonChiffre: null })
+      .where(eq(fluxIcal.personneId, apprenant.personneId));
+    // L'adresse existante continue de fonctionner : seul le réaffichage est impossible.
+    expect((await lire(url)).statusCode).toBe(200);
+    expect((await moi('GET', apprenant.cookie)).json<FluxIcal>()).toMatchObject({
+      actif: true,
+      url: null,
+      regenerationRequise: true,
+    });
+    const nouvelle = await activer(apprenant);
+    expect((await moi('GET', apprenant.cookie)).json<FluxIcal>()).toMatchObject({
+      url: nouvelle,
+      regenerationRequise: false,
+    });
+  });
+
+  it('US-04-09 ne réaffiche pas un jeton altéré, recopié ou périmé', async () => {
+    const urlIntervenant = await activer(intervenant);
+    await activer(apprenant);
+    const [deLui] = await owner.db
+      .select({ chiffre: fluxIcal.jetonChiffre, empreinte: fluxIcal.jetonEmpreinte })
+      .from(fluxIcal)
+      .where(eq(fluxIcal.personneId, intervenant.personneId));
+    const etatApprenant = async () => (await moi('GET', apprenant.cookie)).json<FluxIcal>();
+
+    // Valeur chiffrée d'une autre personne recopiée sur sa ligne : illisible (données associées).
+    await owner.db
+      .update(fluxIcal)
+      .set({ jetonChiffre: deLui?.chiffre ?? null })
+      .where(eq(fluxIcal.personneId, apprenant.personneId));
+    expect(await etatApprenant()).toMatchObject({ url: null, regenerationRequise: true });
+    expect(JSON.stringify(await etatApprenant())).not.toContain(urlIntervenant);
+
+    // Valeur altérée.
+    await owner.db
+      .update(fluxIcal)
+      .set({ jetonChiffre: 'v1.abc.def.ghi' })
+      .where(eq(fluxIcal.personneId, apprenant.personneId));
+    expect(await etatApprenant()).toMatchObject({ url: null, regenerationRequise: true });
+
+    // Jeton chiffré qui ne correspond plus à l'empreinte.
+    await activer(apprenant);
+    await owner.db
+      .update(fluxIcal)
+      .set({ jetonEmpreinte: 'f'.repeat(64) })
+      .where(eq(fluxIcal.personneId, apprenant.personneId));
+    expect(await etatApprenant()).toMatchObject({ url: null, regenerationRequise: true });
+    await activer(apprenant);
   });
 
   it('RG-04-15 publie les séances publiées et retirées de la personne, sans brouillon', async () => {
@@ -274,8 +347,18 @@ describe('RG-04-15 flux iCal personnel', () => {
     const url = await activer(apprenant);
     const reponse = await moi('DELETE', apprenant.cookie);
     expect(reponse.statusCode).toBe(200);
-    expect(reponse.json()).toEqual({ actif: false, regenereLe: null, url: null });
+    expect(reponse.json()).toEqual({
+      actif: false,
+      regenereLe: null,
+      url: null,
+      regenerationRequise: false,
+    });
     expect((await lire(url)).statusCode).toBe(404);
+    const [ligne] = await owner.db
+      .select()
+      .from(fluxIcal)
+      .where(eq(fluxIcal.personneId, apprenant.personneId));
+    expect(ligne).toMatchObject({ jetonEmpreinte: null, jetonChiffre: null });
     expect((await moi('GET', apprenant.cookie)).json<FluxIcal>().actif).toBe(false);
     const [trace] = await owner.db
       .select()
@@ -309,9 +392,15 @@ describe('RG-04-15 flux iCal personnel', () => {
   it('RG-04-15 n’écrit jamais l’adresse secrète dans les journaux', async () => {
     const url = await activer(apprenant);
     await lire(url);
+    await moi('GET', apprenant.cookie);
     const secret = url.split('.')[1] ?? '';
+    const [ligne] = await owner.db
+      .select({ chiffre: fluxIcal.jetonChiffre })
+      .from(fluxIcal)
+      .where(eq(fluxIcal.personneId, apprenant.personneId));
     expect(logs.join('')).toContain('/api/agenda/[masqué]');
     expect(logs.join('')).not.toContain(secret);
+    expect(logs.join('')).not.toContain(ligne?.chiffre ?? '-');
     expect(masquerJetonsUrl('/api/agenda/abc.def.ics?x=1')).toBe('/api/agenda/[masqué]?x=1');
     expect(masquerJetonsUrl('/api/moi/agenda')).toBe('/api/moi/agenda');
   });

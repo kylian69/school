@@ -30,7 +30,17 @@ import { PlateformeModule } from './modules/plateforme/index.js';
 import type { ObjectStorage } from './shared/storage/object-storage.js';
 import type { UploadService } from './shared/storage/uploads.js';
 import type { EmailsQueue } from './shared/emails.js';
-import { AUTH, DATABASE, EMAILS, ENV, OBJECT_STORAGE, UPLOADS, VALKEY } from './shared/tokens.js';
+import { FieldEncryption, keysFromEnv } from './shared/crypto/field-encryption.js';
+import {
+  AUTH,
+  DATABASE,
+  EMAILS,
+  ENV,
+  FIELD_ENCRYPTION,
+  OBJECT_STORAGE,
+  UPLOADS,
+  VALKEY,
+} from './shared/tokens.js';
 
 export interface AppResources {
   env: Env;
@@ -95,10 +105,14 @@ export class AppModule {
         { provide: OBJECT_STORAGE, useValue: resources.storage },
         { provide: UPLOADS, useValue: resources.uploads },
         { provide: EMAILS, useValue: resources.emails },
+        {
+          provide: FIELD_ENCRYPTION,
+          useFactory: () => new FieldEncryption(keysFromEnv(resources.env)),
+        },
         ResourcesLifecycle,
         { provide: APP_INTERCEPTOR, useClass: ContractValidationInterceptor },
       ],
-      exports: [ENV, DATABASE, VALKEY, AUTH, OBJECT_STORAGE, UPLOADS, EMAILS],
+      exports: [ENV, DATABASE, VALKEY, AUTH, OBJECT_STORAGE, UPLOADS, EMAILS, FIELD_ENCRYPTION],
     };
   }
 }

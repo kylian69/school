@@ -23,7 +23,8 @@ import { ecrireFluxIcal, fenetreFluxIcal, type EvenementFluxIcal } from '@scolal
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
-import { DATABASE, ENV } from '../../shared/tokens.js';
+import { FieldEncryption, FieldEncryptionError } from '../../shared/crypto/field-encryption.js';
+import { DATABASE, ENV, FIELD_ENCRYPTION } from '../../shared/tokens.js';
 
 /** Au-delà, le flux est tronqué (une personne a rarement plus de 30 séances par semaine). */
 const SEANCES_MAX = 2_000;
@@ -34,33 +35,58 @@ export interface FluxIcalGenere {
   etag: string;
 }
 
+const INACTIF: FluxIcal = { actif: false, regenereLe: null, url: null, regenerationRequise: false };
+
+/** Données associées du chiffrement : le jeton n'est lisible que sur la ligne de sa personne. */
+const contexteJeton = (personneId: string) => `flux_ical.jeton:${personneId}`;
+
 /**
  * RG-04-15 : flux iCal personnel. Le jeton porte l'identifiant de l'école (transaction RLS) et un
- * secret dont seule l'empreinte est stockée. Une seule adresse par personne : la régénérer
- * invalide la précédente.
+ * secret. La lecture publique cherche par l'empreinte du secret, sans rien déchiffrer ; le jeton
+ * est conservé chiffré par champ (ADR 0002) pour être réaffiché à son seul propriétaire. Une seule
+ * adresse par personne : la régénérer invalide la précédente.
  */
 @Injectable()
 export class FluxIcalService {
   constructor(
     @Inject(DATABASE) private readonly db: Database,
     @Inject(ENV) private readonly env: Env,
+    @Inject(FIELD_ENCRYPTION) private readonly chiffrement: FieldEncryption,
   ) {}
 
+  /**
+   * État du flux de la personne connectée, adresse comprise : elle seule la lit (la ligne est
+   * cherchée par sa propre fiche). Un jeton chiffré absent, illisible ou qui ne correspond plus à
+   * l'empreinte n'est jamais renvoyé : la personne est invitée à régénérer.
+   */
   async etat(tx: Transaction, access: Access): Promise<FluxIcal> {
     const [ligne] = await tx
-      .select({ empreinte: fluxIcal.jetonEmpreinte, regenereLe: fluxIcal.regenereLe })
+      .select({
+        empreinte: fluxIcal.jetonEmpreinte,
+        chiffre: fluxIcal.jetonChiffre,
+        regenereLe: fluxIcal.regenereLe,
+      })
       .from(fluxIcal)
       .where(eq(fluxIcal.personneId, access.personneId));
+    if (!ligne?.empreinte) return INACTIF;
+    const jeton = ligne.chiffre ? this.dechiffrer(ligne.chiffre, access) : null;
+    const valide = jeton !== null && lireJeton(jeton)?.empreinte === ligne.empreinte;
     return {
-      actif: Boolean(ligne?.empreinte),
-      regenereLe: ligne?.empreinte ? (ligne.regenereLe?.toISOString() ?? null) : null,
-      url: null,
+      actif: true,
+      regenereLe: ligne.regenereLe?.toISOString() ?? null,
+      url: valide ? this.adresse(jeton) : null,
+      regenerationRequise: !valide,
     };
   }
 
   /** Crée l'adresse ou la remplace (l'ancienne cesse aussitôt de répondre). */
   async regenerer(tx: Transaction, access: Access, adresseIp: string): Promise<FluxIcal> {
     const { jeton, empreinte } = nouveauJeton(access.organisationId);
+    const jetonChiffre = this.chiffrement.encrypt(
+      jeton,
+      access.organisationId,
+      contexteJeton(access.personneId),
+    );
     const maintenant = new Date();
     const [avant] = await tx
       .select({ id: fluxIcal.id, empreinte: fluxIcal.jetonEmpreinte })
@@ -73,6 +99,7 @@ export class FluxIcalService {
         organisationId: access.organisationId,
         personneId: access.personneId,
         jetonEmpreinte: empreinte,
+        jetonChiffre,
         regenereLe: maintenant,
         createdBy: access.userId,
       })
@@ -80,13 +107,14 @@ export class FluxIcalService {
         target: [fluxIcal.organisationId, fluxIcal.personneId],
         set: {
           jetonEmpreinte: empreinte,
+          jetonChiffre,
           regenereLe: maintenant,
           revoqueLe: null,
           updatedBy: access.userId,
         },
       })
       .returning({ id: fluxIcal.id });
-    // Ni le jeton ni son empreinte au journal : seulement l'état du flux.
+    // Ni le jeton, ni son empreinte, ni sa forme chiffrée au journal : seulement l'état du flux.
     await enregistrerAudit(tx, {
       action: avant?.empreinte ? 'flux-ical.regenerer' : 'flux-ical.activer',
       objetType: 'personne',
@@ -99,7 +127,8 @@ export class FluxIcalService {
     return {
       actif: true,
       regenereLe: maintenant.toISOString(),
-      url: new URL(`/api/agenda/${jeton}.ics`, this.env.PUBLIC_URL).toString(),
+      url: this.adresse(jeton),
+      regenerationRequise: false,
     };
   }
 
@@ -111,7 +140,12 @@ export class FluxIcalService {
     if (avant?.empreinte) {
       await tx
         .update(fluxIcal)
-        .set({ jetonEmpreinte: null, revoqueLe: new Date(), updatedBy: access.userId })
+        .set({
+          jetonEmpreinte: null,
+          jetonChiffre: null,
+          revoqueLe: new Date(),
+          updatedBy: access.userId,
+        })
         .where(eq(fluxIcal.id, avant.id));
       await enregistrerAudit(tx, {
         action: 'flux-ical.revoquer',
@@ -123,7 +157,25 @@ export class FluxIcalService {
         apres: { actif: false, fluxId: avant.id },
       });
     }
-    return { actif: false, regenereLe: null, url: null };
+    return INACTIF;
+  }
+
+  private adresse(jeton: string): string {
+    return new URL(`/api/agenda/${jeton}.ics`, this.env.PUBLIC_URL).toString();
+  }
+
+  /** Valeur altérée ou clé retirée : traitée comme absente (régénération proposée). */
+  private dechiffrer(chiffre: string, access: Access): string | null {
+    try {
+      return this.chiffrement.decrypt(
+        chiffre,
+        access.organisationId,
+        contexteJeton(access.personneId),
+      );
+    } catch (error) {
+      if (error instanceof FieldEncryptionError) return null;
+      throw error;
+    }
   }
 
   /**

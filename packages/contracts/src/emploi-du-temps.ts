@@ -453,14 +453,16 @@ export const SaisieCorrespondancesEdt = z
 export type SaisieCorrespondancesEdt = z.infer<typeof SaisieCorrespondancesEdt>;
 
 /**
- * RG-04-15 : flux iCal personnel. L'adresse secrète n'est connue qu'à sa création : seule son
- * empreinte est conservée, elle n'est donc renvoyée qu'après une création ou une régénération.
+ * RG-04-15 : flux iCal personnel. L'adresse secrète n'est renvoyée qu'à son propriétaire (secret
+ * conservé chiffré). Un flux créé avant le chiffrement ne peut pas être réaffiché :
+ * `regenerationRequise`, il faut le régénérer une fois.
  */
 export const FluxIcal = z
   .object({
     actif: z.boolean(),
     regenereLe: instant.nullable(),
     url: z.url().nullable(),
+    regenerationRequise: z.boolean(),
   })
   .meta({ id: 'FluxIcal' });
 export type FluxIcal = z.infer<typeof FluxIcal>;

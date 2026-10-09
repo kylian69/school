@@ -16,11 +16,16 @@ test.describe('US-04-09 Mes connexions : agenda', () => {
     await page.getByRole('button', { name: /Activer l’abonnement|Régénérer l’adresse/ }).click();
     const adresse = page.getByLabel('Adresse d’abonnement');
     await expect(adresse).toHaveValue(/\/api\/agenda\/.+\.ics$/);
-    await expect(page.getByText(/elle ne sera plus affichée/)).toBeVisible();
+    await expect(page.getByText(/Vous retrouverez cette adresse ici/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Copier l’adresse' })).toBeVisible();
     await expectNoAccessibilityViolations(page);
 
+    // US-04-09 : l'adresse est réaffichée à son propriétaire après rechargement (fausse API
+    // partagée entre projets : la valeur exacte peut avoir changé entre-temps).
+    await page.reload();
+    await expect(adresse).toHaveValue(/\/api\/agenda\/.+\.ics$/);
     const premiere = await adresse.inputValue();
+
     await page.getByRole('button', { name: 'Régénérer l’adresse' }).click();
     await expect(page.getByRole('status')).toHaveText(
       'Nouvelle adresse créée : l’ancienne ne fonctionne plus.',

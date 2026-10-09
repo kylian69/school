@@ -386,6 +386,13 @@
       "when": 1791531704099,
       "tag": "0054_notifications_par_ecole",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1791533836442,
+      "tag": "0055_flux_ical_chiffre",
+      "breakpoints": true
     }
   ]
 }

@@ -2185,24 +2185,25 @@ createServer(async (request, response) => {
       rejoue: false,
     });
   }
-  // Flux iCal personnel (RG-04-15) : l'adresse n'est renvoyée qu'à sa création.
+  // Flux iCal personnel (RG-04-15) : l'adresse est réaffichée à son propriétaire.
   if (path === '/api/moi/agenda') {
     if (!user) return json(401, { message: 'Session absente' });
+    const etat = () => ({
+      actif: monAgenda.regenereLe !== null,
+      regenereLe: monAgenda.regenereLe,
+      url:
+        monAgenda.regenereLe === null
+          ? null
+          : `http://localhost:3000/api/agenda/fictif.secret${monAgenda.version}.ics`,
+      regenerationRequise: false,
+    });
     if (request.method === 'POST') {
       monAgenda.regenereLe = new Date().toISOString();
       monAgenda.version += 1;
-      return json(201, {
-        actif: true,
-        regenereLe: monAgenda.regenereLe,
-        url: `http://localhost:3000/api/agenda/fictif.secret${monAgenda.version}.ics`,
-      });
+      return json(201, etat());
     }
     if (request.method === 'DELETE') monAgenda.regenereLe = null;
-    return json(200, {
-      actif: monAgenda.regenereLe !== null,
-      regenereLe: monAgenda.regenereLe,
-      url: null,
-    });
+    return json(200, etat());
   }
   if (path === '/api/moi/photo') {
     if (!user) return json(401, { message: 'Session absente' });
