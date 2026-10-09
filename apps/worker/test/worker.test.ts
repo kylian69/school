@@ -123,6 +123,7 @@ describe('Tâches planifiées et workers', () => {
     await registerSchedules(maintenance);
     const schedulers = await maintenance.getJobSchedulers();
     expect(schedulers.map((s) => [s.key, s.pattern]).sort()).toEqual([
+      [MAINTENANCE_JOBS.conservationIndisponibilites, '30 3 * * *'],
       [MAINTENANCE_JOBS.notificationsEdt, undefined],
       [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],
       [MAINTENANCE_JOBS.prechargementEmargement, undefined],
@@ -134,6 +135,10 @@ describe('Tâches planifiées et workers', () => {
 
   it('RG-01-23 la tâche de purge de la corbeille s’exécute', async () => {
     await terminer(maintenance, MAINTENANCE_JOBS.purgeCorbeille, {});
+  });
+
+  it('RG-04-18 la tâche de conservation des indisponibilités s’exécute', async () => {
+    await terminer(maintenance, MAINTENANCE_JOBS.conservationIndisponibilites, {});
   });
 
   it('la tâche de maintenance crée les partitions à venir', async () => {

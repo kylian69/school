@@ -12,6 +12,7 @@ import { RemplacementIntervenant, ReportSeance } from './changements-seance';
 import { AnnulationSeance, FormulaireSeance } from './formulaire-seance';
 import {
   auPas,
+  type BlocFond,
   disposer,
   fondDuJour,
   grilleAffichee,
@@ -36,6 +37,10 @@ const COULEURS_TYPE: Record<string, string> = {
 
 /** Hachures des jours fermés ou en entreprise et des indisponibilités (maquette « hatch »). */
 const HACHURES = 'repeating-linear-gradient(135deg, var(--surface2) 0 8px, transparent 8px 16px)';
+
+/** RG-04-18 : le motif d'une indisponibilité n'arrive qu'aux gestionnaires de l'intervenant. */
+const libelleBloc = (b: BlocFond) =>
+  b.motif ? t.fond.indisponibleMotif(b.motif) : t.fond[b.nature];
 
 const libelleJour = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'UTC',
@@ -306,7 +311,7 @@ export function Planificateur({
                         <p className="sr-only">
                           {t.fond.resumeJour(
                             blocs.map((b) =>
-                              t.fond.creneau(t.fond[b.nature], heureDe(b.debut), heureDe(b.fin)),
+                              t.fond.creneau(libelleBloc(b), heureDe(b.debut), heureDe(b.fin)),
                             ),
                           )}
                         </p>
@@ -314,7 +319,7 @@ export function Planificateur({
                           <div
                             key={`${b.nature}-${String(b.debut)}`}
                             aria-hidden
-                            className={`pointer-events-none absolute inset-x-0 px-1 text-[10px] font-semibold ${
+                            className={`pointer-events-none absolute inset-x-0 overflow-hidden px-1 text-[10px] font-semibold ${
                               b.nature === 'disponible'
                                 ? 'bg-ok-soft text-ok'
                                 : 'bg-bad-soft text-bad'
@@ -325,7 +330,7 @@ export function Planificateur({
                               ...(b.nature === 'indisponible' ? { backgroundImage: HACHURES } : {}),
                             }}
                           >
-                            {t.fond[b.nature]}
+                            {libelleBloc(b)}
                           </div>
                         ))}
                       </>

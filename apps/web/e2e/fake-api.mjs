@@ -1582,7 +1582,17 @@ function fondEdt(p, debut) {
   return {
     jours,
     disponibilites: p.get('intervenantId')
-      ? { ...DISPONIBILITES_FAKE, indisponibilites: [] }
+      ? {
+          ...DISPONIBILITES_FAKE,
+          // RG-04-18 : motif transmis au gestionnaire de l'intervenant (compte d'administration).
+          indisponibilites: [
+            {
+              debut: `${debut}T14:00:00.000Z`,
+              fin: `${debut}T15:00:00.000Z`,
+              motif: 'Jury de soutenance fictif',
+            },
+          ],
+        }
       : null,
     aPlacer: promos.length > 0 ? aPlacer : null,
   };

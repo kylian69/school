@@ -11,6 +11,10 @@ export {
 } from './droits.js';
 export { purgerCorbeille, type BilanPurge } from './corbeille.js';
 export {
+  purgerIndisponibilites,
+  type BilanConservationIndisponibilites,
+} from './indisponibilites.js';
+export {
   attenduDeSeance,
   enregistrerPresenceDirecte,
   enregistrerPresences,

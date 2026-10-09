@@ -36,6 +36,24 @@ const INDISPONIBILITES_MAX = 200;
 /** Données associées du chiffrement : le motif n'est lisible que sur sa ligne. */
 const contexteMotif = (id: string) => `indisponibilite_intervenant.motif:${id}`;
 
+/**
+ * Motif d'une indisponibilité, lu par l'intervenant ou par un gestionnaire de son périmètre ;
+ * valeur altérée ou clé retirée : traité comme absent.
+ */
+export function lireMotifIndisponibilite(
+  chiffrement: FieldEncryption,
+  organisationId: string,
+  ligne: { id: string; motifChiffre: string | null },
+): string | null {
+  if (!ligne.motifChiffre) return null;
+  try {
+    return chiffrement.decrypt(ligne.motifChiffre, organisationId, contexteMotif(ligne.id));
+  } catch (error) {
+    if (error instanceof FieldEncryptionError) return null;
+    throw error;
+  }
+}
+
 const MESSAGES_CRENEAU: Record<ErreurCreneau, [string, string]> = {
   bornes: ['heureFin', 'L’heure de fin doit suivre l’heure de début.'],
   periode: ['valableAu', 'La fin de validité doit suivre son début.'],
@@ -72,7 +90,8 @@ const invalide = (details: [string, string][]) =>
 /**
  * E-04-07 · Mes disponibilités (RG-04-18, US-04-10) : l'intervenant connecté déclare ses créneaux
  * récurrents et ses indisponibilités ponctuelles. Tout porte sur sa propre fiche (périmètre
- * « soi ») ; la grille et la détection des conflits les lisent sans le motif.
+ * « soi ») ; la détection des conflits les lit sans le motif, la grille ne le montre qu'aux
+ * gestionnaires de l'intervenant (GrilleService).
  */
 @Injectable()
 export class DisponibilitesService {
@@ -339,18 +358,8 @@ export class DisponibilitesService {
       id: i.id,
       debut: i.debut.toISOString(),
       fin: i.fin.toISOString(),
-      motif: i.motifChiffre ? this.dechiffrer(i.motifChiffre, i.id, access) : null,
+      motif: lireMotifIndisponibilite(this.chiffrement, access.organisationId, i),
     };
-  }
-
-  /** Valeur altérée ou clé retirée : motif traité comme absent. */
-  private dechiffrer(chiffre: string, id: string, access: Access): string | null {
-    try {
-      return this.chiffrement.decrypt(chiffre, access.organisationId, contexteMotif(id));
-    } catch (error) {
-      if (error instanceof FieldEncryptionError) return null;
-      throw error;
-    }
   }
 }
 

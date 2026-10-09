@@ -4,11 +4,14 @@ import type { DatedTable } from '../dated-table.js';
 export interface DureeConservation {
   /** Durée ISO 8601 (P5Y = 5 ans, P0D = dès l'événement). */
   duree: string;
-  apres: 'sortie' | 'creation';
-  echeance: 'suppression' | 'anonymisation';
+  /** Événement de départ ; « fin » : fin de la période décrite par la donnée. */
+  apres: 'sortie' | 'creation' | 'fin';
+  /** « effacement » : seul le champ sensible est vidé, la ligne reste. */
+  echeance: 'suppression' | 'anonymisation' | 'effacement';
 }
 
 const SOURCE_CAHIER = 'Cahier des charges Scolaly';
+const SOURCE_PILOTE = "Décision de l'établissement / pilote 09/10/2026";
 
 /**
  * Durées de conservation par défaut (RGPD-04), paramétrables par l'école dans les limites
@@ -48,6 +51,22 @@ export const dureesConservation: DatedTable<DureeConservation> = {
       fin: null,
       source: `${SOURCE_CAHIER}, module 19, traçabilité de la console`,
       valeur: { duree: 'P3Y', apres: 'creation', echeance: 'suppression' },
+    },
+    {
+      // RG-04-18 : le motif d'une indisponibilité ne sert plus une fois celle-ci passée.
+      cle: 'indisponibilite-intervenant-motif',
+      debut: '2026-10-09',
+      fin: null,
+      source: SOURCE_PILOTE,
+      valeur: { duree: 'P0D', apres: 'fin', echeance: 'effacement' },
+    },
+    {
+      // RG-04-18 : l'indisponibilité passée reste un an, pour expliquer un planning récent.
+      cle: 'indisponibilite-intervenant',
+      debut: '2026-10-09',
+      fin: null,
+      source: SOURCE_PILOTE,
+      valeur: { duree: 'P12M', apres: 'fin', echeance: 'suppression' },
     },
   ],
 };

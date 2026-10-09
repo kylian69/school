@@ -259,6 +259,16 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
         .locator(`section[aria-labelledby="jour-${semaine}"]`)
         .getByText('Disponible de 08:00 à 12:00'),
     ).toBeAttached();
+    // RG-04-18 : le gestionnaire voit le motif de l'indisponibilité, à l'écran et en clair.
+    const lundiGrille = page.locator(`section[aria-labelledby="jour-${semaine}"]`);
+    await expect(
+      lundiGrille.getByText('Indisponible : Jury de soutenance fictif', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      lundiGrille.getByText(
+        /Indisponible : Jury de soutenance fictif de \d{2}:\d{2} à \d{2}:\d{2}/,
+      ),
+    ).toBeAttached();
     await expect(page.getByRole('region', { name: 'Modules à placer' })).toBeHidden();
     await expectNoAccessibilityViolations(page);
   });

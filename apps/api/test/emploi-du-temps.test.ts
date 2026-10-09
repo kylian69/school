@@ -16,6 +16,7 @@ import {
   type SerieCreee,
 } from '@scolaly/contracts';
 import {
+  affectation,
   anneeScolaire,
   attribution,
   auditEvenement,
@@ -39,7 +40,8 @@ import { and, asc, eq } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
-import { AUTH, VALKEY } from '../src/shared/tokens.js';
+import type { FieldEncryption } from '../src/shared/crypto/field-encryption.js';
+import { AUTH, FIELD_ENCRYPTION, VALKEY } from '../src/shared/tokens.js';
 import { signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
 
 const PASSWORD = 'phrase de passe des tests de l’emploi du temps';
@@ -748,7 +750,9 @@ describe('E-04-01 fond de la grille et modules à placer', () => {
     const s = await semaine(admin, '2026-12-14', `intervenantId=${coIntervenantId}`);
     expect(s.disponibilites).toEqual({
       creneaux: [{ jourSemaine: 1, heureDebut: '08:00', heureFin: '12:00' }],
-      indisponibilites: [{ debut: '2026-12-15T08:00:00.000Z', fin: '2026-12-15T12:00:00.000Z' }],
+      indisponibilites: [
+        { debut: '2026-12-15T08:00:00.000Z', fin: '2026-12-15T12:00:00.000Z', motif: null },
+      ],
     });
     expect(s.aPlacer).toBeNull();
     const verification = await requete('POST', '/api/edt/verification', admin, {
@@ -778,6 +782,69 @@ describe('E-04-01 fond de la grille et modules à placer', () => {
     const parPromotion = await semaine(direction, '2026-12-07', `promotionId=${promo.id}`);
     expect(parPromotion.aPlacer).toBeNull();
     expect(parPromotion.jours).toHaveLength(7);
+  });
+
+  it('RG-04-18 montre le motif d’indisponibilité aux seuls gestionnaires de l’intervenant', async () => {
+    const id = newId();
+    const motif = 'Jury de soutenance fictif';
+    await owner.db.insert(indisponibiliteIntervenant).values({
+      id,
+      organisationId: ecole,
+      personneId: intervenantId,
+      debut: new Date('2026-12-22T08:00:00Z'),
+      fin: new Date('2026-12-22T10:00:00Z'),
+      motifChiffre: app
+        .get<FieldEncryption>(FIELD_ENCRYPTION)
+        .encrypt(motif, ecole, `indisponibilite_intervenant.motif:${id}`),
+    });
+    const motifs = async (cookie: string) =>
+      (
+        await semaine(cookie, '2026-12-21', `intervenantId=${intervenantId}`)
+      ).disponibilites?.indisponibilites.map((i) => i.motif);
+
+    // Toute l'école : scolarité.
+    expect(await motifs(scolarite)).toEqual([motif]);
+    // Lecture seule de l'EDT : ni disponibilités ni motif.
+    const direction = await semaine(
+      await compte('direction'),
+      '2026-12-21',
+      `intervenantId=${intervenantId}`,
+    );
+    expect(direction.disponibilites).toBeNull();
+    expect(JSON.stringify(direction)).not.toContain(motif);
+
+    // Responsable d'une promotion : motif seulement si l'intervenant y est affecté.
+    const email = `responsable.${newId()}@edt.test`;
+    const { userId } = await createPasswordAccount(app.get<Auth>(AUTH), {
+      email,
+      name: 'Fictif',
+      password: PASSWORD,
+    });
+    const [fiche] = await owner.db
+      .insert(personne)
+      .values({ organisationId: ecole, nom: 'Fictif', prenom: 'Eli', email, userId })
+      .returning();
+    const [responsable] = await owner.db
+      .select()
+      .from(role)
+      .where(and(eq(role.organisationId, ecole), eq(role.code, 'responsable-pedagogique')));
+    await owner.db.insert(attribution).values({
+      organisationId: ecole,
+      personneId: fiche?.id ?? '',
+      roleId: responsable?.id ?? '',
+      perimetreType: 'promotion',
+      perimetreId: promo.id,
+      debut: '2026-01-01',
+    });
+    const cookie = await signInCookie(app, email, PASSWORD);
+    expect(await motifs(cookie)).toEqual([null]);
+    await owner.db.insert(affectation).values({
+      organisationId: ecole,
+      personneId: intervenantId,
+      moduleId,
+      promotionId: promo.id,
+    });
+    expect(await motifs(cookie)).toEqual([motif]);
   });
 });
 

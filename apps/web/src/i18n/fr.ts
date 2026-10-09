@@ -1629,6 +1629,7 @@ export const fr = {
       fermeture: (libelle: string) => `Fermé : ${libelle}`,
       disponible: 'Disponible',
       indisponible: 'Indisponible',
+      indisponibleMotif: (motif: string) => `Indisponible : ${motif}`,
       resumeJour: (elements: string[]) => elements.join(' ; '),
       creneau: (libelle: string, debut: string, fin: string) => `${libelle} de ${debut} à ${fin}`,
     },
@@ -1986,7 +1987,7 @@ export const fr = {
     creneauRetire: 'Créneau retiré.',
     indisposTitre: 'Mes indisponibilités',
     indisposAide:
-      'Congés, rendez-vous, autre engagement : la pédagogie voit seulement que vous êtes indisponible, jamais le motif.',
+      'Congés, rendez-vous, autre engagement : les personnes qui construisent votre emploi du temps voient l’indisponibilité et son motif. Une indisponibilité est supprimée 12 mois après sa fin.',
     aucuneIndispo: 'Aucune indisponibilité à venir.',
     periode: (debut: string, fin: string) => `Du ${debut} au ${fin}`,
     retirerIndispo: (periode: string) => `Retirer l’indisponibilité ${periode}`,
@@ -1997,7 +1998,7 @@ export const fr = {
     finA: 'à',
     motif: 'Motif (facultatif)',
     motifAide:
-      'Visible de vous seul. Restez bref et n’indiquez aucun détail de santé ou de vie privée.',
+      'Visible de vous et des gestionnaires de votre emploi du temps, effacé à la fin de l’indisponibilité. Restez bref et n’indiquez aucun détail de santé ou de vie privée.',
     ajouterIndispo: 'Déclarer',
     indispoAjoutee: 'Indisponibilité déclarée.',
     indispoRetiree: 'Indisponibilité retirée.',

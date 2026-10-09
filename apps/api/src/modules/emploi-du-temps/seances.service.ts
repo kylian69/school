@@ -219,6 +219,7 @@ export class SeancesService {
       }),
       creation: gestion !== false,
       ...(await this.grille.fond(tx, {
+        organisationId: access.organisationId,
         etablissementId: campus.id,
         debut: recherche.debut,
         fin,
