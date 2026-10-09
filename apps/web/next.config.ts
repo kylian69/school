@@ -18,6 +18,12 @@ const config: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(self), geolocation=(self), microphone=()' },
         ],
       },
+      {
+        // La page d'activation porte le jeton d'invitation dans son adresse : aucun en-tête
+        // Referer ne le transmet, pas même aux appels de la même origine (journaux de l'API).
+        source: '/activation/:path*',
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+      },
     ]);
   },
 };
