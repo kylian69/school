@@ -3311,6 +3311,151 @@
         }
       }
     },
+    "/api/moi/disponibilites": {
+      "get": {
+        "operationId": "DisponibilitesController.lire",
+        "summary": "Mes créneaux de disponibilité et mes indisponibilités à venir",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "disponibilites:declarer"
+          ],
+          "scope": "soi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesDisponibilites"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/disponibilites/creneaux": {
+      "post": {
+        "operationId": "DisponibilitesController.ajouterCreneau",
+        "summary": "Déclarer un créneau récurrent de disponibilité",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "disponibilites:declarer"
+          ],
+          "scope": "soi"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieCreneauDisponibilite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesDisponibilites"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/disponibilites/creneaux/{id}": {
+      "delete": {
+        "operationId": "DisponibilitesController.retirerCreneau",
+        "summary": "Retirer un créneau de disponibilité",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "disponibilites:declarer"
+          ],
+          "scope": "soi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesDisponibilites"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/disponibilites/indisponibilites": {
+      "post": {
+        "operationId": "DisponibilitesController.ajouterIndisponibilite",
+        "summary": "Déclarer une indisponibilité ponctuelle, motif facultatif",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "disponibilites:declarer"
+          ],
+          "scope": "soi"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaisieIndisponibilite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesDisponibilites"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/disponibilites/indisponibilites/{id}": {
+      "delete": {
+        "operationId": "DisponibilitesController.retirerIndisponibilite",
+        "summary": "Retirer une indisponibilité",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "disponibilites:declarer"
+          ],
+          "scope": "soi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesDisponibilites"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/moi/enseignements": {
       "get": {
         "operationId": "MoiScolariteController.enseignements",
@@ -7525,6 +7670,7 @@
                 "edt:lire",
                 "edt:gerer",
                 "edt:forcer",
+                "disponibilites:declarer",
                 "emargement:animer"
               ]
             }
@@ -8169,6 +8315,50 @@
           "nature",
           "libelle",
           "objetId"
+        ],
+        "additionalProperties": false
+      },
+      "CreneauDisponibilite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "jourSemaine": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "heureDebut": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "heureFin": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "valableDu": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "valableAu": {
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "id",
+          "jourSemaine",
+          "heureDebut",
+          "heureFin",
+          "valableDu",
+          "valableAu"
         ],
         "additionalProperties": false
       },
@@ -9312,6 +9502,37 @@
         ],
         "additionalProperties": false
       },
+      "IndisponibiliteDeclaree": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "motif": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "debut",
+          "fin",
+          "motif"
+        ],
+        "additionalProperties": false
+      },
       "Inscription": {
         "type": "object",
         "properties": {
@@ -10409,6 +10630,36 @@
         ],
         "additionalProperties": false
       },
+      "MesDisponibilites": {
+        "type": "object",
+        "properties": {
+          "fuseau": {
+            "type": "string"
+          },
+          "plage": {
+            "$ref": "#/components/schemas/PlageEdt"
+          },
+          "creneaux": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreneauDisponibilite"
+            }
+          },
+          "indisponibilites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndisponibiliteDeclaree"
+            }
+          }
+        },
+        "required": [
+          "fuseau",
+          "plage",
+          "creneaux",
+          "indisponibilites"
+        ],
+        "additionalProperties": false
+      },
       "MesEnseignements": {
         "type": "object",
         "properties": {
@@ -11441,7 +11692,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 36,
+            "maxItems": 37,
             "type": "array",
             "items": {
               "type": "string",
@@ -11481,6 +11732,7 @@
                 "edt:lire",
                 "edt:gerer",
                 "edt:forcer",
+                "disponibilites:declarer",
                 "emargement:animer"
               ]
             }
@@ -12173,7 +12425,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 36,
+            "maxItems": 37,
             "type": "array",
             "items": {
               "type": "string",
@@ -12213,6 +12465,7 @@
                 "edt:lire",
                 "edt:gerer",
                 "edt:forcer",
+                "disponibilites:declarer",
                 "emargement:animer"
               ]
             }
@@ -15277,6 +15530,7 @@
                 "edt:lire",
                 "edt:gerer",
                 "edt:forcer",
+                "disponibilites:declarer",
                 "emargement:animer"
               ]
             }
@@ -15497,6 +15751,46 @@
         ],
         "additionalProperties": false
       },
+      "SaisieCreneauDisponibilite": {
+        "type": "object",
+        "properties": {
+          "jourSemaine": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "heureDebut": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$"
+          },
+          "heureFin": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$"
+          },
+          "valableDu": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "valableAu": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          }
+        },
+        "required": [
+          "jourSemaine",
+          "heureDebut",
+          "heureFin",
+          "valableDu",
+          "valableAu"
+        ],
+        "additionalProperties": false
+      },
       "SaisieEchelle": {
         "type": "object",
         "properties": {
@@ -15635,6 +15929,31 @@
           "capacite",
           "option",
           "autresPromotionIds"
+        ],
+        "additionalProperties": false
+      },
+      "SaisieIndisponibilite": {
+        "type": "object",
+        "properties": {
+          "debut": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "fin": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "motif": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "debut",
+          "fin",
+          "motif"
         ],
         "additionalProperties": false
       },

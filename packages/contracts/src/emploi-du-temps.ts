@@ -491,3 +491,83 @@ export const FluxIcal = z
   })
   .meta({ id: 'FluxIcal' });
 export type FluxIcal = z.infer<typeof FluxIcal>;
+
+const heureQuart = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):(00|15|30|45)$/, 'Heure au format HH:MM, par quart d’heure.');
+/** Date et heure dans le fuseau de l'établissement, sans décalage (AAAA-MM-JJTHH:MM). */
+const dateHeureLocale = z
+  .string()
+  .regex(
+    /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d$/,
+    'Date et heure attendues au format AAAA-MM-JJTHH:MM.',
+  );
+
+/** Motif d'une indisponibilité : donnée personnelle, facultative et brève (minimisation). */
+export const MOTIF_INDISPONIBILITE_MAX = 120;
+
+/** RG-04-18 : créneau récurrent de disponibilité saisi par l'intervenant (E-04-07). */
+export const SaisieCreneauDisponibilite = z
+  .object({
+    /** Jour ISO : lundi = 1 … dimanche = 7. */
+    jourSemaine: z.int().min(1).max(7),
+    heureDebut: heureQuart,
+    heureFin: heureQuart,
+    /** Période de validité, bornes comprises ; null : sans limite. */
+    valableDu: jour.nullable().default(null),
+    valableAu: jour.nullable().default(null),
+  })
+  .meta({ id: 'SaisieCreneauDisponibilite' });
+export type SaisieCreneauDisponibilite = z.infer<typeof SaisieCreneauDisponibilite>;
+
+export const CreneauDisponibilite = z
+  .object({
+    id: z.uuid(),
+    jourSemaine: z.int().min(1).max(7),
+    heureDebut: heure,
+    heureFin: heure,
+    valableDu: jour.nullable(),
+    valableAu: jour.nullable(),
+  })
+  .meta({ id: 'CreneauDisponibilite' });
+export type CreneauDisponibilite = z.infer<typeof CreneauDisponibilite>;
+
+/** RG-04-18 : indisponibilité ponctuelle, bornes dans le fuseau de l'établissement. */
+export const SaisieIndisponibilite = z
+  .object({
+    debut: dateHeureLocale,
+    fin: dateHeureLocale,
+    motif: z
+      .string()
+      .trim()
+      .max(MOTIF_INDISPONIBILITE_MAX, `Motif limité à ${MOTIF_INDISPONIBILITE_MAX} caractères.`)
+      .nullable()
+      .default(null),
+  })
+  .meta({ id: 'SaisieIndisponibilite' });
+export type SaisieIndisponibilite = z.infer<typeof SaisieIndisponibilite>;
+
+export const IndisponibiliteDeclaree = z
+  .object({
+    id: z.uuid(),
+    debut: instant,
+    fin: instant,
+    /** Lu par le seul intervenant ; null si absent ou illisible. */
+    motif: z.string().nullable(),
+  })
+  .meta({ id: 'IndisponibiliteDeclaree' });
+export type IndisponibiliteDeclaree = z.infer<typeof IndisponibiliteDeclaree>;
+
+/** E-04-07 · Mes disponibilités : créneaux, indisponibilités à venir et cadre de saisie. */
+export const MesDisponibilites = z
+  .object({
+    /** Fuseau d'affichage et de saisie des indisponibilités. */
+    fuseau: z.string(),
+    /** RG-04-02 : plage de saisie (la plus large des établissements de l'école). */
+    plage: PlageEdt,
+    creneaux: z.array(CreneauDisponibilite),
+    /** Indisponibilités non terminées, par date de début. */
+    indisponibilites: z.array(IndisponibiliteDeclaree),
+  })
+  .meta({ id: 'MesDisponibilites' });
+export type MesDisponibilites = z.infer<typeof MesDisponibilites>;

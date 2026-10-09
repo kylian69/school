@@ -1,4 +1,5 @@
 import type { Intervalle } from '../calendrier/annee.js';
+import { creneauApplicable } from './disponibilites.js';
 import { instantLocal, PAS_GRILLE_MINUTES } from './recurrence.js';
 
 /**
@@ -43,6 +44,9 @@ export interface CreneauDisponibilite {
   jourSemaine: number;
   heureDebut: string;
   heureFin: string;
+  /** Période de validité (AAAA-MM-JJ, bornes comprises) ; absente : toujours valable. */
+  valableDu?: string | null;
+  valableAu?: string | null;
 }
 
 export interface ContexteConflits {
@@ -265,9 +269,12 @@ function raisonIndisponible(
     contexte.indisponibilites.some((i) => i.intervenantId === intervenantId && chevauche(i, seance))
   )
     return 'indisponibilite';
-  const creneaux = contexte.disponibilites.filter((d) => d.intervenantId === intervenantId);
-  if (creneaux.length === 0) return null;
   const [jour] = jours;
+  // Seuls comptent les créneaux valables ce jour : hors de leur période, rien n'est déclaré.
+  const creneaux = contexte.disponibilites.filter(
+    (d) => d.intervenantId === intervenantId && creneauApplicable(d, jour),
+  );
+  if (creneaux.length === 0) return null;
   const couverte =
     jours.length === 1 &&
     creneaux.some(

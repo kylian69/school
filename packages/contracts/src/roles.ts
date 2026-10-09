@@ -155,7 +155,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
     perimetre: 'soi',
     doubleAuthentificationRequise: false,
     phase: 'MVP',
-    permissions: ['emargement:animer', 'salles:lire'],
+    permissions: ['emargement:animer', 'salles:lire', 'disponibilites:declarer'],
   },
   {
     code: 'apprenant',

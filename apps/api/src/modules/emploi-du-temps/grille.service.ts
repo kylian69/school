@@ -9,7 +9,7 @@ import {
   seance,
   type Transaction,
 } from '@scolaly/db';
-import { volumesAPlacer } from '@scolaly/domain';
+import { creneauApplicable, volumesAPlacer } from '@scolaly/domain';
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { ContexteService, joursEntre, versPlanifiee, volumeEnMinutes } from './contexte.service.js';
 
@@ -129,12 +129,21 @@ export class GrilleService {
       d.debutFenetre,
       d.finFenetre,
     );
+    // Un créneau ne figure que s'il est valable le jour de la semaine affichée qui lui correspond
+    // (période de validité) ; jour ISO : lundi = 1 … dimanche = 7.
+    const jourIso = (jour: string) => ((new Date(`${jour}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
+    const jours = joursEntre(d.debut, d.fin);
     return {
-      creneaux: disponibilites.map(({ jourSemaine, heureDebut, heureFin }) => ({
-        jourSemaine,
-        heureDebut,
-        heureFin,
-      })),
+      creneaux: disponibilites
+        .filter((c) => {
+          const jour = jours.find((j) => jourIso(j) === c.jourSemaine);
+          return jour !== undefined && creneauApplicable(c, jour);
+        })
+        .map(({ jourSemaine, heureDebut, heureFin }) => ({
+          jourSemaine,
+          heureDebut,
+          heureFin,
+        })),
       indisponibilites: indisponibilites.map((i) => ({
         debut: i.debut.toISOString(),
         fin: i.fin.toISOString(),

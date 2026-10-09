@@ -49,6 +49,7 @@ export const PERMISSIONS = {
   'edt:lire': 'Consulter les emplois du temps, brouillons compris',
   'edt:gerer': 'Créer, modifier, annuler et publier les séances',
   'edt:forcer': 'Forcer un conflit de salle ou de groupe (cours commun), avec un motif',
+  'disponibilites:declarer': 'Déclarer ses propres disponibilités et indisponibilités',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
 } as const;

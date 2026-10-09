@@ -294,6 +294,25 @@ describe('RG-04-18 intervenant indisponible', () => {
     expect(detecterConflits(cible, ctx)).toEqual(avertissement('hors-disponibilites'));
   });
 
+  it('RG-04-18 ignore les créneaux hors de leur période de validité', () => {
+    const creneau = { intervenantId: 'I1', jourSemaine: 2, heureDebut: '08:00', heureFin: '13:00' };
+    const valable = contexte({
+      disponibilites: [{ ...creneau, valableDu: '2026-09-01', valableAu: '2026-10-06' }],
+    });
+    expect(detecterConflits(cible, valable)).toEqual([]);
+    // Seul créneau déclaré, mais expiré : rien n'est déclaré ce jour, pas d'avertissement.
+    const expire = contexte({ disponibilites: [{ ...creneau, valableAu: '2026-10-05' }] });
+    expect(detecterConflits(cible, expire)).toEqual([]);
+    // Un autre créneau valable ce jour ne couvre pas la séance : avertissement.
+    const autre = contexte({
+      disponibilites: [
+        { ...creneau, valableDu: '2026-10-07' },
+        { ...creneau, heureDebut: '14:00', heureFin: '18:00' },
+      ],
+    });
+    expect(detecterConflits(cible, autre)).toEqual(avertissement('hors-disponibilites'));
+  });
+
   it('RG-04-18 avertit d’une séance sur deux jours hors des créneaux d’un jour', () => {
     const nuit = { ...cible, fin: instantLocal('2026-10-07', '01:00', fuseau) };
     const disponibilites = [
