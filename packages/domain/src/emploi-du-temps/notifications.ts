@@ -2,7 +2,8 @@
  * Notifications des changements de l'emploi du temps (RG-04-14) : envoi immédiat ou récapitulatif
  * quotidien, regroupement des rafales (RG-08-11) et badge « modifié » dans l'EDT.
  */
-import type { StatutSeance } from './conflits.js';
+import { jourLocal, type StatutSeance } from './conflits.js';
+import { instantLocal } from './recurrence.js';
 
 /** RG-04-14 : un changement est signalé aussitôt si la séance a lieu dans les 48 heures. */
 export const DELAI_NOTIFICATION_IMMEDIATE_HEURES = 48;
@@ -14,8 +15,16 @@ export const DELAI_NOTIFICATION_IMMEDIATE_HEURES = 48;
 export const ATTENTE_REGROUPEMENT_MINUTES = 2;
 export const ATTENTE_REGROUPEMENT_MAX_MINUTES = 10;
 
-/** RG-04-14 : durée par défaut du badge « modifié » (réglage produit, modifiable). */
+/**
+ * RG-04-14 : heure locale du récapitulatif quotidien, dans le fuseau de l'établissement de la
+ * séance (un récapitulatif par fuseau et par personne).
+ */
+export const HEURE_RECAPITULATIF_EDT = '18:00';
+
+/** RG-04-14 : durée par défaut du badge « modifié » (réglage produit, modifiable par école). */
 export const DUREE_BADGE_MODIFIE_JOURS = 7;
+/** Durée la plus longue qu'une école peut choisir pour le badge « modifié ». */
+export const DUREE_BADGE_MODIFIE_MAX_JOURS = 60;
 
 const MINUTE = 60_000;
 
@@ -47,6 +56,23 @@ export function envoiImmediatDu(
     ecart(attente.dernier) >= ATTENTE_REGROUPEMENT_MINUTES * MINUTE ||
     ecart(attente.premier) >= ATTENTE_REGROUPEMENT_MAX_MINUTES * MINUTE
   );
+}
+
+/**
+ * RG-04-14 : dernier récapitulatif dû dans un fuseau, au plus tard maintenant (18 h aujourd'hui,
+ * ou 18 h la veille avant 18 h). Un changement noté avant cet instant et pas encore envoyé part
+ * dans le récapitulatif ; un changement noté après attend le suivant.
+ */
+export function dernierRecapitulatif(
+  fuseau: string,
+  maintenant: Date,
+  heure = HEURE_RECAPITULATIF_EDT,
+): Date {
+  const jour = jourLocal(maintenant, fuseau);
+  const aujourdhui = instantLocal(jour, heure, fuseau);
+  if (aujourdhui <= maintenant) return aujourdhui;
+  const veille = new Date(Date.parse(`${jour}T00:00:00Z`) - 24 * 60 * MINUTE);
+  return instantLocal(veille.toISOString().slice(0, 10), heure, fuseau);
 }
 
 /**

@@ -379,6 +379,13 @@
       "when": 1791519576413,
       "tag": "0053_flux_ical",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1791531704099,
+      "tag": "0054_notifications_par_ecole",
+      "breakpoints": true
     }
   ]
 }

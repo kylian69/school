@@ -112,6 +112,8 @@ const ecole = {
   siren: null,
   modeleMatricule: '{NUM:6}',
   exempleMatricule: '000001',
+  edtBadgeModifieJours: null,
+  edtBadgeModifieJoursDefaut: 7,
   etablissements: [
     {
       id: '01a10000-0000-7000-8000-0000000000b1',

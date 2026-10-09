@@ -57,10 +57,11 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
     { every: 60_000 },
     { name: MAINTENANCE_JOBS.notificationsEdt, opts: { removeOnComplete: 10, removeOnFail: 100 } },
   );
-  // Chaque jour à 18 h (Paris) : récapitulatif des autres changements d'EDT (RG-04-14).
+  // Chaque quart d'heure : récapitulatif des autres changements d'EDT, envoyé à 18 h dans le
+  // fuseau de l'établissement des séances (RG-04-14 ; tous les fuseaux sont au quart d'heure).
   await maintenance.upsertJobScheduler(
     MAINTENANCE_JOBS.recapitulatifEdt,
-    { pattern: '0 18 * * *', tz: 'Europe/Paris' },
+    { pattern: '*/15 * * * *' },
     { name: MAINTENANCE_JOBS.recapitulatifEdt, opts: { removeOnComplete: 30, removeOnFail: 100 } },
   );
 }

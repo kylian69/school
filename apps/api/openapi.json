@@ -3534,7 +3534,7 @@
       },
       "patch": {
         "operationId": "OrganisationController.modifier",
-        "summary": "Modifier le nom, le nom affiché ou le SIREN de l’école",
+        "summary": "Modifier le nom, le nom affiché, le SIREN, le modèle de matricule ou la durée du badge « modifié » de l’école",
         "x-scolaly-access": {
           "kind": "permission",
           "permissions": [
@@ -11307,6 +11307,12 @@
             "nullable": true,
             "type": "string",
             "maxLength": 30
+          },
+          "edtBadgeModifieJours": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
           }
         },
         "additionalProperties": false
@@ -12872,6 +12878,17 @@
           "exempleMatricule": {
             "type": "string"
           },
+          "edtBadgeModifieJours": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "edtBadgeModifieJoursDefaut": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "etablissements": {
             "type": "array",
             "items": {
@@ -12886,6 +12903,8 @@
           "siren",
           "modeleMatricule",
           "exempleMatricule",
+          "edtBadgeModifieJours",
+          "edtBadgeModifieJoursDefaut",
           "etablissements"
         ],
         "additionalProperties": false

@@ -3,34 +3,34 @@ import {
   ChargeChangementEdt,
   cheminLogo,
   emailChangementsEdt,
+  FUSEAU_PAR_DEFAUT,
   type ChangementEdtAnnonce,
   type EmailJob,
   type EvenementJob,
 } from '@scolaly/contracts';
 import {
-  etablissement,
-  groupePromotion,
+  fuseauDeSeance,
   notificationEdt,
   notificationsEdtEnAttente,
+  notificationsEdtParFuseau,
   organisation,
   personne,
-  promotion,
   salle,
   seance,
   seanceAttenduCalcule,
   seanceIntervenant,
-  seancePublic,
   withOrganisation,
   type Database,
   type Transaction,
 } from '@scolaly/db';
 import {
   changementUrgent,
+  dernierRecapitulatif,
   envoiImmediatDu,
   natureAnnoncee,
   type NatureNotificationEdt,
 } from '@scolaly/domain';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 
 /** Lignes insérées par requête (publication d'un semestre entier pour plusieurs promotions). */
 const LOT = 1000;
@@ -130,10 +130,19 @@ export async function enregistrerChangementEdt(
 
 export type ModeEnvoiEdt = 'immediat' | 'recapitulatif';
 
+/** Envoi à une personne ; pour le récapitulatif, les changements d'un fuseau notés avant 18 h. */
+interface Envoi {
+  organisationId: string;
+  personneId: string;
+  recapitulatif?: { fuseau: string | null; avant: Date };
+}
+
 /**
  * RG-04-14, RG-08-11 : envoie à chaque personne un seul email regroupant ses changements :
  * - `immediat` (chaque minute) : les changements urgents, une fois la rafale terminée ;
- * - `recapitulatif` (chaque jour à 18 h) : tous les changements restants.
+ * - `recapitulatif` (chaque quart d'heure) : dans chaque fuseau où il est 18 h passées, les
+ *   changements notés avant 18 h locales et pas encore envoyés. Une personne dont les séances
+ *   relèvent de plusieurs fuseaux reçoit un récapitulatif par fuseau, chaque séance dans un seul.
  * Les lignes envoyées sont supprimées dans la transaction qui confie l'email à la file ; la clé
  * de la tâche dépend des lignes : une transaction rejouée ne crée pas de second email.
  * Renvoie le nombre d'emails confiés à la file.
@@ -145,29 +154,35 @@ export async function envoyerNotificationsEdt(
   mode: ModeEnvoiEdt,
   maintenant = new Date(),
 ): Promise<number> {
-  const parEcole = new Map<string, Set<string>>();
-  for (const a of await notificationsEdtEnAttente(db)) {
-    if (mode === 'immediat' && !(a.urgente && envoiImmediatDu(a, maintenant))) continue;
-    parEcole.set(a.organisationId, (parEcole.get(a.organisationId) ?? new Set()).add(a.personneId));
+  const envois: Envoi[] = [];
+  if (mode === 'immediat') {
+    const vus = new Set<string>();
+    for (const a of await notificationsEdtEnAttente(db)) {
+      if (!(a.urgente && envoiImmediatDu(a, maintenant))) continue;
+      if (vus.has(`${a.organisationId}:${a.personneId}`)) continue;
+      vus.add(`${a.organisationId}:${a.personneId}`);
+      envois.push({ organisationId: a.organisationId, personneId: a.personneId });
+    }
+  } else {
+    for (const a of await notificationsEdtParFuseau(db)) {
+      const avant = dernierRecapitulatif(a.fuseau ?? FUSEAU_PAR_DEFAUT, maintenant);
+      if (a.premier >= avant) continue;
+      envois.push({ ...a, recapitulatif: { fuseau: a.fuseau, avant } });
+    }
   }
   let envoyes = 0;
-  for (const [organisationId, personnes] of parEcole) {
-    for (const personneId of personnes) {
-      const envoye = await withOrganisation(db, organisationId, (tx) =>
-        envoyerA(tx, { organisationId, personneId, mode, publicUrl, envoyer }),
-      );
-      if (envoye) envoyes += 1;
-    }
+  for (const envoi of envois) {
+    const envoye = await withOrganisation(db, envoi.organisationId, (tx) =>
+      envoyerA(tx, { ...envoi, publicUrl, envoyer }),
+    );
+    if (envoye) envoyes += 1;
   }
   return envoyes;
 }
 
 async function envoyerA(
   tx: Transaction,
-  o: {
-    organisationId: string;
-    personneId: string;
-    mode: ModeEnvoiEdt;
+  o: Envoi & {
     publicUrl: string;
     envoyer: (email: EmailJob, cle: string) => Promise<void>;
   },
@@ -184,7 +199,12 @@ async function envoyerA(
       and(
         eq(notificationEdt.personneId, o.personneId),
         isNull(notificationEdt.deletedAt),
-        o.mode === 'immediat' ? eq(notificationEdt.urgente, true) : undefined,
+        o.recapitulatif
+          ? and(
+              lt(notificationEdt.createdAt, o.recapitulatif.avant),
+              sql`${fuseauDeSeance(notificationEdt.seanceId)} is not distinct from ${o.recapitulatif.fuseau}`,
+            )
+          : eq(notificationEdt.urgente, true),
       ),
     )
     .for('update', { skipLocked: true });
@@ -212,7 +232,7 @@ async function envoyerA(
     prenom: destinataire.prenom,
     ecole: destinataire.ecole,
     lien: new URL('/', o.publicUrl).toString(),
-    recapitulatif: o.mode === 'recapitulatif',
+    recapitulatif: o.recapitulatif !== undefined,
     changements,
     marque: {
       nom: destinataire.nomAffichage,
@@ -281,7 +301,14 @@ async function annonces(
         )),
     ].map((c) => c.seanceId),
   );
-  const fuseaux = await fuseauxDesSeances(tx, seanceIds);
+  const fuseaux = new Map(
+    (
+      await tx
+        .select({ id: seance.id, fuseau: fuseauDeSeance(seance.id) })
+        .from(seance)
+        .where(inArray(seance.id, seanceIds))
+    ).map((s) => [s.id, s.fuseau]),
+  );
   return seances
     .map((s) => {
       const nouvelle = nouvelles.find((n) => n.id === s.reporteeVersId);
@@ -294,45 +321,11 @@ async function annonces(
         libelle: s.libelle,
         debut: s.debut,
         fin: s.fin,
-        fuseau: fuseaux.get(s.id) ?? 'Europe/Paris',
+        fuseau: fuseaux.get(s.id) ?? FUSEAU_PAR_DEFAUT,
         salle: s.salle,
         reporteeVers:
           s.statut === 'reportee' && nouvelle ? { debut: nouvelle.debut, fin: nouvelle.fin } : null,
       };
     })
     .sort((a, b) => a.debut.getTime() - b.debut.getTime());
-}
-
-/** Fuseau de l'établissement de chaque séance, par sa promotion (directe ou par un groupe). */
-async function fuseauxDesSeances(tx: Transaction, seanceIds: readonly string[]) {
-  const lignes = await tx
-    .select({ seanceId: seancePublic.seanceId, fuseau: etablissement.fuseauHoraire })
-    .from(seancePublic)
-    .leftJoin(
-      groupePromotion,
-      and(
-        eq(groupePromotion.organisationId, seancePublic.organisationId),
-        eq(groupePromotion.groupeId, seancePublic.groupeId),
-        isNull(groupePromotion.deletedAt),
-      ),
-    )
-    .innerJoin(
-      promotion,
-      and(
-        eq(promotion.organisationId, seancePublic.organisationId),
-        eq(
-          promotion.id,
-          sql`coalesce(${seancePublic.promotionId}, ${groupePromotion.promotionId})`,
-        ),
-      ),
-    )
-    .innerJoin(
-      etablissement,
-      and(
-        eq(etablissement.organisationId, promotion.organisationId),
-        eq(etablissement.id, promotion.etablissementId),
-      ),
-    )
-    .where(and(inArray(seancePublic.seanceId, [...seanceIds]), isNull(seancePublic.deletedAt)));
-  return new Map(lignes.map((l) => [l.seanceId, l.fuseau]));
 }

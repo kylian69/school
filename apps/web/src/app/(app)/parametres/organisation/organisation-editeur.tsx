@@ -225,10 +225,13 @@ function FicheOrganisation({
   async function onSubmit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
     setEnvoi(true);
+    const saisie = valeurs(event.currentTarget);
+    const jours = saisie.edtBadgeModifieJours?.trim();
     const resultat = await envoyer(
       '/api/organisation',
       'PATCH',
-      valeurs(event.currentTarget),
+      // Champ vide : la valeur par défaut de l'instance.
+      { ...saisie, edtBadgeModifieJours: jours ? Number(jours) : null },
       t.erreur,
     );
     setEnvoi(false);
@@ -275,6 +278,19 @@ function FicheOrganisation({
             defaultValue={organisation.modeleMatricule}
             maxLength={30}
             className="font-mono"
+          />
+          <Champ
+            nom="edtBadgeModifieJours"
+            label={t.badgeModifie}
+            erreurs={erreurs}
+            aide={t.aideBadgeModifie(organisation.edtBadgeModifieJoursDefaut)}
+            defaultValue={organisation.edtBadgeModifieJours ?? ''}
+            placeholder={String(organisation.edtBadgeModifieJoursDefaut)}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={60}
+            step={1}
           />
         </fieldset>
         <p role="alert" aria-live="polite" className="text-sm text-bad empty:hidden">

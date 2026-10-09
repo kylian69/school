@@ -77,6 +77,7 @@ import type { Redis } from 'ioredis';
 import type { Access } from '../../access/access-resolver.js';
 import { plageEdt } from '../../shared/plage-edt.js';
 import type { Env } from '../../config/env.js';
+import { dureeBadgeModifie } from '../../shared/badge-modifie.js';
 import { ENV, VALKEY } from '../../shared/tokens.js';
 import { promotionsCouvertes } from '../scolarite/index.js';
 import {
@@ -1311,6 +1312,7 @@ export class SeancesService {
     const promotionsDe = await this.promotionsDesSeances(tx, lignes);
     const gestion = await this.gestion(tx, access);
     const maintenant = new Date();
+    const dureeBadge = await dureeBadgeModifie(tx, this.env);
     return lignes.map((l) => ({
       id: l.id,
       libelle: l.libelle,
@@ -1330,7 +1332,7 @@ export class SeancesService {
       serieId: l.serieId,
       reporteeVersId: l.reporteeVersId,
       modifieeLe: l.modifieeLe?.toISOString() ?? null,
-      modifiee: badgeModifie(l.modifieeLe, maintenant, this.env.EDT_BADGE_MODIFIE_JOURS),
+      modifiee: badgeModifie(l.modifieeLe, maintenant, dureeBadge),
       conflits:
         ctx && (l.statut === 'brouillon' || l.statut === 'publiee')
           ? detecterConflits(versPlanifiee(l), ctx)

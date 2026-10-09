@@ -618,6 +618,9 @@ export const fr = {
     modeleMatricule: 'Modèle de matricule',
     aideMatricule: (exemple: string) =>
       `Prochain matricule : ${exemple}. Jetons : {ANNEE}, {AA} (année scolaire), {NUM:n} (numéro sur n chiffres). Un matricule n’est jamais réattribué.`,
+    badgeModifie: 'Badge « modifié » (jours)',
+    aideBadgeModifie: (defaut: number) =>
+      `Durée pendant laquelle une séance modifiée porte le badge dans l’emploi du temps, de 0 (jamais) à 60 jours. Laissez vide pour la valeur par défaut : ${defaut} jours.`,
     enregistrer: 'Enregistrer',
     enregistrement: 'Enregistrement…',
     enregistre: 'Modifications enregistrées.',

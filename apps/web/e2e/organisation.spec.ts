@@ -101,4 +101,23 @@ test.describe('E-01-02 Organisation et établissements', () => {
     await modification.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
     await expect(carte.getByText('09:00 – 17:30, mar. mer. jeu. ven. sam.')).toBeVisible();
   });
+
+  test('RG-04-14 règle la durée du badge « modifié » de l’école', async ({ page }) => {
+    await page.goto('/parametres/organisation');
+    const champ = page.getByLabel('Badge « modifié » (jours)');
+    await expect(champ).toHaveValue('');
+    await expect(page.getByText(/valeur par défaut : 7 jours/)).toBeVisible();
+    await champ.fill('3');
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await expect(page.getByText('Modifications enregistrées.')).toBeVisible();
+    await page.reload();
+    await expect(champ).toHaveValue('3');
+    // Champ vidé : retour à la valeur par défaut.
+    await champ.fill('');
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await expect(page.getByText('Modifications enregistrées.')).toBeVisible();
+    await page.reload();
+    await expect(champ).toHaveValue('');
+  });
 });

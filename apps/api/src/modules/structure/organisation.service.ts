@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -33,6 +34,8 @@ import {
 } from '@scolaly/domain';
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
+import type { Env } from '../../config/env.js';
+import { ENV } from '../../shared/tokens.js';
 import { anneeDeReference } from '../../shared/matricule.js';
 import { colonnesPlageEdt, plageEdt } from '../../shared/plage-edt.js';
 
@@ -97,6 +100,8 @@ const vide = (v: string | null | undefined) => (v === undefined ? undefined : v 
 /** Organisation et établissements de l'école (E-01-02 ; US-01-02, RG-01-01, RG-01-02). */
 @Injectable()
 export class OrganisationService {
+  constructor(@Inject(ENV) private readonly env: Env) {}
+
   async lire(tx: Transaction, access: Access): Promise<OrganisationDetail> {
     const [ecole] = await tx
       .select()
@@ -119,6 +124,8 @@ export class OrganisationService {
         annee: await anneeDeReference(tx),
         numero: ecole.matriculeCompteur + 1,
       }),
+      edtBadgeModifieJours: ecole.edtBadgeModifieJours,
+      edtBadgeModifieJoursDefaut: this.env.EDT_BADGE_MODIFIE_JOURS,
       etablissements: etablissements.map((e) => this.detail(e)),
     };
   }
@@ -151,6 +158,9 @@ export class OrganisationService {
         ...(changement.nomAffichage !== undefined ? { nomAffichage: changement.nomAffichage } : {}),
         ...(siren !== undefined ? { siren } : {}),
         ...(modele !== undefined ? { modeleMatricule: modele } : {}),
+        ...(changement.edtBadgeModifieJours !== undefined
+          ? { edtBadgeModifieJours: changement.edtBadgeModifieJours }
+          : {}),
         updatedBy: access.userId,
       })
       .where(eq(organisation.id, access.organisationId));
@@ -166,12 +176,14 @@ export class OrganisationService {
         nomAffichage: avant.nomAffichage,
         siren: avant.siren,
         modeleMatricule: avant.modeleMatricule,
+        edtBadgeModifieJours: avant.edtBadgeModifieJours,
       },
       apres: {
         nom: apres.nom,
         nomAffichage: apres.nomAffichage,
         siren: apres.siren,
         modeleMatricule: apres.modeleMatricule,
+        edtBadgeModifieJours: apres.edtBadgeModifieJours,
       },
     });
     return apres;

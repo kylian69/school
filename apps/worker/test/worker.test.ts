@@ -127,7 +127,7 @@ describe('Tâches planifiées et workers', () => {
       [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],
       [MAINTENANCE_JOBS.prechargementEmargement, undefined],
       [MAINTENANCE_JOBS.purgeCorbeille, '0 3 * * *'],
-      [MAINTENANCE_JOBS.recapitulatifEdt, '0 18 * * *'],
+      [MAINTENANCE_JOBS.recapitulatifEdt, '*/15 * * * *'],
       [MAINTENANCE_JOBS.relancesInvitations, '0 9 * * *'],
     ]);
   });

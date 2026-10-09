@@ -94,6 +94,10 @@ export const OrganisationDetail = z
     /** Modèle de matricule (RG-01-06) et exemple du prochain matricule. */
     modeleMatricule: z.string(),
     exempleMatricule: z.string(),
+    /** RG-04-14 : jours d'affichage du badge « modifié » ; null : valeur par défaut. */
+    edtBadgeModifieJours: z.int().nullable(),
+    /** Valeur par défaut de l'instance, appliquée quand l'école n'a rien choisi. */
+    edtBadgeModifieJoursDefaut: z.int(),
     etablissements: z.array(Etablissement),
   })
   .meta({ id: 'OrganisationDetail' });
@@ -106,6 +110,8 @@ export const ModificationOrganisation = z
     siren: identifiant.optional(),
     /** Jetons {ANNEE}, {AA} et {NUM:n} ; null : numéro séquentiel par défaut. */
     modeleMatricule: z.string().trim().max(30).nullable().optional(),
+    /** RG-04-14 : de 0 (jamais de badge) à 60 jours ; null : valeur par défaut de l'instance. */
+    edtBadgeModifieJours: z.int().min(0).max(60).nullable().optional(),
   })
   .meta({ id: 'ModificationOrganisation' });
 export type ModificationOrganisation = z.infer<typeof ModificationOrganisation>;
