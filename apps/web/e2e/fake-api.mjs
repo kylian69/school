@@ -104,6 +104,14 @@ const PLAGE_EDT = {
   limiteMidi: '13:00',
   joursOuvres: [1, 2, 3, 4, 5],
 };
+/** RG-06-10 : contrôle actif par défaut, périmètre à renseigner. */
+const LOCALISATION_DEFAUT = {
+  active: true,
+  latitude: null,
+  longitude: null,
+  rayonMetres: 300,
+  plagesIp: [],
+};
 
 const ecole = {
   id: '01a10000-0000-7000-8000-0000000000e1',
@@ -130,6 +138,7 @@ const ecole = {
       email: null,
       statut: 'actif',
       edt: { ...PLAGE_EDT },
+      localisation: { ...LOCALISATION_DEFAUT },
     },
   ],
 };
@@ -220,6 +229,21 @@ const plageDisponibilites = {
 const SEANCE_ID = '0192f0a4-1b2c-7d3e-8f40-0000000000aa';
 // Émargements de Léa, par appel de test (cookie e2e-appel) : deux projets Playwright tournent en parallèle.
 const emargementsLea = new Map();
+// RG-06-10 : résultat du contrôle de localisation du scan de Léa, par appel.
+const localisationsLea = new Map();
+// Campus fictif des E2E (position simulée par Playwright) : centre et rayon.
+const CAMPUS_E2E = { latitude: 45.75, longitude: 4.85, rayonMetres: 300 };
+const localiser = (position) => {
+  if (!position || position.precisionMetres > CAMPUS_E2E.rayonMetres) return 'inconnu';
+  const dLat = ((position.latitude - CAMPUS_E2E.latitude) * Math.PI) / 180;
+  const dLon =
+    ((position.longitude - CAMPUS_E2E.longitude) *
+      Math.PI *
+      Math.cos((CAMPUS_E2E.latitude * Math.PI) / 180)) /
+    180;
+  const distance = 6_371_008.8 * Math.sqrt(dLat ** 2 + dLon ** 2);
+  return distance <= CAMPUS_E2E.rayonMetres + position.precisionMetres ? 'sur-place' : 'hors-site';
+};
 const cleAppel = (request) =>
   (request.headers.cookie ?? '').match(/e2e-appel=(\w+)/)?.[1] ?? 'commun';
 const appelFictif = (request) => {
@@ -230,6 +254,7 @@ const appelFictif = (request) => {
       prenom: 'Léa',
       scanneLe: emargementsLea.get(cleAppel(request)) ?? null,
       rejoue: false,
+      localisation: localisationsLea.get(cleAppel(request)) ?? null,
     },
     {
       personneId: '0192f0a4-1b2c-7d3e-8f40-000000000002',
@@ -237,6 +262,7 @@ const appelFictif = (request) => {
       prenom: 'Noé',
       scanneLe: null,
       rejoue: false,
+      localisation: null,
     },
   ];
   return { presents: liste.filter((l) => l.scanneLe).length, attendus: 2, liste };
@@ -251,6 +277,7 @@ const seanceFictive = () => {
     distanciel: false,
     intervenant: 'Sophie Arnaud',
     modifiee: true,
+    localisation: true,
   };
 };
 
@@ -2243,20 +2270,24 @@ createServer(async (request, response) => {
     return;
   }
   if (path === '/api/emargement/code' && request.method === 'POST') {
-    const { code } = await readBody(request);
+    const { code, position } = await readBody(request);
     if (code !== '123456') {
       return json(400, {
         message: 'Ce code n’est pas le bon : saisissez celui affiché maintenant.',
       });
     }
     const cle = cleAppel(request);
-    if (!emargementsLea.has(cle)) emargementsLea.set(cle, new Date().toISOString());
+    if (!emargementsLea.has(cle)) {
+      emargementsLea.set(cle, new Date().toISOString());
+      localisationsLea.set(cle, localiser(position));
+    }
     return json(200, {
       statut: 'present',
       seance: seanceFictive().libelle,
       scanneLe: emargementsLea.get(cle),
       retardMinutes: 0,
       rejoue: false,
+      localisation: localisationsLea.get(cle),
     });
   }
   // Flux iCal personnel (RG-04-15) : l'adresse est réaffichée à son propriétaire.
@@ -2734,6 +2765,7 @@ createServer(async (request, response) => {
         email: null,
         statut: 'actif',
         edt: { ...PLAGE_EDT },
+        localisation: { ...LOCALISATION_DEFAUT },
         ...body,
       };
       ecole.etablissements.push(cree);
@@ -2752,6 +2784,16 @@ createServer(async (request, response) => {
         return json(400, {
           message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
           details: ['uai : L’UAI compte 7 chiffres suivis d’une lettre, par exemple 0691234A.'],
+        });
+      const plageInvalide = (body.localisation?.plagesIp ?? []).findIndex(
+        (p) => !/^[0-9a-f:.]+(\/\d{1,3})?$/i.test(p),
+      );
+      if (plageInvalide >= 0)
+        return json(400, {
+          message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+          details: [
+            `localisation.plagesIp.${plageInvalide} : Plage d’adresses IP invalide : saisissez par exemple 192.0.2.0/24.`,
+          ],
         });
       if (body.edt && body.edt.fin <= body.edt.debut)
         return json(400, {

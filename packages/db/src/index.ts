@@ -25,7 +25,9 @@ export {
 } from './indisponibilites.js';
 export {
   attenduDeSeance,
+  effacerLocalisationsEchues,
   enregistrerPresenceDirecte,
+  etablissementDeSeance,
   enregistrerPresences,
   fuseauDeSeance,
   notificationsEdtEnAttente,

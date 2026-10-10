@@ -68,5 +68,14 @@ export const dureesConservation: DatedTable<DureeConservation> = {
       source: SOURCE_PILOTE,
       valeur: { duree: 'P12M', apres: 'fin', echeance: 'suppression' },
     },
+    {
+      // RG-06-11, RGPD-03 : le résultat du contrôle de localisation sert à la vérification de
+      // l'appel et au rapport mensuel des anomalies ; il est effacé ensuite, la présence reste.
+      cle: 'presence-localisation',
+      debut: '2026-10-10',
+      fin: null,
+      source: "Décision de l'établissement / pilote 10/10/2026",
+      valeur: { duree: 'P2M', apres: 'creation', echeance: 'effacement' },
+    },
   ],
 };

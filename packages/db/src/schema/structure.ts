@@ -1,10 +1,13 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   char,
   check,
   date,
+  doublePrecision,
   foreignKey,
   index,
+  integer,
   pgEnum,
   pgTable,
   smallint,
@@ -50,10 +53,27 @@ export const etablissement = pgTable(
       .array()
       .notNull()
       .default(sql`'{1,2,3,4,5}'::smallint[]`),
+    /**
+     * RG-06-09, RG-06-10 : contrôle de localisation à l'émargement (actif par défaut) et
+     * périmètre du site : centre (degrés décimaux), rayon en mètres, plages d'adresses IP du
+     * réseau du campus (CIDR). Sans coordonnées ni plage, rien n'est contrôlé.
+     */
+    localisationActive: boolean().notNull().default(true),
+    localisationLatitude: doublePrecision(),
+    localisationLongitude: doublePrecision(),
+    localisationRayon: integer().notNull().default(300),
+    localisationPlagesIp: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     ...trackingColumns(),
   },
   (t) => [
     ...organisationConstraints('etablissement', t),
+    check(
+      'etablissement_localisation_check',
+      sql`(${t.localisationLatitude} is null) = (${t.localisationLongitude} is null) AND ${t.localisationLatitude} between -90 and 90 AND ${t.localisationLongitude} between -180 and 180 AND ${t.localisationRayon} between 50 and 5000`,
+    ),
     check('etablissement_edt_plage_check', sql`${t.edtFin} > ${t.edtDebut}`),
     check(
       'etablissement_edt_limite_check',

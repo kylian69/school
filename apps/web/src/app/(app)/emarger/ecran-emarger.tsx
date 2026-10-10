@@ -3,18 +3,52 @@
 import {
   lireJeton,
   ResultatScan,
+  type PositionScan,
   type ResultatScan as Resultat,
   type SeanceProche,
 } from '@scolaly/contracts';
 import { Badge, Button, Card } from '@scolaly/ui';
 import jsQR from 'jsqr';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { fr } from '@/i18n/fr';
 import { formatHeure } from '@/lib/format';
 
 const t = fr.emargement;
 /** Scans conservés sans réseau, renvoyés au retour de la connexion (RG-00-19). */
 const FILE_HORS_LIGNE = 'scolaly:emargements-en-attente';
+
+/** Attente maximale de la position : au-delà, le scan part sans elle (RGPD-03, jamais bloqué). */
+const DELAI_POSITION_MS = 8000;
+/** Arrondi à 4 décimales (environ 11 m) : pas plus précis que nécessaire pour un rayon de site. */
+const arrondir = (degres: number) => Math.round(degres * 1e4) / 1e4;
+/** Écart maximal dû à l'arrondi, ajouté à la précision annoncée pour rester honnête. */
+const ECART_ARRONDI_METRES = 8;
+
+/**
+ * RGPD-03 : position du téléphone, demandée seulement pour une séance qui la contrôle. Le
+ * navigateur demande l'autorisation ; un refus, une absence ou un délai dépassé donnent « rien »,
+ * et le scan part quand même. La position n'est jamais gardée sur l'appareil.
+ */
+function lirePosition(): Promise<PositionScan | undefined> {
+  if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+    return Promise.resolve(undefined);
+  }
+  return new Promise((resoudre) => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        resoudre({
+          latitude: arrondir(p.coords.latitude),
+          longitude: arrondir(p.coords.longitude),
+          precisionMetres: Math.ceil(p.coords.accuracy) + ECART_ARRONDI_METRES,
+        });
+      },
+      () => {
+        resoudre(undefined);
+      },
+      { enableHighAccuracy: true, timeout: DELAI_POSITION_MS, maximumAge: 60_000 },
+    );
+  });
+}
 
 type Envoi =
   { etat: 'ok'; resultat: Resultat } | { etat: 'erreur'; message: string } | { etat: 'hors-ligne' };
@@ -61,7 +95,32 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
   const [camera, setCamera] = useState<'fermee' | 'ouverte' | 'indisponible'>('fermee');
   const video = useRef<HTMLVideoElement>(null);
   const idCode = useId();
+  const idInfo = useId();
   const [seanceCode, setSeanceCode] = useState(seances[0]?.id ?? '');
+  const [lecturePosition, setLecturePosition] = useState(false);
+  /** Lecture lancée à l'ouverture de la caméra, pour être prête quand le QR est lu. */
+  const position = useRef<Promise<PositionScan | undefined> | null>(null);
+  const controlees = useMemo(
+    () => new Set(seances.filter((s) => s.localisation).map((s) => s.id)),
+    [seances],
+  );
+  const controle = controlees.size > 0;
+
+  /** Position à joindre au scan de cette séance, si elle la contrôle. */
+  const positionPour = useCallback(
+    async (seanceId: string | undefined) => {
+      if (!seanceId || !controlees.has(seanceId)) return undefined;
+      position.current ??= lirePosition();
+      setLecturePosition(true);
+      try {
+        return await position.current;
+      } finally {
+        position.current = null;
+        setLecturePosition(false);
+      }
+    },
+    [controlees],
+  );
 
   // Renvoi des scans gardés hors ligne, au chargement et au retour du réseau.
   useEffect(() => {
@@ -84,10 +143,15 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
     };
   }, []);
 
-  const scanner = useCallback(async (jeton: string) => {
-    setCamera('fermee');
-    setEnvoi(await envoyerScan('/api/emargement/scan', { jeton }, jeton));
-  }, []);
+  const scanner = useCallback(
+    async (jeton: string) => {
+      setCamera('fermee');
+      const lue = await positionPour(lireJeton(jeton)?.seanceId);
+      // Hors ligne, seul le jeton est gardé : la position n'est jamais stockée sur l'appareil.
+      setEnvoi(await envoyerScan('/api/emargement/scan', { jeton, position: lue }, jeton));
+    },
+    [positionPour],
+  );
 
   // Lecture du QR à la caméra : une image toutes les 200 ms, décodée par jsQR.
   useEffect(() => {
@@ -129,7 +193,10 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
   async function validerCode(formulaire: FormData) {
     const valeur = formulaire.get('code');
     const code = typeof valeur === 'string' ? valeur.trim() : '';
-    setEnvoi(await envoyerScan('/api/emargement/code', { seanceId: seanceCode, code }));
+    const lue = await positionPour(seanceCode);
+    setEnvoi(
+      await envoyerScan('/api/emargement/code', { seanceId: seanceCode, code, position: lue }),
+    );
   }
 
   if (envoi?.etat === 'ok') {
@@ -144,12 +211,33 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
           {t.aHeure(formatHeure(r.scanneLe))}
           {r.retardMinutes > 0 ? ` · ${t.retard(r.retardMinutes)}` : ''}
         </p>
+        {r.localisation === 'hors-site' || r.localisation === 'inconnu' ? (
+          <p className="rounded-control bg-warn-soft p-3 text-sm">
+            {t.localisationAVerifier[r.localisation]}
+          </p>
+        ) : null}
       </Card>
     );
   }
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
+      {controle ? (
+        // RGPD-03 : l'apprenant est informé avant que son téléphone ne demande l'autorisation.
+        <Card className="flex flex-col gap-2" role="region" aria-labelledby={idInfo}>
+          <h2 id={idInfo} className="text-base font-semibold">
+            {t.localisationTitre}
+          </h2>
+          <p className="text-sm">{t.localisationInfo}</p>
+          <p className="text-sm text-muted">{t.localisationConservation}</p>
+          <p className="text-sm text-muted">{t.localisationRefus}</p>
+        </Card>
+      ) : null}
+      {lecturePosition ? (
+        <p role="status" className="text-sm text-muted">
+          {t.localisationEnCours}
+        </p>
+      ) : null}
       {envoi?.etat === 'hors-ligne' ? (
         <p role="status" className="rounded-control bg-warn-soft p-3 text-sm">
           {t.envoiEnCours}
@@ -204,6 +292,8 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
             ) : (
               <Button
                 onClick={() => {
+                  // La position se lit pendant que l'apprenant vise le QR.
+                  if (controle) position.current ??= lirePosition();
                   setCamera('ouverte');
                 }}
               >

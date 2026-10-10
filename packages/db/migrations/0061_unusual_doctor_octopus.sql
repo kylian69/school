@@ -1,0 +1,1 @@
+CREATE INDEX "presence_localisation_idx" ON "presence" USING btree ("organisation_id","scanne_le") WHERE "presence"."localisation" is not null;

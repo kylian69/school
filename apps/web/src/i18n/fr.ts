@@ -675,6 +675,24 @@ export const fr = {
       joursCourts: ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'],
       resume: (debut: string, fin: string, jours: string) => `${debut} – ${fin}, ${jours}`,
     },
+    localisation: {
+      titre: 'Localisation à l’émargement',
+      aide: 'Au scan, la position du téléphone (avec l’autorisation de l’apprenant) ou le réseau du campus est comparé à ce périmètre. Seul le résultat est conservé ; un scan hors site ou non confirmé est enregistré « à vérifier » pour l’intervenant, jamais refusé. Les séances à distance ne sont pas contrôlées.',
+      aideNouveau:
+        'Contrôle actif par défaut, sans effet tant que les coordonnées du site ou les adresses IP du campus ne sont pas renseignées. Modifiable une fois l’établissement créé.',
+      active: 'Contrôler la localisation à l’émargement',
+      latitude: 'Latitude du site',
+      longitude: 'Longitude du site',
+      aideCoordonnees: 'En degrés décimaux, par exemple 45.7578 et 4.8320.',
+      rayon: 'Rayon (mètres)',
+      aideRayon: 'De 50 à 5 000 m ; 300 m par défaut.',
+      plagesIp: 'Adresses IP du réseau du campus',
+      aidePlagesIp:
+        'Une plage par ligne, par exemple 192.0.2.0/24. Un scan depuis ce réseau est sur place, même sans position.',
+      resumeActif: (rayon: number) => `active, rayon ${rayon} m`,
+      resumeSansPerimetre: 'active, périmètre à renseigner',
+      resumeInactif: 'désactivée',
+    },
     confirmerArchivage: (nom: string) =>
       `Archiver « ${nom} » ? Il n’apparaîtra plus dans les choix, mais ses données sont conservées. Vous pourrez le réactiver.`,
     annuler: 'Annuler',
@@ -819,6 +837,24 @@ export const fr = {
     aHeure: (heure: string) => `à ${heure}`,
     envoiEnCours: 'Présence en cours d’envoi : elle partira dès le retour de la connexion.',
     erreur: 'L’émargement a échoué. Réessayez ou signalez-vous à l’intervenant.',
+    localisationTitre: 'Contrôle de présence sur place',
+    localisationInfo:
+      'Pour vérifier que vous êtes bien sur le campus, votre établissement compare la position de votre téléphone au périmètre du site au moment du scan. Votre téléphone vous demande votre autorisation.',
+    localisationConservation:
+      'Votre position n’est ni conservée ni partagée : seul le résultat (sur place, hors site ou inconnu) est enregistré avec votre présence, puis effacé au bout de deux mois.',
+    localisationRefus:
+      'Vous pouvez refuser : votre présence est quand même enregistrée, et l’intervenant la vérifie.',
+    localisationEnCours: 'Position en cours de lecture…',
+    localisationAVerifier: {
+      'hors-site':
+        'Votre position semble hors du campus : votre présence est enregistrée, l’intervenant la vérifiera.',
+      inconnu:
+        'Votre position n’a pas pu être confirmée : votre présence est enregistrée, l’intervenant la vérifiera.',
+    },
+    localisationListe: {
+      'hors-site': 'hors site, à vérifier',
+      inconnu: 'position inconnue, à vérifier',
+    },
   },
   referentiel: {
     titre: 'Formations',

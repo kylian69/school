@@ -13,11 +13,14 @@ import {
   verifierCode,
   verifierJeton,
   type CodeEmargement,
+  type PositionScan,
+  type ResultatLocalisation,
   type ResultatScan,
   type ScanEmargement,
   type SeanceEnCache,
 } from '@scolaly/contracts';
-import { evaluerScan } from '@scolaly/domain';
+import { evaluerLocalisation, evaluerScan } from '@scolaly/domain';
+import { BlockList, isIPv4, isIPv6 } from 'node:net';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Auth } from '../../auth/auth.js';
@@ -37,6 +40,37 @@ const pasOuvert = () =>
   new ConflictException(
     "L'appel de cette séance n'est pas ouvert. Attendez que l'intervenant l'ouvre, ou signalez-vous à lui.",
   );
+
+/** Plages déjà analysées, par liste : le scan ne les relit pas à chaque fois (calcul en mémoire). */
+const listesIp = new Map<string, BlockList>();
+
+/** Type d'adresse pour BlockList ; une adresse IPv4 vue en IPv6 (::ffff:a.b.c.d) est ramenée en IPv4. */
+function adresse(ip: string): { ip: string; type: 'ipv4' | 'ipv6' } | null {
+  const v4 = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+  if (isIPv4(v4)) return { ip: v4, type: 'ipv4' };
+  return isIPv6(ip) ? { ip, type: 'ipv6' } : null;
+}
+
+/** RGPD-03 : l'adresse IP de l'envoi est-elle dans les plages du réseau du campus ? */
+export function reseauDuCampus(plages: readonly string[], ip: string): boolean {
+  if (plages.length === 0) return false;
+  const cle = plages.join(',');
+  let liste = listesIp.get(cle);
+  if (!liste) {
+    liste = new BlockList();
+    for (const plage of plages) {
+      const [base = '', longueur] = plage.split('/');
+      const lue = adresse(base);
+      if (!lue) continue;
+      if (longueur === undefined) liste.addAddress(lue.ip, lue.type);
+      else liste.addSubnet(lue.ip, Number(longueur), lue.type);
+    }
+    if (listesIp.size > 1000) listesIp.clear();
+    listesIp.set(cle, liste);
+  }
+  const lue = adresse(ip);
+  return lue !== null && liste.check(lue.ip, lue.type);
+}
 
 /**
  * Chemin rapide du scan (architecture, section 5 ; RG-00-16 à RG-00-18) : session, séance,
@@ -61,12 +95,16 @@ export class ScanService {
     this.clesMaitresses = clesMaitressesParPriorite(env.chiffrement);
   }
 
-  scanner(headers: IncomingHttpHeaders, corps: ScanEmargement): Promise<ResultatScan> {
-    return this.avecBascule((magasin) => this.scannerAvec(magasin, headers, corps));
+  scanner(headers: IncomingHttpHeaders, corps: ScanEmargement, ip: string): Promise<ResultatScan> {
+    return this.avecBascule((magasin) => this.scannerAvec(magasin, headers, corps, ip));
   }
 
-  saisirCode(headers: IncomingHttpHeaders, corps: CodeEmargement): Promise<ResultatScan> {
-    return this.avecBascule((magasin) => this.saisirCodeAvec(magasin, headers, corps));
+  saisirCode(
+    headers: IncomingHttpHeaders,
+    corps: CodeEmargement,
+    ip: string,
+  ): Promise<ResultatScan> {
+    return this.avecBascule((magasin) => this.saisirCodeAvec(magasin, headers, corps, ip));
   }
 
   /**
@@ -105,6 +143,7 @@ export class ScanService {
     magasin: Magasin,
     headers: IncomingHttpHeaders,
     corps: ScanEmargement,
+    ip: string,
   ): Promise<ResultatScan> {
     const lu = lireJeton(corps.jeton);
     if (!lu) throw new BadRequestException('Ce QR code n’est pas un QR d’émargement Scolaly.');
@@ -131,15 +170,14 @@ export class ScanService {
     const instant = verification.rejoue
       ? verification.fenetre * JETON_PERIODE_SECONDES * 1000
       : maintenant;
-    return this.enregistrer(
-      magasin,
-      lu.seanceId,
-      seance,
-      userId,
-      instant,
-      'qr',
-      verification.rejoue,
-    );
+    return this.enregistrer(magasin, lu.seanceId, seance, userId, instant, {
+      mode: 'qr',
+      rejoue: verification.rejoue,
+      // RG-00-19 : un scan rejoué a été fait ailleurs et plus tôt : ni sa position ni l'adresse
+      // de l'envoi ne disent où était l'apprenant (il est déjà « à vérifier »).
+      position: verification.rejoue ? undefined : corps.position,
+      ip: verification.rejoue ? undefined : ip,
+    });
   }
 
   /**
@@ -166,6 +204,7 @@ export class ScanService {
     magasin: Magasin,
     headers: IncomingHttpHeaders,
     corps: CodeEmargement,
+    ip: string,
   ): Promise<ResultatScan> {
     const [seance, userId] = await Promise.all([
       magasin.seance(corps.seanceId),
@@ -184,7 +223,38 @@ export class ScanService {
         'Ce code n’est pas le bon : saisissez celui affiché maintenant.',
       );
     }
-    return this.enregistrer(magasin, corps.seanceId, seance, userId, maintenant, 'code', false);
+    return this.enregistrer(magasin, corps.seanceId, seance, userId, maintenant, {
+      mode: 'code',
+      rejoue: false,
+      position: corps.position,
+      ip,
+    });
+  }
+
+  /**
+   * RG-06-09, RG-06-10, RGPD-03 : résultat du contrôle de localisation, calculé en mémoire avec le
+   * périmètre préchargé ; la position et l'adresse IP ne sont ni conservées ni journalisées. Null :
+   * pas de contrôle pour cette séance.
+   */
+  private localiser(
+    seance: SeanceEnCache,
+    position: PositionScan | undefined,
+    ip: string | undefined,
+  ): ResultatLocalisation | null {
+    const perimetre = seance.localisation;
+    if (!perimetre) return null;
+    return evaluerLocalisation({
+      perimetre:
+        perimetre.latitude !== null && perimetre.longitude !== null
+          ? {
+              latitude: perimetre.latitude,
+              longitude: perimetre.longitude,
+              rayonMetres: perimetre.rayonMetres,
+            }
+          : null,
+      position: position ?? null,
+      reseauCampus: ip !== undefined && reseauDuCampus(perimetre.plagesIp, ip),
+    });
   }
 
   private async enregistrer(
@@ -193,9 +263,14 @@ export class ScanService {
     seance: SeanceEnCache,
     userId: string,
     instant: number,
-    mode: 'qr' | 'code',
-    rejoue: boolean,
+    scan: {
+      mode: 'qr' | 'code';
+      rejoue: boolean;
+      position: PositionScan | undefined;
+      ip: string | undefined;
+    },
   ): Promise<ResultatScan> {
+    const { mode, rejoue } = scan;
     const personneId = await magasin.attendu(seanceId, userId);
     if (!personneId) {
       throw new ForbiddenException(
@@ -211,8 +286,17 @@ export class ScanService {
       );
     }
     const scanneLe = new Date(instant).toISOString();
+    const localisation = this.localiser(seance, scan.position, scan.ip);
     const existante = await magasin.enregistrer(
-      { organisationId: seance.organisationId, seanceId, personneId, scanneLe, mode, rejoue },
+      {
+        organisationId: seance.organisationId,
+        seanceId,
+        personneId,
+        scanneLe,
+        mode,
+        rejoue,
+        localisation,
+      },
       seance.fin,
     );
     if (existante) {
@@ -224,6 +308,7 @@ export class ScanService {
         scanneLe: existante.scanneLe,
         retardMinutes: retard.ok ? retard.retardMinutes : 0,
         rejoue: existante.rejoue,
+        localisation: existante.localisation ?? null,
       };
     }
     return {
@@ -232,6 +317,7 @@ export class ScanService {
       scanneLe,
       retardMinutes: evaluation.retardMinutes,
       rejoue,
+      localisation,
     };
   }
 }

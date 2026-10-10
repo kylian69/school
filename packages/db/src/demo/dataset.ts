@@ -291,6 +291,9 @@ export function buildDemoDataset(options: { personnesParEcole?: number; seed?: n
         adresseLigne1: campus.adresse,
         codePostal: campus.codePostal,
         ville: campus.ville,
+        // RG-06-10 : réseau du campus fictif, plage réservée à la documentation (RFC 5737) ; pas
+        // de coordonnées, la ville est inventée. Un scan de démonstration est donc « à vérifier ».
+        localisationPlagesIp: ['192.0.2.0/24'],
         createdAt: CREATED_AT,
       });
     }

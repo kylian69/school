@@ -102,6 +102,39 @@ test.describe('E-01-02 Organisation et établissements', () => {
     await expect(carte.getByText('09:00 – 17:30, mar. mer. jeu. ven. sam.')).toBeVisible();
   });
 
+  test('US-06-14 règle le périmètre de localisation à l’émargement', async ({ page }) => {
+    const nom = `Campus ${Math.random().toString(36).slice(2, 7)}`;
+    await page.goto('/parametres/organisation');
+    await page.getByRole('button', { name: 'Ajouter un établissement' }).click();
+    const dialogue = page.getByRole('dialog', { name: 'Nouvel établissement' });
+    await expect(dialogue.getByText(/Contrôle actif par défaut/)).toBeVisible();
+    await dialogue.getByLabel('Nom de l’établissement').fill(nom);
+    await dialogue.getByLabel('Adresse', { exact: true }).fill('5 rue Fictive');
+    await dialogue.getByLabel('Code postal').fill('69000');
+    await dialogue.getByLabel('Ville').fill('Lumerac');
+    await dialogue.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
+
+    const carte = page.getByRole('listitem').filter({ hasText: nom });
+    await expect(carte.getByText('active, périmètre à renseigner')).toBeVisible();
+    await carte.getByRole('button', { name: `Modifier ${nom}` }).click();
+    const modification = page.getByRole('dialog', { name: `Modifier « ${nom} »` });
+    await expect(modification.getByLabel('Contrôler la localisation à l’émargement')).toBeChecked();
+    await modification.getByLabel('Latitude du site').fill('45,7578');
+    await modification.getByLabel('Longitude du site').fill('4.832');
+    await modification.getByLabel('Rayon (mètres)').fill('250');
+    await modification.getByLabel('Adresses IP du réseau du campus').fill('campus');
+    await modification.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
+    await expect(modification.getByText(/Plage d’adresses IP invalide/)).toBeVisible();
+    await expect(modification.getByLabel('Adresses IP du réseau du campus')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    await modification.getByLabel('Adresses IP du réseau du campus').fill('192.0.2.0/24');
+    await expectNoAccessibilityViolations(page);
+    await modification.getByRole('button', { name: 'Enregistrer l’établissement' }).click();
+    await expect(carte.getByText('active, rayon 250 m')).toBeVisible();
+  });
+
   test('RG-04-14 règle la durée du badge « modifié » de l’école', async ({ page }) => {
     await page.goto('/parametres/organisation');
     const champ = page.getByLabel('Badge « modifié » (jours)');

@@ -41,7 +41,7 @@ export interface Magasin {
   enregistrer(
     presence: PresenceEnCache,
     finMs: number,
-  ): Promise<{ scanneLe: string; rejoue: boolean } | null>;
+  ): Promise<Pick<PresenceEnCache, 'scanneLe' | 'rejoue' | 'localisation'> | null>;
 }
 
 /** Toute erreur de Valkey devient CacheIndisponible. */

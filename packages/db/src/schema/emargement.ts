@@ -265,6 +265,12 @@ export const notificationEdt = pgTable(
 ).enableRLS();
 
 export const presenceMode = pgEnum('presence_mode', ['qr', 'code', 'manuel']);
+/** RG-06-10, RGPD-03 : seul résultat conservé du contrôle de localisation (jamais la position). */
+export const presenceLocalisation = pgEnum('presence_localisation', [
+  'sur-place',
+  'hors-site',
+  'inconnu',
+]);
 
 /**
  * Présence enregistrée (RG-00-18) : une seule par apprenant et par séance. Écrite par lots depuis
@@ -280,11 +286,21 @@ export const presence = pgTable(
     mode: presenceMode().notNull(),
     /** RG-00-19 : scan conservé hors ligne puis renvoyé, à vérifier par l'intervenant. */
     rejoue: boolean().notNull().default(false),
+    /**
+     * RG-06-09 : résultat du contrôle de localisation ; null sans contrôle. Hors site ou inconnu :
+     * présence à vérifier par l'intervenant. Effacé à l'échéance (packages/referentials,
+     * `presence-localisation`).
+     */
+    localisation: presenceLocalisation(),
     ...trackingColumns(),
   },
   (t) => [
     ...organisationConstraints('presence', t),
     uniqueIndex('presence_unique_key').on(t.organisationId, t.seanceId, t.personneId),
+    /** Effacement des résultats échus (RGPD-03) : index restreint aux résultats encore présents. */
+    index('presence_localisation_idx')
+      .on(t.organisationId, t.scanneLe)
+      .where(sql`${t.localisation} is not null`),
     foreignKey({
       name: 'presence_seance_fk',
       columns: [t.organisationId, t.seanceId],

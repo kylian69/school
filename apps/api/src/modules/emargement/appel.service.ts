@@ -12,10 +12,13 @@ import {
   type AppelEnDirect,
   commandesSessions,
   type OuvertureAppel,
+  perimetreAControler,
   type PresenceEnCache,
+  type ResultatLocalisation,
 } from '@scolaly/contracts';
 import {
   cleMaitresseCourante,
+  etablissementDeSeance,
   presence,
   seanceEtAttendus,
   seanceIntervenant,
@@ -42,7 +45,10 @@ const BATTEMENT_MS = 15_000;
 const RELECTURE_BASE_MS = 5_000;
 
 type Attendu = { personneId: string; nom: string; prenom: string };
-type Scans = Map<string, { scanneLe: string; rejoue: boolean }>;
+type Scans = Map<
+  string,
+  { scanneLe: string; rejoue: boolean; localisation: ResultatLocalisation | null }
+>;
 
 /** Ce que le flux en direct garde en mémoire : attendus et présences déjà en base, lus une fois. */
 export interface EtatDirect {
@@ -54,13 +60,19 @@ export interface EtatDirect {
 
 function composer(attendus: readonly Attendu[], enBase: Scans, enCache: PresenceEnCache[]) {
   const scans: Scans = new Map(enBase);
-  for (const p of enCache) scans.set(p.personneId, { scanneLe: p.scanneLe, rejoue: p.rejoue });
+  for (const p of enCache)
+    scans.set(p.personneId, {
+      scanneLe: p.scanneLe,
+      rejoue: p.rejoue,
+      localisation: p.localisation ?? null,
+    });
   const liste = attendus.map((a) => ({
     personneId: a.personneId,
     nom: a.nom,
     prenom: a.prenom,
     scanneLe: scans.get(a.personneId)?.scanneLe ?? null,
     rejoue: scans.get(a.personneId)?.rejoue ?? false,
+    localisation: scans.get(a.personneId)?.localisation ?? null,
   }));
   return {
     presents: liste.filter((l) => l.scanneLe !== null).length,
@@ -138,6 +150,11 @@ export class AppelService implements OnModuleDestroy {
           debut: ligne.debut.getTime(),
           fin: ligne.fin.getTime(),
           distanciel: ligne.distanciel,
+          // RG-06-10 : périmètre préchargé, le scan le compare sans requête SQL.
+          localisation: perimetreAControler(
+            ligne.distanciel,
+            await etablissementDeSeance(tx, ligne),
+          ),
         },
         new Map(attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : []))),
       )
@@ -164,9 +181,12 @@ export class AppelService implements OnModuleDestroy {
     };
   }
 
-  private static scansEnBase(lignes: { personneId: string; scanneLe: Date; rejoue: boolean }[]) {
+  private static scansEnBase(lignes: (typeof presence.$inferSelect)[]): Scans {
     return new Map(
-      lignes.map((p) => [p.personneId, { scanneLe: p.scanneLe.toISOString(), rejoue: p.rejoue }]),
+      lignes.map((p) => [
+        p.personneId,
+        { scanneLe: p.scanneLe.toISOString(), rejoue: p.rejoue, localisation: p.localisation },
+      ]),
     );
   }
 

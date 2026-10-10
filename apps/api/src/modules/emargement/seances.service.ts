@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { SeanceProche } from '@scolaly/contracts';
+import { perimetreAControler, type SeanceProche } from '@scolaly/contracts';
 import {
   etablissement,
+  etablissementDeSeance,
   personne,
   salle,
   seance,
@@ -43,6 +44,8 @@ export class SeancesService {
         fin: seance.fin,
         distanciel: seance.distanciel,
         modifieeLe: seance.modifieeLe,
+        salleId: seance.salleId,
+        serieId: seance.serieId,
         etablissementSalle: salle.etablissementId,
         etablissementSerie: seanceSerie.etablissementId,
       })
@@ -87,6 +90,15 @@ export class SeancesService {
       lignes.map((l) => l.id),
     );
     const dureeBadge = await dureeBadgeModifie(tx, this.env);
+    // RGPD-03 : l'apprenant est informé avant le scan quand sa position sera comparée au campus.
+    // Une lecture par salle ou série distincte, pas par séance.
+    const parLieu = new Map<string, Awaited<ReturnType<typeof etablissementDeSeance>>>();
+    const controles = new Map<string, boolean>();
+    for (const l of lignes) {
+      const lieu = `${l.salleId ?? ''}|${l.serieId ?? ''}`;
+      if (!parLieu.has(lieu)) parLieu.set(lieu, await etablissementDeSeance(tx, l));
+      controles.set(l.id, perimetreAControler(l.distanciel, parLieu.get(lieu) ?? null) !== null);
+    }
     return lignes.map((l) => ({
       id: l.id,
       libelle: l.libelle,
@@ -95,6 +107,7 @@ export class SeancesService {
       distanciel: l.distanciel,
       intervenant: noms.get(l.id)?.join(', ') ?? null,
       modifiee: badgeModifie(l.modifieeLe, new Date(maintenant), dureeBadge),
+      localisation: controles.get(l.id) ?? false,
     }));
   }
 

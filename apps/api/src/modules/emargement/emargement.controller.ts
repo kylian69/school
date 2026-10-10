@@ -49,7 +49,7 @@ export class ScanController {
     response: ResultatScan,
   })
   scanner(@Body() corps: ScanEmargement, @Req() request: ScolalyRequest) {
-    return this.scans.scanner(request.headers, corps);
+    return this.scans.scanner(request.headers, corps, request.ip);
   }
 
   @Post('code')
@@ -61,7 +61,7 @@ export class ScanController {
     response: ResultatScan,
   })
   saisirCode(@Body() corps: CodeEmargement, @Req() request: ScolalyRequest) {
-    return this.scans.saisirCode(request.headers, corps);
+    return this.scans.saisirCode(request.headers, corps, request.ip);
   }
 }
 

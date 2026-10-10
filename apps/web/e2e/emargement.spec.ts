@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { expectNoAccessibilityViolations } from './accessibilite';
 import { seConnecter } from './session';
 
@@ -64,6 +64,80 @@ test.describe('Module 06 Émargement', () => {
       'en attente',
     );
     await expectNoAccessibilityViolations(page);
+  });
+
+  // Projet « mobile-360 » : parcours vérifié aussi sur un téléphone de 360 px.
+  test.describe('RG-06-09 contrôle de localisation à l’émargement', () => {
+    /** Appel propre au test : la fausse API garde un état par appel (projets en parallèle). */
+    const appelPropre = async (page: Page, context: BrowserContext) => {
+      await context.addCookies([
+        {
+          name: 'e2e-appel',
+          value: `l${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`,
+          url: new URL(page.url()).origin,
+        },
+      ]);
+    };
+
+    const emargerParCode = async (page: Page) => {
+      await page.goto('/emarger');
+      // RGPD-03 : l'apprenant est informé avant toute demande d'autorisation.
+      const info = page.getByRole('region', { name: 'Contrôle de présence sur place' });
+      await expect(info).toContainText('Votre position n’est ni conservée ni partagée');
+      await expect(info).toContainText('Vous pouvez refuser');
+      await expectNoAccessibilityViolations(page);
+      await page.getByLabel('Code à 6 chiffres').fill('123456');
+      await page.getByRole('button', { name: 'Valider le code' }).click();
+      await expect(page.getByText('Présence enregistrée')).toBeVisible();
+    };
+
+    test('RG-06-10 position sur le campus : présence enregistrée sans vérification', async ({
+      page,
+      context,
+    }) => {
+      await appelPropre(page, context);
+      await context.grantPermissions(['geolocation']);
+      await context.setGeolocation({ latitude: 45.7504, longitude: 4.8502, accuracy: 20 });
+      const corps = page.waitForRequest('**/api/emargement/code');
+      await emargerParCode(page);
+      // Position arrondie (minimisation), précision augmentée de l'écart d'arrondi.
+      expect((await corps).postDataJSON()).toMatchObject({
+        position: { latitude: 45.7504, longitude: 4.8502, precisionMetres: 28 },
+      });
+      await expect(page.getByText(/l’intervenant la vérifiera/)).toHaveCount(0);
+      await expectNoAccessibilityViolations(page);
+    });
+
+    test('RG-06-11 position hors du campus : enregistrée « à vérifier », signalée à l’intervenant', async ({
+      page,
+      context,
+    }) => {
+      await appelPropre(page, context);
+      await context.grantPermissions(['geolocation']);
+      await context.setGeolocation({ latitude: 45.79, longitude: 4.85, accuracy: 15 });
+      await emargerParCode(page);
+      await expect(page.getByText(/semble hors du campus/)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+
+      await page.goto('/seances');
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await expect(page.getByRole('listitem').filter({ hasText: 'Léa Martin' })).toContainText(
+        'hors site, à vérifier',
+      );
+      await expectNoAccessibilityViolations(page);
+    });
+
+    test('RGPD-03 un refus d’autorisation ne bloque pas l’émargement', async ({
+      page,
+      context,
+    }) => {
+      await appelPropre(page, context);
+      await context.clearPermissions();
+      const corps = page.waitForRequest('**/api/emargement/code');
+      await emargerParCode(page);
+      expect((await corps).postDataJSON()).not.toHaveProperty('position');
+      await expect(page.getByText(/n’a pas pu être confirmée/)).toBeVisible();
+    });
   });
 
   test('US-06-02 l’apprenant émarge avec le code à 6 chiffres', async ({ page }) => {

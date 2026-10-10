@@ -11,7 +11,7 @@ import type { Queue } from 'bullmq';
 import { Worker, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
-import { purgerIndisponibilitesPassees } from './conservation.js';
+import { effacerLocalisationsPassees, purgerIndisponibilitesPassees } from './conservation.js';
 import { prechargerSeances } from './emargement.js';
 import type { Mailer } from './mailer.js';
 import { enregistrerChangementEdt, envoyerNotificationsEdt } from './notifications-edt.js';
@@ -134,6 +134,9 @@ export function startWorkers(options: {
       } else if (job.name === MAINTENANCE_JOBS.conservationIndisponibilites) {
         const bilan = await purgerIndisponibilitesPassees(db);
         logger.info({ bilan }, 'Indisponibilités passées purgées');
+        // Même passage nocturne : résultats de localisation échus (RGPD-03), comptes seulement.
+        const effaces = await effacerLocalisationsPassees(db);
+        if (effaces > 0) logger.info({ effaces }, 'Résultats de localisation effacés');
       } else if (job.name === MAINTENANCE_JOBS.rechiffrement) {
         // Comptes seulement : ni valeur ni clé dans les journaux.
         const bilan = await rechiffrerValeurs(db, options.chiffrement);
