@@ -218,7 +218,29 @@ const plageDisponibilites = {
   joursOuvres: [1, 2, 3, 4, 5],
 };
 const SEANCE_ID = '0192f0a4-1b2c-7d3e-8f40-0000000000aa';
-let emargementLea = null;
+// Émargements de Léa, par appel de test (cookie e2e-appel) : deux projets Playwright tournent en parallèle.
+const emargementsLea = new Map();
+const cleAppel = (request) =>
+  (request.headers.cookie ?? '').match(/e2e-appel=(\w+)/)?.[1] ?? 'commun';
+const appelFictif = (request) => {
+  const liste = [
+    {
+      personneId: '0192f0a4-1b2c-7d3e-8f40-000000000001',
+      nom: 'Martin',
+      prenom: 'Léa',
+      scanneLe: emargementsLea.get(cleAppel(request)) ?? null,
+      rejoue: false,
+    },
+    {
+      personneId: '0192f0a4-1b2c-7d3e-8f40-000000000002',
+      nom: 'Petit',
+      prenom: 'Noé',
+      scanneLe: null,
+      rejoue: false,
+    },
+  ];
+  return { presents: liste.filter((l) => l.scanneLe).length, attendus: 2, liste };
+};
 const seanceFictive = () => {
   const debut = new Date(Date.now() - 60_000);
   return {
@@ -2200,24 +2222,25 @@ createServer(async (request, response) => {
       maintenant: new Date().toISOString(),
     });
   }
-  if (path === `/api/seances/${SEANCE_ID}/appel`) {
-    const liste = [
-      {
-        personneId: '0192f0a4-1b2c-7d3e-8f40-000000000001',
-        nom: 'Martin',
-        prenom: 'Léa',
-        scanneLe: emargementLea,
-        rejoue: false,
-      },
-      {
-        personneId: '0192f0a4-1b2c-7d3e-8f40-000000000002',
-        nom: 'Petit',
-        prenom: 'Noé',
-        scanneLe: null,
-        rejoue: false,
-      },
-    ];
-    return json(200, { presents: liste.filter((l) => l.scanneLe).length, attendus: 2, liste });
+  if (path === `/api/seances/${SEANCE_ID}/appel`) return json(200, appelFictif(request));
+  // Liste en direct (US-06-03) : flux SSE, un événement à chaque changement.
+  if (path === `/api/seances/${SEANCE_ID}/appel/direct`) {
+    response.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+    });
+    let envoye = '';
+    const tic = () => {
+      const donnees = JSON.stringify(appelFictif(request));
+      if (donnees !== envoye) {
+        envoye = donnees;
+        response.write(`data: ${donnees}\n\n`);
+      }
+    };
+    tic();
+    const minuterie = setInterval(tic, 200);
+    response.on('close', () => clearInterval(minuterie));
+    return;
   }
   if (path === '/api/emargement/code' && request.method === 'POST') {
     const { code } = await readBody(request);
@@ -2226,11 +2249,12 @@ createServer(async (request, response) => {
         message: 'Ce code n’est pas le bon : saisissez celui affiché maintenant.',
       });
     }
-    emargementLea ??= new Date().toISOString();
+    const cle = cleAppel(request);
+    if (!emargementsLea.has(cle)) emargementsLea.set(cle, new Date().toISOString());
     return json(200, {
       statut: 'present',
       seance: seanceFictive().libelle,
-      scanneLe: emargementLea,
+      scanneLe: emargementsLea.get(cle),
       retardMinutes: 0,
       rejoue: false,
     });

@@ -5362,6 +5362,31 @@
         }
       }
     },
+    "/api/seances/{id}/appel/direct": {
+      "get": {
+        "operationId": "AppelController.flux",
+        "summary": "Présents et attendus en direct, en flux SSE (text/event-stream) : un événement AppelEnDirect à chaque changement",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/seances/{id}/appel/ouverture": {
       "post": {
         "operationId": "AppelController.ouvrir",

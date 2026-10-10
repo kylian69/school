@@ -1,32 +1,34 @@
 import 'reflect-metadata';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { CLES_EMARGEMENT, commandesPrechargement, commandesSessions } from '@scolaly/contracts';
+import { CLES_EMARGEMENT, OuvertureAppel, ROLES_PAR_DEFAUT } from '@scolaly/contracts';
 import {
+  attribution,
   authAccount,
-  cleMaitresseCourante,
   authUser,
   createDatabase,
+  initialiserRolesParDefaut,
+  inscrireManquants,
   newId,
   organisation,
   personne,
-  inscrireManquants,
   promotionTechnique,
+  role,
   seance,
+  seanceIntervenant,
   seancePublic,
-  sessionsDesComptes,
 } from '@scolaly/db';
-import { eq, like } from 'drizzle-orm';
+import { and, eq, like } from 'drizzle-orm';
 import { createAuth } from '../auth/auth.js';
 import { hashPassword } from '../auth/password.js';
 import { loadEnv } from '../config/env.js';
-import { cleDeSeance } from '../modules/emargement/cache-emargement.js';
 import { createValkey } from '../shared/valkey.js';
 
 /**
- * Préparation de la preuve de charge (I2.2) : une école fictive, N apprenants avec un compte et une
- * session ouverte, une séance qui les attend tous, préchargée dans Valkey. Écrit le fichier lu par
- * le scénario k6 (CHARGE_FICHIER). Les sessions sont gardées d'un tir à l'autre (30 jours).
+ * Préparation de la preuve de charge (I2.2, I4.3) : une école fictive, N apprenants avec un compte
+ * et une session ouverte, une séance publiée qui les attend tous et que son intervenant ouvre par
+ * l'API (CHARGE_API_URL), comme depuis son écran. Écrit le fichier lu par le scénario k6
+ * (CHARGE_FICHIER). Les sessions des apprenants sont gardées d'un tir à l'autre (30 jours).
  */
 const env = loadEnv();
 if (env.NODE_ENV === 'production') {
@@ -39,6 +41,8 @@ const fichier = process.env.CHARGE_FICHIER ?? '../../infra/charge/.donnees/donne
 const motDePasse = 'phrase de passe de la charge, fictive';
 const DOMAINE = 'charge.scolaly.test';
 const email = (i: number) => `apprenant-${String(i).padStart(5, '0')}@${DOMAINE}`;
+const EMAIL_INTERVENANT = `intervenant@${DOMAINE}`;
+const apiUrl = process.env.CHARGE_API_URL ?? 'http://localhost:3001';
 
 const owner = createDatabase(migratorUrl, { max: 4 });
 const app = createDatabase(env.DATABASE_URL, { max: 8 });
@@ -98,36 +102,74 @@ try {
     .where(eq(personne.organisationId, organisationId));
   const parEmail = new Map(fiches.map((f) => [f.email, f]));
 
+  // L'intervenant de l'école de charge (rôle intervenant, périmètre « soi »), créé une fois.
+  await initialiserRolesParDefaut(db, organisationId, ROLES_PAR_DEFAUT);
+  let intervenantId = parEmail.get(EMAIL_INTERVENANT)?.id;
+  if (!intervenantId) {
+    const userId = newId();
+    await db
+      .insert(authUser)
+      .values({ id: userId, email: EMAIL_INTERVENANT, name: 'Intervenant', emailVerified: true });
+    await db
+      .insert(authAccount)
+      .values({ userId, accountId: userId, providerId: 'credential', password: hache });
+    const [fiche] = await db
+      .insert(personne)
+      .values({
+        organisationId,
+        nom: 'Charge',
+        prenom: 'Intervenant',
+        email: EMAIL_INTERVENANT,
+        userId,
+        compteEtat: 'actif',
+      })
+      .returning({ id: personne.id });
+    const [roleIntervenant] = await db
+      .select({ id: role.id })
+      .from(role)
+      .where(and(eq(role.organisationId, organisationId), eq(role.code, 'intervenant')));
+    if (!fiche || !roleIntervenant) throw new Error('Intervenant de charge non créé.');
+    await db.insert(attribution).values({
+      organisationId,
+      personneId: fiche.id,
+      roleId: roleIntervenant.id,
+      perimetreType: 'soi',
+      debut: '2026-01-01',
+    });
+    intervenantId = fiche.id;
+  }
+
   // Sessions : ouvertes par Better Auth lui-même (cookie signé), gardées d'un tir à l'autre.
   const precedent = existsSync(fichier)
     ? (JSON.parse(readFileSync(fichier, 'utf8')) as { cookies?: string[] })
     : {};
+  const auth = createAuth(env, app.db, valkey);
+  await valkey.connect().catch(() => undefined);
+  const connexion = async (adresse: string) => {
+    const reponse = await auth.api.signInEmail({
+      body: { email: adresse, password: motDePasse },
+      asResponse: true,
+    });
+    const cookie = reponse.headers.get('set-cookie')?.split(';')[0];
+    if (!reponse.ok || !cookie) throw new Error(`Connexion refusée : ${adresse}`);
+    return cookie;
+  };
   let cookies = precedent.cookies ?? [];
   if (cookies.length < nombre) {
-    const auth = createAuth(env, app.db, valkey);
-    await valkey.connect().catch(() => undefined);
     cookies = [];
     for (let debut = 0; debut < nombre; debut += 16) {
       const lot = await Promise.all(
-        Array.from({ length: Math.min(16, nombre - debut) }, async (_, k) => {
-          const reponse = await auth.api.signInEmail({
-            body: { email: email(debut + k), password: motDePasse },
-            asResponse: true,
-          });
-          const cookie = reponse.headers.get('set-cookie')?.split(';')[0];
-          if (!reponse.ok || !cookie) throw new Error(`Connexion refusée : ${email(debut + k)}`);
-          return cookie;
-        }),
+        Array.from({ length: Math.min(16, nombre - debut) }, (_, k) => connexion(email(debut + k))),
       );
       cookies.push(...lot);
       if (debut % 1000 === 0)
         console.warn(`Sessions ouvertes : ${String(cookies.length)}/${String(nombre)}`);
     }
-  } else {
-    await valkey.connect().catch(() => undefined);
   }
+  const cookieIntervenant = await connexion(EMAIL_INTERVENANT);
 
-  // Une séance neuve à chaque tir : en cours depuis une minute, tous les apprenants attendus.
+  // Une séance neuve à chaque tir : en cours depuis une minute, tous les apprenants attendus,
+  // animée par l'intervenant de l'école de charge (RG-04-01), qui en ouvre l'appel par l'API.
   const seanceId = newId();
   const debutSeance = new Date(Date.now() - 60_000);
   const finSeance = new Date(debutSeance.getTime() + 3 * 3600_000);
@@ -138,6 +180,9 @@ try {
     debut: debutSeance,
     fin: finSeance,
   });
+  await db
+    .insert(seanceIntervenant)
+    .values({ organisationId, seanceId, personneId: intervenantId });
   // Les apprenants sont inscrits (une fois) à une promotion technique, public de la séance.
   const attendus = Array.from({ length: nombre }, (_, i) => parEmail.get(email(i))).flatMap((f) =>
     f ? [f] : [],
@@ -154,37 +199,27 @@ try {
     attendus.map((f) => f.id),
   );
   await db.insert(seancePublic).values({ organisationId, seanceId, promotionId });
-  await valkey
-    .pipeline(
-      commandesPrechargement(
-        seanceId,
-        {
-          organisationId,
-          libelle: 'Séance de la preuve de charge',
-          debut: debutSeance.getTime(),
-          fin: finSeance.getTime(),
-          distanciel: false,
-        },
-        new Map(attendus.flatMap((f) => (f.userId ? [[f.userId, f.id] as const] : []))),
-      ),
-    )
-    .exec();
   await valkey.del(CLES_EMARGEMENT.presences(seanceId));
-  // Sessions remises en cache, comme à l'ouverture de l'appel (RG-00-17).
-  const comptes = attendus.flatMap((f) => (f.userId ? [f.userId] : []));
-  const sessions = await sessionsDesComptes(app.db, comptes);
-  for (let debut = 0; debut < sessions.length; debut += 5000) {
-    await valkey.pipeline(commandesSessions(sessions.slice(debut, debut + 5000))).exec();
-  }
+
+  // Ouverture de l'appel comme à l'écran de l'intervenant : préchargement et sessions en cache
+  // (RG-00-17), clé de la séance renvoyée pour calculer le QR.
+  const reponse = await fetch(`${apiUrl}/api/seances/${seanceId}/appel/ouverture`, {
+    method: 'POST',
+    headers: { cookie: cookieIntervenant, origin: env.WEB_ORIGIN },
+  });
+  if (!reponse.ok)
+    throw new Error(
+      `Ouverture de l'appel refusée : ${String(reponse.status)} ${await reponse.text()}`,
+    );
+  const ouverture = OuvertureAppel.parse(await reponse.json());
 
   mkdirSync(dirname(fichier), { recursive: true });
   writeFileSync(
     fichier,
     JSON.stringify({
       seanceId,
-      cle: Buffer.from(
-        cleDeSeance(cleMaitresseCourante(env.chiffrement), organisationId, seanceId),
-      ).toString('base64'),
+      cle: Buffer.from(ouverture.cle, 'base64url').toString('base64'),
+      intervenant: cookieIntervenant,
       cookies,
     }),
   );

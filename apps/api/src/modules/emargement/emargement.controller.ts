@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Post,
   Req,
+  Res,
 } from '@nestjs/common';
 import {
   AppelEnDirect,
@@ -19,6 +20,7 @@ import {
   SeanceProche,
 } from '@scolaly/contracts';
 import { withOrganisation, type Database } from '@scolaly/db';
+import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ACCESS_RESOLVER, type AccessResolver } from '../../access/access-resolver.js';
 import { Authenticated, Public, RequirePermission } from '../../access/access.decorators.js';
@@ -84,6 +86,23 @@ export class AppelController {
   @ApiContract({ summary: 'Présents et attendus en direct', response: AppelEnDirect })
   enDirect(@Param('id', ParseUUIDPipe) id: string) {
     return this.appels.enDirect(RequestContext.tx(), RequestContext.access(), id);
+  }
+
+  @Get('direct')
+  @RequirePermission('emargement:animer')
+  @ApiContract({
+    summary:
+      'Présents et attendus en direct, en flux SSE (text/event-stream) : un événement AppelEnDirect à chaque changement',
+    response: z.string(),
+  })
+  async flux(@Param('id', ParseUUIDPipe) id: string, @Res() reply: FastifyReply) {
+    const etat = await this.appels.preparerDirect(RequestContext.tx(), RequestContext.access(), id);
+    // Le flux part une fois la transaction validée : il ne garde aucune connexion à la base.
+    RequestContext.apresValidation(() => {
+      reply.hijack();
+      this.appels.diffuser(reply.raw, etat);
+      return Promise.resolve();
+    });
   }
 }
 

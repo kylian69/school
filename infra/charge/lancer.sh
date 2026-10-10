@@ -1,5 +1,6 @@
 #!/bin/sh
-# Preuve de charge de l'émargement (I2.2) : préparation, tir k6, vérification 0 perte / 0 doublon.
+# Preuve de charge de l'émargement (I2.2, I4.3) : préparation (l'intervenant ouvre l'appel par
+# l'API), tir k6, vérification 0 perte / 0 doublon et liste en direct complète.
 #
 #   APPRENANTS=5000 sh infra/charge/lancer.sh
 #   APPRENANTS=50000 API_URLS=http://host.docker.internal:3001,http://host.docker.internal:3002 \
@@ -7,6 +8,7 @@
 #
 # Prérequis : services de développement (pnpm dev:up), API et worker construits et lancés
 # (LOG_LEVEL=warn conseillé : un journal par requête fausserait la mesure), Docker pour k6.
+# CHARGE_API_URL : API vue de la machine hôte (défaut http://localhost:3001).
 # SEUIL_P99=0 désactive le seuil de latence (scénario réduit de la CI, ADR 0001).
 set -eu
 cd "$(dirname "$0")/../.."

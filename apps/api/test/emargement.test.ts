@@ -27,10 +27,12 @@ import {
   seancePublic,
   type Database,
 } from '@scolaly/db';
+import { instantLocal, jourLocal } from '@scolaly/domain';
 import { and, eq } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
+import { AppelService } from '../src/modules/emargement/appel.service.js';
 import { AUTH, DATABASE, VALKEY } from '../src/shared/tokens.js';
 import { signInCookie, startApp, WEB_ORIGIN } from './helpers.js';
 
@@ -47,6 +49,8 @@ const ecole = newId();
 const seanceId = newId();
 const autreSeanceId = newId();
 const seanceDegradeeId = newId();
+const seanceDirecteId = newId();
+const seanceHierId = newId();
 let intervenant: string;
 let igorId: string;
 let autreIntervenant: string;
@@ -116,7 +120,7 @@ beforeAll(async () => {
   const noeId = await compte('noe.apprenant@exemple.test', 'apprenant');
   await compte('hugo.apprenant@exemple.test', 'apprenant');
   const debut = new Date(Date.now() - 60_000);
-  for (const id of [seanceId, autreSeanceId, seanceDegradeeId]) {
+  for (const id of [seanceId, autreSeanceId, seanceDegradeeId, seanceDirecteId]) {
     await owner.db.insert(seance).values({
       id,
       organisationId: ecole,
@@ -136,7 +140,20 @@ beforeAll(async () => {
   await owner.db.insert(seancePublic).values([
     { organisationId: ecole, seanceId, promotionId: lesDeux },
     { organisationId: ecole, seanceId: seanceDegradeeId, promotionId: leaSeule },
+    { organisationId: ecole, seanceId: seanceDirecteId, promotionId: lesDeux },
   ]);
+  // US-06-01 : une séance de la veille au soir (fuseau par défaut, l'école n'a pas de campus).
+  const minuit = instantLocal(jourLocal(new Date(), 'Europe/Paris'), '00:00', 'Europe/Paris');
+  await owner.db.insert(seance).values({
+    id: seanceHierId,
+    organisationId: ecole,
+    libelle: 'Séance de la veille',
+    debut: new Date(minuit.getTime() - 30 * 60_000),
+    fin: new Date(minuit.getTime() - 10 * 60_000),
+  });
+  await owner.db
+    .insert(seanceIntervenant)
+    .values({ organisationId: ecole, seanceId: seanceHierId, personneId: intervenantId });
   intervenant = await connexion('ines.intervenante@exemple.test');
   autreIntervenant = await connexion('igor.intervenant@exemple.test');
   lea = await connexion('lea.apprenante@exemple.test');
@@ -317,14 +334,16 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
   it('liste les séances à animer de l’intervenant et celles à émarger de l’apprenant', async () => {
     const aAnimer = (await appeler('GET', '/api/seances', intervenant)).json<SeanceProche[]>();
     expect(aAnimer.map((s) => s.id).sort()).toEqual(
-      [seanceId, autreSeanceId, seanceDegradeeId].sort(),
+      [seanceId, autreSeanceId, seanceDegradeeId, seanceDirecteId].sort(),
     );
     expect(aAnimer[0]?.intervenant).toBe('ines Fictif');
     expect((await appeler('GET', '/api/seances', autreIntervenant)).json<SeanceProche[]>()).toEqual(
       [],
     );
     const aEmarger = (await appeler('GET', '/api/moi/seances', lea)).json<SeanceProche[]>();
-    expect(aEmarger.map((s) => s.id).sort()).toEqual([seanceId, seanceDegradeeId].sort());
+    expect(aEmarger.map((s) => s.id).sort()).toEqual(
+      [seanceId, seanceDegradeeId, seanceDirecteId].sort(),
+    );
     expect((await appeler('GET', '/api/moi/seances', horsListe)).json<SeanceProche[]>()).toEqual(
       [],
     );
@@ -341,6 +360,99 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
     expect((await ouvrir(autreSeanceId, autreIntervenant)).statut).toBe(200);
     expect((await ouvrir(autreSeanceId, intervenant)).statut).toBe(200);
     expect((await ouvrir(seanceId, autreIntervenant)).statut).toBe(403);
+  });
+});
+
+/** Lit un flux SSE de l'API (serveur à l'écoute), événement par événement. */
+async function suivre(id: string, cookie: string) {
+  const adresse = await app.getUrl();
+  const controleur = new AbortController();
+  const reponse = await fetch(`${adresse}/api/seances/${id}/appel/direct`, {
+    headers: { cookie },
+    signal: controleur.signal,
+  });
+  const lecteur = (reponse.body as ReadableStream<Uint8Array>)
+    .pipeThrough(new TextDecoderStream())
+    .getReader();
+  let tampon = '';
+  const suivant = async (): Promise<AppelEnDirect> => {
+    for (;;) {
+      const fin = tampon.indexOf('\n\n');
+      if (fin >= 0) {
+        const bloc = tampon.slice(0, fin);
+        tampon = tampon.slice(fin + 2);
+        const donnees = bloc.split('\n').find((l) => l.startsWith('data: '));
+        if (donnees) return JSON.parse(donnees.slice(6)) as AppelEnDirect;
+        continue;
+      }
+      const { value, done } = await lecteur.read();
+      if (done) throw new Error('Flux refermé.');
+      tampon += value;
+    }
+  };
+  return {
+    reponse,
+    suivant,
+    fermer: () => {
+      controleur.abort();
+    },
+  };
+}
+
+describe('US-06-03 liste en direct (flux SSE)', () => {
+  beforeAll(async () => {
+    await app.listen(0, '127.0.0.1');
+  });
+
+  it('RG-06-05 la liste se met à jour au scan, sans requête SQL une fois le flux ouvert', async () => {
+    const { ouverture } = await ouvrir(seanceDirecteId);
+    const flux = await suivre(seanceDirecteId, intervenant);
+    try {
+      expect(flux.reponse.status).toBe(200);
+      expect(flux.reponse.headers.get('content-type')).toContain('text/event-stream');
+      expect(flux.reponse.headers.get('cache-control')).toContain('no-transform');
+      const initial = await flux.suivant();
+      expect(initial).toMatchObject({ presents: 0, attendus: 2 });
+
+      const pool = (app.get<Database>(DATABASE) as unknown as { $client: Pool }).$client;
+      let requetes = 0;
+      const query = pool.query.bind(pool);
+      const connect = pool.connect.bind(pool);
+      pool.query = (...args: unknown[]) => {
+        requetes++;
+        return query(...args);
+      };
+      pool.connect = (...args: unknown[]) => {
+        requetes++;
+        return connect(...args);
+      };
+      let apres: AppelEnDirect;
+      try {
+        const jeton = await jetonDe(ouverture);
+        const scan = await appeler('POST', '/api/emargement/scan', noe, { jeton });
+        expect(scan.json<ResultatScan>()).toMatchObject({ statut: 'present' });
+        apres = await flux.suivant();
+      } finally {
+        pool.query = query;
+        pool.connect = connect;
+      }
+      expect(requetes).toBe(0);
+      expect(apres.presents).toBe(1);
+      expect(apres.liste.find((l) => l.prenom === 'noe')?.scanneLe).not.toBeNull();
+      expect(apres.liste.find((l) => l.prenom === 'lea')?.scanneLe).toBeNull();
+    } finally {
+      flux.fermer();
+    }
+    // La connexion coupée par le navigateur referme le flux côté API.
+    const service = app.get<{ flux: Set<unknown> }>(AppelService);
+    await expect.poll(() => service.flux.size).toBe(0);
+  });
+
+  it('refuse le flux à un intervenant d’une autre séance et à un apprenant', async () => {
+    for (const cookie of [autreIntervenant, lea]) {
+      const reponse = await appeler('GET', `/api/seances/${seanceDirecteId}/appel/direct`, cookie);
+      expect(reponse.statusCode).toBe(403);
+    }
   });
 });
 

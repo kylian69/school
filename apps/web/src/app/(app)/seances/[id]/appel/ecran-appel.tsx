@@ -72,20 +72,20 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
     };
   }, [ouverture]);
 
-  // Appel en direct (RG-06-03).
+  // Appel en direct (US-06-03) : flux SSE, reconnecté par le navigateur s'il est coupé.
   useEffect(() => {
     if (!ouverture) return;
-    let annule = false;
-    const lire = async () => {
-      const reponse = await fetch(`/api/seances/${seanceId}/appel`).catch(() => null);
-      const lu = AppelEnDirect.safeParse(await reponse?.json().catch(() => null));
-      if (!annule && lu.success) setAppel(lu.data);
+    const flux = new EventSource(`/api/seances/${seanceId}/appel/direct`);
+    flux.onmessage = (evenement: MessageEvent<string>) => {
+      try {
+        const lu = AppelEnDirect.safeParse(JSON.parse(evenement.data));
+        if (lu.success) setAppel(lu.data);
+      } catch {
+        // Événement illisible : le suivant remettra la liste à jour.
+      }
     };
-    void lire();
-    const minuterie = setInterval(() => void lire(), 2000);
     return () => {
-      annule = true;
-      clearInterval(minuterie);
+      flux.close();
     };
   }, [ouverture, seanceId]);
 
