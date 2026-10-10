@@ -12,12 +12,13 @@ import { formatHeure } from '@/lib/format';
 const t = fr.emargement;
 export const metadata: Metadata = { title: t.seances };
 
-/** US-06-01 · Séances de l'intervenant, d'où il ouvre l'appel. */
+/** US-06-01 · Séances du jour de l'intervenant, d'où il ouvre l'appel. */
 export default async function SeancesPage() {
   const permissions = (await getContexte())?.permissions ?? [];
   if (!permissions.includes('emargement:animer')) notFound();
   const { data } = await apiGet('/api/seances', z.array(SeanceProche));
   const seances = data ?? [];
+  const maintenant = new Date().getTime();
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -36,6 +37,11 @@ export default async function SeancesPage() {
                 <div className="flex flex-col gap-0.5">
                   <h2 className="flex items-center gap-2 text-base font-semibold">
                     {s.libelle}
+                    {Date.parse(s.fin) < maintenant ? (
+                      <Badge tone="neutral">{t.terminee}</Badge>
+                    ) : Date.parse(s.debut) <= maintenant ? (
+                      <Badge tone="ok">{t.enCours}</Badge>
+                    ) : null}
                     {s.modifiee ? (
                       <Badge tone="warn" title={t.modifieeAide}>
                         {t.modifiee}

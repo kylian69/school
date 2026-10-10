@@ -777,8 +777,11 @@ export const fr = {
   emargement: {
     seances: 'Mes séances',
     seancesAide:
-      'Séances en cours ou à venir dans les 12 heures. Ouvrez l’appel au début du cours : le QR s’affiche sur votre écran.',
-    aucuneSeance: 'Aucune séance en cours ou à venir dans les 12 prochaines heures.',
+      'Vos séances du jour. Ouvrez l’appel au début du cours : le QR s’affiche sur votre écran et la liste des présents se met à jour en direct.',
+    aucuneSeance:
+      'Aucune séance publiée aujourd’hui. Les séances annulées ou reportées n’apparaissent pas.',
+    enCours: 'En cours',
+    terminee: 'Terminée',
     ouvrirAppel: 'Ouvrir l’appel',
     distanciel: 'À distance',
     modifiee: 'Modifiée',

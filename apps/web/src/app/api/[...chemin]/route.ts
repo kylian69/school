@@ -27,6 +27,8 @@ async function relay(request: NextRequest): Promise<Response> {
     method: request.method,
     headers,
     redirect: 'manual',
+    // Navigateur parti : la requête vers l'API est abandonnée (flux en direct de l'appel).
+    signal: request.signal,
     ...(hasBody ? { body: await request.arrayBuffer() } : {}),
   });
   const responseHeaders = new Headers(upstream.headers);

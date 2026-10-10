@@ -13,7 +13,9 @@ test.describe('Module 06 Émargement', () => {
     await page.goto('/seances');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mes séances');
     // RG-04-14 : la séance modifiée depuis peu porte le badge.
-    await expect(page.getByRole('heading', { name: 'Droit des affaires Modifiée' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Droit des affaires En cours Modifiée' }),
+    ).toBeVisible();
     await expectNoAccessibilityViolations(page);
     await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
 
@@ -25,6 +27,42 @@ test.describe('Module 06 Émargement', () => {
     await expect(page.getByText(/Nouveau code dans \d+ s/)).toBeVisible();
     await expect(page.getByText(/\d \/ 2 présents/)).toBeVisible();
     await expect(page.getByText('Noé Petit')).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+  });
+
+  test('US-06-03 l’intervenant ouvre l’appel, l’apprenant émarge : la liste se met à jour en direct', async ({
+    page,
+    context,
+  }) => {
+    // Appel propre à ce test : la fausse API garde un état par appel (projets en parallèle).
+    await context.addCookies([
+      {
+        name: 'e2e-appel',
+        value: `t${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`,
+        url: new URL(page.url()).origin,
+      },
+    ]);
+    await page.goto('/seances');
+    await expect(page.getByText('Vos séances du jour.', { exact: false })).toBeVisible();
+    await expect(page.getByText('En cours')).toBeVisible();
+    await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+    await expect(page.getByText('0 / 2 présents')).toBeVisible();
+    const lea = page.getByRole('listitem').filter({ hasText: 'Léa Martin' });
+    await expect(lea).toContainText('en attente');
+
+    const apprenant = await context.newPage();
+    await apprenant.goto('/emarger');
+    await apprenant.getByLabel('Code à 6 chiffres').fill('123456');
+    await apprenant.getByRole('button', { name: 'Valider le code' }).click();
+    await expect(apprenant.getByText('Présence enregistrée')).toBeVisible();
+    await apprenant.close();
+
+    // Sans rechargement : le flux en direct pousse la présence à l'écran de l'intervenant.
+    await expect(page.getByText('1 / 2 présents')).toBeVisible();
+    await expect(lea).toContainText(/\d{2}:\d{2}/);
+    await expect(page.getByRole('listitem').filter({ hasText: 'Noé Petit' })).toContainText(
+      'en attente',
+    );
     await expectNoAccessibilityViolations(page);
   });
 

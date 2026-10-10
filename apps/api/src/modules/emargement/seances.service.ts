@@ -1,13 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { SeanceProche } from '@scolaly/contracts';
 import {
+  etablissement,
   personne,
+  salle,
   seance,
   seanceAttenduCalcule,
   seanceIntervenant,
+  seanceSerie,
   type Transaction,
 } from '@scolaly/db';
-import { badgeModifie } from '@scolaly/domain';
+import { badgeModifie, jourLocal } from '@scolaly/domain';
 import { and, asc, eq, gt, inArray, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
@@ -15,6 +18,7 @@ import { dureeBadgeModifie } from '../../shared/badge-modifie.js';
 import { ENV } from '../../shared/tokens.js';
 
 const HEURE = 3600_000;
+const FUSEAU_PAR_DEFAUT = 'Europe/Paris';
 
 /** RG-04-01 : séances dont la personne est l'un des intervenants. */
 function seancesDe(tx: Transaction, personneId: string) {
@@ -29,9 +33,9 @@ function seancesDe(tx: Transaction, personneId: string) {
 export class SeancesService {
   constructor(@Inject(ENV) private readonly env: Env) {}
 
-  async proches(tx: Transaction, filtre: SQL | undefined): Promise<SeanceProche[]> {
-    const maintenant = Date.now();
-    const lignes = await tx
+  /** Séances publiées de la fenêtre, avec l'établissement (salle, sinon série) qui fixe le fuseau. */
+  private async lister(tx: Transaction, fenetre: SQL | undefined, filtre: SQL | undefined) {
+    return tx
       .selectDistinct({
         id: seance.id,
         libelle: seance.libelle,
@@ -39,6 +43,8 @@ export class SeancesService {
         fin: seance.fin,
         distanciel: seance.distanciel,
         modifieeLe: seance.modifieeLe,
+        etablissementSalle: salle.etablissementId,
+        etablissementSerie: seanceSerie.etablissementId,
       })
       .from(seance)
       .leftJoin(
@@ -48,17 +54,34 @@ export class SeancesService {
           eq(seanceAttenduCalcule.seanceId, seance.id),
         ),
       )
+      .leftJoin(
+        salle,
+        and(eq(salle.organisationId, seance.organisationId), eq(salle.id, seance.salleId)),
+      )
+      .leftJoin(
+        seanceSerie,
+        and(
+          eq(seanceSerie.organisationId, seance.organisationId),
+          eq(seanceSerie.id, seance.serieId),
+        ),
+      )
       .where(
         and(
           isNull(seance.deletedAt),
           // RG-04-13 : les brouillons ne sont vus que de la pédagogie ; une séance annulée n'a pas d'appel.
           eq(seance.statut, 'publiee'),
-          gt(seance.fin, new Date(maintenant - HEURE)),
-          lt(seance.debut, new Date(maintenant + 12 * HEURE)),
+          fenetre,
           filtre,
         ),
       )
       .orderBy(asc(seance.debut));
+  }
+
+  private async presenter(
+    tx: Transaction,
+    lignes: Awaited<ReturnType<SeancesService['lister']>>,
+    maintenant: number,
+  ): Promise<SeanceProche[]> {
     const noms = await this.intervenants(
       tx,
       lignes.map((l) => l.id),
@@ -105,19 +128,49 @@ export class SeancesService {
     return noms;
   }
 
-  /** Pour l'intervenant : ses séances ; avec un périmètre « toute l'école » : toutes. */
-  aAnimer(tx: Transaction, access: Access) {
+  /**
+   * US-06-01 : séances du jour de l'intervenant (toutes celles de l'école avec un périmètre
+   * « toute l'école »), terminées comprises, le jour s'entendant dans le fuseau de l'établissement
+   * de la séance (salle, sinon série, sinon premier établissement de l'école).
+   */
+  async aAnimer(tx: Transaction, access: Access): Promise<SeanceProche[]> {
     const ecole = (access.perimetres.get('emargement:animer') ?? []).some(
       (p) => p.type === 'organisation',
     );
-    return this.proches(
+    const maintenant = Date.now();
+    // Un jour local contient l'instant présent : ses séances débutent à moins de 24 h de lui.
+    const lignes = await this.lister(
       tx,
+      and(
+        gt(seance.debut, new Date(maintenant - 24 * HEURE)),
+        lt(seance.debut, new Date(maintenant + 24 * HEURE)),
+      ),
       ecole ? undefined : inArray(seance.id, seancesDe(tx, access.personneId)),
     );
+    const campus = await tx
+      .select({ id: etablissement.id, fuseau: etablissement.fuseauHoraire })
+      .from(etablissement)
+      .orderBy(asc(etablissement.createdAt));
+    const fuseaux = new Map(campus.map((c) => [c.id, c.fuseau]));
+    const parDefaut = campus[0]?.fuseau ?? FUSEAU_PAR_DEFAUT;
+    const duJour = lignes.filter((l) => {
+      const fuseau = fuseaux.get(l.etablissementSalle ?? l.etablissementSerie ?? '') ?? parDefaut;
+      return jourLocal(l.debut, fuseau) === jourLocal(new Date(maintenant), fuseau);
+    });
+    return this.presenter(tx, duJour, maintenant);
   }
 
-  /** Pour l'apprenant : les séances où il est attendu. */
-  aEmarger(tx: Transaction, access: Access) {
-    return this.proches(tx, eq(seanceAttenduCalcule.personneId, access.personneId));
+  /** Pour l'apprenant : les séances où il est attendu, en cours ou dans les 12 heures. */
+  async aEmarger(tx: Transaction, access: Access): Promise<SeanceProche[]> {
+    const maintenant = Date.now();
+    const lignes = await this.lister(
+      tx,
+      and(
+        gt(seance.fin, new Date(maintenant - HEURE)),
+        lt(seance.debut, new Date(maintenant + 12 * HEURE)),
+      ),
+      eq(seanceAttenduCalcule.personneId, access.personneId),
+    );
+    return this.presenter(tx, lignes, maintenant);
   }
 }
