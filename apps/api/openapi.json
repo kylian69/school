@@ -3607,6 +3607,9 @@
                         },
                         "modifiee": {
                           "type": "boolean"
+                        },
+                        "localisation": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -3616,7 +3619,8 @@
                         "fin",
                         "distanciel",
                         "intervenant",
-                        "modifiee"
+                        "modifiee",
+                        "localisation"
                       ]
                     }
                   }
@@ -5317,6 +5321,9 @@
                         },
                         "modifiee": {
                           "type": "boolean"
+                        },
+                        "localisation": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -5326,7 +5333,8 @@
                         "fin",
                         "distanciel",
                         "intervenant",
-                        "modifiee"
+                        "modifiee",
+                        "localisation"
                       ]
                     }
                   }
@@ -6271,6 +6279,15 @@
                 },
                 "rejoue": {
                   "type": "boolean"
+                },
+                "localisation": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "sur-place",
+                    "hors-site",
+                    "inconnu"
+                  ]
                 }
               },
               "required": [
@@ -6278,7 +6295,8 @@
                 "nom",
                 "prenom",
                 "scanneLe",
-                "rejoue"
+                "rejoue",
+                "localisation"
               ],
               "additionalProperties": false
             }
@@ -7149,6 +7167,13 @@
           "code": {
             "type": "string",
             "pattern": "^\\d{6}$"
+          },
+          "position": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PositionScan"
+              }
+            ]
           }
         },
         "required": [
@@ -9028,6 +9053,9 @@
           "edt": {
             "$ref": "#/components/schemas/PlageEdt"
           },
+          "localisation": {
+            "$ref": "#/components/schemas/LocalisationEtablissement"
+          },
           "manquantes": {
             "type": "array",
             "items": {
@@ -9056,6 +9084,7 @@
           "email",
           "statut",
           "edt",
+          "localisation",
           "manquantes"
         ],
         "additionalProperties": false
@@ -10475,6 +10504,67 @@
         ],
         "additionalProperties": false
       },
+      "LocalisationEtablissement": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "latitude": {
+            "nullable": true,
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "nullable": true,
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "rayonMetres": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 5000
+          },
+          "plagesIp": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "cidrv4",
+                  "pattern": "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\/([0-9]|[1-2][0-9]|3[0-2])$"
+                },
+                {
+                  "type": "string",
+                  "format": "cidrv6",
+                  "pattern": "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))\\/(12[0-8]|1[01][0-9]|[1-9]?[0-9])$"
+                },
+                {
+                  "type": "string",
+                  "format": "ipv4",
+                  "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+                },
+                {
+                  "type": "string",
+                  "format": "ipv6",
+                  "pattern": "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$"
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "active",
+          "latitude",
+          "longitude",
+          "rayonMetres",
+          "plagesIp"
+        ],
+        "additionalProperties": false
+      },
       "MaFormation": {
         "type": "object",
         "properties": {
@@ -11334,6 +11424,13 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/PlageEdt"
+              }
+            ]
+          },
+          "localisation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocalisationEtablissement"
               }
             ]
           }
@@ -13581,6 +13678,32 @@
         ],
         "additionalProperties": false
       },
+      "PositionScan": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "precisionMetres": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "precisionMetres"
+        ],
+        "additionalProperties": false
+      },
       "PreparationAnneeSuivante": {
         "type": "object",
         "properties": {
@@ -15083,6 +15206,15 @@
           },
           "rejoue": {
             "type": "boolean"
+          },
+          "localisation": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "sur-place",
+              "hors-site",
+              "inconnu"
+            ]
           }
         },
         "required": [
@@ -15090,7 +15222,8 @@
           "seance",
           "scanneLe",
           "retardMinutes",
-          "rejoue"
+          "rejoue",
+          "localisation"
         ],
         "additionalProperties": false
       },
@@ -16830,6 +16963,13 @@
           },
           "horsLigne": {
             "type": "boolean"
+          },
+          "position": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PositionScan"
+              }
+            ]
           }
         },
         "required": [
@@ -17081,6 +17221,9 @@
           },
           "modifiee": {
             "type": "boolean"
+          },
+          "localisation": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -17090,7 +17233,8 @@
           "fin",
           "distanciel",
           "intervenant",
-          "modifiee"
+          "modifiee",
+          "localisation"
         ],
         "additionalProperties": false
       },

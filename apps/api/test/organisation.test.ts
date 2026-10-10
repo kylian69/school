@@ -179,6 +179,55 @@ describe('E-01-02 organisation et établissements', () => {
     }
   });
 
+  it('US-06-14 paramètre le périmètre de localisation, avant et après tracés', async () => {
+    expect(campus.localisation).toEqual({
+      active: true,
+      latitude: null,
+      longitude: null,
+      rayonMetres: 300,
+      plagesIp: [],
+    });
+    const localisation = {
+      active: true,
+      latitude: 45.7578,
+      longitude: 4.832,
+      rayonMetres: 250,
+      plagesIp: ['192.0.2.0/24', '2001:db8::/32', '192.0.2.0/24'],
+    };
+    const reponse = await requete('PATCH', `/api/etablissements/${campus.id}`, admin, {
+      localisation,
+    });
+    expect(reponse.statusCode).toBe(200);
+    expect(reponse.json<Etablissement>().localisation).toEqual({
+      ...localisation,
+      plagesIp: ['192.0.2.0/24', '2001:db8::/32'],
+    });
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, campus.id),
+          eq(auditEvenement.action, 'etablissement.modifier'),
+          sql`${auditEvenement.apres}->'localisation'->>'rayonMetres' = '250'`,
+        ),
+      );
+    expect(trace?.avant).toMatchObject({ localisation: { latitude: null, rayonMetres: 300 } });
+
+    for (const [refus, champ] of [
+      [{ ...localisation, longitude: null }, /^localisation\.longitude : /],
+      [{ ...localisation, rayonMetres: 10 }, /^localisation\.rayonMetres : /],
+      [{ ...localisation, plagesIp: ['campus'] }, /^localisation\.plagesIp\.0 : /],
+      [{ ...localisation, latitude: 91 }, /^localisation\.latitude : /],
+    ] as const) {
+      const reponseRefus = await requete('PATCH', `/api/etablissements/${campus.id}`, admin, {
+        localisation: refus,
+      });
+      expect(reponseRefus.statusCode).toBe(400);
+      expect(reponseRefus.json<{ details: string[] }>().details[0]).toMatch(champ);
+    }
+  });
+
   it('refuse un établissement sans adresse ou avec un fuseau inconnu', async () => {
     const sansAdresse = await requete('POST', '/api/etablissements', admin, {
       nom: 'Campus incomplet',

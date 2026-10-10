@@ -1,7 +1,9 @@
-import { and, eq, gt, inArray, isNull, sql, type AnyColumn } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, lte, sql, type AnyColumn } from 'drizzle-orm';
 import type { Database } from './client.js';
 import { withOrganisation, type Transaction } from './organisation-context.js';
-import { presence, seance, seanceAttenduCalcule } from './schema/emargement.js';
+import { presence, seance, seanceAttenduCalcule, seanceSerie } from './schema/emargement.js';
+import { salle } from './schema/scolarite.js';
+import { etablissement } from './schema/structure.js';
 import { authSession, authUser } from './schema/auth.js';
 import { personne } from './schema/personne.js';
 
@@ -13,6 +15,83 @@ export interface PresenceAEcrire {
   scanneLe: string;
   mode: 'qr' | 'code' | 'manuel';
   rejoue: boolean;
+  /** RG-06-10 : résultat du contrôle de localisation ; absent ou null sans contrôle. */
+  localisation?: 'sur-place' | 'hors-site' | 'inconnu' | null;
+}
+
+/**
+ * Établissement d'une séance pour le contrôle de localisation (RG-06-10) : celui de la salle, sinon
+ * celui de la série, sinon le seul établissement de l'école. Plusieurs établissements sans salle ni
+ * série : on ne devine pas, rien n'est contrôlé. Lu au préchargement, jamais pendant le scan.
+ */
+export async function etablissementDeSeance(
+  tx: Transaction,
+  s: { salleId: string | null; serieId: string | null },
+) {
+  const colonnes = {
+    localisationActive: etablissement.localisationActive,
+    localisationLatitude: etablissement.localisationLatitude,
+    localisationLongitude: etablissement.localisationLongitude,
+    localisationRayon: etablissement.localisationRayon,
+    localisationPlagesIp: etablissement.localisationPlagesIp,
+  };
+  if (s.salleId) {
+    const [trouve] = await tx
+      .select(colonnes)
+      .from(salle)
+      .innerJoin(
+        etablissement,
+        and(
+          eq(etablissement.organisationId, salle.organisationId),
+          eq(etablissement.id, salle.etablissementId),
+        ),
+      )
+      .where(eq(salle.id, s.salleId));
+    if (trouve) return trouve;
+  }
+  if (s.serieId) {
+    const [trouve] = await tx
+      .select(colonnes)
+      .from(seanceSerie)
+      .innerJoin(
+        etablissement,
+        and(
+          eq(etablissement.organisationId, seanceSerie.organisationId),
+          eq(etablissement.id, seanceSerie.etablissementId),
+        ),
+      )
+      .where(eq(seanceSerie.id, s.serieId));
+    if (trouve) return trouve;
+  }
+  const tous = await tx
+    .select(colonnes)
+    .from(etablissement)
+    .where(and(isNull(etablissement.deletedAt), eq(etablissement.statut, 'actif')))
+    .limit(2);
+  return tous.length === 1 ? (tous[0] ?? null) : null;
+}
+
+/**
+ * RGPD-03, conservation : efface le résultat du contrôle de localisation des présences scannées au
+ * plus tard à `limite` (packages/referentials, `presence-localisation`) ; la présence reste.
+ * Idempotent ; une transaction par école, sous RLS. Renvoie le nombre de résultats effacés.
+ */
+export async function effacerLocalisationsEchues(db: Database, limite: Date): Promise<number> {
+  const ecoles = await db.execute<{ organisation_id: string }>(
+    sql`select organisation_id from localisations_a_effacer(${limite.toISOString()}::timestamptz)`,
+  );
+  let effaces = 0;
+  for (const { organisation_id: organisationId } of ecoles.rows) {
+    effaces += await withOrganisation(db, organisationId, async (tx) => {
+      const lignes = await tx
+        .update(presence)
+        .set({ localisation: null })
+        .where(and(lte(presence.scanneLe, limite), isNotNull(presence.localisation)))
+        .returning({ id: presence.id });
+      return lignes.length;
+    });
+  }
+  return effaces;
 }
 
 /** Séances qui commencent dans l'intervalle, toutes écoles confondues (préchargement, RG-00-17). */
@@ -141,6 +220,7 @@ export async function enregistrerPresences(
             scanneLe: new Date(p.scanneLe),
             mode: p.mode,
             rejoue: p.rejoue,
+            localisation: p.localisation ?? null,
           })),
         )
         .onConflictDoNothing({
@@ -168,7 +248,11 @@ export async function organisationDeSeance(db: Database, seanceId: string): Prom
 export async function enregistrerPresenceDirecte(
   tx: Transaction,
   p: PresenceAEcrire,
-): Promise<{ scanneLe: Date; rejoue: boolean } | null> {
+): Promise<{
+  scanneLe: Date;
+  rejoue: boolean;
+  localisation: NonNullable<PresenceAEcrire['localisation']> | null;
+} | null> {
   const [ajoutee] = await tx
     .insert(presence)
     .values({
@@ -178,6 +262,7 @@ export async function enregistrerPresenceDirecte(
       scanneLe: new Date(p.scanneLe),
       mode: p.mode,
       rejoue: p.rejoue,
+      localisation: p.localisation ?? null,
     })
     .onConflictDoNothing({
       target: [presence.organisationId, presence.seanceId, presence.personneId],
@@ -185,7 +270,11 @@ export async function enregistrerPresenceDirecte(
     .returning({ id: presence.id });
   if (ajoutee) return null;
   const [existante] = await tx
-    .select({ scanneLe: presence.scanneLe, rejoue: presence.rejoue })
+    .select({
+      scanneLe: presence.scanneLe,
+      rejoue: presence.rejoue,
+      localisation: presence.localisation,
+    })
     .from(presence)
     .where(and(eq(presence.seanceId, p.seanceId), eq(presence.personneId, p.personneId)));
   return existante ?? null;

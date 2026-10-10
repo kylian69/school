@@ -37,6 +37,7 @@ import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
 import { ENV } from '../../shared/tokens.js';
 import { anneeDeReference } from '../../shared/matricule.js';
+import { colonnesLocalisation, localisationEtablissement } from '../../shared/localisation.js';
 import { colonnesPlageEdt, plageEdt } from '../../shared/plage-edt.js';
 
 type LigneEtablissement = typeof etablissement.$inferSelect;
@@ -324,6 +325,7 @@ export class OrganisationService {
       siret,
       nda,
       ...(saisie.edt ? colonnesPlageEdt(saisie.edt) : {}),
+      ...(saisie.localisation ? colonnesLocalisation(saisie.localisation) : {}),
     };
     return Object.fromEntries(Object.entries(champs).filter(([, v]) => v !== undefined));
   }
@@ -342,6 +344,7 @@ export class OrganisationService {
       telephone: e.telephone,
       email: e.email,
       edt: plageEdt(e),
+      localisation: localisationEtablissement(e),
     };
   }
 
@@ -361,6 +364,7 @@ export class OrganisationService {
       email: e.email,
       statut: e.statut,
       edt: plageEdt(e),
+      localisation: localisationEtablissement(e),
       manquantes: informationsManquantes(e),
     };
   }

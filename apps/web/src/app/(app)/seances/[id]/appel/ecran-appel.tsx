@@ -163,6 +163,13 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
                   {l.scanneLe
                     ? `${formatHeure(l.scanneLe)}${l.rejoue ? ` · ${t.rejoue}` : ''}`
                     : t.enAttente}
+                  {/* RG-06-11 : scan hors site ou de position inconnue, signalé avec sa raison. */}
+                  {l.scanneLe &&
+                  (l.localisation === 'hors-site' || l.localisation === 'inconnu') ? (
+                    <span className="font-medium text-warn">
+                      {` · ${t.localisationListe[l.localisation]}`}
+                    </span>
+                  ) : null}
                 </span>
               </li>
             ))}

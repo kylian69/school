@@ -110,6 +110,15 @@ export function OrganisationEditeur({
                         .join(' '),
                     )}
                   </dd>
+                  <dt className="text-muted">{t.localisation.titre}</dt>
+                  <dd>
+                    {!etablissement.localisation.active
+                      ? t.localisation.resumeInactif
+                      : etablissement.localisation.latitude === null &&
+                          etablissement.localisation.plagesIp.length === 0
+                        ? t.localisation.resumeSansPerimetre
+                        : t.localisation.resumeActif(etablissement.localisation.rayonMetres)}
+                  </dd>
                   {(['uai', 'siret', 'nda'] as const).map((champ) =>
                     etablissement[champ] ? (
                       <div key={champ} className="contents">
@@ -330,8 +339,27 @@ function EtablissementDialog({
     const formulaire = event.currentTarget;
     const saisie = valeurs(formulaire);
     const champs = Object.fromEntries(
-      Object.entries(saisie).filter(([cle]) => !cle.startsWith('edt.')),
+      Object.entries(saisie).filter(
+        ([cle]) => !cle.startsWith('edt.') && !cle.startsWith('localisation.'),
+      ),
     );
+    // RG-06-10 : le périmètre de localisation se règle aussi sur un établissement existant.
+    const nombre = (cle: string) => {
+      const valeur = saisie[cle]?.trim().replace(',', '.') ?? '';
+      return valeur === '' ? null : Number(valeur);
+    };
+    const localisation = existant
+      ? {
+          active: new FormData(formulaire).get('localisation.active') === 'on',
+          latitude: nombre('localisation.latitude'),
+          longitude: nombre('localisation.longitude'),
+          rayonMetres: nombre('localisation.rayonMetres') ?? 0,
+          plagesIp: (saisie['localisation.plagesIp'] ?? '')
+            .split(/[\s,;]+/)
+            .map((p) => p.trim())
+            .filter((p) => p !== ''),
+        }
+      : undefined;
     // RG-04-02 : la plage de l'emploi du temps se règle sur un établissement existant.
     const edt = existant
       ? {
@@ -344,7 +372,7 @@ function EtablissementDialog({
     const resultat = await envoyer(
       existant ? `/api/etablissements/${existant.id}` : '/api/etablissements',
       existant ? 'PATCH' : 'POST',
-      edt ? { ...champs, edt } : champs,
+      edt && localisation ? { ...champs, edt, localisation } : champs,
       t.erreur,
     );
     if (!resultat.ok) {
@@ -482,6 +510,7 @@ function EtablissementDialog({
             />
           </div>
           <PlageEdtChamps existant={existant} erreurs={erreurs} />
+          <LocalisationChamps existant={existant} erreurs={erreurs} />
           <p role="alert" aria-live="polite" className="min-h-5 text-sm text-bad">
             {erreurs.message}
           </p>
@@ -573,6 +602,90 @@ function PlageEdtChamps({
         </>
       ) : (
         <p className="text-xs text-muted">{t.edt.aideNouveau}</p>
+      )}
+    </fieldset>
+  );
+}
+
+/** US-06-14, RG-06-10 : périmètre de localisation à l'émargement (coordonnées, rayon, réseau). */
+function LocalisationChamps({
+  existant,
+  erreurs,
+}: {
+  existant: Etablissement | null;
+  erreurs: Erreurs;
+}) {
+  const tl = t.localisation;
+  const idPlages = useId();
+  const erreurPlages = erreurs.details
+    .find((d) => d.startsWith('localisation.plagesIp'))
+    ?.replace(/^[^:]+ : /, '');
+  return (
+    <fieldset className="flex flex-col gap-3 rounded-control border border-line p-4">
+      <legend className="px-1 text-sm font-semibold">{tl.titre}</legend>
+      {existant ? (
+        <>
+          <p className="text-xs text-muted">{tl.aide}</p>
+          <label className="flex min-h-11 items-center gap-2 text-sm md:min-h-0">
+            <input
+              type="checkbox"
+              name="localisation.active"
+              defaultChecked={existant.localisation.active}
+              className="size-4"
+            />
+            {tl.active}
+          </label>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Champ
+              nom="localisation.latitude"
+              label={tl.latitude}
+              erreurs={erreurs}
+              inputMode="decimal"
+              aide={tl.aideCoordonnees}
+              defaultValue={existant.localisation.latitude ?? ''}
+            />
+            <Champ
+              nom="localisation.longitude"
+              label={tl.longitude}
+              erreurs={erreurs}
+              inputMode="decimal"
+              defaultValue={existant.localisation.longitude ?? ''}
+            />
+            <Champ
+              nom="localisation.rayonMetres"
+              label={tl.rayon}
+              erreurs={erreurs}
+              type="number"
+              min={50}
+              max={5000}
+              step={10}
+              required
+              aide={tl.aideRayon}
+              defaultValue={existant.localisation.rayonMetres}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={idPlages}>{tl.plagesIp}</Label>
+            <textarea
+              id={idPlages}
+              name="localisation.plagesIp"
+              rows={3}
+              spellCheck={false}
+              aria-invalid={erreurPlages ? true : undefined}
+              aria-describedby={`${idPlages}-aide`}
+              defaultValue={existant.localisation.plagesIp.join('\n')}
+              className="rounded-control border border-line bg-surface px-3 py-2 font-mono text-sm"
+            />
+            <p
+              id={`${idPlages}-aide`}
+              className={erreurPlages ? 'text-sm text-bad' : 'text-xs text-muted'}
+            >
+              {erreurPlages ?? tl.aidePlagesIp}
+            </p>
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-muted">{tl.aideNouveau}</p>
       )}
     </fieldset>
   );

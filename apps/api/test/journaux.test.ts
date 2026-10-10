@@ -81,3 +81,25 @@ describe('Adresses secrètes dans les journaux', () => {
     expect(masquerJetonsUrl('/api/personnes?page=2')).toBe('/api/personnes?page=2');
   });
 });
+
+describe('Position de l’émargement dans les journaux (RGPD-03)', () => {
+  it('RGPD-03 la position envoyée au scan n’apparaît jamais, même en niveau trace', async () => {
+    const position = { latitude: 45.123456, longitude: 4.654321, precisionMetres: 17.5 };
+    for (const [url, payload] of [
+      ['/api/emargement/scan', { jeton: 'qr-invalide', position }],
+      ['/api/emargement/code', { seanceId: 'pas-un-uuid', code: '12', position }],
+      [
+        '/api/emargement/code',
+        {
+          seanceId: '01a12565-ed83-728c-88db-527f1d440b90',
+          code: '123456',
+          position: { ...position, latitude: 945.123456 },
+        },
+      ],
+    ] as const) {
+      const journaux = await journauxDe('POST', url, payload);
+      expect(journaux.length).toBeGreaterThan(0);
+      expect(journaux).not.toMatch(/45\.123|4\.654|945\.12|17\.5|latitude|longitude/);
+    }
+  });
+});

@@ -5,15 +5,44 @@ import { z } from 'zod';
  * ouverture de l'appel) et le worker (préchargement, écriture par lots).
  */
 
-/** Scan du QR par l'apprenant (RG-06-06). `horsLigne` : scan conservé puis renvoyé (RG-00-19). */
+/**
+ * RGPD-03 : position du téléphone au moment du scan, avec l'autorisation de l'apprenant. Comparée
+ * au périmètre de l'établissement à la réception puis jetée : jamais stockée ni journalisée.
+ */
+export const PositionScan = z
+  .object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    /** Rayon d'incertitude annoncé par le téléphone, en mètres. */
+    precisionMetres: z.number().min(0).max(1_000_000),
+  })
+  .meta({ id: 'PositionScan' });
+export type PositionScan = z.infer<typeof PositionScan>;
+
+/** RG-06-10 : seul résultat conservé du contrôle de localisation ; null : pas de contrôle. */
+export const ResultatLocalisation = z.enum(['sur-place', 'hors-site', 'inconnu']);
+export type ResultatLocalisation = z.infer<typeof ResultatLocalisation>;
+
+/**
+ * Scan du QR par l'apprenant (RG-06-06). `horsLigne` : scan conservé puis renvoyé (RG-00-19).
+ * `position` : facultative, absente si l'apprenant refuse ou si le téléphone n'en donne pas.
+ */
 export const ScanEmargement = z
-  .object({ jeton: z.string().max(200), horsLigne: z.boolean().optional() })
+  .object({
+    jeton: z.string().max(200),
+    horsLigne: z.boolean().optional(),
+    position: PositionScan.optional(),
+  })
   .meta({ id: 'ScanEmargement' });
 export type ScanEmargement = z.infer<typeof ScanEmargement>;
 
 /** Code à 6 chiffres saisi à la main (RG-06-05, RG-06-08). */
 export const CodeEmargement = z
-  .object({ seanceId: z.uuid(), code: z.string().regex(/^\d{6}$/, 'Saisissez les 6 chiffres.') })
+  .object({
+    seanceId: z.uuid(),
+    code: z.string().regex(/^\d{6}$/, 'Saisissez les 6 chiffres.'),
+    position: PositionScan.optional(),
+  })
   .meta({ id: 'CodeEmargement' });
 export type CodeEmargement = z.infer<typeof CodeEmargement>;
 
@@ -25,6 +54,8 @@ export const ResultatScan = z
     retardMinutes: z.int().min(0),
     /** RG-00-19 : accepté dans la fenêtre de grâce, à vérifier par l'intervenant. */
     rejoue: z.boolean(),
+    /** RG-06-09 : hors site ou inconnu, la présence est enregistrée « à vérifier ». */
+    localisation: ResultatLocalisation.nullable(),
   })
   .meta({ id: 'ResultatScan' });
 export type ResultatScan = z.infer<typeof ResultatScan>;
@@ -57,6 +88,8 @@ export const AppelEnDirect = z
         prenom: z.string(),
         scanneLe: z.iso.datetime().nullable(),
         rejoue: z.boolean(),
+        /** RG-06-11 : résultat du contrôle de localisation, null sans contrôle. */
+        localisation: ResultatLocalisation.nullable(),
       }),
     ),
   })
@@ -88,6 +121,19 @@ export interface PresenceEnCache {
   scanneLe: string;
   mode: 'qr' | 'code' | 'manuel';
   rejoue: boolean;
+  /** RG-06-10 : résultat du contrôle (absent : pas de contrôle, ou présence d'avant I4.3). */
+  localisation?: ResultatLocalisation | null;
+}
+
+/**
+ * RG-06-10 : périmètre de localisation de l'établissement de la séance, préchargé avec elle
+ * (architecture, section 5) : le scan le compare sans requête SQL.
+ */
+export interface PerimetreEnCache {
+  latitude: number | null;
+  longitude: number | null;
+  rayonMetres: number;
+  plagesIp: string[];
 }
 
 /** Séance telle que préchargée dans Valkey (RG-00-17). */
@@ -97,6 +143,8 @@ export interface SeanceEnCache {
   debut: number;
   fin: number;
   distanciel: boolean;
+  /** Null : pas de contrôle (désactivé, séance à distance ou périmètre non renseigné). */
+  localisation: PerimetreEnCache | null;
 }
 
 /** Les clés du cache vivent jusqu'à une heure après la fin de la séance (secondes Unix). */
@@ -143,6 +191,8 @@ export function commandesPrechargement(
       String(seance.fin),
       'distanciel',
       seance.distanciel ? '1' : '0',
+      'localisation',
+      seance.localisation ? JSON.stringify(seance.localisation) : '',
     ],
     ['expireat', CLES_EMARGEMENT.seance(seanceId), fin],
   );
@@ -175,6 +225,35 @@ export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCach
     debut: Number(valeurs.debut),
     fin: Number(valeurs.fin),
     distanciel: valeurs.distanciel === '1',
+    localisation: valeurs.localisation
+      ? (JSON.parse(valeurs.localisation) as PerimetreEnCache)
+      : null,
+  };
+}
+
+/**
+ * RG-06-08, RG-06-10 : périmètre à contrôler pour une séance ; null si le contrôle est désactivé,
+ * si la séance est à distance, ou si l'établissement n'a ni coordonnées ni plage d'adresses IP.
+ */
+export function perimetreAControler(
+  distanciel: boolean,
+  etablissement: {
+    localisationActive: boolean;
+    localisationLatitude: number | null;
+    localisationLongitude: number | null;
+    localisationRayon: number;
+    localisationPlagesIp: string[];
+  } | null,
+): PerimetreEnCache | null {
+  if (distanciel || !etablissement?.localisationActive) return null;
+  const coordonnees =
+    etablissement.localisationLatitude !== null && etablissement.localisationLongitude !== null;
+  if (!coordonnees && etablissement.localisationPlagesIp.length === 0) return null;
+  return {
+    latitude: coordonnees ? etablissement.localisationLatitude : null,
+    longitude: coordonnees ? etablissement.localisationLongitude : null,
+    rayonMetres: etablissement.localisationRayon,
+    plagesIp: etablissement.localisationPlagesIp,
   };
 }
 
@@ -189,6 +268,8 @@ export const SeanceProche = z
     intervenant: z.string().nullable(),
     /** RG-04-14 : badge « modifié », affiché quelques jours après la dernière modification. */
     modifiee: z.boolean(),
+    /** RGPD-03 : le scan de cette séance compare la position au périmètre du campus. */
+    localisation: z.boolean(),
   })
   .meta({ id: 'SeanceProche' });
 export type SeanceProche = z.infer<typeof SeanceProche>;

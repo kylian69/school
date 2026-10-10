@@ -2,10 +2,12 @@ import {
   CLES_EMARGEMENT,
   commandesPrechargement,
   commandesSessions,
+  perimetreAControler,
   type PresenceEnCache,
 } from '@scolaly/contracts';
 import {
   enregistrerPresences,
+  etablissementDeSeance,
   seanceEtAttendus,
   seancesAPrecharger,
   sessionsDesComptes,
@@ -43,6 +45,11 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
     );
     // Séance annulée ou reportée entre-temps : elle ne s'émarge plus (US-04-11).
     if (trouve?.seance.statut !== 'publiee') continue;
+    // RG-06-10 : périmètre de localisation préchargé avec la séance (aucune requête au scan).
+    const localisation = perimetreAControler(
+      trouve.seance.distanciel,
+      await withOrganisation(db, organisationId, (tx) => etablissementDeSeance(tx, trouve.seance)),
+    );
     const attendus = new Map(
       trouve.attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : [])),
     );
@@ -56,6 +63,7 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
             debut: trouve.seance.debut.getTime(),
             fin: trouve.seance.fin.getTime(),
             distanciel: trouve.seance.distanciel,
+            localisation,
           },
           attendus,
         ),

@@ -1,7 +1,8 @@
-import type { PresenceEnCache, SeanceEnCache } from '@scolaly/contracts';
+import { perimetreAControler, type PresenceEnCache, type SeanceEnCache } from '@scolaly/contracts';
 import {
   attenduDeSeance,
   enregistrerPresenceDirecte,
+  etablissementDeSeance,
   organisationDeSeance,
   seance,
   withOrganisation,
@@ -23,24 +24,28 @@ export class MagasinDegrade implements Magasin {
     this.seanceChargee ??= (async () => {
       const organisationId = await organisationDeSeance(this.db, seanceId);
       if (!organisationId) return null;
-      const [ligne] = await withOrganisation(this.db, organisationId, (tx) =>
-        tx
+      return withOrganisation(this.db, organisationId, async (tx) => {
+        const [ligne] = await tx
           .select()
           .from(seance)
           // US-04-11 : une séance annulée ou reportée ne s'émarge plus, comme dans le cache.
           .where(
             and(eq(seance.id, seanceId), eq(seance.statut, 'publiee'), isNull(seance.deletedAt)),
+          );
+        if (!ligne) return null;
+        return {
+          organisationId,
+          libelle: ligne.libelle,
+          debut: ligne.debut.getTime(),
+          fin: ligne.fin.getTime(),
+          distanciel: ligne.distanciel,
+          // RG-06-10 : même contrôle de localisation qu'avec le cache.
+          localisation: perimetreAControler(
+            ligne.distanciel,
+            await etablissementDeSeance(tx, ligne),
           ),
-      );
-      return ligne
-        ? {
-            organisationId,
-            libelle: ligne.libelle,
-            debut: ligne.debut.getTime(),
-            fin: ligne.fin.getTime(),
-            distanciel: ligne.distanciel,
-          }
-        : null;
+        };
+      });
     })();
     return this.seanceChargee;
   }
@@ -58,7 +63,11 @@ export class MagasinDegrade implements Magasin {
       enregistrerPresenceDirecte(tx, presence),
     );
     return existante
-      ? { scanneLe: existante.scanneLe.toISOString(), rejoue: existante.rejoue }
+      ? {
+          scanneLe: existante.scanneLe.toISOString(),
+          rejoue: existante.rejoue,
+          localisation: existante.localisation,
+        }
       : null;
   }
 }

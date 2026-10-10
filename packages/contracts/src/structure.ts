@@ -61,6 +61,41 @@ export const PlageEdt = z
   .meta({ id: 'PlageEdt' });
 export type PlageEdt = z.infer<typeof PlageEdt>;
 
+/** RG-06-10 : rayon par défaut du périmètre de localisation, en mètres. */
+export const RAYON_LOCALISATION_PAR_DEFAUT = 300;
+/** Bornes de saisie du rayon : en deçà, le GPS d'un téléphone n'est pas assez précis. */
+export const RAYON_LOCALISATION_MIN = 50;
+export const RAYON_LOCALISATION_MAX = 5000;
+export const PLAGES_IP_MAX = 50;
+
+/** Plage d'adresses IP du réseau du campus (CIDR IPv4 ou IPv6, ou adresse seule). */
+const plageIp = z.union([z.cidrv4(), z.cidrv6(), z.ipv4(), z.ipv6()], {
+  error: 'Plage d’adresses IP invalide : saisissez par exemple 192.0.2.0/24.',
+});
+
+/**
+ * RG-06-09, RG-06-10 : contrôle de localisation à l'émargement d'un établissement. Actif par
+ * défaut ; sans coordonnées ni plage d'adresses IP, il n'y a rien à contrôler. Les coordonnées
+ * sont celles du site (pas d'une personne).
+ */
+export const LocalisationEtablissement = z
+  .object({
+    active: z.boolean(),
+    latitude: z.number().min(-90).max(90).nullable(),
+    longitude: z.number().min(-180).max(180).nullable(),
+    rayonMetres: z
+      .int()
+      .min(RAYON_LOCALISATION_MIN, `Le rayon est d’au moins ${RAYON_LOCALISATION_MIN} m.`)
+      .max(RAYON_LOCALISATION_MAX, `Le rayon est d’au plus ${RAYON_LOCALISATION_MAX} m.`),
+    plagesIp: z.array(plageIp).max(PLAGES_IP_MAX),
+  })
+  .refine((l) => (l.latitude === null) === (l.longitude === null), {
+    message: 'Saisissez la latitude et la longitude du site, ou aucune des deux.',
+    path: ['longitude'],
+  })
+  .meta({ id: 'LocalisationEtablissement' });
+export type LocalisationEtablissement = z.infer<typeof LocalisationEtablissement>;
+
 export const INFORMATIONS_MANQUANTES = ['adresse', 'uai', 'siret', 'nda'] as const;
 
 export const Etablissement = z
@@ -79,6 +114,7 @@ export const Etablissement = z
     email: z.string().nullable(),
     statut: z.enum(['actif', 'archive']),
     edt: PlageEdt,
+    localisation: LocalisationEtablissement,
     /** RG-01-02 : informations reprises par les documents officiels, encore absentes. */
     manquantes: z.array(z.enum(INFORMATIONS_MANQUANTES)),
   })
@@ -146,7 +182,7 @@ export const NouvelEtablissement = z
 export type NouvelEtablissement = z.infer<typeof NouvelEtablissement>;
 
 export const ModificationEtablissement = z
-  .object({ ...champsEtablissement, edt: PlageEdt })
+  .object({ ...champsEtablissement, edt: PlageEdt, localisation: LocalisationEtablissement })
   .partial()
   .meta({ id: 'ModificationEtablissement' });
 export type ModificationEtablissement = z.infer<typeof ModificationEtablissement>;

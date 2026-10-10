@@ -421,6 +421,20 @@
       "when": 1791586384329,
       "tag": "0059_rotation_cle_chiffrement",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791628488814,
+      "tag": "0060_previous_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791628517349,
+      "tag": "0061_unusual_doctor_octopus",
+      "breakpoints": true
     }
   ]
 }

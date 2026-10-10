@@ -7,6 +7,7 @@ import {
   authAccount,
   authUser,
   createDatabase,
+  etablissement,
   initialiserRolesParDefaut,
   inscrireManquants,
   newId,
@@ -58,6 +59,27 @@ try {
   }
   if (!ecole) throw new Error('École de charge introuvable.');
   const organisationId = ecole.id;
+  // RG-06-10 : un seul établissement, avec un périmètre de localisation : chaque scan du tir passe
+  // par le contrôle (sans position, résultat « inconnu »), toujours sans requête SQL. Un campus
+  // créé par une préparation antérieure reçoit lui aussi le périmètre.
+  const perimetre = {
+    localisationActive: true,
+    localisationLatitude: 45.75,
+    localisationLongitude: 4.85,
+    localisationPlagesIp: ['192.0.2.0/24'],
+  };
+  const campus = await db
+    .update(etablissement)
+    .set(perimetre)
+    .where(eq(etablissement.organisationId, organisationId))
+    .returning({ id: etablissement.id });
+  if (campus.length === 0) {
+    await db.insert(etablissement).values({
+      organisationId,
+      nom: 'Campus de la preuve de charge (fictif)',
+      ...perimetre,
+    });
+  }
 
   // Comptes et fiches manquants, en lots, avec un seul hachage du mot de passe partagé.
   const existants = new Set(

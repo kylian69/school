@@ -1,4 +1,5 @@
 import {
+  effacerLocalisationsEchues,
   purgerIndisponibilites,
   type BilanConservationIndisponibilites,
   type Database,
@@ -20,4 +21,14 @@ export async function purgerIndisponibilitesPassees(
     motifLimite: reculerDuree(maintenant, duree('indisponibilite-intervenant-motif')),
     ligneLimite: reculerDuree(maintenant, duree('indisponibilite-intervenant')),
   });
+}
+
+/**
+ * RGPD-03, conservation du résultat du contrôle de localisation : effacé des présences scannées
+ * depuis la durée en vigueur (packages/referentials, `presence-localisation`) ; la présence reste.
+ */
+export function effacerLocalisationsPassees(db: Database, maintenant = new Date()) {
+  const jour = maintenant.toISOString().slice(0, 10);
+  const { duree } = valueAt(dureesConservation, jour, 'presence-localisation').valeur;
+  return effacerLocalisationsEchues(db, reculerDuree(maintenant, duree));
 }

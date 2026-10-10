@@ -4,14 +4,18 @@ import {
   commandesPrechargement,
   commandesRetraitSeance,
   commandesSessions,
+  lireSeanceEnCache,
+  perimetreAControler,
+  type SeanceEnCache,
 } from './emargement.js';
 
-const seance = {
+const seance: SeanceEnCache = {
   organisationId: 'ecole',
   libelle: 'Droit',
   debut: Date.UTC(2026, 9, 6, 8),
   fin: Date.UTC(2026, 9, 6, 10),
   distanciel: false,
+  localisation: null,
 };
 
 describe('RG-00-17 préchargement léger', () => {
@@ -63,5 +67,51 @@ describe('US-04-11 séance retirée du cache', () => {
       CLES_EMARGEMENT.prechargee('s1'),
     ]);
     expect(commande).not.toContain(CLES_EMARGEMENT.presences('s1'));
+  });
+});
+
+describe('RG-06-10 périmètre de localisation préchargé', () => {
+  const etablissement = {
+    localisationActive: true,
+    localisationLatitude: 45.75,
+    localisationLongitude: 4.85,
+    localisationRayon: 300,
+    localisationPlagesIp: ['192.0.2.0/24'],
+  };
+
+  it('relit le périmètre écrit avec la séance, et son absence', () => {
+    const perimetre = perimetreAControler(false, etablissement);
+    const hash = (s: typeof seance) => {
+      const commande = commandesPrechargement('s1', s, new Map()).find(
+        (c) => c[0] === 'hset' && c[1] === CLES_EMARGEMENT.seance('s1'),
+      );
+      const champs = commande?.slice(2) ?? [];
+      return Object.fromEntries(
+        champs.flatMap((v, i) => (i % 2 === 0 ? [[v, champs[i + 1] ?? '']] : [])),
+      );
+    };
+    expect(lireSeanceEnCache(hash({ ...seance, localisation: perimetre }))?.localisation).toEqual({
+      latitude: 45.75,
+      longitude: 4.85,
+      rayonMetres: 300,
+      plagesIp: ['192.0.2.0/24'],
+    });
+    expect(lireSeanceEnCache(hash(seance))?.localisation).toBeNull();
+  });
+
+  it('RG-06-08 aucun contrôle à distance, désactivé, ou sans coordonnées ni plage', () => {
+    expect(perimetreAControler(true, etablissement)).toBeNull();
+    expect(perimetreAControler(false, null)).toBeNull();
+    expect(perimetreAControler(false, { ...etablissement, localisationActive: false })).toBeNull();
+    expect(
+      perimetreAControler(false, {
+        ...etablissement,
+        localisationLatitude: null,
+        localisationPlagesIp: [],
+      }),
+    ).toBeNull();
+    expect(
+      perimetreAControler(false, { ...etablissement, localisationLongitude: null }),
+    ).toMatchObject({ latitude: null, longitude: null, plagesIp: ['192.0.2.0/24'] });
   });
 });
