@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput & node --watch --enable-source-maps --env-file-if-exists=../../.env dist/main.js",
+    "dev": "concurrently --raw --kill-others \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --enable-source-maps --env-file-if-exists=../../.env dist/main.js\"",
     "start": "node --enable-source-maps dist/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -49,6 +49,7 @@
     "@scolaly/config": "workspace:*",
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
+    "concurrently": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "unplugin-swc": "catalog:",
