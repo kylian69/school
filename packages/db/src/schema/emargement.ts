@@ -475,6 +475,56 @@ export const fluxIcal = pgTable(
   ],
 ).enableRLS();
 
+/** US-06-04, RG-06-12 : décision de l'intervenant sur un attendu. */
+export const presenceMarquageStatut = pgEnum('presence_marquage_statut', [
+  'present',
+  'retard',
+  'absent',
+]);
+
+/**
+ * Appel manuel (US-06-04, US-06-05) : décision de l'intervenant sur un attendu, une par séance et
+ * par apprenant. Elle l'emporte sur le scan (table presence), conservé tel quel comme preuve ; chaque
+ * changement est tracé dans le journal d'audit avec la valeur avant et après.
+ */
+export const presenceMarquage = pgTable(
+  'presence_marquage',
+  {
+    ...organisationScoped(),
+    seanceId: uuid().notNull(),
+    personneId: uuid().notNull(),
+    statut: presenceMarquageStatut().notNull(),
+    minutesRetard: smallint(),
+    /** Fiche de l'intervenant (ou de la personne habilitée) qui a marqué. */
+    marquePar: uuid().notNull(),
+    marqueLe: timestamp({ withTimezone: true }).notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('presence_marquage', t),
+    uniqueIndex('presence_marquage_unique_key').on(t.organisationId, t.seanceId, t.personneId),
+    foreignKey({
+      name: 'presence_marquage_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }),
+    foreignKey({
+      name: 'presence_marquage_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    foreignKey({
+      name: 'presence_marquage_marque_par_fk',
+      columns: [t.organisationId, t.marquePar],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check(
+      'presence_marquage_retard_check',
+      sql`(${t.statut} = 'retard') = (${t.minutesRetard} is not null and ${t.minutesRetard} > 0)`,
+    ),
+  ],
+).enableRLS();
+
 /**
  * Apprenants attendus à une séance, calculés (migration 0035, security_invoker : la RLS des tables
  * s'applique ; recréée sans l'ancienne table seance_attendu en 0058). Inscrits actifs le jour de la

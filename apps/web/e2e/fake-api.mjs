@@ -246,27 +246,44 @@ const localiser = (position) => {
 };
 const cleAppel = (request) =>
   (request.headers.cookie ?? '').match(/e2e-appel=(\w+)/)?.[1] ?? 'commun';
+// US-06-04 : décisions de l'intervenant, par appel (clé : appel|fiche).
+const marquagesAppel = new Map();
+const LEA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000001';
+const NOE_ID = '0192f0a4-1b2c-7d3e-8f40-000000000002';
+const statutFictif = (scanneLe, localisation, marquage) => {
+  if (marquage) return marquage.statut;
+  if (!scanneLe) return 'en-attente';
+  return localisation === 'hors-site' || localisation === 'inconnu' ? 'a-verifier' : 'present';
+};
 const appelFictif = (request) => {
+  const cle = cleAppel(request);
   const liste = [
     {
-      personneId: '0192f0a4-1b2c-7d3e-8f40-000000000001',
+      personneId: LEA_ID,
       nom: 'Martin',
       prenom: 'Léa',
-      scanneLe: emargementsLea.get(cleAppel(request)) ?? null,
+      scanneLe: emargementsLea.get(cle) ?? null,
       rejoue: false,
-      localisation: localisationsLea.get(cleAppel(request)) ?? null,
+      localisation: localisationsLea.get(cle) ?? null,
     },
     {
-      personneId: '0192f0a4-1b2c-7d3e-8f40-000000000002',
+      personneId: NOE_ID,
       nom: 'Petit',
       prenom: 'Noé',
       scanneLe: null,
       rejoue: false,
       localisation: null,
     },
-  ];
-  return { presents: liste.filter((l) => l.scanneLe).length, attendus: 2, liste };
+  ].map((l) => {
+    const marquage = marquagesAppel.get(`${cle}|${l.personneId}`) ?? null;
+    return { ...l, statut: statutFictif(l.scanneLe, l.localisation, marquage), marquage };
+  });
+  const presents = liste.filter((l) => ['present', 'retard', 'a-verifier'].includes(l.statut));
+  return { presents: presents.length, attendus: 2, liste };
 };
+// RG-01-27 : photo fictive de Léa (Noé n'en a pas : initiales).
+const PHOTO_FICTIVE =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#4F46E5"/></svg>';
 const seanceFictive = () => {
   const debut = new Date(Date.now() - 60_000);
   return {
@@ -2250,6 +2267,39 @@ createServer(async (request, response) => {
     });
   }
   if (path === `/api/seances/${SEANCE_ID}/appel`) return json(200, appelFictif(request));
+  // US-06-04, US-06-05 : appel manuel ; la décision l'emporte sur le scan.
+  const marquage = path.match(
+    new RegExp(`^/api/seances/${SEANCE_ID}/appel/presences/([0-9a-f-]+)$`),
+  );
+  if (marquage && request.method === 'PUT') {
+    const { statut, minutesRetard } = await readBody(request);
+    if ((statut === 'retard') !== (Number.isInteger(minutesRetard) && minutesRetard > 0)) {
+      return json(400, {
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: ['marquage : Indiquez le retard en minutes entières.'],
+      });
+    }
+    marquagesAppel.set(`${cleAppel(request)}|${marquage[1]}`, {
+      statut,
+      minutesRetard: statut === 'retard' ? minutesRetard : null,
+      marqueLe: new Date().toISOString(),
+    });
+    return json(200, appelFictif(request));
+  }
+  if (path === `/api/seances/${SEANCE_ID}/appel/photos`) {
+    return json(200, {
+      expireLe: new Date(Date.now() + 300_000).toISOString(),
+      photos: [{ personneId: LEA_ID, url: '/api/photos/appel?jeton=fictif' }],
+    });
+  }
+  if (path === '/api/photos/appel') {
+    response.writeHead(200, {
+      'content-type': 'image/svg+xml',
+      'cache-control': 'private, max-age=300',
+    });
+    response.end(PHOTO_FICTIVE);
+    return;
+  }
   // Liste en direct (US-06-03) : flux SSE, un événement à chaque changement.
   if (path === `/api/seances/${SEANCE_ID}/appel/direct`) {
     response.writeHead(200, {

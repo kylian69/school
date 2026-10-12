@@ -4,6 +4,7 @@ import {
   commandesPrechargement,
   expirationCache,
   lireSeanceEnCache,
+  type MarquageEnCache,
   type PresenceEnCache,
   type SeanceEnCache,
 } from '@scolaly/contracts';
@@ -100,6 +101,31 @@ export class CacheEmargement implements Magasin {
       ),
     )) as string | null;
     return existante ? (JSON.parse(existante) as PresenceEnCache) : null;
+  }
+
+  /**
+   * Décision de l'intervenant, copiée après validation de la transaction pour la liste en direct
+   * (la base fait foi). Le hash vit jusqu'à une heure après la fin de la séance.
+   */
+  async marquer(seanceId: string, personneId: string, marquage: MarquageEnCache, finMs: number) {
+    const cle = CLES_EMARGEMENT.marquages(seanceId);
+    await surValkey(() =>
+      this.valkey
+        .multi()
+        .hset(cle, personneId, JSON.stringify(marquage))
+        .expireat(cle, Math.max(expirationCache(finMs), Math.ceil(Date.now() / 1000) + 3600))
+        .exec(),
+    );
+  }
+
+  async marquages(seanceId: string): Promise<Map<string, MarquageEnCache>> {
+    const valeurs = await surValkey(() => this.valkey.hgetall(CLES_EMARGEMENT.marquages(seanceId)));
+    return new Map(
+      Object.entries(valeurs).map(([personneId, v]) => [
+        personneId,
+        JSON.parse(v) as MarquageEnCache,
+      ]),
+    );
   }
 
   async presences(seanceId: string): Promise<PresenceEnCache[]> {

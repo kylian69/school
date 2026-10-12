@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -11,15 +12,20 @@ import {
   JETON_PERIODE_SECONDES,
   type AppelEnDirect,
   commandesSessions,
+  type MarquageEnCache,
+  type MarquagePresence,
   type OuvertureAppel,
   perimetreAControler,
+  type PhotosAppel,
   type PresenceEnCache,
   type ResultatLocalisation,
 } from '@scolaly/contracts';
 import {
   cleMaitresseCourante,
+  enregistrerAudit,
   etablissementDeSeance,
   presence,
+  presenceMarquage,
   seanceEtAttendus,
   seanceIntervenant,
   sessionsDesComptes,
@@ -27,13 +33,29 @@ import {
   type Database,
   type Transaction,
 } from '@scolaly/db';
+import { comptePresent, statutDansAppel, verifierMarquage } from '@scolaly/domain';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { ServerResponse } from 'node:http';
 import type { Access } from '../../access/access-resolver.js';
+import { RequestContext } from '../../access/request-context.js';
 import type { Env } from '../../config/env.js';
-import { DATABASE, ENV, VALKEY } from '../../shared/tokens.js';
+import { ObjectStorage, SIGNED_URL_TTL_SECONDS } from '../../shared/storage/object-storage.js';
+import { DATABASE, ENV, OBJECT_STORAGE, VALKEY } from '../../shared/tokens.js';
+import { UrlSignee } from '../../shared/url-signee.js';
 import { CacheEmargement, CacheIndisponible, cleDeSeance } from './cache-emargement.js';
+
+/** Adresse des photos signées de la liste d'appel (servies par PhotosAppelController). */
+export const ROUTE_PHOTOS_SIGNEES = '/api/photos/appel';
+
+const REFUS_MARQUAGE = {
+  'trop-tot':
+    "L'appel de cette séance n'est pas encore ouvert : réessayez 10 minutes avant son début.",
+  verrouille:
+    "L'appel de cette séance est verrouillé (7 jours après la séance) : demandez à la scolarité.",
+  'retard-invalide':
+    'Indiquez le retard en minutes entières, entre 1 et la durée de la séance ; seul un retard en porte.',
+} as const;
 
 /** Liste en direct : lecture du cache toutes les 500 ms (module 06, section 9 : moins d'une seconde). */
 const INTERVALLE_DIRECT_MS = 500;
@@ -49,37 +71,78 @@ type Scans = Map<
   string,
   { scanneLe: string; rejoue: boolean; localisation: ResultatLocalisation | null }
 >;
+type Marquages = Map<string, MarquageEnCache>;
 
-/** Ce que le flux en direct garde en mémoire : attendus et présences déjà en base, lus une fois. */
+/** Ce que le flux en direct garde en mémoire : attendus, présences et décisions en base, lus une fois. */
 export interface EtatDirect {
   organisationId: string;
   seanceId: string;
   attendus: Attendu[];
   enBase: Scans;
+  marquagesEnBase: Marquages;
 }
 
-function composer(attendus: readonly Attendu[], enBase: Scans, enCache: PresenceEnCache[]) {
-  const scans: Scans = new Map(enBase);
-  for (const p of enCache)
+/** Ce que la liste lit dans Valkey à chaque tour. */
+interface LectureCache {
+  presences: PresenceEnCache[];
+  marquages: Marquages;
+}
+
+function composer(
+  attendus: readonly Attendu[],
+  etat: Pick<EtatDirect, 'enBase' | 'marquagesEnBase'>,
+  cache: LectureCache,
+) {
+  const scans: Scans = new Map(etat.enBase);
+  for (const p of cache.presences)
     scans.set(p.personneId, {
       scanneLe: p.scanneLe,
       rejoue: p.rejoue,
       localisation: p.localisation ?? null,
     });
-  const liste = attendus.map((a) => ({
-    personneId: a.personneId,
-    nom: a.nom,
-    prenom: a.prenom,
-    scanneLe: scans.get(a.personneId)?.scanneLe ?? null,
-    rejoue: scans.get(a.personneId)?.rejoue ?? false,
-    localisation: scans.get(a.personneId)?.localisation ?? null,
-  }));
+  // La décision la plus récente l'emporte : la base fait foi, le cache peut être en avance.
+  const marquages: Marquages = new Map(etat.marquagesEnBase);
+  for (const [personneId, m] of cache.marquages) {
+    const enBase = marquages.get(personneId);
+    if (!enBase || Date.parse(m.marqueLe) > Date.parse(enBase.marqueLe))
+      marquages.set(personneId, m);
+  }
+  const liste = attendus.map((a) => {
+    const scan = scans.get(a.personneId) ?? null;
+    const marquage = marquages.get(a.personneId) ?? null;
+    return {
+      personneId: a.personneId,
+      nom: a.nom,
+      prenom: a.prenom,
+      scanneLe: scan?.scanneLe ?? null,
+      rejoue: scan?.rejoue ?? false,
+      localisation: scan?.localisation ?? null,
+      statut: statutDansAppel(scan, marquage),
+      marquage,
+    };
+  });
   return {
-    presents: liste.filter((l) => l.scanneLe !== null).length,
+    presents: liste.filter((l) => comptePresent(l.statut)).length,
     attendus: liste.length,
     liste,
   } satisfies AppelEnDirect;
 }
+
+const marquagesDe = (lignes: (typeof presenceMarquage.$inferSelect)[]): Marquages =>
+  new Map(
+    lignes.map((m) => [
+      m.personneId,
+      { statut: m.statut, minutesRetard: m.minutesRetard, marqueLe: m.marqueLe.toISOString() },
+    ]),
+  );
+
+const lireMarquagesEnBase = async (tx: Transaction, seanceId: string) =>
+  marquagesDe(
+    await tx
+      .select()
+      .from(presenceMarquage)
+      .where(and(eq(presenceMarquage.seanceId, seanceId), isNull(presenceMarquage.deletedAt))),
+  );
 
 /** Ouverture de l'appel et liste en direct, pour l'intervenant (US-06-01, US-06-03). */
 @Injectable()
@@ -90,14 +153,18 @@ export class AppelService implements OnModuleDestroy {
   /** Flux en direct ouverts, refermés à l'arrêt de l'API. */
   private readonly flux = new Set<() => void>();
 
+  private readonly signature: UrlSignee;
+
   constructor(
     @Inject(VALKEY) valkey: Redis,
     @Inject(ENV) env: Env,
     @Inject(DATABASE) private readonly db: Database,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {
     this.cache = new CacheEmargement(valkey);
     // Clé de séance dérivée de la clé maîtresse courante (ADR 0006).
     this.cleMaitresse = cleMaitresseCourante(env.chiffrement);
+    this.signature = new UrlSignee(this.cleMaitresse, 'photos-appel');
   }
 
   onModuleDestroy() {
@@ -190,16 +257,18 @@ export class AppelService implements OnModuleDestroy {
     );
   }
 
-  /** Présences du cache, ou null si Valkey ne répond pas. */
-  private async presencesEnCache(seanceId: string): Promise<PresenceEnCache[] | null> {
+  /** Présences et décisions du cache, ou null si Valkey ne répond pas. */
+  private async lireCache(seanceId: string): Promise<LectureCache | null> {
     if (!this.cache.disponible()) return null;
-    return this.cache.presences(seanceId).catch((erreur: unknown) => {
-      if (!(erreur instanceof CacheIndisponible)) throw erreur;
-      return null;
-    });
+    return Promise.all([this.cache.presences(seanceId), this.cache.marquages(seanceId)])
+      .then(([presences, marquages]) => ({ presences, marquages }))
+      .catch((erreur: unknown) => {
+        if (!(erreur instanceof CacheIndisponible)) throw erreur;
+        return null;
+      });
   }
 
-  /** Droits vérifiés, attendus et présences en base lus une fois, avant d'ouvrir le flux. */
+  /** Droits vérifiés, attendus, présences et décisions en base lus une fois, avant le flux. */
   async preparerDirect(tx: Transaction, access: Access, seanceId: string): Promise<EtatDirect> {
     const { attendus } = await this.charger(tx, access, seanceId);
     const enBase = await tx.select().from(presence).where(eq(presence.seanceId, seanceId));
@@ -208,13 +277,160 @@ export class AppelService implements OnModuleDestroy {
       seanceId,
       attendus: attendus.map((a) => ({ personneId: a.personneId, nom: a.nom, prenom: a.prenom })),
       enBase: AppelService.scansEnBase(enBase),
+      marquagesEnBase: await lireMarquagesEnBase(tx, seanceId),
     };
   }
 
   /** Présents du cache (en direct) et de la base (déjà écrits par le worker). */
   async enDirect(tx: Transaction, access: Access, seanceId: string): Promise<AppelEnDirect> {
     const etat = await this.preparerDirect(tx, access, seanceId);
-    return composer(etat.attendus, etat.enBase, (await this.presencesEnCache(seanceId)) ?? []);
+    return composer(
+      etat.attendus,
+      etat,
+      (await this.lireCache(seanceId)) ?? { presences: [], marquages: new Map() },
+    );
+  }
+
+  /**
+   * Appel manuel (US-06-04, US-06-05 ; RG-06-11, RG-06-12) : l'intervenant marque un attendu
+   * présent, en retard ou absent, qu'il ait scanné ou non. Le scan reste en base tel quel ; la
+   * décision est tracée (valeur avant et après) puis copiée dans le cache pour la liste en direct.
+   */
+  async marquer(
+    tx: Transaction,
+    access: Access,
+    seanceId: string,
+    personneId: string,
+    corps: MarquagePresence,
+    adresseIp: string,
+  ): Promise<AppelEnDirect> {
+    const { seance: ligne, attendus } = await this.charger(tx, access, seanceId);
+    if (ligne.statut !== 'publiee')
+      throw new ConflictException(
+        "Cette séance n'est pas publiée, ou elle est annulée ou reportée : son appel ne se fait pas.",
+      );
+    if (!attendus.some((a) => a.personneId === personneId))
+      throw new NotFoundException(
+        "Cet apprenant n'est pas attendu à cette séance. Vérifiez son groupe auprès de la scolarité.",
+      );
+    const refus = verifierMarquage(
+      { debutMs: ligne.debut.getTime(), finMs: ligne.fin.getTime() },
+      Date.now(),
+      corps,
+    );
+    if (refus)
+      throw new BadRequestException({
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: [`marquage : ${REFUS_MARQUAGE[refus]}`],
+      });
+
+    const [scan] = await tx
+      .select()
+      .from(presence)
+      .where(and(eq(presence.seanceId, seanceId), eq(presence.personneId, personneId)));
+    const [ancien] = await tx
+      .select()
+      .from(presenceMarquage)
+      .where(
+        and(eq(presenceMarquage.seanceId, seanceId), eq(presenceMarquage.personneId, personneId)),
+      );
+    const enCache = (await this.lireCache(seanceId))?.presences.find(
+      (p) => p.personneId === personneId,
+    );
+    const scanConnu = enCache
+      ? { rejoue: enCache.rejoue, localisation: enCache.localisation ?? null }
+      : (scan ?? null);
+    const marquageAvant = ancien && !ancien.deletedAt ? ancien : null;
+    const marqueLe = new Date();
+    const valeurs = {
+      statut: corps.statut,
+      minutesRetard: corps.statut === 'retard' ? corps.minutesRetard : null,
+      marquePar: access.personneId,
+      marqueLe,
+      deletedAt: null,
+      updatedBy: access.userId,
+    };
+    const [ecrit] = await tx
+      .insert(presenceMarquage)
+      .values({
+        ...valeurs,
+        organisationId: access.organisationId,
+        seanceId,
+        personneId,
+        createdBy: access.userId,
+      })
+      .onConflictDoUpdate({
+        target: [
+          presenceMarquage.organisationId,
+          presenceMarquage.seanceId,
+          presenceMarquage.personneId,
+        ],
+        set: { ...valeurs, updatedAt: marqueLe },
+      })
+      .returning({ id: presenceMarquage.id });
+    // Absences et présences : action sensible, tracée avec la valeur avant et après.
+    await enregistrerAudit(tx, {
+      action: 'presence.marquer',
+      objetType: 'presence_marquage',
+      objetId: ecrit?.id ?? null,
+      auteurId: access.userId,
+      adresseIp,
+      avant: {
+        seanceId,
+        personneId,
+        statut: statutDansAppel(scanConnu, marquageAvant),
+        minutesRetard: marquageAvant?.minutesRetard ?? null,
+        scanneLe: enCache?.scanneLe ?? scan?.scanneLe.toISOString() ?? null,
+      },
+      apres: { seanceId, personneId, statut: valeurs.statut, minutesRetard: valeurs.minutesRetard },
+    });
+    const enMemoire: MarquageEnCache = {
+      statut: valeurs.statut,
+      minutesRetard: valeurs.minutesRetard,
+      marqueLe: marqueLe.toISOString(),
+    };
+    RequestContext.apresValidation(() =>
+      this.cache
+        .marquer(seanceId, personneId, enMemoire, ligne.fin.getTime())
+        .catch((erreur: unknown) => {
+          // Sans Valkey, la liste en direct relit la base (mode dégradé).
+          if (!(erreur instanceof CacheIndisponible)) throw erreur;
+        }),
+    );
+    return this.enDirect(tx, access, seanceId);
+  }
+
+  /**
+   * Photos des attendus (RG-01-27 : intervenants des groupes de l'apprenant, liste d'appel ;
+   * RG-06-11). Chaque adresse est signée pour le compte qui la demande et vaut quelques minutes :
+   * la photo reste privée dans le stockage, jamais publique.
+   */
+  async photos(tx: Transaction, access: Access, seanceId: string): Promise<PhotosAppel> {
+    const { attendus } = await this.charger(tx, access, seanceId);
+    const expireLe = Date.now() + SIGNED_URL_TTL_SECONDS * 1000;
+    return {
+      expireLe: new Date(expireLe).toISOString(),
+      photos: attendus.flatMap((a) =>
+        a.photoCle
+          ? [
+              {
+                personneId: a.personneId,
+                url: `${ROUTE_PHOTOS_SIGNEES}?jeton=${this.signature.signer({ c: a.photoCle, u: access.userId }, expireLe)}`,
+              },
+            ]
+          : [],
+      ),
+    };
+  }
+
+  /** Photo d'une adresse signée, pour le seul compte à qui elle a été donnée. */
+  async photoSignee(jeton: string, userId: string | undefined): Promise<Buffer> {
+    const charge = this.signature.verifier(jeton);
+    if (!charge || typeof charge.c !== 'string' || !userId || charge.u !== userId)
+      throw new NotFoundException('Photo introuvable ou adresse expirée : rechargez la liste.');
+    return this.storage.get(charge.c).catch(() => {
+      throw new NotFoundException('Photo introuvable ou adresse expirée : rechargez la liste.');
+    });
   }
 
   /**
@@ -232,7 +448,7 @@ export class AppelService implements OnModuleDestroy {
     });
     reponse.write('retry: 2000\n\n');
     const ouvertLe = Date.now();
-    let enBase = etat.enBase;
+    let enBase = { enBase: etat.enBase, marquagesEnBase: etat.marquagesEnBase };
     let envoye = '';
     let dernierEnvoi = ouvertLe;
     let relueLe = ouvertLe;
@@ -246,17 +462,20 @@ export class AppelService implements OnModuleDestroy {
       reponse.end();
     };
     const tic = async () => {
-      const enCache = await this.presencesEnCache(etat.seanceId);
+      const enCache = await this.lireCache(etat.seanceId);
       if (enCache === null && Date.now() - relueLe >= RELECTURE_BASE_MS) {
         relueLe = Date.now();
-        enBase = AppelService.scansEnBase(
-          await withOrganisation(this.db, etat.organisationId, (tx) =>
-            tx.select().from(presence).where(eq(presence.seanceId, etat.seanceId)),
+        enBase = await withOrganisation(this.db, etat.organisationId, async (tx) => ({
+          enBase: AppelService.scansEnBase(
+            await tx.select().from(presence).where(eq(presence.seanceId, etat.seanceId)),
           ),
-        );
+          marquagesEnBase: await lireMarquagesEnBase(tx, etat.seanceId),
+        }));
       }
       if (!actif) return;
-      const donnees = JSON.stringify(composer(etat.attendus, enBase, enCache ?? []));
+      const donnees = JSON.stringify(
+        composer(etat.attendus, enBase, enCache ?? { presences: [], marquages: new Map() }),
+      );
       if (donnees !== envoye) {
         envoye = donnees;
         dernierEnvoi = Date.now();

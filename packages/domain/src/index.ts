@@ -21,6 +21,7 @@ export * from './imports/validation.js';
 export * from './corbeille/corbeille.js';
 export * from './conservation/conservation.js';
 export * from './photos/photo.js';
+export * from './emargement/appel-manuel.js';
 export * from './emargement/fenetre-scan.js';
 export * from './emargement/localisation.js';
 export * from './referentiel/maquette.js';

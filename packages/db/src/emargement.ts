@@ -181,6 +181,8 @@ export async function seanceEtAttendus(tx: Transaction, seanceId: string) {
       userId: personne.userId,
       nom: personne.nom,
       prenom: personne.prenom,
+      /** Photo validée (RG-01-27 : visible des intervenants, pour la liste d'appel). */
+      photoCle: personne.photoCle,
     })
     .from(seanceAttenduCalcule)
     .innerJoin(

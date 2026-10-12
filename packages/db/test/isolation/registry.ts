@@ -18,6 +18,7 @@ import {
   periode,
   personne,
   presence,
+  presenceMarquage,
   seance,
   competence,
   competenceModule,
@@ -641,6 +642,20 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         personneId: await insertPersonne(db, organisationId),
         scanneLe: new Date('2026-10-05T08:01:00Z'),
         mode: 'qr',
+      });
+    },
+  },
+  presence_marquage: {
+    insert: async (db, organisationId) => {
+      const personneId = await insertPersonne(db, organisationId);
+      await db.insert(presenceMarquage).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        personneId,
+        statut: 'retard',
+        minutesRetard: 12,
+        marquePar: personneId,
+        marqueLe: new Date('2026-10-05T08:12:00Z'),
       });
     },
   },

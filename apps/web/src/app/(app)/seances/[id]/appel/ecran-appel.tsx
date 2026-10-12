@@ -7,20 +7,20 @@ import {
   type AppelEnDirect as Appel,
   type OuvertureAppel as Ouverture,
 } from '@scolaly/contracts';
-import { Card } from '@scolaly/ui';
+import { Button, Card } from '@scolaly/ui';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { fr } from '@/i18n/fr';
 import { formatHeure } from '@/lib/format';
 import { envoyer } from '@/lib/requete';
+import { ListeAppel } from './liste-appel';
 
 const t = fr.emargement;
-/** Tolérance avant retard (RG-06-02), pour l'affichage seulement : le serveur fait foi. */
-const TOLERANCE_MS = 5 * 60_000;
 
 /**
  * Écran de l'intervenant. Le QR et le code sont calculés ici, sans appel au serveur (RG-00-16),
- * avec l'horloge corrigée par l'heure du serveur ; la liste se rafraîchit toutes les 2 secondes.
+ * avec l'horloge corrigée par l'heure du serveur ; la liste suit le flux en direct, et chaque
+ * apprenant peut être marqué à la main (US-06-04, US-06-05).
  */
 export function EcranAppel({ seanceId }: { seanceId: string }) {
   const [ouverture, setOuverture] = useState<{ donnees: Ouverture; decalage: number } | null>(null);
@@ -28,6 +28,7 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
   const [qr, setQr] = useState<{ svg: string; code: string; changeA: number } | null>(null);
   const [reste, setReste] = useState(15);
   const [appel, setAppel] = useState<Appel | null>(null);
+  const [manuel, setManuel] = useState(false);
 
   useEffect(() => {
     void envoyer(
@@ -100,10 +101,6 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
   }
   if (!ouverture) return <p className="text-sm text-muted">{t.appelEnCours}…</p>;
 
-  const debut = Date.parse(ouverture.donnees.debut);
-  const presents = appel?.liste.filter((l) => l.scanneLe !== null) ?? [];
-  const enRetard = presents.filter((l) => Date.parse(l.scanneLe ?? '') > debut + TOLERANCE_MS);
-
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -114,9 +111,23 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
         <p className="text-sm text-muted">
           {t.horaire(formatHeure(ouverture.donnees.debut), formatHeure(ouverture.donnees.fin))}
         </p>
+        <div>
+          {/* US-06-05 : appel à la main, sans QR (panne, petit groupe). */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setManuel(!manuel);
+            }}
+          >
+            {manuel ? t.afficherQr : t.appelManuel}
+          </Button>
+        </div>
       </div>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Card className="flex flex-col items-center gap-3 text-center">
+      <div
+        className={manuel ? 'grid gap-4' : 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'}
+      >
+        <Card className={manuel ? 'hidden' : 'flex flex-col items-center gap-3 text-center'}>
           <h2 className="text-lg font-semibold">{t.scannez}</h2>
           <p className="text-sm text-muted">{t.scannezAide}</p>
           {qr ? (
@@ -139,42 +150,12 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
           </div>
         </Card>
         <Card className="flex flex-col gap-3">
-          <p className="text-2xl font-semibold" aria-live="polite">
-            {t.presents(presents.length, appel?.attendus ?? 0)}
-          </p>
-          <p className="text-sm text-muted">
-            {presents.length - enRetard.length} {t.aLHeure} · {enRetard.length} {t.enRetard} ·{' '}
-            {(appel?.attendus ?? 0) - presents.length} {t.enAttente}
-          </p>
-          <ul
-            className="flex max-h-[60vh] flex-col divide-y divide-line overflow-y-auto"
-            tabIndex={0}
-            aria-label={t.direct}
-          >
-            {(appel?.liste ?? []).map((l) => (
-              <li
-                key={l.personneId}
-                className="flex items-center justify-between gap-3 py-2 text-sm"
-              >
-                <span>
-                  {l.prenom} {l.nom}
-                </span>
-                <span className={l.scanneLe ? 'text-ok' : 'text-muted'}>
-                  {l.scanneLe
-                    ? `${formatHeure(l.scanneLe)}${l.rejoue ? ` · ${t.rejoue}` : ''}`
-                    : t.enAttente}
-                  {/* RG-06-11 : scan hors site ou de position inconnue, signalé avec sa raison. */}
-                  {l.scanneLe &&
-                  (l.localisation === 'hors-site' || l.localisation === 'inconnu') ? (
-                    <span className="font-medium text-warn">
-                      {` · ${t.localisationListe[l.localisation]}`}
-                    </span>
-                  ) : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-muted">{t.direct}</p>
+          <ListeAppel
+            seanceId={seanceId}
+            debut={Date.parse(ouverture.donnees.debut)}
+            appel={appel}
+            surAppel={setAppel}
+          />
         </Card>
       </div>
     </>
