@@ -15,7 +15,7 @@ export class JetonChiffre {
 
   emettre(charge: Record<string, unknown>, expireLeMs: number): string {
     const iv = randomBytes(12);
-    const chiffreur = createCipheriv('aes-256-gcm', this.cle, iv);
+    const chiffreur = createCipheriv('aes-256-gcm', this.cle, iv, { authTagLength: 16 });
     const clair = Buffer.from(JSON.stringify({ ...charge, exp: expireLeMs }));
     const chiffre = Buffer.concat([chiffreur.update(clair), chiffreur.final()]);
     return Buffer.concat([iv, chiffreur.getAuthTag(), chiffre]).toString('base64url');
@@ -27,7 +27,9 @@ export class JetonChiffre {
     const octets = Buffer.from(jeton, 'base64url');
     if (octets.length <= 28) return null;
     try {
-      const dechiffreur = createDecipheriv('aes-256-gcm', this.cle, octets.subarray(0, 12));
+      const dechiffreur = createDecipheriv('aes-256-gcm', this.cle, octets.subarray(0, 12), {
+        authTagLength: 16,
+      });
       dechiffreur.setAuthTag(octets.subarray(12, 28));
       const clair = Buffer.concat([dechiffreur.update(octets.subarray(28)), dechiffreur.final()]);
       const charge = JSON.parse(clair.toString('utf8')) as unknown;
