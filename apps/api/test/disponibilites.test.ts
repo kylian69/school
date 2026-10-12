@@ -300,7 +300,7 @@ describe('US-04-10 indisponibilités ponctuelles', () => {
     expect(motifLong.statusCode).toBe(400);
   });
 
-  it('RG-04-18 montre l’indisponibilité dans la grille sans son motif', async () => {
+  it('RG-04-18 montre l’indisponibilité dans la grille, motif visible de la scolarité', async () => {
     const reponse = await app.inject({
       method: 'GET',
       url: `/api/edt/semaine?etablissementId=${campusId}&debut=${lundi(1)}&intervenantId=${intervenant.personneId}`,
@@ -312,7 +312,10 @@ describe('US-04-10 indisponibilités ponctuelles', () => {
       { jourSemaine: 1, heureDebut: '08:00', heureFin: '12:00' },
       { jourSemaine: 4, heureDebut: '10:00', heureFin: '14:00' },
     ]);
-    expect(reponse.body).not.toContain('médical');
+    // Décision du 09/10/2026 (#100) : les gestionnaires lisent le motif. L'indisponibilité (J+10)
+    // ne tombe dans la semaine affichée que certains jours de la semaine.
+    for (const indisponibilite of disponibilites?.indisponibilites ?? [])
+      expect(indisponibilite.motif).toBe(motif);
   });
 
   it('RG-04-18 retire une indisponibilité et efface son motif', async () => {
