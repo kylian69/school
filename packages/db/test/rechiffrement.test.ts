@@ -166,11 +166,12 @@ describe('Rotation de la clé maîtresse (ADR 0006)', () => {
 
   it('rechiffre chaque champ par lots, reprend après une interruption, puis ne refait rien', async () => {
     const crypto = cles(2);
-    // Interruption simulée : deux lots seulement, puis arrêt.
+    // Interruption simulée : deux lots seulement, puis arrêt. Sur la première école seule (5 valeurs
+    // par champ) : l'ordre des groupes n'est pas garanti, et la seconde n'en a que 2 par champ.
     const partiel = await rechiffrerValeurs(app.db, crypto, {
       taille: 2,
       lotsMax: 2,
-      organisationIds: ecoles,
+      organisationIds: [ecoles[0]],
     });
     expect(partiel).toMatchObject({ lots: 2, rechiffrees: 4 });
     const pendant = await nosComptages();

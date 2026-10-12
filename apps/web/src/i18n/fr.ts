@@ -855,6 +855,29 @@ export const fr = {
       'hors-site': 'hors site, à vérifier',
       inconnu: 'position inconnue, à vérifier',
     },
+    // US-06-04, US-06-05 : appel manuel avec photos, correction des scans.
+    appelManuel: 'Faire l’appel à la main',
+    afficherQr: 'Afficher le QR',
+    appelManuelAide:
+      'Touchez Présent, Retard ou Absent pour chaque apprenant ; votre choix remplace le scan, qui reste conservé.',
+    absents: 'absents',
+    aVerifier: 'à vérifier',
+    marquer: (nom: string) => `Statut de ${nom}`,
+    statuts: { present: 'Présent', retard: 'Retard', absent: 'Absent' },
+    etat: {
+      present: 'présent',
+      retard: (minutes: number) => `en retard de ${minutes} min`,
+      absent: 'absent',
+      'a-verifier': 'à vérifier',
+      'en-attente': 'en attente',
+    },
+    manuel: 'marqué à la main',
+    scanRetire: 'scan retiré',
+    minutesRetard: 'Minutes de retard',
+    enregistrerRetard: 'Noter le retard',
+    marquageEchec:
+      'Le statut n’a pas pu être enregistré. Vérifiez votre connexion, puis touchez à nouveau le statut.',
+    photo: (nom: string) => `Photo de ${nom}`,
   },
   referentiel: {
     titre: 'Formations',

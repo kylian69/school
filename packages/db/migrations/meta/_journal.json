@@ -435,6 +435,13 @@
       "when": 1791628517349,
       "tag": "0061_unusual_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791631112033,
+      "tag": "0062_typical_wolfpack",
+      "breakpoints": true
     }
   ]
 }

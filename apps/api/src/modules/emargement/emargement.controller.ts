@@ -8,13 +8,17 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
 import {
   AppelEnDirect,
   CodeEmargement,
+  MarquagePresence,
   OuvertureAppel,
+  PhotosAppel,
   ResultatScan,
   ScanEmargement,
   SeanceProche,
@@ -88,6 +92,40 @@ export class AppelController {
     return this.appels.enDirect(RequestContext.tx(), RequestContext.access(), id);
   }
 
+  @Put('presences/:personneId')
+  @RequirePermission('emargement:animer')
+  @ApiContract({
+    summary:
+      'Marquer un attendu présent, en retard ou absent (appel manuel, correction ou décision sur un scan à vérifier)',
+    body: MarquagePresence,
+    response: AppelEnDirect,
+  })
+  marquer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('personneId', ParseUUIDPipe) personneId: string,
+    @Body() corps: MarquagePresence,
+    @Req() request: ScolalyRequest,
+  ) {
+    return this.appels.marquer(
+      RequestContext.tx(),
+      RequestContext.access(),
+      id,
+      personneId,
+      corps,
+      request.ip,
+    );
+  }
+
+  @Get('photos')
+  @RequirePermission('emargement:animer')
+  @ApiContract({
+    summary: 'Photos des attendus : adresses signées, valables quelques minutes',
+    response: PhotosAppel,
+  })
+  photos(@Param('id', ParseUUIDPipe) id: string) {
+    return this.appels.photos(RequestContext.tx(), RequestContext.access(), id);
+  }
+
   @Get('direct')
   @RequirePermission('emargement:animer')
   @ApiContract({
@@ -103,6 +141,35 @@ export class AppelController {
       this.appels.diffuser(reply.raw, etat);
       return Promise.resolve();
     });
+  }
+}
+
+/**
+ * Photo de la liste d'appel par adresse signée (RG-01-27) : la signature a été donnée après
+ * contrôle des droits, pour ce seul compte ; la session est exigée en plus.
+ */
+@Controller('api/photos/appel')
+export class PhotosAppelController {
+  constructor(private readonly appels: AppelService) {}
+
+  @Get()
+  @Authenticated()
+  @ApiContract({
+    summary: 'Photo d’un attendu (JPEG), par adresse signée',
+    query: z.object({ jeton: z.string() }),
+    response: z.string(),
+  })
+  async image(
+    @Query('jeton') jeton: string | undefined,
+    @Req() request: ScolalyRequest,
+    @Res() reply: FastifyReply,
+  ) {
+    const image = await this.appels.photoSignee(jeton ?? '', request.userId);
+    await reply
+      .header('content-type', 'image/jpeg')
+      .header('cache-control', 'private, max-age=300')
+      .header('x-content-type-options', 'nosniff')
+      .send(image);
   }
 }
 

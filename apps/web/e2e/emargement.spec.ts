@@ -67,6 +67,51 @@ test.describe('Module 06 Émargement', () => {
   });
 
   // Projet « mobile-360 » : parcours vérifié aussi sur un téléphone de 360 px.
+  test('US-06-05 l’intervenant fait l’appel à la main sur la liste avec photos', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([
+      {
+        name: 'e2e-appel',
+        value: `m${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`,
+        url: new URL(page.url()).origin,
+      },
+    ]);
+    await page.goto('/seances');
+    await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+    await page.getByRole('button', { name: 'Faire l’appel à la main' }).click();
+    await expect(page.getByRole('img', { name: /QR code d’émargement/ })).toBeHidden();
+    await expect(page.getByText('0 / 2 présents')).toBeVisible();
+    // RG-01-27 : photo servie par adresse signée ; sans photo, les initiales.
+    await expect(page.getByRole('img', { name: 'Photo de Léa Martin' })).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    const noe = page.getByRole('listitem').filter({ hasText: 'Noé Petit' });
+    await noe.getByRole('button', { name: 'Présent' }).click();
+    await expect(noe).toContainText('présent · marqué à la main');
+    await expect(page.getByText('1 / 2 présents')).toBeVisible();
+
+    // RG-06-12 : un retard, avec les minutes.
+    const lea = page.getByRole('listitem').filter({ hasText: 'Léa Martin' });
+    await lea.getByRole('button', { name: 'Retard' }).click();
+    await lea.getByLabel('Minutes de retard').fill('12');
+    await expectNoAccessibilityViolations(page);
+    await lea.getByRole('button', { name: 'Noter le retard' }).click();
+    await expect(lea).toContainText('en retard de 12 min');
+    await expect(page.getByText('2 / 2 présents')).toBeVisible();
+    await expect(lea.getByRole('button', { name: 'Retard' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    // Correction : la décision suivante remplace la précédente.
+    await lea.getByRole('button', { name: 'Absent' }).click();
+    await expect(lea).toContainText('absent');
+    await expect(page.getByText('1 / 2 présents')).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+  });
+
   test.describe('RG-06-09 contrôle de localisation à l’émargement', () => {
     /** Appel propre au test : la fausse API garde un état par appel (projets en parallèle). */
     const appelPropre = async (page: Page, context: BrowserContext) => {
@@ -121,10 +166,20 @@ test.describe('Module 06 Émargement', () => {
 
       await page.goto('/seances');
       await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
-      await expect(page.getByRole('listitem').filter({ hasText: 'Léa Martin' })).toContainText(
-        'hors site, à vérifier',
-      );
+      const lea = page.getByRole('listitem').filter({ hasText: 'Léa Martin' });
+      await expect(lea).toContainText('hors site, à vérifier');
+      // Sans décision, le scan à vérifier compte comme présent.
+      await expect(page.getByText('1 / 2 présents')).toBeVisible();
       await expectNoAccessibilityViolations(page);
+
+      // US-06-04 : l'intervenant tranche, le scan reste conservé.
+      await lea.getByRole('button', { name: 'Absent' }).click();
+      await expect(lea).toContainText('absent · scan retiré');
+      await expect(lea.getByRole('button', { name: 'Absent' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await expect(page.getByText('0 / 2 présents')).toBeVisible();
     });
 
     test('RGPD-03 un refus d’autorisation ne bloque pas l’émargement', async ({

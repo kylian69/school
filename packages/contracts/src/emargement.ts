@@ -76,9 +76,28 @@ export const OuvertureAppel = z
   .meta({ id: 'OuvertureAppel' });
 export type OuvertureAppel = z.infer<typeof OuvertureAppel>;
 
+/** US-06-04, RG-06-12 : décision de l'intervenant sur un attendu. */
+export const StatutMarque = z.enum(['present', 'retard', 'absent']);
+export type StatutMarque = z.infer<typeof StatutMarque>;
+
+/** Statut d'un attendu dans la liste d'appel : décision, scan à vérifier, scan, ou rien. */
+export const StatutAppel = z.enum(['present', 'retard', 'absent', 'a-verifier', 'en-attente']);
+export type StatutAppel = z.infer<typeof StatutAppel>;
+
+/** Marquage d'un attendu par l'intervenant (appel manuel, correction d'un scan). */
+export const MarquagePresence = z
+  .object({
+    statut: StatutMarque,
+    /** Minutes de retard, pour un retard seulement. */
+    minutesRetard: z.int().min(1).max(1440).nullable(),
+  })
+  .meta({ id: 'MarquagePresence' });
+export type MarquagePresence = z.infer<typeof MarquagePresence>;
+
 /** Liste d'appel en direct (RG-06-03, RG-06-05 : compteur présents / attendus). */
 export const AppelEnDirect = z
   .object({
+    /** Présents, en retard et scans à vérifier sans décision (RG-06-11). */
     presents: z.int().min(0),
     attendus: z.int().min(0),
     liste: z.array(
@@ -90,11 +109,33 @@ export const AppelEnDirect = z
         rejoue: z.boolean(),
         /** RG-06-11 : résultat du contrôle de localisation, null sans contrôle. */
         localisation: ResultatLocalisation.nullable(),
+        statut: StatutAppel,
+        /** Décision de l'intervenant, qui l'emporte sur le scan ; null sans décision. */
+        marquage: MarquagePresence.extend({ marqueLe: z.iso.datetime() }).nullable(),
       }),
     ),
   })
   .meta({ id: 'AppelEnDirect' });
 export type AppelEnDirect = z.infer<typeof AppelEnDirect>;
+
+/**
+ * Photos des attendus pour la liste d'appel (RG-01-27, RG-06-11) : adresses signées, valables
+ * quelques minutes et pour le seul compte qui les a demandées. Sans photo validée : absent.
+ */
+export const PhotosAppel = z
+  .object({
+    expireLe: z.iso.datetime(),
+    photos: z.array(z.object({ personneId: z.uuid(), url: z.string() })),
+  })
+  .meta({ id: 'PhotosAppel' });
+export type PhotosAppel = z.infer<typeof PhotosAppel>;
+
+/** Marquage tel que gardé en cache pour la liste en direct. */
+export interface MarquageEnCache {
+  statut: StatutMarque;
+  minutesRetard: number | null;
+  marqueLe: string;
+}
 
 /** Clés Valkey du chemin rapide ; la durée de vie suit la fin de la séance. */
 export const CLES_EMARGEMENT = {
@@ -104,6 +145,8 @@ export const CLES_EMARGEMENT = {
   attendus: (seanceId: string) => `emargement:attendus:${seanceId}`,
   /** Présences (hash) : fiche → scan en JSON, écrit une seule fois (RG-00-18). */
   presences: (seanceId: string) => `emargement:presences:${seanceId}`,
+  /** Décisions de l'intervenant (hash) : fiche → marquage en JSON, pour la liste en direct. */
+  marquages: (seanceId: string) => `emargement:marquages:${seanceId}`,
   /** Flux lu par le worker, qui écrit les présences par lots dans PostgreSQL. */
   /** Liste des attendus en cours de chargement, basculée d'un coup (RENAME) une fois complète. */
   attendusEnChargement: (seanceId: string) => `emargement:attendus-chargement:${seanceId}`,

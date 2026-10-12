@@ -4067,6 +4067,27 @@
         }
       }
     },
+    "/api/photos/appel": {
+      "get": {
+        "operationId": "PhotosAppelController.image",
+        "summary": "Photo d’un attendu (JPEG), par adresse signée",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/photos/import": {
       "post": {
         "operationId": "ImportPhotosController.importer",
@@ -5420,6 +5441,66 @@
         }
       }
     },
+    "/api/seances/{id}/appel/photos": {
+      "get": {
+        "operationId": "AppelController.photos",
+        "summary": "Photos des attendus : adresses signées, valables quelques minutes",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotosAppel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seances/{id}/appel/presences/{personneId}": {
+      "put": {
+        "operationId": "AppelController.marquer",
+        "summary": "Marquer un attendu présent, en retard ou absent (appel manuel, correction ou décision sur un scan à vérifier)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarquagePresence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppelEnDirect"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/session/contexte": {
       "get": {
         "operationId": "SessionController.contexte",
@@ -6288,6 +6369,47 @@
                     "hors-site",
                     "inconnu"
                   ]
+                },
+                "statut": {
+                  "type": "string",
+                  "enum": [
+                    "present",
+                    "retard",
+                    "absent",
+                    "a-verifier",
+                    "en-attente"
+                  ]
+                },
+                "marquage": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "statut": {
+                      "type": "string",
+                      "enum": [
+                        "present",
+                        "retard",
+                        "absent"
+                      ]
+                    },
+                    "minutesRetard": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "marqueLe": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "statut",
+                    "minutesRetard",
+                    "marqueLe"
+                  ],
+                  "additionalProperties": false
                 }
               },
               "required": [
@@ -6296,7 +6418,9 @@
                 "prenom",
                 "scanneLe",
                 "rejoue",
-                "localisation"
+                "localisation",
+                "statut",
+                "marquage"
               ],
               "additionalProperties": false
             }
@@ -10734,6 +10858,30 @@
         ],
         "additionalProperties": false
       },
+      "MarquagePresence": {
+        "type": "object",
+        "properties": {
+          "statut": {
+            "type": "string",
+            "enum": [
+              "present",
+              "retard",
+              "absent"
+            ]
+          },
+          "minutesRetard": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          }
+        },
+        "required": [
+          "statut",
+          "minutesRetard"
+        ],
+        "additionalProperties": false
+      },
       "MembrePlateforme": {
         "type": "object",
         "properties": {
@@ -13641,6 +13789,42 @@
           "attenteUrl",
           "statut",
           "motif"
+        ],
+        "additionalProperties": false
+      },
+      "PhotosAppel": {
+        "type": "object",
+        "properties": {
+          "expireLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "personneId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "personneId",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "expireLe",
+          "photos"
         ],
         "additionalProperties": false
       },
