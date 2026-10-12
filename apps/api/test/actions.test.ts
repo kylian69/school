@@ -186,5 +186,23 @@ describe('RG-01-21 export des personnes', () => {
       (e) => e.to === 'admin.actions@exemple.test' && e.subject.startsWith('Votre export'),
     );
     expect(email?.text).toMatch(/101 personnes/);
+
+    // ADR 0007 : le lien passe par l'API, pour le seul compte qui a demandé l'export.
+    const lien = /https?:\/\/\S+\/api\/fichiers\/telechargement\?jeton=[\w-]+/.exec(
+      email?.text ?? '',
+    )?.[0];
+    expect(lien).toBeDefined();
+    const chemin = new URL(lien ?? '').pathname + new URL(lien ?? '').search;
+    const fichier = await app.inject({ method: 'GET', url: chemin, headers: { cookie: admin } });
+    expect(fichier.statusCode, fichier.body).toBe(200);
+    expect(fichier.headers['content-type']).toBe('text/csv; charset=utf-8');
+    expect(fichier.headers['content-disposition']).toMatch(/filename="personnes\.csv"/);
+    expect(fichier.body).toContain('"Masse100"');
+    const autreCompte = await app.inject({
+      method: 'GET',
+      url: chemin,
+      headers: { cookie: direction },
+    });
+    expect(autreCompte.statusCode).toBe(404);
   });
 });

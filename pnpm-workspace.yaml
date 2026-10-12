@@ -5,7 +5,6 @@ packages:
 # Versions partagées entre les paquets (figées au démarrage, cf. architecture section 1).
 catalog:
   '@aws-sdk/client-s3': 3.1146.0
-  '@aws-sdk/s3-request-presigner': 3.1146.0
   '@axe-core/playwright': 4.13.0
   '@eslint/js': 9.39.5
   '@fastify/helmet': 13.1.1

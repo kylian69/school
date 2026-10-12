@@ -63,9 +63,9 @@ import {
 import { and, asc, desc, eq, inArray, isNull, ne, or, gt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { aujourdhui } from '../../shared/dates.js';
-import { ObjectStorage } from '../../shared/storage/object-storage.js';
 import { UploadRejectedError, type UploadService } from '../../shared/storage/uploads.js';
-import { OBJECT_STORAGE, UPLOADS } from '../../shared/tokens.js';
+import { UPLOADS } from '../../shared/tokens.js';
+import { TelechargementsService } from '../fichiers/index.js';
 import { couvrePromotion, promotionsCouvertes } from '../scolarite/index.js';
 import { EntreprisesService } from './entreprises.service.js';
 import { RythmesService } from './rythmes.service.js';
@@ -105,7 +105,7 @@ export class ContratsService {
     private readonly entreprises: EntreprisesService,
     private readonly rythmes: RythmesService,
     @Inject(UPLOADS) private readonly uploads: UploadService,
-    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly telechargements: TelechargementsService,
   ) {}
 
   // ——— Lecture ———
@@ -545,7 +545,7 @@ export class ContratsService {
     );
   }
 
-  /** Lien de téléchargement signé, valable quelques minutes. */
+  /** Adresse de téléchargement par l'API, valable quelques minutes (ADR 0007). */
   async lienDocument(
     tx: Transaction,
     access: Access,
@@ -558,7 +558,13 @@ export class ContratsService {
         : await this.chargerConvention(tx, access, id);
     if (!ligne.documentCle) throw new NotFoundException('Aucun document signé n’a été déposé.');
     const nom = `${objet === 'contrat' ? 'contrat' : 'convention-de-stage'} ${apprenant.prenom} ${apprenant.nom}.pdf`;
-    return { url: await this.storage.signedDownloadUrl(ligne.documentCle, { filename: nom }) };
+    return {
+      url: this.telechargements.adresse(
+        access,
+        { cle: ligne.documentCle, nom, type: 'application/pdf' },
+        { permissions: LECTURE },
+      ),
+    };
   }
 
   // ——— Outils ———

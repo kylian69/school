@@ -10,3 +10,4 @@ Chaque décision prise après la validation de l'[architecture technique](../arc
 | [0004](0004-role-plateforme.md) | Console de la plateforme : rôle PostgreSQL `scolaly_platform` aux droits restreints, sans accès aux données des écoles | Accepté | 05/10/2026 |
 | [0005](0005-migrations-une-transaction-par-migration.md) | Migrations appliquées une par une, chacune dans sa transaction (valeurs d'enum ajoutées validées avant usage) | Accepté | 08/10/2026 |
 | [0006](0006-rotation-cle-maitresse.md) | Rotation de la clé maîtresse : versions lues et validées au démarrage, bascule explicite, ré-chiffrement par le worker, retrait contrôlé | Accepté | 09/10/2026 |
+| [0007](0007-telechargement-fichiers-par-api.md) | Téléchargement des fichiers privés par l'API (jeton chiffré lié au compte, droits revérifiés, flux), sans exposer le stockage S3 | Accepté (à valider) | 12/10/2026 |

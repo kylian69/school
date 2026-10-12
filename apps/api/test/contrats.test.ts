@@ -323,7 +323,7 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
     expect(troisieme.statusCode).toBe(400);
   });
 
-  it('US-03-02 joint le contrat signé en PDF, téléchargé par un lien signé', async () => {
+  it('US-03-02 joint le contrat signé en PDF, téléchargé par l’API pour ce seul compte', async () => {
     const image = await app.inject({
       method: 'PUT',
       url: `/api/contrats/${premier.id}/document`,
@@ -345,7 +345,35 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
     const lien = (
       await requete('GET', `/api/contrats/${premier.id}/document`, admin)
     ).json<LienDocument>();
-    expect(lien.url).toContain('X-Amz-Signature');
+    // ADR 0007 : jamais d'adresse du stockage S3, injoignable depuis le navigateur.
+    expect(lien.url).toMatch(/^\/api\/fichiers\/telechargement\?jeton=[\w-]+$/);
+    expect(lien.url).not.toMatch(/Lina|Noa|contrat/i);
+    const fichier = await app.inject({ method: 'GET', url: lien.url, headers: { cookie: admin } });
+    expect(fichier.statusCode, fichier.body).toBe(200);
+    expect(fichier.rawPayload.toString()).toBe('%PDF-1.4\n% contrat fictif\n%%EOF\n');
+    expect(fichier.headers).toMatchObject({
+      'content-type': 'application/pdf',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    });
+    expect(fichier.headers['content-disposition']).toMatch(
+      /^attachment; filename="contrat [^"]+\.pdf"; filename\*=UTF-8''contrat%20/,
+    );
+
+    const autreCompte = await app.inject({
+      method: 'GET',
+      url: lien.url,
+      headers: { cookie: await compte('direction') },
+    });
+    expect(autreCompte.statusCode).toBe(404);
+    expect((await app.inject({ method: 'GET', url: lien.url })).statusCode).toBe(401);
+    const position = lien.url.indexOf('jeton=') + 10;
+    const altere = await app.inject({
+      method: 'GET',
+      url: `${lien.url.slice(0, position)}${lien.url[position] === 'A' ? 'B' : 'A'}${lien.url.slice(position + 1)}`,
+      headers: { cookie: admin },
+    });
+    expect(altere.statusCode).toBe(404);
   });
 
   it('US-03-12 RG-03-07 rupture : tuteurs fermés, poursuite sans employeur puis retour en initial', async () => {

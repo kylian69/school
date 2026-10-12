@@ -35,7 +35,7 @@ const METHODES_LECTURE = new Set(['GET', 'HEAD', 'OPTIONS']);
 /** Code d'erreur repris par l'interface pour proposer la mise en place (RG-00-13, RG-19-10). */
 export const DOUBLE_AUTHENTIFICATION_REQUISE = 'DOUBLE_AUTHENTIFICATION_REQUISE';
 
-const doubleAuthentificationRequise = () =>
+export const doubleAuthentificationRequise = () =>
   new ForbiddenException({
     code: DOUBLE_AUTHENTIFICATION_REQUISE,
     message:

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FichiersModule } from '../fichiers/index.js';
 import { ActionsController } from './actions.controller.js';
 import { ActionsService } from './actions.service.js';
 import { AttributionsController } from './attributions.controller.js';
@@ -17,6 +18,7 @@ import { ValidationImportService } from './validation-import.service.js';
 
 /** Personnes, photos et imports (I1.4). */
 @Module({
+  imports: [FichiersModule],
   controllers: [
     ActionsController,
     PersonnesController,

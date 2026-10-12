@@ -21,11 +21,11 @@ import type { EmailsQueue } from '../../shared/emails.js';
 import { ObjectStorage } from '../../shared/storage/object-storage.js';
 import { EMAILS, OBJECT_STORAGE } from '../../shared/tokens.js';
 import { ComptesService, InvitationsService } from '../comptes/index.js';
+import { DUREE_TELECHARGEMENT_MAX_SECONDES, TelechargementsService } from '../fichiers/index.js';
 import { PersonnesService } from './personnes.service.js';
 
 /** RG-01-21 : au-delà de 100 personnes, l'export est envoyé par un lien valable 24 h. */
 const EXPORT_DIRECT_MAX = 100;
-const LIEN_EXPORT_SECONDES = 24 * 3600;
 
 /** Actions en masse et export de la liste des personnes (E-01-04 ; US-01-06, RG-01-21). */
 @Injectable()
@@ -36,6 +36,7 @@ export class ActionsService {
     private readonly comptes: ComptesService,
     @Inject(EMAILS) private readonly emails: EmailsQueue,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly telechargements: TelechargementsService,
   ) {}
 
   /**
@@ -131,10 +132,12 @@ export class ActionsService {
       'text/csv',
       createHash('sha256').update(fichier).digest('hex'),
     );
-    const lien = await this.storage.signedDownloadUrl(key, {
-      filename: 'personnes.csv',
-      ttlSeconds: LIEN_EXPORT_SECONDES,
-    });
+    // Lien par l'API (ADR 0007), réservé au compte qui a demandé l'export et revérifié à l'usage.
+    const lien = this.telechargements.adresseAbsolue(
+      access,
+      { cle: key, nom: 'personnes.csv', type: 'text/csv; charset=utf-8' },
+      { permissions: ['personnes:exporter'], dureeSecondes: DUREE_TELECHARGEMENT_MAX_SECONDES },
+    );
     const [compte] = await tx
       .select({ email: authUser.email })
       .from(authUser)

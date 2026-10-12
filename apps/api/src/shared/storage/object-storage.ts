@@ -1,15 +1,16 @@
+import { Readable } from 'node:stream';
 import {
   CreateBucketCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  NoSuchKey,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Env } from '../../config/env.js';
 
-/** Durée de validité par défaut d'un lien de téléchargement signé (architecture section 4). */
+/** Durée de validité par défaut d'une adresse de téléchargement signée (architecture section 4). */
 export const SIGNED_URL_TTL_SECONDS = 300;
 
 /**
@@ -71,21 +72,21 @@ export class ObjectStorage {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
-  /** Lien de téléchargement signé, valable quelques minutes, qui force le téléchargement. */
-  signedDownloadUrl(
-    key: string,
-    options: { filename: string; ttlSeconds?: number },
-  ): Promise<string> {
-    const filename = options.filename.replace(/[^\p{L}\p{N}._ -]/gu, '_');
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-      }),
-      { expiresIn: options.ttlSeconds ?? SIGNED_URL_TTL_SECONDS },
-    );
+  /**
+   * Contenu d'un objet en flux, pour le relayer par l'API sans le charger en mémoire : le stockage
+   * n'est jamais exposé au navigateur (ADR 0007). Renvoie null si l'objet n'existe pas.
+   */
+  async lireFlux(key: string): Promise<{ flux: Readable; taille: number | undefined } | null> {
+    try {
+      const reponse = await this.client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      if (!(reponse.Body instanceof Readable)) throw new Error(`Objet illisible : ${key}`);
+      return { flux: reponse.Body, taille: reponse.ContentLength };
+    } catch (erreur) {
+      if (erreur instanceof NoSuchKey) return null;
+      throw erreur;
+    }
   }
 
   destroy(): void {

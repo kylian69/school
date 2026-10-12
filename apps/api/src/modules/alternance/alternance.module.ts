@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AnnuaireEntreprises } from '../../shared/annuaire.js';
+import { FichiersModule } from '../fichiers/index.js';
 import { ContratsController } from './contrats.controller.js';
 import { ContratsService } from './contrats.service.js';
 import { EntreprisesController } from './entreprises.controller.js';
@@ -9,6 +10,7 @@ import { RythmesService } from './rythmes.service.js';
 
 /** Alternance et stages (module 03) : entreprises, tuteurs, contrats, conventions et rythmes (I3.3). */
 @Module({
+  imports: [FichiersModule],
   controllers: [EntreprisesController, ContratsController, RythmesController],
   providers: [AnnuaireEntreprises, EntreprisesService, ContratsService, RythmesService],
   exports: [EntreprisesService, RythmesService],

@@ -116,7 +116,7 @@ export function emailExportPret(options: {
   lien: string;
   total: number;
 }): EmailJob {
-  const presentation = `Votre export de ${String(options.total)} personnes de ${options.ecole} est prêt. Le lien est valable 24 heures :`;
+  const presentation = `Votre export de ${String(options.total)} personnes de ${options.ecole} est prêt. Le lien est valable 24 heures, à ouvrir en étant connecté à Scolaly avec votre compte :`;
   const mention =
     'Ce fichier contient des données personnelles : ne le transférez qu’aux personnes habilitées.';
   return {
