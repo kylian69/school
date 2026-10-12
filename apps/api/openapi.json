@@ -2102,6 +2102,27 @@
         }
       }
     },
+    "/api/fichiers/telechargement": {
+      "get": {
+        "operationId": "TelechargementsController.telecharger",
+        "summary": "Télécharger un fichier privé (contrat signé, export…), par adresse chiffrée",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/formations": {
       "get": {
         "operationId": "FormationsController.lister",

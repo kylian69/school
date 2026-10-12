@@ -157,28 +157,20 @@ describe('Dépôt de fichiers et liens signés (stockage S3)', () => {
     expect(detectType(Buffer.from('pas un PDF'))).toBeNull();
   });
 
-  it("stocke un fichier valide sous l'organisation et le sert par un lien signé de courte durée", async () => {
+  it("stocke un fichier valide sous l'organisation et le relit en flux, sans adresse publique", async () => {
     const stocke = await uploads.store(organisationId, 'essai', pdf, policy);
     expect(stocke).toMatchObject({ type: 'pdf', mime: 'application/pdf', size: pdf.length });
     expect(stocke.key).toMatch(new RegExp(`^organisations/${organisationId}/essai/[0-9a-f-]{36}$`));
 
-    const url = await storage.signedDownloadUrl(stocke.key, { filename: 'relevé de notes.pdf' });
-    expect(url).toContain('X-Amz-Expires=300');
-    const reponse = await fetch(url);
-    expect(reponse.status).toBe(200);
-    expect(Buffer.from(await reponse.arrayBuffer()).equals(pdf)).toBe(true);
-    expect(reponse.headers.get('content-disposition')).toMatch(
-      /^attachment; filename\*=UTF-8''relev/,
-    );
-    expect(reponse.headers.get('x-amz-meta-sha256')).toBe(stocke.sha256);
+    const objet = await storage.lireFlux(stocke.key);
+    expect(objet?.taille).toBe(pdf.length);
+    const morceaux: Buffer[] = [];
+    for await (const morceau of objet?.flux ?? []) morceaux.push(morceau as Buffer);
+    expect(Buffer.concat(morceaux).equals(pdf)).toBe(true);
   });
 
-  it('un lien signé altéré est refusé', async () => {
-    const stocke = await uploads.store(organisationId, 'essai', pdf, policy);
-    const url = await storage.signedDownloadUrl(stocke.key, { filename: 'a.pdf' });
-    expect(
-      (await fetch(url.replace(/X-Amz-Signature=[0-9a-f]+/, 'X-Amz-Signature=00'))).status,
-    ).toBe(403);
+  it('un objet absent se lit comme introuvable', async () => {
+    expect(await storage.lireFlux(`organisations/${organisationId}/essai/${newId()}`)).toBeNull();
   });
 
   it.each([
