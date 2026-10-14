@@ -33,7 +33,7 @@ import {
   type Database,
   type Transaction,
 } from '@scolaly/db';
-import { comptePresent, statutDansAppel, verifierMarquage } from '@scolaly/domain';
+import { comptePresent, modePresence, statutDansAppel, verifierMarquage } from '@scolaly/domain';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import type { ServerResponse } from 'node:http';
@@ -69,7 +69,12 @@ const RELECTURE_BASE_MS = 5_000;
 type Attendu = { personneId: string; nom: string; prenom: string };
 type Scans = Map<
   string,
-  { scanneLe: string; rejoue: boolean; localisation: ResultatLocalisation | null }
+  {
+    scanneLe: string;
+    rejoue: boolean;
+    localisation: ResultatLocalisation | null;
+    aDistance: boolean;
+  }
 >;
 type Marquages = Map<string, MarquageEnCache>;
 
@@ -99,6 +104,7 @@ function composer(
       scanneLe: p.scanneLe,
       rejoue: p.rejoue,
       localisation: p.localisation ?? null,
+      aDistance: p.aDistance ?? false,
     });
   // La décision la plus récente l'emporte : la base fait foi, le cache peut être en avance.
   const marquages: Marquages = new Map(etat.marquagesEnBase);
@@ -117,6 +123,7 @@ function composer(
       scanneLe: scan?.scanneLe ?? null,
       rejoue: scan?.rejoue ?? false,
       localisation: scan?.localisation ?? null,
+      aDistance: scan?.aDistance ?? false,
       statut: statutDansAppel(scan, marquage),
       marquage,
     };
@@ -217,6 +224,7 @@ export class AppelService implements OnModuleDestroy {
           debut: ligne.debut.getTime(),
           fin: ligne.fin.getTime(),
           distanciel: ligne.distanciel,
+          mode: modePresence(ligne),
           // RG-06-10 : périmètre préchargé, le scan le compare sans requête SQL.
           localisation: perimetreAControler(
             ligne.distanciel,
@@ -244,6 +252,7 @@ export class AppelService implements OnModuleDestroy {
         'base64url',
       ),
       periodeSecondes: JETON_PERIODE_SECONDES,
+      mode: modePresence(ligne),
       maintenant: new Date().toISOString(),
     };
   }
@@ -252,7 +261,12 @@ export class AppelService implements OnModuleDestroy {
     return new Map(
       lignes.map((p) => [
         p.personneId,
-        { scanneLe: p.scanneLe.toISOString(), rejoue: p.rejoue, localisation: p.localisation },
+        {
+          scanneLe: p.scanneLe.toISOString(),
+          rejoue: p.rejoue,
+          localisation: p.localisation,
+          aDistance: p.aDistance,
+        },
       ]),
     );
   }

@@ -17,6 +17,8 @@ export interface PresenceAEcrire {
   rejoue: boolean;
   /** RG-06-10 : résultat du contrôle de localisation ; absent ou null sans contrôle. */
   localisation?: 'sur-place' | 'hors-site' | 'inconnu' | null;
+  /** RG-06-08 : émargement à distance ; absent : en salle. */
+  aDistance?: boolean;
 }
 
 /**
@@ -223,6 +225,7 @@ export async function enregistrerPresences(
             mode: p.mode,
             rejoue: p.rejoue,
             localisation: p.localisation ?? null,
+            aDistance: p.aDistance ?? false,
           })),
         )
         .onConflictDoNothing({
@@ -254,6 +257,7 @@ export async function enregistrerPresenceDirecte(
   scanneLe: Date;
   rejoue: boolean;
   localisation: NonNullable<PresenceAEcrire['localisation']> | null;
+  aDistance: boolean;
 } | null> {
   const [ajoutee] = await tx
     .insert(presence)
@@ -265,6 +269,7 @@ export async function enregistrerPresenceDirecte(
       mode: p.mode,
       rejoue: p.rejoue,
       localisation: p.localisation ?? null,
+      aDistance: p.aDistance ?? false,
     })
     .onConflictDoNothing({
       target: [presence.organisationId, presence.seanceId, presence.personneId],
@@ -276,6 +281,7 @@ export async function enregistrerPresenceDirecte(
       scanneLe: presence.scanneLe,
       rejoue: presence.rejoue,
       localisation: presence.localisation,
+      aDistance: presence.aDistance,
     })
     .from(presence)
     .where(and(eq(presence.seanceId, p.seanceId), eq(presence.personneId, p.personneId)));

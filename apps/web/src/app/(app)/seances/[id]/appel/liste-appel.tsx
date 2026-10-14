@@ -31,8 +31,11 @@ const scanEnRetard = (l: Ligne, debut: number) =>
 const minutesDepuis = (debut: number) => Math.max(1, Math.ceil((Date.now() - debut) / 60_000));
 
 /** Ce que l'intervenant lit sous le nom : statut, heure du scan, origine de la décision. */
-function etatDe(l: Ligne): { texte: string; ton: string } {
-  const heure = l.scanneLe ? formatHeure(l.scanneLe) : null;
+function etatDe(l: Ligne, hybride: boolean): { texte: string; ton: string } {
+  // RG-06-08 : en hybride, l'heure du scan dit aussi s'il a été fait à distance.
+  const heure = l.scanneLe
+    ? `${formatHeure(l.scanneLe)}${hybride && l.aDistance ? ` · ${t.aDistance}` : ''}`
+    : null;
   switch (l.statut) {
     case 'present':
       return {
@@ -69,11 +72,14 @@ function etatDe(l: Ligne): { texte: string; ton: string } {
 export function ListeAppel({
   seanceId,
   debut,
+  hybride = false,
   appel,
   surAppel,
 }: {
   seanceId: string;
   debut: number;
+  /** Séance hybride : les émargements à distance sont signalés (RG-06-08). */
+  hybride?: boolean;
   appel: Appel | null;
   surAppel: (appel: Appel) => void;
 }) {
@@ -156,7 +162,7 @@ export function ListeAppel({
       >
         {liste.map((l) => {
           const nom = `${l.prenom} ${l.nom}`;
-          const etat = etatDe(l);
+          const etat = etatDe(l, hybride);
           const photo = photos.get(l.personneId);
           const choisi: StatutMarque | null =
             l.marquage?.statut ?? (l.statut === 'present' ? 'present' : null);

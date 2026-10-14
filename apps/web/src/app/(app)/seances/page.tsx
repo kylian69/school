@@ -50,7 +50,8 @@ export default async function SeancesPage() {
                   </h2>
                   <p className="text-sm text-muted">
                     {t.horaire(formatHeure(s.debut), formatHeure(s.fin))}
-                    {s.distanciel ? ` · ${t.distanciel}` : ''}
+                    {s.mode === 'distanciel' ? ` · ${t.distanciel}` : ''}
+                    {s.mode === 'hybride' ? ` · ${t.hybride}` : ''}
                     {s.intervenant ? ` · ${s.intervenant}` : ''}
                   </p>
                 </div>

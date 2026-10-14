@@ -8,6 +8,7 @@ import {
   withOrganisation,
   type Database,
 } from '@scolaly/db';
+import { modePresence } from '@scolaly/domain';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Magasin } from './cache-emargement.js';
 
@@ -39,6 +40,7 @@ export class MagasinDegrade implements Magasin {
           debut: ligne.debut.getTime(),
           fin: ligne.fin.getTime(),
           distanciel: ligne.distanciel,
+          mode: modePresence(ligne),
           // RG-06-10 : même contrôle de localisation qu'avec le cache.
           localisation: perimetreAControler(
             ligne.distanciel,
@@ -67,6 +69,7 @@ export class MagasinDegrade implements Magasin {
           scanneLe: existante.scanneLe.toISOString(),
           rejoue: existante.rejoue,
           localisation: existante.localisation,
+          aDistance: existante.aDistance,
         }
       : null;
   }

@@ -87,10 +87,21 @@ interface Gabarit {
   statut?: 'publiee' | 'brouillon';
   coAnimation?: boolean;
   distanciel?: boolean;
+  /** RG-06-08 : en salle et en visio (lien de visio sur une séance en salle). */
+  hybride?: boolean;
 }
 
 const GABARITS: readonly Gabarit[] = [
-  { jour: 0, debut: '09:00', fin: '12:00', type: 'cm', module: 0, groupe: null, serie: 1 },
+  {
+    jour: 0,
+    debut: '09:00',
+    fin: '12:00',
+    type: 'cm',
+    module: 0,
+    groupe: null,
+    serie: 1,
+    hybride: true,
+  },
   { jour: 0, debut: '13:30', fin: '15:30', type: 'td', module: 1, groupe: 0, serie: 1 },
   { jour: 0, debut: '15:45', fin: '17:45', type: 'td', module: 1, groupe: 1, serie: 1 },
   { jour: 1, debut: '09:00', fin: '11:00', type: 'tp', module: 2, groupe: 0, serie: 2 },
@@ -511,7 +522,8 @@ async function planifierEcole(
           activite: module ? null : (g.activite ?? null),
           salleId: choisie.id,
           distanciel: g.distanciel ?? false,
-          lienVisio: g.distanciel ? `https://visio.${domaine}/${planifiee.id.slice(-8)}` : null,
+          lienVisio:
+            g.distanciel || g.hybride ? `https://visio.${domaine}/${planifiee.id.slice(-8)}` : null,
           serieId,
         });
         lignes.publics.push({

@@ -195,6 +195,99 @@ test.describe('Module 06 Émargement', () => {
     });
   });
 
+  test.describe('US-06-06 émargement à distance', () => {
+    /** Appel propre au test, séance fictive dans le mode voulu (cookies lus par la fausse API). */
+    const appelEnMode = async (page: Page, context: BrowserContext, mode: string) => {
+      const origine = new URL(page.url()).origin;
+      await context.addCookies([
+        {
+          name: 'e2e-appel',
+          value: `d${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`,
+          url: origine,
+        },
+        { name: 'e2e-mode', value: mode, url: origine },
+      ]);
+      // La position est disponible : le test vérifie qu'elle n'est pas demandée à distance.
+      await context.grantPermissions(['geolocation']);
+      await context.setGeolocation({ latitude: 45.79, longitude: 4.85, accuracy: 15 });
+    };
+
+    test('RG-06-08 séance à distance : QR partagé dans la visio, code saisi sans localisation', async ({
+      page,
+      context,
+    }) => {
+      await appelEnMode(page, context, 'distanciel');
+      await page.goto('/seances');
+      await expect(page.getByText(/· À distance/)).toBeVisible();
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await expect(page.getByText(/Partagez cette fenêtre dans la visioconférence/)).toBeVisible();
+      await expect(page.getByText(/il n’est valable que pendant la visio/)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+
+      const apprenant = await context.newPage();
+      await apprenant.goto('/emarger');
+      await expect(apprenant.getByText(/si vous suivez sur cet appareil/)).toBeVisible();
+      await expect(
+        apprenant.getByRole('region', { name: 'Contrôle de présence sur place' }),
+      ).toHaveCount(0);
+      await expectNoAccessibilityViolations(apprenant);
+      const corps = apprenant.waitForRequest('**/api/emargement/code');
+      await apprenant.getByLabel('Code à 6 chiffres').fill('123456');
+      await apprenant.getByRole('button', { name: 'Valider le code' }).click();
+      expect((await corps).postDataJSON()).not.toHaveProperty('position');
+      await expect(apprenant.getByText('Présence enregistrée')).toBeVisible();
+      await expect(apprenant.getByText('Émargement à distance')).toBeVisible();
+      await expect(apprenant.getByText(/l’intervenant la vérifiera/)).toHaveCount(0);
+      await apprenant.close();
+
+      // Liste en direct : présent, sans « à vérifier » de localisation.
+      await expect(page.getByText('1 / 2 présents')).toBeVisible();
+      const lea = page.getByRole('listitem').filter({ hasText: 'Léa Martin' });
+      await expect(lea).not.toContainText('à vérifier');
+    });
+
+    test('RG-06-08 séance hybride : l’apprenant à distance le déclare, l’intervenant le voit', async ({
+      page,
+      context,
+    }) => {
+      await appelEnMode(page, context, 'hybride');
+      await page.goto('/emarger');
+      const choix = page.getByRole('group', {
+        name: 'Comment suivez-vous « Droit des affaires » ?',
+      });
+      await expect(choix.getByRole('radio', { name: 'En salle' })).toBeChecked();
+      // En salle, le contrôle de localisation reste annoncé.
+      await expect(
+        page.getByRole('region', { name: 'Contrôle de présence sur place' }),
+      ).toBeVisible();
+      await choix.getByRole('radio', { name: 'À distance, en visio' }).check();
+      await expect(
+        page.getByRole('region', { name: 'Contrôle de présence sur place' }),
+      ).toHaveCount(0);
+      await expect(page.getByText(/votre position n’est pas demandée/)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+      const corps = page.waitForRequest('**/api/emargement/code');
+      await page.getByLabel('Code à 6 chiffres').fill('123456');
+      await page.getByRole('button', { name: 'Valider le code' }).click();
+      const envoye = (await corps).postDataJSON() as Record<string, unknown>;
+      expect(envoye).toMatchObject({ aDistance: true });
+      expect(envoye).not.toHaveProperty('position');
+      await expect(page.getByText('Émargement à distance')).toBeVisible();
+
+      await page.goto('/seances');
+      await expect(page.getByText(/· Hybride/)).toBeVisible();
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await expect(page.getByText(/partagez-le dans la visioconférence/)).toBeVisible();
+      const lea = page.getByRole('listitem').filter({ hasText: 'Léa Martin' });
+      await expect(lea).toContainText('à distance');
+      await expect(page.getByText('1 / 2 présents')).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+      // US-06-04 : l'intervenant garde la main sur un émargement à distance.
+      await lea.getByRole('button', { name: 'Absent' }).click();
+      await expect(page.getByText('0 / 2 présents')).toBeVisible();
+    });
+  });
+
   test('US-06-02 l’apprenant émarge avec le code à 6 chiffres', async ({ page }) => {
     await page.goto('/emarger');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Émarger');

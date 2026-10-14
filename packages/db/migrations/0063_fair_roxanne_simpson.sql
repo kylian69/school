@@ -1,0 +1,1 @@
+ALTER TABLE "presence" ADD COLUMN "a_distance" boolean DEFAULT false NOT NULL;

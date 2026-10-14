@@ -231,6 +231,11 @@ const SEANCE_ID = '0192f0a4-1b2c-7d3e-8f40-0000000000aa';
 const emargementsLea = new Map();
 // RG-06-10 : résultat du contrôle de localisation du scan de Léa, par appel.
 const localisationsLea = new Map();
+// RG-06-08 : émargement à distance de Léa, par appel.
+const aDistanceLea = new Map();
+// Mode de présence de la séance fictive, par test (cookie e2e-mode) : présentiel par défaut.
+const modeSeance = (request) =>
+  (request.headers.cookie ?? '').match(/e2e-mode=(distanciel|hybride)/)?.[1] ?? 'presentiel';
 // Campus fictif des E2E (position simulée par Playwright) : centre et rayon.
 const CAMPUS_E2E = { latitude: 45.75, longitude: 4.85, rayonMetres: 300 };
 const localiser = (position) => {
@@ -265,6 +270,7 @@ const appelFictif = (request) => {
       scanneLe: emargementsLea.get(cle) ?? null,
       rejoue: false,
       localisation: localisationsLea.get(cle) ?? null,
+      aDistance: aDistanceLea.get(cle) ?? false,
     },
     {
       personneId: NOE_ID,
@@ -273,6 +279,7 @@ const appelFictif = (request) => {
       scanneLe: null,
       rejoue: false,
       localisation: null,
+      aDistance: false,
     },
   ].map((l) => {
     const marquage = marquagesAppel.get(`${cle}|${l.personneId}`) ?? null;
@@ -284,17 +291,19 @@ const appelFictif = (request) => {
 // RG-01-27 : photo fictive de Léa (Noé n'en a pas : initiales).
 const PHOTO_FICTIVE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#4F46E5"/></svg>';
-const seanceFictive = () => {
+const seanceFictive = (request) => {
+  const mode = modeSeance(request);
   const debut = new Date(Date.now() - 60_000);
   return {
     id: SEANCE_ID,
     libelle: 'Droit des affaires',
     debut: debut.toISOString(),
     fin: new Date(debut.getTime() + 3 * 3600_000).toISOString(),
-    distanciel: false,
+    distanciel: mode === 'distanciel',
+    mode,
     intervenant: 'Sophie Arnaud',
     modifiee: true,
-    localisation: true,
+    localisation: mode !== 'distanciel',
   };
 };
 
@@ -2252,11 +2261,12 @@ createServer(async (request, response) => {
   }
   // Émargement : une séance fictive en cours, deux attendus ; le code 123456 est accepté.
   if (path === '/api/seances' || path === '/api/moi/seances') {
-    return json(200, [seanceFictive()]);
+    return json(200, [seanceFictive(request)]);
   }
   if (path === `/api/seances/${SEANCE_ID}/appel/ouverture` && request.method === 'POST') {
-    const s = seanceFictive();
+    const s = seanceFictive(request);
     return json(200, {
+      mode: s.mode,
       seanceId: SEANCE_ID,
       libelle: s.libelle,
       debut: s.debut,
@@ -2320,7 +2330,7 @@ createServer(async (request, response) => {
     return;
   }
   if (path === '/api/emargement/code' && request.method === 'POST') {
-    const { code, position } = await readBody(request);
+    const { code, position, aDistance } = await readBody(request);
     if (code !== '123456') {
       return json(400, {
         message: 'Ce code n’est pas le bon : saisissez celui affiché maintenant.',
@@ -2329,15 +2339,19 @@ createServer(async (request, response) => {
     const cle = cleAppel(request);
     if (!emargementsLea.has(cle)) {
       emargementsLea.set(cle, new Date().toISOString());
-      localisationsLea.set(cle, localiser(position));
+      const mode = modeSeance(request);
+      const distance = mode === 'distanciel' || (mode === 'hybride' && aDistance === true);
+      aDistanceLea.set(cle, distance);
+      localisationsLea.set(cle, distance ? null : localiser(position));
     }
     return json(200, {
       statut: 'present',
-      seance: seanceFictive().libelle,
+      seance: seanceFictive(request).libelle,
       scanneLe: emargementsLea.get(cle),
       retardMinutes: 0,
       rejoue: false,
       localisation: localisationsLea.get(cle),
+      aDistance: aDistanceLea.get(cle),
     });
   }
   // Flux iCal personnel (RG-04-15) : l'adresse est réaffichée à son propriétaire.

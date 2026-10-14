@@ -98,11 +98,24 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
   const idInfo = useId();
   const [seanceCode, setSeanceCode] = useState(seances[0]?.id ?? '');
   const [lecturePosition, setLecturePosition] = useState(false);
+  /** RG-06-08 : séances hybrides que l'apprenant déclare suivre à distance. */
+  const [aDistance, setADistance] = useState<ReadonlySet<string>>(new Set());
   /** Lecture lancée à l'ouverture de la caméra, pour être prête quand le QR est lu. */
   const position = useRef<Promise<PositionScan | undefined> | null>(null);
-  const controlees = useMemo(
-    () => new Set(seances.filter((s) => s.localisation).map((s) => s.id)),
+  const hybrides = useMemo(
+    () => new Set(seances.filter((s) => s.mode === 'hybride').map((s) => s.id)),
     [seances],
+  );
+  // À distance, la position n'est pas demandée (RG-06-08).
+  const controlees = useMemo(
+    () => new Set(seances.filter((s) => s.localisation && !aDistance.has(s.id)).map((s) => s.id)),
+    [seances, aDistance],
+  );
+  /** Déclaration jointe au scan d'une séance hybride ; rien ailleurs. */
+  const declaration = useCallback(
+    (seanceId: string | undefined) =>
+      seanceId && hybrides.has(seanceId) ? { aDistance: aDistance.has(seanceId) } : {},
+    [hybrides, aDistance],
   );
   const controle = controlees.size > 0;
 
@@ -146,11 +159,18 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
   const scanner = useCallback(
     async (jeton: string) => {
       setCamera('fermee');
-      const lue = await positionPour(lireJeton(jeton)?.seanceId);
+      const seanceId = lireJeton(jeton)?.seanceId;
+      const lue = await positionPour(seanceId);
       // Hors ligne, seul le jeton est gardé : la position n'est jamais stockée sur l'appareil.
-      setEnvoi(await envoyerScan('/api/emargement/scan', { jeton, position: lue }, jeton));
+      setEnvoi(
+        await envoyerScan(
+          '/api/emargement/scan',
+          { jeton, position: lue, ...declaration(seanceId) },
+          jeton,
+        ),
+      );
     },
-    [positionPour],
+    [positionPour, declaration],
   );
 
   // Lecture du QR à la caméra : une image toutes les 200 ms, décodée par jsQR.
@@ -195,7 +215,12 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
     const code = typeof valeur === 'string' ? valeur.trim() : '';
     const lue = await positionPour(seanceCode);
     setEnvoi(
-      await envoyerScan('/api/emargement/code', { seanceId: seanceCode, code, position: lue }),
+      await envoyerScan('/api/emargement/code', {
+        seanceId: seanceCode,
+        code,
+        position: lue,
+        ...declaration(seanceCode),
+      }),
     );
   }
 
@@ -211,6 +236,7 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
           {t.aHeure(formatHeure(r.scanneLe))}
           {r.retardMinutes > 0 ? ` · ${t.retard(r.retardMinutes)}` : ''}
         </p>
+        {r.aDistance ? <Badge tone="accent">{t.enregistreeADistance}</Badge> : null}
         {r.localisation === 'hors-site' || r.localisation === 'inconnu' ? (
           <p className="rounded-control bg-warn-soft p-3 text-sm">
             {t.localisationAVerifier[r.localisation]}
@@ -259,6 +285,8 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
               <div key={s.id}>
                 <h2 className="flex items-center gap-2 text-base font-semibold">
                   {s.libelle}
+                  {s.mode === 'distanciel' ? <Badge tone="accent">{t.distanciel}</Badge> : null}
+                  {s.mode === 'hybride' ? <Badge tone="accent">{t.hybride}</Badge> : null}
                   {s.modifiee ? (
                     <Badge tone="warn" title={t.modifieeAide}>
                       {t.modifiee}
@@ -269,6 +297,23 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
                   {t.horaire(formatHeure(s.debut), formatHeure(s.fin))}
                   {s.intervenant ? ` · ${s.intervenant}` : ''}
                 </p>
+                {s.mode === 'distanciel' ? (
+                  <p className="mt-1 text-sm">{t.visioApprenant}</p>
+                ) : null}
+                {s.mode === 'hybride' ? (
+                  <ChoixSuivi
+                    seance={s}
+                    aDistance={aDistance.has(s.id)}
+                    onChange={(distance) => {
+                      setADistance((avant) => {
+                        const apres = new Set(avant);
+                        if (distance) apres.add(s.id);
+                        else apres.delete(s.id);
+                        return apres;
+                      });
+                    }}
+                  />
+                ) : null}
               </div>
             ))}
             {camera === 'ouverte' ? (
@@ -344,5 +389,43 @@ export function EcranEmarger({ seances }: { seances: readonly SeanceProche[] }) 
         </>
       )}
     </div>
+  );
+}
+
+/** RG-06-08 : séance hybride, l'apprenant dit s'il la suit en salle ou à distance. */
+function ChoixSuivi({
+  seance,
+  aDistance,
+  onChange,
+}: {
+  seance: SeanceProche;
+  aDistance: boolean;
+  onChange: (aDistance: boolean) => void;
+}) {
+  const nom = useId();
+  return (
+    <fieldset className="mt-2 flex flex-col gap-2">
+      <legend className="text-sm font-medium">{t.suiviHybride(seance.libelle)}</legend>
+      <div className="flex flex-wrap gap-2">
+        {(['salle', 'distance'] as const).map((choix) => (
+          <label
+            key={choix}
+            className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-soft"
+          >
+            <input
+              type="radio"
+              name={nom}
+              value={choix}
+              checked={aDistance === (choix === 'distance')}
+              onChange={() => {
+                onChange(choix === 'distance');
+              }}
+            />
+            {t.suivi[choix]}
+          </label>
+        ))}
+      </div>
+      {aDistance ? <p className="text-sm text-muted">{t.suiviDistanceAide}</p> : null}
+    </fieldset>
   );
 }

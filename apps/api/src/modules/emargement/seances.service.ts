@@ -11,7 +11,7 @@ import {
   seanceSerie,
   type Transaction,
 } from '@scolaly/db';
-import { badgeModifie, jourLocal } from '@scolaly/domain';
+import { badgeModifie, jourLocal, modePresence } from '@scolaly/domain';
 import { and, asc, eq, gt, inArray, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
@@ -43,6 +43,8 @@ export class SeancesService {
         debut: seance.debut,
         fin: seance.fin,
         distanciel: seance.distanciel,
+        // RG-06-08 : lu pour le mode de présence seulement, jamais renvoyé ici.
+        lienVisio: seance.lienVisio,
         modifieeLe: seance.modifieeLe,
         salleId: seance.salleId,
         serieId: seance.serieId,
@@ -105,6 +107,7 @@ export class SeancesService {
       debut: l.debut.toISOString(),
       fin: l.fin.toISOString(),
       distanciel: l.distanciel,
+      mode: modePresence(l),
       intervenant: noms.get(l.id)?.join(', ') ?? null,
       modifiee: badgeModifie(l.modifieeLe, new Date(maintenant), dureeBadge),
       localisation: controles.get(l.id) ?? false,

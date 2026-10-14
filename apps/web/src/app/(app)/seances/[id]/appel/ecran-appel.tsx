@@ -7,7 +7,7 @@ import {
   type AppelEnDirect as Appel,
   type OuvertureAppel as Ouverture,
 } from '@scolaly/contracts';
-import { Button, Card } from '@scolaly/ui';
+import { Badge, Button, Card } from '@scolaly/ui';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { fr } from '@/i18n/fr';
@@ -100,6 +100,7 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
     );
   }
   if (!ouverture) return <p className="text-sm text-muted">{t.appelEnCours}…</p>;
+  const { mode } = ouverture.donnees;
 
   return (
     <>
@@ -111,6 +112,16 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
         <p className="text-sm text-muted">
           {t.horaire(formatHeure(ouverture.donnees.debut), formatHeure(ouverture.donnees.fin))}
         </p>
+        {mode !== 'presentiel' ? (
+          // RG-06-08 : à distance, le QR est partagé dans la visio ; le code sert sur le même appareil.
+          <div className="flex flex-col gap-1 rounded-control bg-accent-soft p-3 text-sm">
+            <p className="flex items-center gap-2 font-medium">
+              {t.visioTitre}
+              <Badge tone="accent">{mode === 'hybride' ? t.hybride : t.distanciel}</Badge>
+            </p>
+            <p>{t.visioIntervenant[mode]}</p>
+          </div>
+        ) : null}
         <div>
           {/* US-06-05 : appel à la main, sans QR (panne, petit groupe). */}
           <Button
@@ -146,13 +157,16 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
             <p className="font-mono text-3xl font-semibold tracking-[0.3em]" data-testid="code">
               {qr?.code ?? '······'}
             </p>
-            <p className="max-w-sm text-xs text-muted">{t.codeAide}</p>
+            <p className="max-w-sm text-xs text-muted">
+              {mode === 'presentiel' ? t.codeAide : t.codeAideVisio}
+            </p>
           </div>
         </Card>
         <Card className="flex flex-col gap-3">
           <ListeAppel
             seanceId={seanceId}
             debut={Date.parse(ouverture.donnees.debut)}
+            hybride={mode === 'hybride'}
             appel={appel}
             surAppel={setAppel}
           />

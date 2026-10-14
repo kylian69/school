@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { AppelEnDirect, CLES_EMARGEMENT } from '@scolaly/contracts';
 import { createDatabase, presence } from '@scolaly/db';
-import { count, countDistinct, eq } from 'drizzle-orm';
+import { and, count, countDistinct, eq } from 'drizzle-orm';
 import { createValkey } from '../shared/valkey.js';
 
 /**
@@ -78,6 +78,14 @@ try {
     .select({ lignes: count(), apprenants: countDistinct(presence.personneId) })
     .from(presence)
     .where(eq(presence.seanceId, seanceId));
+  // RG-06-08 : un apprenant sur quatre (indices multiples de 4) a émargé à distance, sans contrôle.
+  const [distance] = await owner.db
+    .select({
+      lignes: count(),
+      localisees: count(presence.localisation),
+    })
+    .from(presence)
+    .where(and(eq(presence.seanceId, seanceId), eq(presence.aDistance, true)));
   const enCache = await valkey.hlen(CLES_EMARGEMENT.presences(seanceId));
   const enDirect = intervenant ? await presentsEnDirect(intervenant) : null;
   const bilan = {
@@ -90,6 +98,8 @@ try {
     pertes: attendu - (base?.apprenants ?? 0),
     doublons: (base?.lignes ?? 0) - (base?.apprenants ?? 0),
     fluxVideEnMs: ecoulement,
+    emargementsADistance: distance?.lignes ?? 0,
+    emargementsADistanceLocalises: distance?.localisees ?? 0,
     presentsDansLaListeEnDirect: enDirect,
   };
   console.warn(JSON.stringify(bilan, null, 2));
@@ -97,8 +107,20 @@ try {
   const cacheFaux = !degrade && enCache !== attendu;
   // US-06-03 : la liste en direct de l'intervenant compte tous les scans acceptés.
   const directFaux = enDirect !== null && enDirect !== attendu;
-  if (bilan.pertes !== 0 || bilan.doublons !== 0 || cacheFaux || doubleAcceptation || directFaux) {
-    console.error('Échec : présences perdues, en double ou absentes de la liste en direct.');
+  const distanceFaux =
+    bilan.emargementsADistanceLocalises !== 0 ||
+    bilan.emargementsADistance !== Math.ceil(attendu / 4);
+  if (
+    bilan.pertes !== 0 ||
+    bilan.doublons !== 0 ||
+    cacheFaux ||
+    doubleAcceptation ||
+    directFaux ||
+    distanceFaux
+  ) {
+    console.error(
+      'Échec : présences perdues, en double, absentes de la liste en direct ou mal marquées à distance.',
+    );
     process.exitCode = 1;
   } else {
     console.warn('0 perte, 0 doublon, liste en direct complète.');

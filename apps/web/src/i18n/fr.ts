@@ -878,6 +878,25 @@ export const fr = {
     marquageEchec:
       'Le statut n’a pas pu être enregistré. Vérifiez votre connexion, puis touchez à nouveau le statut.',
     photo: (nom: string) => `Photo de ${nom}`,
+    // US-06-06, RG-06-08 : séances à distance et hybrides.
+    hybride: 'Hybride',
+    aDistance: 'à distance',
+    visioTitre: 'Séance en visio',
+    visioIntervenant: {
+      distanciel:
+        'Partagez cette fenêtre dans la visioconférence : les apprenants scannent le QR avec leur téléphone, ou saisissent le code s’ils suivent sur le même appareil.',
+      hybride:
+        'Affichez ce QR en salle et partagez-le dans la visioconférence : les apprenants à distance scannent le QR ou saisissent le code, sans contrôle de leur position.',
+    },
+    codeAideVisio:
+      'Le code change toutes les 15 secondes : il n’est valable que pendant la visio, une copie envoyée plus tard ne fonctionne pas.',
+    visioApprenant:
+      'Séance à distance : scannez avec votre téléphone le QR partagé dans la visio, ou, si vous suivez sur cet appareil, saisissez le code à 6 chiffres affiché sous le QR. Votre position n’est pas demandée.',
+    suiviHybride: (seance: string) => `Comment suivez-vous « ${seance} » ?`,
+    suivi: { salle: 'En salle', distance: 'À distance, en visio' },
+    suiviDistanceAide:
+      'À distance, votre position n’est pas demandée : scannez le QR partagé dans la visio ou saisissez le code. L’intervenant voit que vous suivez à distance.',
+    enregistreeADistance: 'Émargement à distance',
   },
   referentiel: {
     titre: 'Formations',
