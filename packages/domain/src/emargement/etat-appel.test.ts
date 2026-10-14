@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { minutesDeRetard, statutDansAppel } from './appel-manuel.js';
 import {
+  correctionVerrouillee,
   decisionAVerifier,
   etatAppel,
   listeCanonique,
+  peutCorrigerVerrouille,
   raisonAVerifier,
   verifierModification,
   type LigneFeuille,
@@ -62,6 +64,49 @@ describe('verifierModification', () => {
     expect(
       verifierModification(seance, true, seance.finMs + 7 * J + 1, { gestionnaire: true, motif }),
     ).toBe('verrouille');
+  });
+
+  it('RG-06-15 après verrouillage, le droit spécifique de l’école permet de corriger avec un motif', () => {
+    const verrouille = { droit: 'ecole' as const };
+    const tard = seance.finMs + 400 * J;
+    expect(
+      verifierModification(seance, true, tard, { gestionnaire: true, motif: 'Erreur', verrouille }),
+    ).toBeNull();
+    expect(
+      verifierModification(seance, true, tard, { gestionnaire: true, motif: ' ', verrouille }),
+    ).toBe('motif-requis');
+    // Un appel jamais signé reste verrouillé, même avec le droit.
+    expect(
+      verifierModification(seance, false, tard, { gestionnaire: true, motif: 'x', verrouille }),
+    ).toBe('verrouille');
+    expect(correctionVerrouillee(seance, tard, verrouille)).toBe('ecole');
+    expect(correctionVerrouillee(seance, seance.finMs + J, verrouille)).toBeNull();
+  });
+
+  it('RG-06-15 l’intervenant qui a le droit spécifique corrige jusqu’au délai de son école', () => {
+    const verrouille = { droit: 'intervenant' as const, jours: 14 };
+    const motif = 'Feuille papier retrouvée';
+    const acteur = { gestionnaire: false, motif, verrouille };
+    expect(verifierModification(seance, true, seance.finMs + 14 * J, acteur)).toBeNull();
+    expect(verifierModification(seance, true, seance.finMs + 14 * J + 1, acteur)).toBe(
+      'delai-verrouille',
+    );
+    expect(peutCorrigerVerrouille(seance, true, seance.finMs + 8 * J, verrouille)).toBe(true);
+    expect(peutCorrigerVerrouille(seance, true, seance.finMs + 15 * J, verrouille)).toBe(false);
+    // Avant le verrouillage, ce n'est pas une correction après verrouillage.
+    expect(peutCorrigerVerrouille(seance, true, seance.finMs + J, verrouille)).toBe(false);
+    // Délai réglé à 7 jours : rien n'est permis après le verrouillage.
+    const sept = { droit: 'intervenant' as const, jours: 7 };
+    expect(peutCorrigerVerrouille(seance, true, seance.finMs + 7 * J + 1, sept)).toBe(false);
+  });
+
+  it('RG-06-15 sans le droit spécifique, un appel verrouillé ne se corrige pas', () => {
+    const tard = seance.finMs + 8 * J;
+    expect(verifierModification(seance, true, tard, { gestionnaire: true, motif: 'x' })).toBe(
+      'verrouille',
+    );
+    expect(peutCorrigerVerrouille(seance, true, tard, null)).toBe(false);
+    expect(correctionVerrouillee(seance, tard, null)).toBeNull();
   });
 });
 

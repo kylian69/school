@@ -60,12 +60,22 @@ export const organisation = pgTable(
      * de l'instance (variable EDT_BADGE_MODIFIE_JOURS de l'API).
      */
     edtBadgeModifieJours: smallint(),
+    /**
+     * RG-06-15 : jours après la séance pendant lesquels un intervenant qui a le droit spécifique
+     * corrige encore son appel verrouillé (7 : jamais après le verrouillage) ; null : valeur par
+     * défaut (domaine, CORRECTION_VERROUILLEE_INTERVENANT_JOURS).
+     */
+    emargementCorrectionVerrouilleeJours: smallint(),
     ...trackingColumns(),
   },
   (t) => [
     check(
       'organisation_edt_badge_modifie_jours_check',
       sql`${t.edtBadgeModifieJours} between 0 and 60`,
+    ),
+    check(
+      'organisation_emargement_correction_verrouillee_jours_check',
+      sql`${t.emargementCorrectionVerrouilleeJours} between 7 and 90`,
     ),
     isolationPolicy('organisation', 'id'),
     // Console de la plateforme (ADR 0004) : toutes les organisations, cette table seulement.

@@ -61,7 +61,8 @@ export type RefusMarquage = 'trop-tot' | 'verrouille' | 'retard-invalide';
 
 /**
  * Contrôle d'un marquage : possible dès l'ouverture de la fenêtre de scan (RG-06-02) et jusqu'au
- * verrouillage (RG-06-01) ; un retard porte un nombre entier de minutes, au plus la durée de la
+ * verrouillage (RG-06-01), au-delà seulement avec le droit spécifique (RG-06-15, contrôlé par
+ * verifierModification) ; un retard porte un nombre entier de minutes, au plus la durée de la
  * séance, et seul un retard en porte. Après validation, voir aussi verifierModification.
  */
 export function verifierMarquage(
@@ -69,9 +70,13 @@ export function verifierMarquage(
   maintenantMs: number,
   marquage: MarquageAppel,
   regles: ReglesScan = REGLES_SCAN_PAR_DEFAUT,
+  droitVerrouille = false,
 ): RefusMarquage | null {
   if (maintenantMs < seance.debutMs - regles.ouvertureAvantMinutes * MINUTE) return 'trop-tot';
-  if (maintenantMs > seance.finMs + VERROUILLAGE_APPEL_JOURS * 24 * 60 * MINUTE) {
+  if (
+    !droitVerrouille &&
+    maintenantMs > seance.finMs + VERROUILLAGE_APPEL_JOURS * 24 * 60 * MINUTE
+  ) {
     return 'verrouille';
   }
   if (marquage.statut !== 'retard')

@@ -21,6 +21,7 @@ import {
   FeuilleAppel,
   MarquagePresence,
   OuvertureAppel,
+  CorrectionVerrouillee,
   PhotosAppel,
   ResultatScan,
   ScanEmargement,
@@ -227,6 +228,7 @@ export class PhotosAppelController {
 export class SeancesController {
   constructor(
     private readonly seances: SeancesService,
+    private readonly appels: AppelService,
     @Inject(ACCESS_RESOLVER) private readonly resolver: AccessResolver,
     @Inject(DATABASE) private readonly db: Database,
   ) {}
@@ -236,6 +238,18 @@ export class SeancesController {
   @ApiContract({ summary: 'Mes séances proches, à animer', response: z.array(SeanceProche) })
   aAnimer() {
     return this.seances.aAnimer(RequestContext.tx(), RequestContext.access());
+  }
+
+  /** RG-06-15 : périmètre contrôlé par le service (droit spécifique sur toute l'école). */
+  @Get('emargement/corrections-verrouillees')
+  @RequirePermission('emargement:corriger-verrouille')
+  @ApiContract({
+    summary:
+      'Corrections d’appels verrouillés faites par des intervenants, les plus récentes d’abord',
+    response: z.array(CorrectionVerrouillee),
+  })
+  correctionsVerrouillees() {
+    return this.appels.correctionsVerrouillees(RequestContext.tx(), RequestContext.access());
   }
 
   /** Aucune permission pour ses propres séances : l'école est celle de la session. */

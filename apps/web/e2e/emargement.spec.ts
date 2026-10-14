@@ -370,7 +370,10 @@ test.describe('Module 06 Émargement', () => {
       await expectNoAccessibilityViolations(page);
     });
 
-    test('RG-06-01 un appel verrouillé se consulte sans se modifier', async ({ page, context }) => {
+    test('RG-06-01, RG-06-15 sans le droit spécifique, un appel verrouillé se consulte sans se modifier', async ({
+      page,
+      context,
+    }) => {
       await cookie(page, context, 'e2e-etat', 'verrouille');
       await page.goto('/seances');
       await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
@@ -379,6 +382,82 @@ test.describe('Module 06 Émargement', () => {
       await expect(page.getByRole('img', { name: /QR code d’émargement/ })).toBeHidden();
       await expect(page.getByRole('group', { name: 'Statut de Noé Petit' })).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Valider l’appel' })).toHaveCount(0);
+      await expectNoAccessibilityViolations(page);
+    });
+
+    const appelUnique = () => `v${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`;
+
+    test('RG-06-15 correction d’un appel verrouillé par un intervenant tracée : motif, version signée, mention', async ({
+      page,
+      context,
+    }) => {
+      await cookie(page, context, 'e2e-etat', 'verrouille');
+      await cookie(page, context, 'e2e-droit-verrouille', 'intervenant');
+      await cookie(page, context, 'e2e-appel', appelUnique());
+      await page.goto('/seances');
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await expect(page.getByRole('heading', { name: 'Appel verrouillé' })).toBeVisible();
+      await expect(page.getByText(/vous avez le droit de le corriger/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Valider l’appel' })).toHaveCount(0);
+      // L'intervenant ne voit pas la liste des signalements, réservée aux gestionnaires.
+      const noe = page.getByRole('listitem').filter({ hasText: 'Noé Petit' });
+      await noe.getByRole('button', { name: 'Présent' }).click();
+      await expect(page.getByRole('alert').filter({ hasText: 'indiquez le motif' })).toBeVisible();
+      await expect(page.getByText(/signalée à la scolarité et à la pédagogie/)).toBeVisible();
+      await page.getByLabel('Motif de la correction').fill('Feuille papier retrouvée');
+      await noe.getByRole('button', { name: 'Présent' }).click();
+      await expect(page.getByText(/Version 2 · .* · Feuille papier retrouvée/)).toBeVisible();
+      await expect(page.getByText('après verrouillage, par l’intervenant')).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+      await page.goto('/seances');
+      await expect(
+        page.getByRole('heading', { name: 'Appels verrouillés corrigés par des intervenants' }),
+      ).toHaveCount(0);
+    });
+
+    test('RG-06-15 correction par le corps pédagogique : signalement des intervenants visible, historique consultable', async ({
+      page,
+      context,
+    }) => {
+      const motif = `Erreur de groupe ${appelUnique()}`;
+      await cookie(page, context, 'e2e-etat', 'verrouille');
+      await cookie(page, context, 'e2e-droit-verrouille', 'intervenant');
+      await cookie(page, context, 'e2e-appel', appelUnique());
+      await page.goto('/seances');
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await page.getByLabel('Motif de la correction').fill(motif);
+      await page
+        .getByRole('listitem')
+        .filter({ hasText: 'Noé Petit' })
+        .getByRole('button', { name: 'Présent' })
+        .click();
+      await expect(page.getByText(/· version 2/)).toBeVisible();
+
+      // La scolarité voit la correction de l'intervenant dans la liste des séances.
+      await cookie(page, context, 'e2e-droit-verrouille', 'ecole');
+      await page.goto('/seances');
+      const section = page.getByRole('region', {
+        name: 'Appels verrouillés corrigés par des intervenants',
+      });
+      const signalement = section.getByRole('listitem').filter({ hasText: motif });
+      await expect(signalement).toContainText('Camille Durand');
+      await expect(signalement).toContainText('version 2');
+      await expectNoAccessibilityViolations(page);
+
+      // Historique des versions, puis correction par le corps pédagogique (sans délai).
+      await signalement.getByRole('link', { name: 'Voir la feuille' }).click();
+      await expect(page.getByRole('heading', { name: 'Versions de la feuille' })).toBeVisible();
+      await expect(page.getByText('après verrouillage, par l’intervenant')).toBeVisible();
+      await page.getByLabel('Motif de la correction').fill('Correction de la scolarité');
+      await page
+        .getByRole('listitem')
+        .filter({ hasText: 'Noé Petit' })
+        .getByRole('button', { name: 'Absent' })
+        .click();
+      await expect(
+        page.getByText(/Version 3 · .* · Sacha Leroy · Correction de la scolarité/),
+      ).toBeVisible();
+      await expect(page.getByText('après verrouillage', { exact: true })).toBeVisible();
       await expectNoAccessibilityViolations(page);
     });
   });

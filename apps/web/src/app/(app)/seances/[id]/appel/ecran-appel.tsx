@@ -232,7 +232,9 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
             </p>
           ) : null}
           {appel?.etat === 'verrouille' ? (
-            <p className="text-sm text-muted">{t.verrouilleAide}</p>
+            <p className="text-sm text-muted">
+              {appel.correctionVerrouillee ? t.verrouilleCorrigibleAide : t.verrouilleAide}
+            </p>
           ) : null}
           {appel?.etat === 'a-venir' ? <p className="text-sm text-muted">{t.aVenirAide}</p> : null}
           {appel?.etat === 'ouvert' ? (
@@ -273,6 +275,16 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
                 {versions.map((v) => (
                   <li key={v.version}>
                     {t.version(v.version, formatDateHeure(v.valideLe), v.validePar, v.motif)}
+                    {v.correctionVerrouillee ? (
+                      <>
+                        {' '}
+                        <Badge
+                          tone={v.correctionVerrouillee === 'intervenant' ? 'warn' : 'neutral'}
+                        >
+                          {t.correctionVerrouilleeBadge[v.correctionVerrouillee]}
+                        </Badge>
+                      </>
+                    ) : null}
                   </li>
                 ))}
               </ol>

@@ -122,6 +122,8 @@ const ecole = {
   exempleMatricule: '000001',
   edtBadgeModifieJours: null,
   edtBadgeModifieJoursDefaut: 7,
+  emargementCorrectionVerrouilleeJours: null,
+  emargementCorrectionVerrouilleeJoursDefaut: 14,
   etablissements: [
     {
       id: '01a10000-0000-7000-8000-0000000000b1',
@@ -257,22 +259,27 @@ const LEA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000001';
 const NOE_ID = '0192f0a4-1b2c-7d3e-8f40-000000000002';
 const NINA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000003';
 // RG-06-13 : validations de l'appel, par appel de test ; cookie e2e-etat=verrouille : appel de
-// plus de 7 jours, déjà validé (RG-06-01).
+// plus de 7 jours, déjà validé (RG-06-01). RG-06-15 : cookie e2e-droit-verrouille=ecole ou
+// intervenant : la personne a le droit de corriger l'appel verrouillé ; sans lui, elle ne l'a pas.
 const validationsAppel = new Map();
 const verrouille = (request) => /e2e-etat=verrouille/.test(request.headers.cookie ?? '');
+const droitVerrouille = (request) =>
+  (request.headers.cookie ?? '').match(/e2e-droit-verrouille=(ecole|intervenant)/)?.[1] ?? null;
+const VERSION_VERROUILLEE = {
+  version: 1,
+  valideLe: '2026-10-01T08:30:00.000Z',
+  validePar: 'Camille Durand',
+  empreinte: 'c'.repeat(64),
+  motif: null,
+  commentaire: null,
+  correctionVerrouillee: null,
+};
 const versionsAppel = (request) =>
   verrouille(request)
-    ? [
-        {
-          version: 1,
-          valideLe: '2026-10-01T08:30:00.000Z',
-          validePar: 'Camille Durand',
-          empreinte: 'c'.repeat(64),
-          motif: null,
-          commentaire: null,
-        },
-      ]
+    ? [VERSION_VERROUILLEE, ...(validationsAppel.get(`${cleAppel(request)}|verrouille`) ?? [])]
     : (validationsAppel.get(cleAppel(request)) ?? []);
+// RG-06-15 : corrections des intervenants après verrouillage, signalées aux gestionnaires.
+const correctionsVerrouillees = [];
 const raisonFictive = (localisation) =>
   localisation === 'hors-site' || localisation === 'inconnu' ? localisation : null;
 const statutFictif = (scanneLe, localisation, marquage) => {
@@ -336,6 +343,7 @@ const appelFictif = (request) => {
   return {
     etat: verrouille(request) ? 'verrouille' : versions.length > 0 ? 'valide' : 'ouvert',
     validation: versions.at(-1) ?? null,
+    correctionVerrouillee: verrouille(request) && droitVerrouille(request) !== null,
     presents: presents.length,
     attendus: 2,
     liste,
@@ -343,17 +351,28 @@ const appelFictif = (request) => {
 };
 const ajouterVersion = (request, motif, commentaire) => {
   const versions = versionsAppel(request);
-  validationsAppel.set(cleAppel(request), [
-    ...versions,
-    {
-      version: versions.length + 1,
-      valideLe: new Date().toISOString(),
-      validePar: 'Camille Durand',
-      empreinte: randomUUID().replaceAll('-', '').repeat(2),
+  const droit = verrouille(request) ? droitVerrouille(request) : null;
+  const version = {
+    version: versions.length + 1,
+    valideLe: new Date().toISOString(),
+    validePar: droit === 'ecole' ? 'Sacha Leroy' : 'Camille Durand',
+    empreinte: randomUUID().replaceAll('-', '').repeat(2),
+    motif,
+    commentaire,
+    correctionVerrouillee: droit,
+  };
+  if (droit === 'intervenant')
+    correctionsVerrouillees.unshift({
+      seanceId: SEANCE_ID,
+      libelle: 'Droit des affaires',
+      debut: '2026-09-30T08:00:00.000Z',
+      version: version.version,
+      corrigeeLe: version.valideLe,
+      corrigeePar: version.validePar,
       motif,
-      commentaire,
-    },
-  ]);
+    });
+  const cle = verrouille(request) ? `${cleAppel(request)}|verrouille` : cleAppel(request);
+  validationsAppel.set(cle, [...(validationsAppel.get(cle) ?? []), version]);
 };
 // RG-01-27 : photo fictive de Léa (Noé n'en a pas : initiales).
 const PHOTO_FICTIVE =
@@ -2156,6 +2175,7 @@ createServer(async (request, response) => {
             'calendrier:gerer',
             'calendrier:lire',
             'emargement:animer',
+            'emargement:corriger-verrouille',
             'edt:forcer',
             'edt:gerer',
             'edt:lire',
@@ -2360,6 +2380,14 @@ createServer(async (request, response) => {
     ajouterVersion(request, null, commentaire ?? null);
     return json(200, appelFictif(request));
   }
+  if (path === '/api/emargement/corrections-verrouillees') {
+    if (droitVerrouille(request) !== 'ecole')
+      return json(403, {
+        message:
+          "Seules la scolarité et la pédagogie de l'école voient les corrections des intervenants : demandez-leur le détail.",
+      });
+    return json(200, correctionsVerrouillees);
+  }
   if (path === `/api/seances/${SEANCE_ID}/appel/ajoutables`) {
     const ajoutee = marquagesAppel.has(`${cleAppel(request)}|${NINA_ID}`);
     return json(200, ajoutee ? [] : [{ personneId: NINA_ID, nom: 'Bernard', prenom: 'Nina' }]);
@@ -2375,7 +2403,7 @@ createServer(async (request, response) => {
         message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
         details: [detail],
       });
-    if (verrouille(request))
+    if (verrouille(request) && !droitVerrouille(request))
       return invalide(
         "marquage : L'appel de cette séance est verrouillé (7 jours après la séance) : demandez à la scolarité.",
       );

@@ -28,6 +28,7 @@ describe('RG-06-13 appel validé dans le cache', () => {
     empreinte: 'a'.repeat(64),
     motif: null,
     commentaire: null,
+    correctionVerrouillee: null,
   };
 
   it('RG-06-13 précharge la validation, et ne l’efface jamais quand l’appel n’est pas validé', () => {

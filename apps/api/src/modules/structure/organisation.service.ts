@@ -23,6 +23,7 @@ import {
   controlerNda,
   controlerSiren,
   controlerSiret,
+  CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
   controlerUai,
   informationsManquantes,
   analyserModeleMatricule,
@@ -127,6 +128,8 @@ export class OrganisationService {
       }),
       edtBadgeModifieJours: ecole.edtBadgeModifieJours,
       edtBadgeModifieJoursDefaut: this.env.EDT_BADGE_MODIFIE_JOURS,
+      emargementCorrectionVerrouilleeJours: ecole.emargementCorrectionVerrouilleeJours,
+      emargementCorrectionVerrouilleeJoursDefaut: CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
       etablissements: etablissements.map((e) => this.detail(e)),
     };
   }
@@ -162,6 +165,11 @@ export class OrganisationService {
         ...(changement.edtBadgeModifieJours !== undefined
           ? { edtBadgeModifieJours: changement.edtBadgeModifieJours }
           : {}),
+        ...(changement.emargementCorrectionVerrouilleeJours !== undefined
+          ? {
+              emargementCorrectionVerrouilleeJours: changement.emargementCorrectionVerrouilleeJours,
+            }
+          : {}),
         updatedBy: access.userId,
       })
       .where(eq(organisation.id, access.organisationId));
@@ -178,6 +186,7 @@ export class OrganisationService {
         siren: avant.siren,
         modeleMatricule: avant.modeleMatricule,
         edtBadgeModifieJours: avant.edtBadgeModifieJours,
+        emargementCorrectionVerrouilleeJours: avant.emargementCorrectionVerrouilleeJours,
       },
       apres: {
         nom: apres.nom,
@@ -185,6 +194,7 @@ export class OrganisationService {
         siren: apres.siren,
         modeleMatricule: apres.modeleMatricule,
         edtBadgeModifieJours: apres.edtBadgeModifieJours,
+        emargementCorrectionVerrouilleeJours: apres.emargementCorrectionVerrouilleeJours,
       },
     });
     return apres;

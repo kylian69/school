@@ -622,6 +622,9 @@ export const fr = {
     badgeModifie: 'Badge « modifié » (jours)',
     aideBadgeModifie: (defaut: number) =>
       `Durée pendant laquelle une séance modifiée porte le badge dans l’emploi du temps, de 0 (jamais) à 60 jours. Laissez vide pour la valeur par défaut : ${defaut} jours.`,
+    correctionVerrouillee: 'Correction d’un appel verrouillé par l’intervenant (jours)',
+    aideCorrectionVerrouillee: (defaut: number) =>
+      `Jours après la séance pendant lesquels un intervenant qui en a le droit corrige encore son appel verrouillé, de 7 (jamais après le verrouillage) à 90. Chaque correction est signalée à la scolarité et à la pédagogie. Laissez vide pour la valeur par défaut : ${defaut} jours.`,
     enregistrer: 'Enregistrer',
     enregistrement: 'Enregistrement…',
     enregistre: 'Modifications enregistrées.',
@@ -917,6 +920,21 @@ export const fr = {
       'L’appel est validé : indiquez le motif avant de changer un statut. Chaque correction crée une nouvelle version de la feuille.',
     verrouilleAide:
       'L’appel est verrouillé 7 jours après la séance : il ne se modifie plus. Demandez à la scolarité en cas d’erreur.',
+    verrouilleCorrigibleAide:
+      'L’appel est verrouillé, mais vous avez le droit de le corriger : chaque correction exige un motif, crée une nouvelle version signée et reste tracée.',
+    motifAideVerrouille:
+      'L’appel est verrouillé : indiquez le motif avant de changer un statut. La correction crée une nouvelle version signée ; celle d’un intervenant est signalée à la scolarité et à la pédagogie.',
+    correctionVerrouilleeBadge: {
+      ecole: 'après verrouillage',
+      intervenant: 'après verrouillage, par l’intervenant',
+    },
+    correctionsTitre: 'Appels verrouillés corrigés par des intervenants',
+    correctionsAide:
+      'Corrections faites après le verrouillage par les intervenants (droit spécifique), les plus récentes d’abord. Ouvrez la feuille pour voir l’historique des versions.',
+    correction: (seance: string, date: string, nom: string, version: number, motif: string) =>
+      `${seance} · corrigé le ${date} par ${nom} · version ${version} · ${motif}`,
+    voirFeuille: 'Voir la feuille',
+    aucuneCorrection: 'Aucun appel verrouillé n’a été corrigé par un intervenant.',
     aVenirAide: 'L’appel s’ouvre 10 minutes avant le début de la séance.',
     versions: 'Versions de la feuille',
     version: (v: number, date: string, nom: string, motif: string | null) =>

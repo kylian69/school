@@ -134,6 +134,12 @@ export const OrganisationDetail = z
     edtBadgeModifieJours: z.int().nullable(),
     /** Valeur par défaut de l'instance, appliquée quand l'école n'a rien choisi. */
     edtBadgeModifieJoursDefaut: z.int(),
+    /**
+     * RG-06-15 : jours après la séance pendant lesquels un intervenant qui a le droit spécifique
+     * corrige encore son appel verrouillé ; null : valeur par défaut.
+     */
+    emargementCorrectionVerrouilleeJours: z.int().nullable(),
+    emargementCorrectionVerrouilleeJoursDefaut: z.int(),
     etablissements: z.array(Etablissement),
   })
   .meta({ id: 'OrganisationDetail' });
@@ -148,6 +154,8 @@ export const ModificationOrganisation = z
     modeleMatricule: z.string().trim().max(30).nullable().optional(),
     /** RG-04-14 : de 0 (jamais de badge) à 60 jours ; null : valeur par défaut de l'instance. */
     edtBadgeModifieJours: z.int().min(0).max(60).nullable().optional(),
+    /** RG-06-15 : de 7 (rien après le verrouillage) à 90 jours ; null : valeur par défaut. */
+    emargementCorrectionVerrouilleeJours: z.int().min(7).max(90).nullable().optional(),
   })
   .meta({ id: 'ModificationOrganisation' });
 export type ModificationOrganisation = z.infer<typeof ModificationOrganisation>;

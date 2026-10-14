@@ -13,6 +13,9 @@ import {
   type AppelEnDirect,
   type ApprenantsAjoutables,
   commandesSessions,
+  type CorrectionVerrouillee,
+  EVENEMENT_CORRECTION_VERROUILLEE,
+  type ChargeCorrectionVerrouillee,
   type FeuilleAppel,
   type MarquageEnCache,
   type MarquagePresence,
@@ -28,8 +31,11 @@ import {
   apprenantsAjoutables,
   appelValidation,
   cleMaitresseCourante,
+  ajouterEvenement,
+  correctionsVerrouilleesIntervenants,
   enregistrerAudit,
   etablissementDeSeance,
+  organisation,
   personne,
   presence,
   presenceMarquage,
@@ -44,11 +50,16 @@ import {
   type Transaction,
 } from '@scolaly/db';
 import {
+  type ActeurModification,
+  type DroitVerrouille,
   comptePresent,
+  CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
+  correctionVerrouillee,
   decisionAVerifier,
   etatAppel,
   listeCanonique,
   minutesDeRetard,
+  peutCorrigerVerrouille,
   raisonAVerifier,
   statutDansAppel,
   verifierMarquage,
@@ -83,12 +94,21 @@ const REFUS_MARQUAGE = {
 const REFUS_MODIFICATION: Record<RefusModification, string> = {
   'trop-tot': REFUS_MARQUAGE['trop-tot'],
   verrouille:
-    "L'appel de cette séance est verrouillé (7 jours après la séance) : il ne se modifie plus.",
+    "L'appel de cette séance est verrouillé (7 jours après la séance) : seule une personne qui a le droit de corriger un appel verrouillé peut encore corriger un appel validé.",
+  'delai-verrouille':
+    "Le délai fixé par l'école pour corriger un appel verrouillé est passé : demandez la correction à la scolarité ou à la pédagogie.",
   'delai-intervenant':
     "Le délai de correction de l'intervenant (2 jours après la séance) est passé : demandez la correction à la scolarité ou à la pédagogie.",
   'motif-requis':
     'Cet appel est déjà validé : indiquez le motif de la correction (3 caractères au moins), puis réessayez.',
 };
+
+/** RG-06-15 : action d'audit d'une correction, selon le droit exercé. */
+const ACTIONS_CORRECTION = {
+  ordinaire: 'appel.corriger',
+  ecole: 'appel.corriger-verrouille',
+  intervenant: 'appel.corriger-verrouille-intervenant',
+} as const;
 
 /** Liste en direct : lecture du cache toutes les 500 ms (module 06, section 9 : moins d'une seconde). */
 const INTERVALLE_DIRECT_MS = 500;
@@ -124,6 +144,8 @@ export interface EtatDirect {
   enBase: Scans;
   marquagesEnBase: Marquages;
   validation: VersionAppel | null;
+  /** RG-06-15 : droit de la personne connectée de corriger l'appel une fois verrouillé. */
+  verrouille: ActeurModification['verrouille'];
 }
 
 /** Ce que la liste lit dans Valkey à chaque tour. */
@@ -188,9 +210,17 @@ function composer(etat: Omit<EtatDirect, 'organisationId' | 'seanceId'>, cache: 
     cache.validation && cache.validation.version > (etat.validation?.version ?? 0)
       ? cache.validation
       : etat.validation;
+  const seance = { debutMs: etat.debutMs, finMs: etat.finMs };
+  const maintenant = Date.now();
   return {
-    etat: etatAppel({ debutMs: etat.debutMs, finMs: etat.finMs }, validation !== null, Date.now()),
+    etat: etatAppel(seance, validation !== null, maintenant),
     validation,
+    correctionVerrouillee: peutCorrigerVerrouille(
+      seance,
+      validation !== null,
+      maintenant,
+      etat.verrouille,
+    ),
     presents: liste.filter((l) => comptePresent(l.statut)).length,
     attendus: etat.attendus.length,
     liste,
@@ -291,7 +321,12 @@ export class AppelService implements OnModuleDestroy {
     const gestionnaire = (access.perimetres.get('emargement:animer') ?? []).some(
       (p) => p.type === 'organisation',
     );
-    if (!gestionnaire) {
+    // RG-06-15 : droit spécifique après verrouillage, de l'école (sur toute l'école) ou de
+    // l'intervenant (ses seules séances, dans le délai de son école).
+    const droitVerrouille = access.perimetres.get('emargement:corriger-verrouille') ?? [];
+    const ecole = droitVerrouille.some((p) => p.type === 'organisation');
+    let intervenant = false;
+    if (!gestionnaire || (!ecole && droitVerrouille.length > 0)) {
       const [lien] = await tx
         .select({ id: seanceIntervenant.id })
         .from(seanceIntervenant)
@@ -302,12 +337,25 @@ export class AppelService implements OnModuleDestroy {
             isNull(seanceIntervenant.deletedAt),
           ),
         );
-      if (!lien)
+      if (!lien && !gestionnaire)
         throw new ForbiddenException(
           "Seuls les intervenants de cette séance peuvent en ouvrir l'appel.",
         );
+      intervenant = Boolean(lien);
     }
-    return { ...trouve, gestionnaire };
+    let verrouille: ActeurModification['verrouille'] = null;
+    if (ecole) verrouille = { droit: 'ecole' };
+    else if (intervenant && droitVerrouille.length > 0) {
+      const [reglage] = await tx
+        .select({ jours: organisation.emargementCorrectionVerrouilleeJours })
+        .from(organisation)
+        .where(eq(organisation.id, access.organisationId));
+      verrouille = {
+        droit: 'intervenant',
+        jours: reglage?.jours ?? CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
+      };
+    }
+    return { ...trouve, gestionnaire, verrouille };
   }
 
   /** Précharge la séance dans Valkey (RG-00-17) et donne à l'écran de quoi calculer le QR. */
@@ -398,7 +446,7 @@ export class AppelService implements OnModuleDestroy {
 
   /** Droits vérifiés, attendus, présences et décisions en base lus une fois, avant le flux. */
   async preparerDirect(tx: Transaction, access: Access, seanceId: string): Promise<EtatDirect> {
-    const { seance: ligne, attendus } = await this.charger(tx, access, seanceId);
+    const { seance: ligne, attendus, verrouille } = await this.charger(tx, access, seanceId);
     const enBase = await tx.select().from(presence).where(eq(presence.seanceId, seanceId));
     const marquagesEnBase = await lireMarquagesEnBase(tx, seanceId);
     const derniere = (await validationsDeSeance(tx, seanceId)).at(-1);
@@ -415,6 +463,7 @@ export class AppelService implements OnModuleDestroy {
       enBase: AppelService.scansEnBase(enBase),
       marquagesEnBase,
       validation: derniere ? versionAppel(derniere) : null,
+      verrouille,
     };
   }
 
@@ -426,33 +475,34 @@ export class AppelService implements OnModuleDestroy {
 
   /**
    * Refuse une modification de l'appel hors de son cycle (RG-06-01) ; après validation, c'est une
-   * correction, avec motif et dans les délais (RG-06-15). Renvoie la dernière validation.
+   * correction, avec motif et dans les délais (RG-06-15) ; après verrouillage, avec le droit
+   * spécifique. Renvoie la dernière validation et, le cas échéant, le droit exercé.
    */
   private async controlerModification(
     tx: Transaction,
     seanceId: string,
     ligne: { debut: Date; fin: Date; statut: string },
-    gestionnaire: boolean,
-    motif: string | null,
+    acteur: ActeurModification,
   ) {
     if (ligne.statut !== 'publiee')
       throw new ConflictException(
         "Cette séance n'est pas publiée, ou elle est annulée ou reportée : son appel ne se fait pas.",
       );
     const validations = await validationsDeSeance(tx, seanceId);
-    const refus = verifierModification(
-      { debutMs: ligne.debut.getTime(), finMs: ligne.fin.getTime() },
-      validations.length > 0,
-      Date.now(),
-      { gestionnaire, motif },
-    );
+    const seance = { debutMs: ligne.debut.getTime(), finMs: ligne.fin.getTime() };
+    const maintenant = Date.now();
+    const refus = verifierModification(seance, validations.length > 0, maintenant, acteur);
     if (refus === 'motif-requis')
       throw new BadRequestException({
         message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
         details: [`motif : ${REFUS_MODIFICATION[refus]}`],
       });
     if (refus) throw new ConflictException(REFUS_MODIFICATION[refus]);
-    return validations.at(-1) ?? null;
+    const derniere = validations.at(-1) ?? null;
+    return {
+      derniere,
+      verrouillee: derniere ? correctionVerrouillee(seance, maintenant, acteur.verrouille) : null,
+    };
   }
 
   /**
@@ -470,11 +520,18 @@ export class AppelService implements OnModuleDestroy {
     corps: MarquagePresence,
     client: ClientValidation,
   ): Promise<AppelEnDirect> {
-    const { seance: ligne, attendus, gestionnaire } = await this.charger(tx, access, seanceId);
+    const {
+      seance: ligne,
+      attendus,
+      gestionnaire,
+      verrouille,
+    } = await this.charger(tx, access, seanceId);
     const refus = verifierMarquage(
       { debutMs: ligne.debut.getTime(), finMs: ligne.fin.getTime() },
       Date.now(),
       corps,
+      undefined,
+      verrouille !== null,
     );
     if (refus)
       throw new BadRequestException({
@@ -482,7 +539,11 @@ export class AppelService implements OnModuleDestroy {
         details: [`marquage : ${REFUS_MARQUAGE[refus]}`],
       });
     const motif = corps.motif ?? null;
-    const derniere = await this.controlerModification(tx, seanceId, ligne, gestionnaire, motif);
+    const { derniere, verrouillee } = await this.controlerModification(tx, seanceId, ligne, {
+      gestionnaire,
+      motif,
+      verrouille,
+    });
     const [ancien] = await tx
       .select()
       .from(presenceMarquage)
@@ -566,6 +627,7 @@ export class AppelService implements OnModuleDestroy {
         minutesRetard: valeurs.minutesRetard,
         nonAttendu,
         motif,
+        correctionVerrouillee: verrouillee,
       },
     });
     const enMemoire: MarquageEnCache = {
@@ -590,6 +652,7 @@ export class AppelService implements OnModuleDestroy {
       motif,
       commentaire: null,
       avant: { version: derniere.version, empreinte: derniere.empreinte },
+      verrouillee,
     });
     return { ...appel, etat: 'valide', validation: version };
   }
@@ -611,13 +674,14 @@ export class AppelService implements OnModuleDestroy {
       throw new ConflictException(
         "Cet appel est déjà validé. Pour le corriger, changez le statut d'un apprenant en indiquant le motif.",
       );
-    await this.controlerModification(tx, seanceId, ligne, gestionnaire, null);
+    await this.controlerModification(tx, seanceId, ligne, { gestionnaire, motif: null });
     const appel = await this.enDirect(tx, access, seanceId);
     const version = await this.signer(tx, access, seanceId, ligne.fin, appel, client, {
       version: 1,
       motif: null,
       commentaire: corps.commentaire || null,
       avant: null,
+      verrouillee: null,
     });
     return { ...appel, etat: 'valide', validation: version };
   }
@@ -635,6 +699,7 @@ export class AppelService implements OnModuleDestroy {
       motif: string | null;
       commentaire: string | null;
       avant: { version: number; empreinte: string } | null;
+      verrouillee: DroitVerrouille | null;
     },
   ): Promise<VersionAppel> {
     const liste = appel.liste.map(ligneValidee);
@@ -654,11 +719,14 @@ export class AppelService implements OnModuleDestroy {
         liste,
         motif: v.motif,
         commentaire: v.commentaire,
+        correctionVerrouillee: v.verrouillee,
         createdBy: access.userId,
       })
       .returning({ id: appelValidation.id });
+    // RG-06-15 : une correction après verrouillage a son action, distincte pour l'intervenant,
+    // que la scolarité et la pédagogie retrouvent dans le journal.
     await enregistrerAudit(tx, {
-      action: v.version === 1 ? 'appel.valider' : 'appel.corriger',
+      action: v.version === 1 ? 'appel.valider' : ACTIONS_CORRECTION[v.verrouillee ?? 'ordinaire'],
       objetType: 'appel_validation',
       objetId: ecrit?.id ?? null,
       auteurId: access.userId,
@@ -671,8 +739,16 @@ export class AppelService implements OnModuleDestroy {
         presents: appel.presents,
         attendus: appel.attendus,
         motif: v.motif,
+        correctionVerrouillee: v.verrouillee,
       },
     });
+    // RG-06-15 : la correction d'un intervenant après verrouillage est signalée à la scolarité et
+    // à la pédagogie (email, par la boîte d'envoi : rien ne part si la transaction échoue).
+    if (v.verrouillee === 'intervenant')
+      await ajouterEvenement(tx, EVENEMENT_CORRECTION_VERROUILLEE, {
+        seanceId,
+        version: v.version,
+      } satisfies ChargeCorrectionVerrouillee);
     const [auteur] = await nomsDe(tx, [access.personneId]);
     const version = versionAppel({
       version: v.version,
@@ -682,6 +758,7 @@ export class AppelService implements OnModuleDestroy {
       empreinte,
       motif: v.motif,
       commentaire: v.commentaire,
+      correctionVerrouillee: v.verrouillee,
     });
     RequestContext.apresValidation(() =>
       this.cache.valider(seanceId, version, fin.getTime()).catch((erreur: unknown) => {
@@ -745,6 +822,29 @@ export class AppelService implements OnModuleDestroy {
       liste,
       version,
     };
+  }
+
+  /**
+   * RG-06-15 : corrections d'appels verrouillés faites par des intervenants, signalées à la
+   * scolarité et à la pédagogie : réservé au droit spécifique sur toute l'école.
+   */
+  async correctionsVerrouillees(tx: Transaction, access: Access): Promise<CorrectionVerrouillee[]> {
+    const ecole = (access.perimetres.get('emargement:corriger-verrouille') ?? []).some(
+      (p) => p.type === 'organisation',
+    );
+    if (!ecole)
+      throw new ForbiddenException(
+        "Seules la scolarité et la pédagogie de l'école voient les corrections des intervenants : demandez-leur le détail.",
+      );
+    return (await correctionsVerrouilleesIntervenants(tx)).map((c) => ({
+      seanceId: c.seanceId,
+      libelle: c.libelle,
+      debut: c.debut.toISOString(),
+      version: c.version,
+      corrigeeLe: c.corrigeeLe.toISOString(),
+      corrigeePar: `${c.prenom} ${c.nom}`,
+      motif: c.motif ?? '',
+    }));
   }
 
   /** Apprenants de la même promotion que l'intervenant peut ajouter (mauvais groupe). */

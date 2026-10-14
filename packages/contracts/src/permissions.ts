@@ -52,6 +52,8 @@ export const PERMISSIONS = {
   'disponibilites:declarer': 'Déclarer ses propres disponibilités et indisponibilités',
   // Module 06 · Émargement
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
+  'emargement:corriger-verrouille':
+    'Corriger un appel verrouillé (plus de 7 jours après la séance), avec un motif ; sur ses seules séances pour un intervenant, dans le délai fixé par l’école',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

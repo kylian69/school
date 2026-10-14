@@ -236,11 +236,16 @@ function FicheOrganisation({
     setEnvoi(true);
     const saisie = valeurs(event.currentTarget);
     const jours = saisie.edtBadgeModifieJours?.trim();
+    const correction = saisie.emargementCorrectionVerrouilleeJours?.trim();
     const resultat = await envoyer(
       '/api/organisation',
       'PATCH',
       // Champ vide : la valeur par défaut de l'instance.
-      { ...saisie, edtBadgeModifieJours: jours ? Number(jours) : null },
+      {
+        ...saisie,
+        edtBadgeModifieJours: jours ? Number(jours) : null,
+        emargementCorrectionVerrouilleeJours: correction ? Number(correction) : null,
+      },
       t.erreur,
     );
     setEnvoi(false);
@@ -299,6 +304,21 @@ function FicheOrganisation({
             inputMode="numeric"
             min={0}
             max={60}
+            step={1}
+          />
+          <Champ
+            nom="emargementCorrectionVerrouilleeJours"
+            label={t.correctionVerrouillee}
+            erreurs={erreurs}
+            aide={t.aideCorrectionVerrouillee(
+              organisation.emargementCorrectionVerrouilleeJoursDefaut,
+            )}
+            defaultValue={organisation.emargementCorrectionVerrouilleeJours ?? ''}
+            placeholder={String(organisation.emargementCorrectionVerrouilleeJoursDefaut)}
+            type="number"
+            inputMode="numeric"
+            min={7}
+            max={90}
             step={1}
           />
         </fieldset>
