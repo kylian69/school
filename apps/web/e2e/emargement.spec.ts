@@ -246,6 +246,21 @@ test.describe('Module 06 Émargement', () => {
       await expect(lea).not.toContainText('à vérifier');
     });
 
+    test('RG-06-08 séance en salle avec un lien de visio : présentielle, pas de choix « à distance »', async ({
+      page,
+      context,
+    }) => {
+      // Séance marquée présentielle dans l'emploi du temps (le lien de visio n'y change rien).
+      await appelEnMode(page, context, 'presentiel');
+      await page.goto('/emarger');
+      await expect(page.getByRole('heading', { name: /Droit des affaires/ })).toBeVisible();
+      await expect(page.getByRole('radio', { name: 'À distance, en visio' })).toHaveCount(0);
+      await expect(
+        page.getByRole('region', { name: 'Contrôle de présence sur place' }),
+      ).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+    });
+
     test('RG-06-08 séance hybride : l’apprenant à distance le déclare, l’intervenant le voit', async ({
       page,
       context,

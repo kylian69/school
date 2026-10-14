@@ -146,7 +146,7 @@ beforeAll(async () => {
   await creerSeance('publiee', { debut: demain, salleId: amphi?.id ?? null }, lies);
   await creerSeance(
     'distance',
-    { debut: new Date(demain.getTime() + JOUR), distanciel: true },
+    { debut: new Date(demain.getTime() + JOUR), modePresence: 'distanciel' },
     lies,
   );
   await creerSeance('brouillon', { debut: demain, statut: 'brouillon' }, lies);

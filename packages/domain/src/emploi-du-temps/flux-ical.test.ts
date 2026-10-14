@@ -14,6 +14,7 @@ const textes = {
   annulee: 'Annulé : ',
   reportee: 'Reporté : ',
   distanciel: 'À distance',
+  hybride: 'ou à distance',
 };
 
 const evenement = (surcharge: Partial<EvenementFluxIcal> = {}): EvenementFluxIcal => ({
@@ -23,7 +24,7 @@ const evenement = (surcharge: Partial<EvenementFluxIcal> = {}): EvenementFluxIca
   fin: new Date('2026-10-12T09:00:00Z'),
   fuseau: 'Europe/Paris',
   lieu: 'Amphi A',
-  distanciel: false,
+  mode: 'presentiel',
   statut: 'publiee',
   modifieeLe: null,
   majLe: new Date('2026-10-01T08:30:00Z'),
@@ -117,11 +118,21 @@ describe('RG-04-15 flux iCal personnel', () => {
 
   it('RG-04-15 indique la salle, la distance ou rien', () => {
     expect(lignes(flux([evenement()]))).toContain('LOCATION:Amphi A');
-    expect(lignes(flux([evenement({ lieu: null, distanciel: true })]))).toContain(
+    expect(lignes(flux([evenement({ lieu: null, mode: 'distanciel' })]))).toContain(
       'LOCATION:À distance',
     );
+    expect(lignes(flux([evenement({ mode: 'distanciel' })]))).toContain('LOCATION:Amphi A');
     expect(lignes(flux([evenement({ lieu: null })])).some((x) => x.startsWith('LOCATION'))).toBe(
       false,
+    );
+  });
+
+  it('RG-06-08 une séance hybride indique la salle ou la distance', () => {
+    expect(lignes(flux([evenement({ mode: 'hybride' })]))).toContain(
+      'LOCATION:Amphi A ou à distance',
+    );
+    expect(lignes(flux([evenement({ lieu: null, mode: 'hybride' })]))).toContain(
+      'LOCATION:À distance',
     );
   });
 

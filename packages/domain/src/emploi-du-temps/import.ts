@@ -1,6 +1,7 @@
 import { interpreterDate } from '../imports/personnes.js';
 import type { TableauLu } from '../imports/csv.js';
 import { normaliserNom } from '../personnes/doublons.js';
+import type { ModePresence } from '../emargement/distanciel.js';
 import { instantLocal } from './recurrence.js';
 
 /**
@@ -20,6 +21,7 @@ export const COLONNES_EDT = [
   'Salle',
   'Type',
   'Identifiant',
+  'Mode',
 ] as const;
 
 /** RG-04-08 : au plus autant de séances par fichier (un semestre en compte environ 2 000). */
@@ -44,6 +46,8 @@ export interface SeanceImportee {
   intervenants: string[];
   salle: string | null;
   type: TypeSeanceImport;
+  /** RG-06-08 : mode de présence ; null (colonne absente ou vide) : celui de la séance est gardé. */
+  mode: ModePresence | null;
 }
 
 export interface MessageImport {
@@ -67,7 +71,8 @@ type Champ =
   | 'intervenants'
   | 'salle'
   | 'type'
-  | 'identifiant';
+  | 'identifiant'
+  | 'mode';
 
 /**
  * En-têtes reconnus (forme normalisée) : modèle Scolaly, puis exports courants d'Hyperplanning
@@ -112,6 +117,7 @@ const ALIAS: Record<Champ, readonly string[]> = {
   salle: ['salle', 'salles', 'room', 'rooms', 'lieu'],
   type: ['type', 'type de seance', 'nature', 'type d enseignement'],
   identifiant: ['identifiant', 'identifiant externe', 'id', 'uid', 'event id', 'reference'],
+  mode: ['mode', 'mode de presence', 'modalite', 'presence'],
 };
 
 const LIBELLES_CHAMPS: Partial<Record<Champ, string>> = {
@@ -139,7 +145,26 @@ export function lireTypeSeance(saisie: string): TypeSeanceImport | null {
   return null;
 }
 
-/** Heure lue : « 8:30 », « 08h30 », « 8h », « 08:30:00 » ou fraction de jour Excel ; en minutes. */
+/**
+ * RG-06-08 : mode de présence lu (« Présentiel », « À distance », « Hybride »…) ; vide : null,
+ * le mode de la séance est gardé (présentiel pour une séance créée). Inconnu : undefined.
+ */
+export function lireModePresence(saisie: string): ModePresence | null | undefined {
+  const forme = normaliserNom(saisie);
+  if (forme === '') return null;
+  if (['presentiel', 'en salle', 'sur site', 'face a face', 'on site'].includes(forme))
+    return 'presentiel';
+  if (
+    ['distanciel', 'a distance', 'distance', 'visio', 'en ligne', 'remote', 'online'].includes(
+      forme,
+    )
+  )
+    return 'distanciel';
+  if (['hybride', 'comodal', 'hybrid'].includes(forme)) return 'hybride';
+  return undefined;
+}
+
+/** Heure lue :« 8:30 », « 08h30 », « 8h », « 08:30:00 » ou fraction de jour Excel ; en minutes. */
 export function lireHeure(saisie: string): number | null {
   const valeur = saisie.trim().toLowerCase();
   const hm = /^(\d{1,2})\s*[:h]\s*(\d{2})?(?::\d{2})?$/.exec(valeur);
@@ -264,6 +289,11 @@ export function lireImportEdt(tableau: TableauLu, fuseau: string): LectureImport
       return erreur(
         `Type inconnu : « ${lire('type')} ». Types reconnus : CM, TD, TP, projet, examen.`,
       );
+    const mode = lireModePresence(lire('mode'));
+    if (mode === undefined)
+      return erreur(
+        `Mode inconnu : « ${lire('mode')} ». Modes reconnus : présentiel, à distance, hybride (ou vide).`,
+      );
     const contenu = {
       debut: instantLocal(jour.date, enHeure(debut), fuseau),
       fin: instantLocal(jour.date, enHeure(fin), fuseau),
@@ -272,6 +302,7 @@ export function lireImportEdt(tableau: TableauLu, fuseau: string): LectureImport
       intervenants: decouper(lire('intervenants')),
       salle: lire('salle') || null,
       type,
+      mode,
     };
     const identifiant = lire('identifiant');
     lecture.seances.push({
@@ -506,6 +537,8 @@ export function lireIcal(texte: string, fuseau: string): LectureImportEdt {
       intervenants: champs.intervenants,
       salle: texteIcal(lire('LOCATION')?.valeur ?? '').trim() || null,
       type,
+      // Un fichier iCal ne dit pas le mode de présence : celui de la séance est gardé.
+      mode: null,
     };
     if (contenu.module === '') return erreur('titre absent : il désigne le module.');
 
@@ -585,6 +618,8 @@ export interface ContenuEmpreinte {
   groupeIds: readonly string[];
   salleId: string | null;
   intervenantIds: readonly string[];
+  /** RG-06-08 : n'entre dans l'empreinte que hors présentiel (empreintes antérieures inchangées). */
+  modePresence?: ModePresence;
 }
 
 /**
@@ -603,6 +638,7 @@ export function empreinteSeance(c: ContenuEmpreinte): string {
     liste(c.groupeIds),
     c.salleId ?? '',
     liste(c.intervenantIds),
+    ...(c.modePresence && c.modePresence !== 'presentiel' ? [c.modePresence] : []),
   ].join('|');
 }
 

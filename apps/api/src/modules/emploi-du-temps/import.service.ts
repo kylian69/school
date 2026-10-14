@@ -526,9 +526,11 @@ export class ImportEdtService {
     seance: { id: string; statut: Seance['statut'] } | null;
     avertissement?: string;
   }> {
-    const cible = { debut: x.lue.debut, fin: x.lue.fin, ...x.contenu };
-    const empreinteFichier = empreinteSeance(cible);
     const existante = existantes.get(x.lue.identifiant) ?? null;
+    // RG-06-08 : sans mode dans le fichier, celui de la séance est gardé (présentiel à la création).
+    const modePresence = x.lue.mode ?? existante?.modePresence ?? 'presentiel';
+    const cible = { debut: x.lue.debut, fin: x.lue.fin, ...x.contenu, modePresence };
+    const empreinteFichier = empreinteSeance(cible);
     if (existante && (existante.statut === 'annulee' || existante.statut === 'reportee'))
       return {
         action: 'ignoree',
@@ -574,7 +576,7 @@ export class ImportEdtService {
             tx,
             access,
             existante.id,
-            { portee: 'seance', ...saisie },
+            { portee: 'seance', ...saisie, modePresence },
             adresseIp,
           )
         ).seances.find((s) => s.id === existante.id)
@@ -582,7 +584,7 @@ export class ImportEdtService {
           id: await this.seances.creerBrouillon(
             tx,
             access,
-            { ...saisie, lienVisio: null, distanciel: false },
+            { ...saisie, lienVisio: null, modePresence },
             adresseIp,
             cache,
           ),

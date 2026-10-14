@@ -218,6 +218,7 @@ export class FluxIcalService {
           annulee: 'Annulé : ',
           reportee: 'Reporté : ',
           distanciel: 'À distance',
+          hybride: 'ou à distance',
         },
       });
       const etag = `"${createHash('sha256').update(contenu).digest('base64url').slice(0, 32)}"`;
@@ -242,7 +243,7 @@ export class FluxIcalService {
         titre: seance.libelle,
         debut: seance.debut,
         fin: seance.fin,
-        distanciel: seance.distanciel,
+        mode: seance.modePresence,
         statut: seance.statut,
         modifieeLe: seance.modifieeLe,
         majLe: seance.updatedAt,
@@ -329,7 +330,7 @@ export class FluxIcalService {
       fin: l.fin,
       fuseau: l.fuseau ?? fuseauPromotion.get(l.id) ?? parDefaut,
       lieu: l.salle,
-      distanciel: l.distanciel,
+      mode: l.mode,
       statut: l.statut === 'publiee' || l.statut === 'annulee' ? l.statut : 'reportee',
       modifieeLe: l.modifieeLe,
       majLe: l.majLe,

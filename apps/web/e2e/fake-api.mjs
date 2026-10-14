@@ -1613,7 +1613,7 @@ const CHAMPS_SEANCE = [
   'intervenantIds',
   'salleId',
   'lienVisio',
-  'distanciel',
+  'modePresence',
 ];
 const contenuSeance = (body) => ({
   type: body.type ?? 'cm',
@@ -1624,7 +1624,7 @@ const contenuSeance = (body) => ({
   intervenantIds: body.intervenantIds ?? [],
   salleId: body.salleId ?? null,
   lienVisio: body.lienVisio ?? null,
-  distanciel: body.distanciel ?? false,
+  modePresence: body.modePresence ?? 'presentiel',
 });
 /** RG-04-06 : un forçage vise un conflit présent et porte un motif. */
 const forcer = (s, forcages = []) => {

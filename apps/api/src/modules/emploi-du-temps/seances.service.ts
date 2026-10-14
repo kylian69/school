@@ -28,6 +28,7 @@ import {
   type VerificationSeance,
   EVENEMENT_CHANGEMENT_EDT,
   type ChargeChangementEdt,
+  type ModePresence,
 } from '@scolaly/contracts';
 import {
   ajouterEvenement,
@@ -127,6 +128,15 @@ const REFUS_REMPLACEMENT: Record<RefusRemplacement, [string, string]> = {
   absent: ['ancienId', 'Cet intervenant n’anime pas cette séance.'],
   'deja-present': ['nouveauId', 'Cet intervenant anime déjà cette séance.'],
 };
+
+/**
+ * RG-06-08 : mode de présence, avec l'ancienne marque `distanciel` tenue à jour pour la version
+ * précédente pendant une mise à jour (colonne à retirer dans la version suivante).
+ */
+const colonnesMode = (modePresence: ModePresence) => ({
+  modePresence,
+  distanciel: modePresence === 'distanciel',
+});
 
 const invalide = (champ: string, message: string) =>
   new BadRequestException({
@@ -326,7 +336,7 @@ export class SeancesService {
       activite: saisie.moduleId ? null : saisie.activite,
       salleId: saisie.salleId,
       lienVisio: saisie.lienVisio,
-      distanciel: saisie.distanciel,
+      ...colonnesMode(saisie.modePresence),
       createdBy: access.userId,
     });
     await this.ecrirePublic(tx, access, id, contenu);
@@ -385,7 +395,7 @@ export class SeancesService {
       activite: saisie.moduleId ? null : saisie.activite,
       salleId: saisie.salleId,
       lienVisio: saisie.lienVisio,
-      distanciel: saisie.distanciel,
+      ...colonnesMode(saisie.modePresence),
       createdBy: access.userId,
     };
     await tx.insert(seance).values(valeurs);
@@ -467,7 +477,9 @@ export class SeancesService {
         debut.getTime() !== l.debut.getTime() ||
         fin.getTime() !== l.fin.getTime() ||
         m.promotionIds !== undefined ||
-        m.groupeIds !== undefined
+        m.groupeIds !== undefined ||
+        // RG-06-08 : le mode de présence est dans le cache (choix « à distance », localisation).
+        (m.modePresence !== undefined && m.modePresence !== l.modePresence)
       )
         aRetirer.push(l.id);
       const significatif = changementSignificatif(l, {
@@ -494,7 +506,7 @@ export class SeancesService {
           activite: moduleId ? null : activite,
           salleId,
           lienVisio: m.lienVisio !== undefined ? m.lienVisio : l.lienVisio,
-          distanciel: m.distanciel ?? l.distanciel,
+          ...colonnesMode(m.modePresence ?? l.modePresence),
           modifieeLe: significatif ? maintenant : l.modifieeLe,
           updatedBy: access.userId,
         })
@@ -644,7 +656,7 @@ export class SeancesService {
       activite: cible.activite,
       salleId,
       lienVisio: cible.lienVisio,
-      distanciel: cible.distanciel,
+      ...colonnesMode(cible.modePresence),
       modifieeLe: maintenant,
       createdBy: access.userId,
     });
@@ -858,7 +870,7 @@ export class SeancesService {
         activite: saisie.moduleId ? null : saisie.activite,
         salleId: saisie.salleId,
         lienVisio: saisie.lienVisio,
-        distanciel: saisie.distanciel,
+        ...colonnesMode(saisie.modePresence),
         serieId,
         createdBy: access.userId,
       })),
@@ -1322,7 +1334,7 @@ export class SeancesService {
       intervenantIds: l.intervenantIds,
       salleId: l.salleId,
       lienVisio: l.lienVisio,
-      distanciel: l.distanciel,
+      modePresence: l.modePresence,
       motifAnnulation: l.motifAnnulation,
       serieId: l.serieId,
       reporteeVersId: l.reporteeVersId,

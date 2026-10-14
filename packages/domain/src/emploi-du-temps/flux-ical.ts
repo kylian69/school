@@ -3,6 +3,7 @@
  * (STATUS:CANCELLED), dans le fuseau de l'établissement (VTIMEZONE), sur une fenêtre bornée.
  * Le texte produit ne dépend que des données : deux appels identiques donnent le même flux (ETag).
  */
+import type { ModePresence } from '../emargement/distanciel.js';
 import { decalage } from './recurrence.js';
 
 const JOUR_MS = 86_400_000;
@@ -44,7 +45,8 @@ export interface EvenementFluxIcal {
   fin: Date;
   fuseau: string;
   lieu: string | null;
-  distanciel: boolean;
+  /** RG-06-08 : mode de présence choisi dans l'emploi du temps. */
+  mode: ModePresence;
   statut: 'publiee' | 'annulee' | 'reportee';
   modifieeLe: Date | null;
   /** Dernière écriture de la séance (LAST-MODIFIED et DTSTAMP). */
@@ -56,6 +58,8 @@ export interface TextesFluxIcal {
   annulee: string;
   reportee: string;
   distanciel: string;
+  /** Ajouté à la salle d'une séance hybride (« Amphi A ou à distance »). */
+  hybride: string;
 }
 
 export interface TransitionFuseau {
@@ -175,7 +179,14 @@ function vevent(e: EvenementFluxIcal, textes: TextesFluxIcal): string[] {
   const retiree = e.statut !== 'publiee';
   const prefixe =
     e.statut === 'annulee' ? textes.annulee : e.statut === 'reportee' ? textes.reportee : '';
-  const lieu = e.lieu ?? (e.distanciel ? textes.distanciel : null);
+  const lieu =
+    e.mode === 'presentiel'
+      ? e.lieu
+      : e.lieu === null
+        ? textes.distanciel
+        : e.mode === 'hybride'
+          ? `${e.lieu} ${textes.hybride}`
+          : e.lieu;
   const majLe = horodatage(e.majLe.getTime());
   return [
     'BEGIN:VEVENT',

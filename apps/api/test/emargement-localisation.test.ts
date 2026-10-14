@@ -177,9 +177,10 @@ beforeAll(async () => {
       debut,
       fin: new Date(debut.getTime() + 2 * 3600_000),
       salleId: salles[cle],
-      distanciel: cle === 'distanciel',
-      // RG-06-08 : en salle avec un lien de visio, la séance est hybride.
-      lienVisio: cle === 'hybride' ? 'https://visio.exemple.test/hybride' : null,
+      // RG-06-08 : le mode est explicite ; la séance « campusIp » a un lien mais reste en salle.
+      modePresence: cle === 'distanciel' || cle === 'hybride' ? cle : 'presentiel',
+      lienVisio:
+        cle === 'hybride' || cle === 'campusIp' ? `https://visio.exemple.test/${cle}` : null,
     });
     await owner.db
       .insert(seanceIntervenant)
@@ -382,9 +383,10 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
     expect(modes.get(seances.hybride)).toBe('hybride');
     expect(modes.get(seances.distanciel)).toBe('distanciel');
     expect(modes.get(seances.salle)).toBe('presentiel');
+    expect(modes.get(seances.campusIp)).toBe('presentiel');
   });
 
-  it('RG-06-08 en présentiel, une déclaration « à distance » est ignorée', async () => {
+  it('RG-06-08 en présentiel, même avec un lien de visio, une déclaration « à distance » est ignorée', async () => {
     const jeton = await jetonOuvert(seances.campusIp);
     expect(
       await scanner(apprenants.eva ?? '', { jeton, aDistance: true }, '198.51.100.9'),

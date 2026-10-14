@@ -338,6 +338,33 @@ describe('US-04-04 import d’un emploi du temps', () => {
     expect(lignes.find((s) => s.identifiantExterne === 'HP-4')?.statut).toBe('publiee');
   });
 
+  it('RG-06-08 la colonne Mode, facultative, choisit le mode ; absente, elle garde celui de la séance', async () => {
+    const avecMode = (mode: string) =>
+      [
+        'Date;Début;Fin;Module;Groupes;Intervenants;Salle;Type;Identifiant;Mode',
+        `14/12/2026;08:00;10:00;M1;TD A;;Salle 101;CM;HP-7;${mode}`,
+      ].join('\n');
+    const mode = async () =>
+      (await importees()).find((s) => s.identifiantExterne === 'HP-7')?.modePresence;
+    expect((await importer(avecMode('Hybride'), { apercu: 'false' })).statusCode).toBe(200);
+    expect(await mode()).toBe('hybride');
+    // Sans colonne : le mode de la séance est gardé, rien ne change.
+    const sans = (
+      await importer(csv(`14/12/2026;08:00;10:00;M1;TD A;;Salle 101;CM;HP-7`), {
+        apercu: 'false',
+      })
+    ).json<ResultatImportEdt>();
+    expect(sans.compteurs).toMatchObject({ inchangees: 1, modifiees: 0 });
+    expect(await mode()).toBe('hybride');
+    const change = (
+      await importer(avecMode('présentiel'), { apercu: 'false' })
+    ).json<ResultatImportEdt>();
+    expect(change.compteurs).toMatchObject({ modifiees: 1 });
+    expect(await mode()).toBe('presentiel');
+    const inconnu = (await importer(avecMode('Sieste'))).json<ResultatImportEdt>();
+    expect(inconnu.erreurs[0]?.message).toContain('Mode inconnu');
+  });
+
   it('RG-04-06 laisse en brouillon, signalée, une séance en conflit bloquant', async () => {
     const r = (
       await importer(

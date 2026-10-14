@@ -1775,7 +1775,17 @@ export const fr = {
       `${statut}, modifiée récemment (personnes concernées prévenues)`,
     conflit: 'Conflit',
     avertissement: 'À vérifier',
-    distanciel: 'À distance',
+    /** RG-06-08 : mode de présence choisi dans l'emploi du temps. */
+    modes: { presentiel: 'Présentiel', distanciel: 'À distance', hybride: 'Hybride' },
+    /** Lieu affiché dans la grille : la salle, suivie du mode hors présentiel. */
+    lieu: (salle: string | null, mode: 'presentiel' | 'distanciel' | 'hybride') =>
+      mode === 'presentiel'
+        ? salle
+        : salle
+          ? `${salle} · ${mode === 'hybride' ? 'hybride' : 'à distance'}`
+          : mode === 'hybride'
+            ? 'Hybride'
+            : 'À distance',
     resume: (
       libelle: string,
       horaire: string,
@@ -1799,6 +1809,7 @@ export const fr = {
       titre: 'Séance choisie',
       vide: 'Choisissez une séance dans la grille pour voir son détail, ses conflits et ses actions.',
       salle: 'Salle',
+      mode: 'Mode de présence',
       visio: 'Lien de visio',
       intervenant: 'Intervenants',
       public: 'Public',
@@ -1869,7 +1880,14 @@ export const fr = {
       salleFermee: (nom: string) => `${nom} (fermée)`,
       places: (nom: string, n: number | null) => (n === null ? nom : `${nom} · ${n} places`),
       lienVisio: 'Lien de visio (facultatif)',
-      distanciel: 'Séance à distance',
+      mode: 'Mode de présence',
+      modeAide: {
+        presentiel:
+          'Tout le monde en salle : la localisation est contrôlée, même si un lien de visio est donné.',
+        distanciel: 'Tout le monde en visio : pas de contrôle de localisation.',
+        hybride:
+          'En salle ou en visio : chaque apprenant indique, en émargeant, s’il suit à distance.',
+      },
       recurrence: 'Répéter chaque semaine (série)',
       jours: 'Jours de la semaine',
       joursCourts: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
@@ -1944,13 +1962,13 @@ export const fr = {
     titre: 'Importer un emploi du temps',
     aide: 'Reprenez l’emploi du temps exporté d’Hyperplanning, de Celcat, d’ADE, d’un tableur ou d’un agenda (.ics). Rien n’est enregistré avant la validation ; un nouvel import du même fichier met à jour les séances sans doublon.',
     retour: 'Retour à l’emploi du temps',
-    modele: 'Date;Début;Fin;Module;Groupes;Intervenants;Salle;Type;Identifiant',
+    modele: 'Date;Début;Fin;Module;Groupes;Intervenants;Salle;Type;Identifiant;Mode',
     exemple:
       '07/12/2026;08:30;10:30;M101;Groupe A, Groupe B;camille.martin@exemple.test;Salle 101;TD;EXT-0001',
     telecharger: 'Télécharger le modèle (CSV)',
     colonnes: 'Colonnes du modèle :',
     noteModele:
-      'Groupes et intervenants se séparent par une virgule. Type : CM (par défaut), TD, TP, projet ou examen. L’identifiant, facultatif, évite les doublons quand le créneau change.',
+      'Groupes et intervenants se séparent par une virgule. Type : CM (par défaut), TD, TP, projet ou examen. L’identifiant, facultatif, évite les doublons quand le créneau change. Mode, facultatif : présentiel, à distance ou hybride (vide : inchangé, présentiel pour une nouvelle séance).',
     etablissement: 'Établissement',
     fichier: 'Fichier CSV, Excel (.xlsx) ou iCal (.ics), 10 Mo au plus',
     publicDefaut: 'Public des séances sans groupe (agenda d’une promotion)',

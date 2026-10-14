@@ -3,6 +3,7 @@
 import {
   ApercuSerie,
   CONFLITS_FORCABLES,
+  ModePresence,
   PORTEES_MODIFICATION,
   ResultatVerification,
   TYPES_SEANCE,
@@ -109,7 +110,9 @@ export function FormulaireSeance({
   );
   const [salleId, setSalleId] = useState((seance ? seance.salleId : defaut.salleId) ?? '');
   const [lienVisio, setLienVisio] = useState(seance?.lienVisio ?? '');
-  const [distanciel, setDistanciel] = useState(seance?.distanciel ?? false);
+  const [modePresence, setModePresence] = useState<ModePresence>(
+    seance?.modePresence ?? 'presentiel',
+  );
   const [portee, setPortee] = useState<Portee>('seance');
   const [serie, setSerie] = useState(false);
   const [joursSemaine, setJoursSemaine] = useState<number[]>([jourIso(jour)]);
@@ -153,7 +156,7 @@ export function FormulaireSeance({
       intervenantIds: [...intervenantIds].sort(),
       salleId: salleId || null,
       lienVisio: lienVisio.trim() || null,
-      distanciel,
+      modePresence,
     }),
     [
       type,
@@ -164,7 +167,7 @@ export function FormulaireSeance({
       intervenantIds,
       salleId,
       lienVisio,
-      distanciel,
+      modePresence,
     ],
   );
   const resultat = verification?.etat === 'ok' ? verification.resultat : null;
@@ -241,7 +244,7 @@ export function FormulaireSeance({
       intervenantIds: s.intervenantIds,
       salleId: s.salleId,
       lienVisio: s.lienVisio,
-      distanciel: s.distanciel,
+      modePresence: s.modePresence,
     };
     for (const [cle, valeur] of Object.entries(contenu))
       if (JSON.stringify(valeur) !== JSON.stringify(avant[cle as keyof typeof avant]))
@@ -467,19 +470,39 @@ export function FormulaireSeance({
             </select>
           </div>
         </div>
-        <div className="grid items-end gap-3 sm:grid-cols-[1fr_auto]">
-          <Champ
-            nom="lienVisio"
-            label={f.lienVisio}
-            erreurs={erreurs}
-            type="url"
-            value={lienVisio}
-            onChange={(e) => {
-              setLienVisio(e.target.value);
-            }}
-          />
-          <Case label={f.distanciel} coche={distanciel} onChange={setDistanciel} />
-        </div>
+        <Champ
+          nom="lienVisio"
+          label={f.lienVisio}
+          erreurs={erreurs}
+          type="url"
+          value={lienVisio}
+          onChange={(e) => {
+            setLienVisio(e.target.value);
+          }}
+        />
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-semibold">{f.mode}</legend>
+          <div className="flex flex-wrap gap-2">
+            {ModePresence.options.map((mode) => (
+              <label
+                key={mode}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line px-3 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-soft"
+              >
+                <input
+                  type="radio"
+                  name="modePresence"
+                  value={mode}
+                  checked={modePresence === mode}
+                  onChange={() => {
+                    setModePresence(mode);
+                  }}
+                />
+                {t.modes[mode]}
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted">{f.modeAide[modePresence]}</p>
+        </fieldset>
 
         {!seance ? (
           <fieldset className="flex flex-col gap-3 rounded-control border border-line p-3">
