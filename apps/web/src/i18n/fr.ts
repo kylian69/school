@@ -385,6 +385,7 @@ export const fr = {
       'apparence.': 'Apparence',
       'demarrage.': 'Liste de démarrage',
       'audit.': 'Journal d’audit',
+      'telechargement.': 'Téléchargements de fichiers',
     } as Record<string, string>,
     actions: {
       'personne.creer': 'Création d’une fiche',
@@ -401,6 +402,9 @@ export const fr = {
       'import.annuler': 'Import annulé',
       'personnes.exporter': 'Export des personnes',
       'audit.exporter': 'Export du journal',
+      'telechargement.fichier': 'Fichier téléchargé',
+      'telechargement.rapport-import': 'Rapport d’import téléchargé',
+      'telechargement.photos-appel': 'Photos de la liste d’appel remises',
       'organisation.modifier': 'Organisation modifiée',
       'etablissement.creer': 'Établissement créé',
       'etablissement.modifier': 'Établissement modifié',

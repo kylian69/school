@@ -116,15 +116,24 @@ export class ImportsController {
   @Get(':id/rapport')
   @RequirePermission('personnes:importer')
   @ApiContract({ summary: 'Rapport CSV des lignes rejetées (RG-01-19)', response: z.string() })
-  async rapport(@Param('id', ParseUUIDPipe) id: string, @Res() reply: FastifyReply) {
+  async rapport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: ScolalyRequest,
+    @Res() reply: FastifyReply,
+  ) {
     const { nom, contenu } = await this.validation.rapportCsv(
       RequestContext.tx(),
+      RequestContext.access(),
       id,
       libelleMotif,
+      request.ip,
     );
-    await reply
-      .header('content-type', 'text/csv; charset=utf-8')
-      .header('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(nom)}`)
-      .send(contenu);
+    // Le rapport n'est remis qu'une fois sa trace validée en base.
+    RequestContext.apresValidation(async () => {
+      await reply
+        .header('content-type', 'text/csv; charset=utf-8')
+        .header('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(nom)}`)
+        .send(contenu);
+    });
   }
 }

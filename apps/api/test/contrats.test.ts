@@ -374,6 +374,24 @@ describe('E-03-03 et E-03-04 contrats d’alternance', () => {
       headers: { cookie: admin },
     });
     expect(altere.statusCode).toBe(404);
+
+    // RG-01-22 : seul le téléchargement réussi est tracé, sans jeton ni nom de fichier.
+    const traces = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.action, 'telechargement.fichier'),
+          eq(auditEvenement.objetId, premier.id),
+        ),
+      );
+    expect(traces).toHaveLength(1);
+    expect(traces[0]).toMatchObject({ objetType: 'contrat', organisationId: ecole });
+    expect(traces[0]?.auteurId).toBeTruthy();
+    expect(traces[0]?.adresseIp).toBeTruthy();
+    const texte = JSON.stringify(traces);
+    expect(texte).not.toContain(lien.url.slice(lien.url.indexOf('jeton=') + 6));
+    expect(texte).not.toMatch(/\.pdf|organisations\//);
   });
 
   it('US-03-12 RG-03-07 rupture : tuteurs fermés, poursuite sans employeur puis retour en initial', async () => {

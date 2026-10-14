@@ -37,7 +37,7 @@ export class TelechargementsController {
     @Req() request: ScolalyRequest,
     @Res() reply: FastifyReply,
   ) {
-    const fichier = await this.telechargements.ouvrir(jeton ?? '', request.userId);
+    const fichier = await this.telechargements.ouvrir(jeton ?? '', request.userId, request.ip);
     reply
       .header('content-type', fichier.type)
       .header('content-disposition', dispositionPieceJointe(fichier.nom))

@@ -204,5 +204,24 @@ describe('RG-01-21 export des personnes', () => {
       headers: { cookie: direction },
     });
     expect(autreCompte.statusCode).toBe(404);
+
+    // RG-01-22 : le téléchargement du lien est tracé, en plus de la demande d'export.
+    const traces = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.organisationId, ecole),
+          eq(auditEvenement.action, 'telechargement.fichier'),
+        ),
+      );
+    expect(traces).toHaveLength(1);
+    expect(traces[0]).toMatchObject({
+      objetType: 'export_personnes',
+      apres: { type: 'text/csv; charset=utf-8' },
+    });
+    expect(traces[0]?.objetId).toBeTruthy();
+    expect(traces[0]?.adresseIp).toBeTruthy();
+    expect(JSON.stringify(traces)).not.toMatch(/jeton|Masse|personnes\.csv/);
   });
 });

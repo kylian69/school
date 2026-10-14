@@ -2,6 +2,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ROLES_PAR_DEFAUT, type ApercuImport } from '@scolaly/contracts';
 import {
   attribution,
+  auditEvenement,
   createDatabase,
   initialiserRolesParDefaut,
   newId,
@@ -252,6 +253,18 @@ describe('E-01-06 validation, rapport et annulation', () => {
     expect(rapport.headers['content-type']).toContain('text/csv');
     expect(rapport.body).toContain('"4";"email";"Adresse email invalide."');
     expect(rapport.body).toContain('"5";"email";"Une fiche porte déjà cet email : ligne ignorée."');
+    // RG-01-22 : le téléchargement du rapport est tracé.
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.action, 'telechargement.rapport-import'),
+          eq(auditEvenement.objetId, apercu.id),
+        ),
+      );
+    expect(trace).toMatchObject({ objetType: 'import_personnes', organisationId: ecole });
+    expect(trace?.adresseIp).toBeTruthy();
     expect((await POST(`/api/imports/${apercu.id}/validation`, {})).statusCode).toBe(409);
 
     // RG-01-20 : annulation dans les 24 h, les fiches créées disparaissent.
