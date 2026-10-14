@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ModePresence } from './emargement.js';
 import { PlageEdt } from './structure.js';
 
 /**
@@ -102,7 +103,8 @@ export const Seance = z
     intervenantIds: z.array(z.uuid()),
     salleId: z.uuid().nullable(),
     lienVisio: z.string().nullable(),
-    distanciel: z.boolean(),
+    /** RG-06-08 : présentiel, à distance ou hybride ; jamais déduit du lien de visio. */
+    modePresence: ModePresence,
     /** Motif de l'annulation ou du report. */
     motifAnnulation: z.string().nullable(),
     serieId: z.uuid().nullable(),
@@ -131,7 +133,8 @@ const ContenuSeance = z.object({
   intervenantIds: z.array(z.uuid()).max(INTERVENANTS_MAX).default([]),
   salleId: z.uuid().nullable().default(null),
   lienVisio: z.url('Lien de visio attendu (https://…).').max(500).nullable().default(null),
-  distanciel: z.boolean().default(false),
+  /** RG-06-08 : seule une séance hybride laisse l'apprenant se déclarer à distance. */
+  modePresence: ModePresence.default('presentiel'),
 });
 
 const avecPublic = (v: { promotionIds: string[]; groupeIds: string[] }) =>
@@ -165,7 +168,7 @@ export const ModificationSeance = z
     intervenantIds: z.array(z.uuid()).max(INTERVENANTS_MAX).optional(),
     salleId: z.uuid().nullable().optional(),
     lienVisio: z.url('Lien de visio attendu (https://…).').max(500).nullable().optional(),
-    distanciel: z.boolean().optional(),
+    modePresence: ModePresence.optional(),
     forcages: z.array(ForcageConflit).max(20).default([]),
   })
   .meta({ id: 'ModificationSeance' });

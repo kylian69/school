@@ -340,6 +340,8 @@ export function Planificateur({
                         {duJour.map((p) => {
                           const s = p.seance;
                           const salle = s.salleId ? (salles.get(s.salleId) ?? null) : null;
+                          // RG-06-08 : le mode est lisible dans la grille, hors présentiel.
+                          const lieu = t.lieu(salle, s.modePresence);
                           const bloquants = s.conflits.filter((c) => c.niveau === 'bloquant');
                           const horaire = `${formatHeure(s.debut, fuseau)} – ${formatHeure(s.fin, fuseau)}`;
                           return (
@@ -370,7 +372,7 @@ export function Planificateur({
                                   s.libelle,
                                   horaire,
                                   t.statuts[s.statut],
-                                  salle,
+                                  lieu,
                                   bloquants.length,
                                   s.modifiee,
                                 )}
@@ -393,7 +395,7 @@ export function Planificateur({
                                     {t.modifiee}
                                   </Badge>
                                 ) : null}
-                                {salle ? <span>{salle}</span> : null}
+                                {lieu ? <span>{lieu}</span> : null}
                               </button>
                             </li>
                           );
@@ -559,7 +561,8 @@ function FicheSeance({
             .join(', ')
         : t.fiche.aucun,
     ],
-    [t.fiche.salle, salle ?? (seance.distanciel ? t.distanciel : t.fiche.aucun)],
+    [t.fiche.salle, salle ?? t.fiche.aucun],
+    [t.fiche.mode, t.modes[seance.modePresence]],
   ];
   if (seance.lienVisio) lignes.push([t.fiche.visio, seance.lienVisio]);
   return (

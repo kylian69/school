@@ -45,6 +45,27 @@ describe('RG-04-08 lecture d’un tableur d’emploi du temps', () => {
         intervenants: ['alice@exemple.test'],
         salle: 'Salle 1',
         type: 'td',
+        mode: null,
+      },
+    ]);
+  });
+
+  it('RG-06-08 lit la colonne facultative du mode de présence', () => {
+    const lu = lireImportEdt(
+      tableau([
+        [...ligneModele, 'Hybride'],
+        [...ligneModele.slice(0, 8), 'HP-2', 'À distance'],
+        [...ligneModele.slice(0, 8), 'HP-3', 'présentiel'],
+        [...ligneModele.slice(0, 8), 'HP-4', 'Sieste'],
+      ]),
+      PARIS,
+    );
+    expect(lu.seances.map((x) => x.mode)).toEqual(['hybride', 'distanciel', 'presentiel']);
+    expect(lu.erreurs).toEqual([
+      {
+        ligne: 5,
+        message:
+          'Mode inconnu : « Sieste ». Modes reconnus : présentiel, à distance, hybride (ou vide).',
       },
     ]);
   });
@@ -239,6 +260,7 @@ describe('RG-04-09 lecture d’un fichier iCal', () => {
         intervenants: ['alice@exemple.test'],
         salle: 'Salle 1, bâtiment A',
         type: 'td',
+        mode: null,
       },
     ]);
   });
@@ -457,6 +479,11 @@ describe('RG-04-11 et RG-04-12 réimport', () => {
 
   it('l’empreinte ne dépend pas de l’ordre des listes', () => {
     expect(empreinteSeance({ ...contenu, promotionIds: ['p1', 'p2'] })).toBe(fichier);
+  });
+
+  it('RG-06-08 l’empreinte ne change que hors présentiel', () => {
+    expect(empreinteSeance({ ...contenu, modePresence: 'presentiel' })).toBe(fichier);
+    expect(empreinteSeance({ ...contenu, modePresence: 'hybride' })).toBe(`${fichier}|hybride`);
   });
 
   it('l’empreinte distingue une activité hors maquette sans type', () => {

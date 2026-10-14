@@ -15,7 +15,6 @@ import {
   withOrganisation,
   type Database,
 } from '@scolaly/db';
-import { modePresence } from '@scolaly/domain';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
 
@@ -49,7 +48,7 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
     if (trouve?.seance.statut !== 'publiee') continue;
     // RG-06-10 : périmètre de localisation préchargé avec la séance (aucune requête au scan).
     const localisation = perimetreAControler(
-      trouve.seance.distanciel,
+      trouve.seance.modePresence === 'distanciel',
       await withOrganisation(db, organisationId, (tx) => etablissementDeSeance(tx, trouve.seance)),
     );
     // RG-06-13 : un appel déjà validé refuse les scans ; l'état part avec la séance.
@@ -68,8 +67,8 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
             libelle: trouve.seance.libelle,
             debut: trouve.seance.debut.getTime(),
             fin: trouve.seance.fin.getTime(),
-            distanciel: trouve.seance.distanciel,
-            mode: modePresence(trouve.seance),
+            distanciel: trouve.seance.modePresence === 'distanciel',
+            mode: trouve.seance.modePresence,
             localisation,
             validation,
           },

@@ -12543,8 +12543,13 @@
             "maxLength": 500,
             "format": "uri"
           },
-          "distanciel": {
-            "type": "boolean"
+          "modePresence": {
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
           },
           "forcages": {
             "default": [],
@@ -17031,9 +17036,14 @@
             "maxLength": 500,
             "format": "uri"
           },
-          "distanciel": {
-            "default": false,
-            "type": "boolean"
+          "modePresence": {
+            "default": "presentiel",
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
           },
           "debut": {
             "type": "string",
@@ -17063,7 +17073,7 @@
           "intervenantIds",
           "salleId",
           "lienVisio",
-          "distanciel",
+          "modePresence",
           "debut",
           "fin",
           "forcages"
@@ -17141,9 +17151,14 @@
             "maxLength": 500,
             "format": "uri"
           },
-          "distanciel": {
-            "default": false,
-            "type": "boolean"
+          "modePresence": {
+            "default": "presentiel",
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
           },
           "dateDebut": {
             "type": "string",
@@ -17203,7 +17218,7 @@
           "intervenantIds",
           "salleId",
           "lienVisio",
-          "distanciel",
+          "modePresence",
           "dateDebut",
           "dateFin",
           "joursSemaine",
@@ -17658,8 +17673,13 @@
             "nullable": true,
             "type": "string"
           },
-          "distanciel": {
-            "type": "boolean"
+          "modePresence": {
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
           },
           "motifAnnulation": {
             "nullable": true,
@@ -17716,7 +17736,7 @@
           "intervenantIds",
           "salleId",
           "lienVisio",
-          "distanciel",
+          "modePresence",
           "motifAnnulation",
           "serieId",
           "reporteeVersId",
@@ -18382,9 +18402,14 @@
             "maxLength": 500,
             "format": "uri"
           },
-          "distanciel": {
-            "default": false,
-            "type": "boolean"
+          "modePresence": {
+            "default": "presentiel",
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
           },
           "id": {
             "type": "string",
@@ -18448,7 +18473,7 @@
           "intervenantIds",
           "salleId",
           "lienVisio",
-          "distanciel",
+          "modePresence",
           "debut",
           "fin",
           "equipements"

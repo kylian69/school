@@ -522,6 +522,7 @@ async function planifierEcole(
           activite: module ? null : (g.activite ?? null),
           salleId: choisie.id,
           distanciel: g.distanciel ?? false,
+          modePresence: g.distanciel ? 'distanciel' : g.hybride ? 'hybride' : 'presentiel',
           lienVisio:
             g.distanciel || g.hybride ? `https://visio.${domaine}/${planifiee.id.slice(-8)}` : null,
           serieId,

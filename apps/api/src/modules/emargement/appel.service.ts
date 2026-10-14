@@ -49,7 +49,6 @@ import {
   etatAppel,
   listeCanonique,
   minutesDeRetard,
-  modePresence,
   raisonAVerifier,
   statutDansAppel,
   verifierMarquage,
@@ -331,11 +330,11 @@ export class AppelService implements OnModuleDestroy {
           libelle: ligne.libelle,
           debut: ligne.debut.getTime(),
           fin: ligne.fin.getTime(),
-          distanciel: ligne.distanciel,
-          mode: modePresence(ligne),
+          distanciel: ligne.modePresence === 'distanciel',
+          mode: ligne.modePresence,
           // RG-06-10 : périmètre préchargé, le scan le compare sans requête SQL.
           localisation: perimetreAControler(
-            ligne.distanciel,
+            ligne.modePresence === 'distanciel',
             await etablissementDeSeance(tx, ligne),
           ),
           // RG-06-13 : un appel validé refuse les scans, sans requête SQL.
@@ -362,7 +361,7 @@ export class AppelService implements OnModuleDestroy {
         'base64url',
       ),
       periodeSecondes: JETON_PERIODE_SECONDES,
-      mode: modePresence(ligne),
+      mode: ligne.modePresence,
       maintenant: new Date().toISOString(),
     };
   }
@@ -712,7 +711,7 @@ export class AppelService implements OnModuleDestroy {
         libelle: ligne.libelle,
         debut: ligne.debut.toISOString(),
         fin: ligne.fin.toISOString(),
-        mode: modePresence(ligne),
+        mode: ligne.modePresence,
       },
       versions: validations.map(versionAppel),
       version: null,

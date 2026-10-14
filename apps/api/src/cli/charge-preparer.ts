@@ -201,7 +201,8 @@ try {
     libelle: 'Séance de la preuve de charge',
     debut: debutSeance,
     fin: finSeance,
-    // RG-06-08 : séance hybride (salle et visio) ; un apprenant sur quatre émarge à distance.
+    // RG-06-08 : séance marquée hybride (salle et visio) ; un apprenant sur quatre émarge à distance.
+    modePresence: 'hybride',
     lienVisio: 'https://visio.charge.scolaly.test/seance',
   });
   await db

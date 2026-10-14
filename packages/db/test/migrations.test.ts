@@ -159,6 +159,42 @@ describe('Migrations depuis une version antérieure', () => {
     });
   });
 
+  it('RG-06-08 0065 reprend le mode de présence : seule la case « à distance » compte', async () => {
+    const index = tags.indexOf('0065_skinny_nico_minoru');
+    expect(index).toBeGreaterThan(0);
+    const database = await createTestDatabase(undefined, {
+      migrationsFolder: migrationsUpTo(index),
+    });
+    databases.push(database);
+    const client = new pg.Client({ connectionString: database.migratorUrl });
+    await client.connect();
+    try {
+      // À distance ; en salle avec un lien (hybride déduit jusqu'ici) ; sans salle avec un lien.
+      await client.query(`
+        insert into organisation (id, nom, nom_affichage)
+          values ('00000000-0000-7000-8000-000000000001', 'École', 'EC');
+        insert into seance (id, organisation_id, libelle, debut, fin, distanciel, lien_visio)
+          values
+            ('00000000-0000-7000-8000-000000000011', '00000000-0000-7000-8000-000000000001',
+             'À distance', now(), now() + interval '1 hour', true, 'https://visio.exemple.test/a'),
+            ('00000000-0000-7000-8000-000000000012', '00000000-0000-7000-8000-000000000001',
+             'Avec lien', now(), now() + interval '1 hour', false, 'https://visio.exemple.test/b'),
+            ('00000000-0000-7000-8000-000000000013', '00000000-0000-7000-8000-000000000001',
+             'En salle', now(), now() + interval '1 hour', false, null)`);
+      await runMigrations(database.migratorUrl);
+      const { rows } = await client.query<{ libelle: string; mode_presence: string }>(
+        'select libelle, mode_presence from seance order by id',
+      );
+      expect(rows).toEqual([
+        { libelle: 'À distance', mode_presence: 'distanciel' },
+        { libelle: 'Avec lien', mode_presence: 'presentiel' },
+        { libelle: 'En salle', mode_presence: 'presentiel' },
+      ]);
+    } finally {
+      await client.end();
+    }
+  });
+
   it('une base à jour ne rejoue aucune migration', async () => {
     const database = await upgradeFrom(tags.length);
     await runMigrations(database.migratorUrl);

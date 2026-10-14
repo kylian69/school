@@ -173,6 +173,45 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await expect(fiche.getByText(`Alix Duo${suffixe}, Basile Duo${suffixe}`)).toBeVisible();
   });
 
+  test('RG-06-08 choisit le mode de présence : un lien de visio ne rend pas la séance hybride', async ({
+    page,
+  }) => {
+    const { semaine, salles } = await preparerGrille(page, '2061');
+    const [salle = ''] = salles;
+    const dialogue = await nouvelleSeance(page, {
+      jour: semaine,
+      debut: '09:00',
+      fin: '11:00',
+      salle,
+    });
+    await dialogue.getByLabel('Lien de visio (facultatif)').fill('https://visio.exemple.test/bois');
+    const mode = dialogue.getByRole('group', { name: 'Mode de présence' });
+    await expect(mode.getByRole('radio', { name: 'Présentiel' })).toBeChecked();
+    await expect(dialogue.getByText(/même si un lien de visio est donné/)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await dialogue.getByRole('button', { name: 'Enregistrer en brouillon' }).click();
+    await expect(dialogue).toBeHidden();
+    const seance = page.getByRole('button', { name: /^Bois, 09:00 – 11:00/ });
+    await expect(seance).toHaveAccessibleName(new RegExp(`, ${salle}$`));
+    await seance.click();
+    const fiche = page.getByRole('region', { name: 'Séance choisie' });
+    await expect(fiche.getByText('Présentiel')).toBeVisible();
+
+    await fiche.getByRole('button', { name: 'Modifier' }).click();
+    const modification = page.getByRole('dialog', { name: 'Modifier la séance' });
+    await modification
+      .getByRole('group', { name: 'Mode de présence' })
+      .getByRole('radio', { name: 'Hybride' })
+      .check();
+    await expect(modification.getByText(/s’il suit à distance/)).toBeVisible();
+    await modification.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await expect(modification).toBeHidden();
+    await expect(seance).toHaveAccessibleName(new RegExp(`${salle} · hybride`));
+    await expect(seance.getByText(`${salle} · hybride`)).toBeVisible();
+    await expect(fiche.getByText('Hybride')).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+  });
+
   test('E-04-01 grise les jours en entreprise (RG-03-13), place un module depuis la barre « à placer » (RG-04-16) et montre les disponibilités (RG-04-18)', async ({
     page,
   }, testInfo) => {

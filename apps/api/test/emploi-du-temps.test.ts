@@ -1055,6 +1055,33 @@ describe('US-04-11 annulation, report et remplacement', () => {
     await valkey.del(CLES_EMARGEMENT.presences(remplacement.id));
   });
 
+  it('RG-06-08 le mode de présence se choisit, n’est jamais déduit du lien, et son changement est audité', async () => {
+    const s = await publiee('29');
+    // Présentiel par défaut ; un lien de visio ne rend pas la séance hybride.
+    expect(s.modePresence).toBe('presentiel');
+    const avecLien = await requete('PATCH', `/api/edt/seances/${s.id}`, admin, {
+      lienVisio: 'https://visio.example.test/salle',
+    });
+    expect(avecLien.json<ResultatSeances>().seances[0]?.modePresence).toBe('presentiel');
+    const valkey = app.get<Redis>(VALKEY);
+    const cle = CLES_EMARGEMENT.seance(s.id);
+    await valkey.hset(cle, 'organisationId', ecole, 'mode', 'presentiel');
+    const hybride = await requete('PATCH', `/api/edt/seances/${s.id}`, admin, {
+      modePresence: 'hybride',
+    });
+    expect(hybride.statusCode).toBe(200);
+    expect(hybride.json<ResultatSeances>().seances[0]?.modePresence).toBe('hybride');
+    // Le cache de l'émargement est relu avec le nouveau mode.
+    expect(await valkey.exists(cle)).toBe(0);
+    const trace = (await audits(s.id)).filter((a) => a.action === 'seance.modifier').at(-1);
+    expect(trace?.avant).toMatchObject({ modePresence: 'presentiel' });
+    expect(trace?.apres).toMatchObject({ modePresence: 'hybride' });
+    expect(
+      (await requete('PATCH', `/api/edt/seances/${s.id}`, admin, { modePresence: 'visio' }))
+        .statusCode,
+    ).toBe(400);
+  });
+
   it('RG-04-14 signale la publication et chaque changement significatif, avec le badge « modifié »', async () => {
     const signalee = await publiee('27');
     expect(signalee.modifiee).toBe(false);

@@ -69,6 +69,12 @@ export const seanceStatut = pgEnum('seance_statut', [
   'annulee',
   'reportee',
 ]);
+/** RG-06-08 : mode de présence d'une séance, choisi dans l'emploi du temps. */
+export const seanceModePresence = pgEnum('seance_mode_presence', [
+  'presentiel',
+  'distanciel',
+  'hybride',
+]);
 /** RG-04-01 : type d'une séance. */
 export const seanceType = pgEnum('seance_type', ['cm', 'td', 'tp', 'projet', 'examen']);
 
@@ -83,8 +89,17 @@ export const seance = pgTable(
     libelle: text().notNull(),
     debut: timestamp({ withTimezone: true }).notNull(),
     fin: timestamp({ withTimezone: true }).notNull(),
-    /** RG-06-08 : séance à distance, sans contrôle de localisation. */
+    /**
+     * Ancienne marque « à distance », tenue égale à mode_presence = 'distanciel' pour la version
+     * précédente pendant une mise à jour ; à retirer dans la version suivante (ajouter, basculer,
+     * retirer). Ne plus la lire.
+     */
     distanciel: boolean().notNull().default(false),
+    /**
+     * RG-06-08 : présentiel, à distance (sans contrôle de localisation) ou hybride (l'apprenant
+     * déclare s'il suit à distance). Un lien de visio ne rend pas une séance hybride.
+     */
+    modePresence: seanceModePresence().notNull().default('presentiel'),
     statut: seanceStatut().notNull().default('publiee'),
     type: seanceType(),
     moduleId: uuid(),

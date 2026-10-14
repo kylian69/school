@@ -11,7 +11,7 @@ import {
   seanceSerie,
   type Transaction,
 } from '@scolaly/db';
-import { badgeModifie, jourLocal, modePresence } from '@scolaly/domain';
+import { badgeModifie, jourLocal } from '@scolaly/domain';
 import { and, asc, eq, gt, inArray, isNull, lt, type SQL } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import type { Env } from '../../config/env.js';
@@ -42,9 +42,7 @@ export class SeancesService {
         libelle: seance.libelle,
         debut: seance.debut,
         fin: seance.fin,
-        distanciel: seance.distanciel,
-        // RG-06-08 : lu pour le mode de présence seulement, jamais renvoyé ici.
-        lienVisio: seance.lienVisio,
+        modePresence: seance.modePresence,
         modifieeLe: seance.modifieeLe,
         salleId: seance.salleId,
         serieId: seance.serieId,
@@ -99,15 +97,18 @@ export class SeancesService {
     for (const l of lignes) {
       const lieu = `${l.salleId ?? ''}|${l.serieId ?? ''}`;
       if (!parLieu.has(lieu)) parLieu.set(lieu, await etablissementDeSeance(tx, l));
-      controles.set(l.id, perimetreAControler(l.distanciel, parLieu.get(lieu) ?? null) !== null);
+      controles.set(
+        l.id,
+        perimetreAControler(l.modePresence === 'distanciel', parLieu.get(lieu) ?? null) !== null,
+      );
     }
     return lignes.map((l) => ({
       id: l.id,
       libelle: l.libelle,
       debut: l.debut.toISOString(),
       fin: l.fin.toISOString(),
-      distanciel: l.distanciel,
-      mode: modePresence(l),
+      distanciel: l.modePresence === 'distanciel',
+      mode: l.modePresence,
       intervenant: noms.get(l.id)?.join(', ') ?? null,
       modifiee: badgeModifie(l.modifieeLe, new Date(maintenant), dureeBadge),
       localisation: controles.get(l.id) ?? false,
