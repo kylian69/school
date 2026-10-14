@@ -561,7 +561,12 @@ export class ContratsService {
     return {
       url: this.telechargements.adresse(
         access,
-        { cle: ligne.documentCle, nom, type: 'application/pdf' },
+        {
+          cle: ligne.documentCle,
+          nom,
+          type: 'application/pdf',
+          objet: { type: objet === 'contrat' ? 'contrat' : 'convention_stage', id },
+        },
         { permissions: LECTURE },
       ),
     };

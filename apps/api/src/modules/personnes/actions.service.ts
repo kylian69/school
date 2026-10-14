@@ -125,7 +125,8 @@ export class ActionsService {
     if (total <= EXPORT_DIRECT_MAX) return { total, contenu };
 
     const fichier = Buffer.from(contenu, 'utf8');
-    const key = ObjectStorage.key(access.organisationId, 'exports', newId());
+    const exportId = newId();
+    const key = ObjectStorage.key(access.organisationId, 'exports', exportId);
     await this.storage.put(
       key,
       fichier,
@@ -135,7 +136,12 @@ export class ActionsService {
     // Lien par l'API (ADR 0007), réservé au compte qui a demandé l'export et revérifié à l'usage.
     const lien = this.telechargements.adresseAbsolue(
       access,
-      { cle: key, nom: 'personnes.csv', type: 'text/csv; charset=utf-8' },
+      {
+        cle: key,
+        nom: 'personnes.csv',
+        type: 'text/csv; charset=utf-8',
+        objet: { type: 'export_personnes', id: exportId },
+      },
       { permissions: ['personnes:exporter'], dureeSecondes: DUREE_TELECHARGEMENT_MAX_SECONDES },
     );
     const [compte] = await tx

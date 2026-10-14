@@ -349,6 +349,25 @@ describe('RG-01-27 photos de la liste d’appel par adresse signée', () => {
     expect(lue.headers['cache-control']).toBe('private, max-age=300');
     expect(lue.rawPayload.equals(image)).toBe(true);
 
+    // RG-01-22 : une trace par lot de photos remis, pas par vignette, sans jeton ni clé.
+    const traces = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.action, 'telechargement.photos-appel'),
+          eq(auditEvenement.objetId, seances.enCours),
+        ),
+      );
+    expect(traces).toHaveLength(1);
+    expect(traces[0]).toMatchObject({
+      objetType: 'seance',
+      organisationId: ecole,
+      apres: { personnes: [fiches.lou] },
+    });
+    expect(traces[0]?.adresseIp).toBeTruthy();
+    expect(JSON.stringify(traces)).not.toMatch(/jeton|organisations\//);
+
     // Un autre compte, une signature altérée ou sans session : rien.
     expect((await appeler('GET', url, cookies.hugo ?? '')).statusCode).toBe(404);
     expect((await appeler('GET', `${url.slice(0, -2)}xx`, cookies.iris ?? '')).statusCode).toBe(

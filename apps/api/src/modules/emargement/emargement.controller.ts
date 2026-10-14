@@ -172,8 +172,8 @@ export class AppelController {
     summary: 'Photos des attendus : adresses signées, valables quelques minutes',
     response: PhotosAppel,
   })
-  photos(@Param('id', ParseUUIDPipe) id: string) {
-    return this.appels.photos(RequestContext.tx(), RequestContext.access(), id);
+  photos(@Param('id', ParseUUIDPipe) id: string, @Req() request: ScolalyRequest) {
+    return this.appels.photos(RequestContext.tx(), RequestContext.access(), id, request.ip);
   }
 
   @Get('direct')

@@ -865,12 +865,29 @@ export class AppelService implements OnModuleDestroy {
    * RG-06-11). Chaque adresse est signée pour le compte qui la demande et vaut quelques minutes :
    * la photo reste privée dans le stockage, jamais publique.
    */
-  async photos(tx: Transaction, access: Access, seanceId: string): Promise<PhotosAppel> {
+  async photos(
+    tx: Transaction,
+    access: Access,
+    seanceId: string,
+    adresseIp: string,
+  ): Promise<PhotosAppel> {
     const { attendus } = await this.charger(tx, access, seanceId);
     const expireLe = Date.now() + SIGNED_URL_TTL_SECONDS * 1000;
+    const avecPhoto = attendus.filter((a) => a.photoCle);
+    // Une trace par lot de photos remis (et non par vignette affichée) : qui les a reçues, pour
+    // quelle séance et quelles personnes. Sans trace écrite, la requête échoue et rien n'est remis.
+    if (avecPhoto.length > 0)
+      await enregistrerAudit(tx, {
+        action: 'telechargement.photos-appel',
+        objetType: 'seance',
+        objetId: seanceId,
+        auteurId: access.userId,
+        adresseIp,
+        apres: { personnes: avecPhoto.map((a) => a.personneId) },
+      });
     return {
       expireLe: new Date(expireLe).toISOString(),
-      photos: attendus.flatMap((a) =>
+      photos: avecPhoto.flatMap((a) =>
         a.photoCle
           ? [
               {

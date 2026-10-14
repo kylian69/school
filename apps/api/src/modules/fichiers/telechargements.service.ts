@@ -1,7 +1,20 @@
 import type { Readable } from 'node:stream';
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import type { Permission } from '@scolaly/contracts';
-import { authUser, cleMaitresseCourante, type Database } from '@scolaly/db';
+import {
+  authUser,
+  cleMaitresseCourante,
+  enregistrerAudit,
+  withOrganisation,
+  type Database,
+} from '@scolaly/db';
 import { eq } from 'drizzle-orm';
 import { ACCESS_RESOLVER, type Access, type AccessResolver } from '../../access/access-resolver.js';
 import { doubleAuthentificationRequise } from '../../access/access.guard.js';
@@ -22,6 +35,8 @@ export interface FichierATelecharger {
   nom: string;
   /** Type MIME envoyé avec le fichier. */
   type: 'application/pdf' | 'text/csv; charset=utf-8';
+  /** Objet métier du fichier, inscrit au journal d'audit à chaque téléchargement. */
+  objet: { type: string; id: string };
 }
 
 export interface FichierOuvert {
@@ -44,6 +59,7 @@ const introuvable = () =>
 @Injectable()
 export class TelechargementsService {
   private readonly jetons: JetonChiffre;
+  private readonly logger = new Logger('Telechargements');
 
   constructor(
     @Inject(ENV) private readonly env: Env,
@@ -76,6 +92,8 @@ export class TelechargementsService {
         u: access.userId,
         o: access.organisationId,
         p: options.permissions,
+        ot: fichier.objet.type,
+        oi: fichier.objet.id,
       },
       Date.now() + duree * 1000,
     );
@@ -87,9 +105,26 @@ export class TelechargementsService {
     return new URL(this.adresse(...parametres), this.env.PUBLIC_URL).toString();
   }
 
-  async ouvrir(jeton: string, userId: string | undefined): Promise<FichierOuvert> {
+  /**
+   * Ouvre le fichier et inscrit le téléchargement au journal d'audit (qui, quand, quel objet, adresse
+   * IP ; jamais le jeton ni le contenu). Sans trace écrite, le fichier n'est pas remis.
+   */
+  async ouvrir(
+    jeton: string,
+    userId: string | undefined,
+    adresseIp: string | undefined,
+  ): Promise<FichierOuvert> {
     const charge = this.jetons.lire(jeton);
-    const { c: cle, n: nom, t: type, u, o: organisationId, p: permissions } = charge ?? {};
+    const {
+      c: cle,
+      n: nom,
+      t: type,
+      u,
+      o: organisationId,
+      p: permissions,
+      ot: objetType,
+      oi: objetId,
+    } = charge ?? {};
     if (
       !userId ||
       u !== userId ||
@@ -123,6 +158,29 @@ export class TelechargementsService {
 
     const objet = await this.storage.lireFlux(cle);
     if (!objet) throw introuvable();
+    try {
+      await withOrganisation(this.db, organisationId, (tx) =>
+        enregistrerAudit(tx, {
+          action: 'telechargement.fichier',
+          // Adresses données avant le suivi des téléchargements : objet inconnu, trace quand même.
+          objetType: typeof objetType === 'string' ? objetType : 'fichier',
+          objetId: typeof objetId === 'string' ? objetId : null,
+          auteurId: userId,
+          adresseIp: adresseIp ?? null,
+          apres: { type },
+        }),
+      );
+    } catch (erreur) {
+      objet.flux.destroy();
+      // Le message d'erreur SQL reprend les valeurs insérées (compte, IP) : seul son type est noté.
+      this.logger.error(
+        `Téléchargement refusé, trace d'audit impossible (${erreur instanceof Error ? erreur.name : 'erreur inconnue'})`,
+      );
+      throw new ServiceUnavailableException(
+        'Le téléchargement n’a pas pu être enregistré au journal : il est refusé par sécurité. ' +
+          'Réessayez dans quelques minutes, puis prévenez l’administrateur si cela persiste.',
+      );
+    }
     return { ...objet, nom, type };
   }
 }

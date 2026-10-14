@@ -277,8 +277,23 @@ export class ValidationImportService {
   }
 
   /** RG-01-19 : rapport des lignes rejetées, au format CSV (séparateur « ; », UTF-8). */
-  async rapportCsv(tx: Transaction, id: string, libelle: (code: string) => string) {
+  /** Rapport des rejets, téléchargé : tracé au journal dans la transaction de la requête. */
+  async rapportCsv(
+    tx: Transaction,
+    access: Access,
+    id: string,
+    libelle: (code: string) => string,
+    adresseIp: string,
+  ) {
     const ligne = await this.imports.charger(tx, id);
+    await enregistrerAudit(tx, {
+      action: 'telechargement.rapport-import',
+      objetType: 'import_personnes',
+      objetId: id,
+      auteurId: access.userId,
+      adresseIp,
+      apres: { type: 'text/csv; charset=utf-8' },
+    });
     const rapport = (ligne.rapport ?? { lignes: [] }) as Rapport;
     const echapper = (v: string) => `"${v.replaceAll('"', '""')}"`;
     const lignes = rapport.lignes.flatMap((l) =>
