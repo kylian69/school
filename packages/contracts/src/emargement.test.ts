@@ -112,8 +112,9 @@ describe('RG-06-10 périmètre de localisation préchargé', () => {
     };
     expect(lireSeanceEnCache(hash({ ...seance, mode: 'hybride' }))?.mode).toBe('hybride');
     const ancien = (distanciel: boolean) => {
-      const { mode: _mode, ...reste } = hash({ ...seance, distanciel });
-      return reste;
+      const champs = hash({ ...seance, distanciel });
+      delete champs.mode;
+      return champs;
     };
     expect(lireSeanceEnCache(ancien(true))?.mode).toBe('distanciel');
     expect(lireSeanceEnCache(ancien(false))?.mode).toBe('presentiel');
