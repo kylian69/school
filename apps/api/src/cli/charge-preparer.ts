@@ -201,6 +201,8 @@ try {
     libelle: 'Séance de la preuve de charge',
     debut: debutSeance,
     fin: finSeance,
+    // RG-06-08 : séance hybride (salle et visio) ; un apprenant sur quatre émarge à distance.
+    lienVisio: 'https://visio.charge.scolaly.test/seance',
   });
   await db
     .insert(seanceIntervenant)

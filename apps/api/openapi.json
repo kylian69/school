@@ -3622,6 +3622,14 @@
                         "distanciel": {
                           "type": "boolean"
                         },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "presentiel",
+                            "distanciel",
+                            "hybride"
+                          ]
+                        },
                         "intervenant": {
                           "nullable": true,
                           "type": "string"
@@ -3639,6 +3647,7 @@
                         "debut",
                         "fin",
                         "distanciel",
+                        "mode",
                         "intervenant",
                         "modifiee",
                         "localisation"
@@ -5357,6 +5366,14 @@
                         "distanciel": {
                           "type": "boolean"
                         },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "presentiel",
+                            "distanciel",
+                            "hybride"
+                          ]
+                        },
                         "intervenant": {
                           "nullable": true,
                           "type": "string"
@@ -5374,6 +5391,7 @@
                         "debut",
                         "fin",
                         "distanciel",
+                        "mode",
                         "intervenant",
                         "modifiee",
                         "localisation"
@@ -6391,6 +6409,9 @@
                     "inconnu"
                   ]
                 },
+                "aDistance": {
+                  "type": "boolean"
+                },
                 "statut": {
                   "type": "string",
                   "enum": [
@@ -6440,6 +6461,7 @@
                 "scanneLe",
                 "rejoue",
                 "localisation",
+                "aDistance",
                 "statut",
                 "marquage"
               ],
@@ -7319,6 +7341,9 @@
                 "$ref": "#/components/schemas/PositionScan"
               }
             ]
+          },
+          "aDistance": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -13492,6 +13517,14 @@
             "exclusiveMinimum": true,
             "maximum": 9007199254740991
           },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
+          },
           "maintenant": {
             "type": "string",
             "format": "date-time",
@@ -13505,6 +13538,7 @@
           "fin",
           "cle",
           "periodeSecondes",
+          "mode",
           "maintenant"
         ],
         "additionalProperties": false
@@ -15420,6 +15454,9 @@
               "hors-site",
               "inconnu"
             ]
+          },
+          "aDistance": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -15428,7 +15465,8 @@
           "scanneLe",
           "retardMinutes",
           "rejoue",
-          "localisation"
+          "localisation",
+          "aDistance"
         ],
         "additionalProperties": false
       },
@@ -17175,6 +17213,9 @@
                 "$ref": "#/components/schemas/PositionScan"
               }
             ]
+          },
+          "aDistance": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -17420,6 +17461,14 @@
           "distanciel": {
             "type": "boolean"
           },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "presentiel",
+              "distanciel",
+              "hybride"
+            ]
+          },
           "intervenant": {
             "nullable": true,
             "type": "string"
@@ -17437,6 +17486,7 @@
           "debut",
           "fin",
           "distanciel",
+          "mode",
           "intervenant",
           "modifiee",
           "localisation"

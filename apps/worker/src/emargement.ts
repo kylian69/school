@@ -14,6 +14,7 @@ import {
   withOrganisation,
   type Database,
 } from '@scolaly/db';
+import { modePresence } from '@scolaly/domain';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
 
@@ -63,6 +64,7 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
             debut: trouve.seance.debut.getTime(),
             fin: trouve.seance.fin.getTime(),
             distanciel: trouve.seance.distanciel,
+            mode: modePresence(trouve.seance),
             localisation,
           },
           attendus,

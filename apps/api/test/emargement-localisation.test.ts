@@ -56,6 +56,7 @@ const seances = {
   desactive: newId(),
   code: newId(),
   campusIp: newId(),
+  hybride: newId(),
 };
 const apprenants: Record<string, string> = {};
 let intervenant: string;
@@ -166,6 +167,7 @@ beforeAll(async () => {
     desactive: salleAnnexe?.id ?? null,
     code: salleCampus?.id ?? null,
     campusIp: salleCampus?.id ?? null,
+    hybride: salleCampus?.id ?? null,
   };
   for (const [cle, id] of Object.entries(seances) as [keyof typeof seances, string][]) {
     await owner.db.insert(seance).values({
@@ -176,6 +178,8 @@ beforeAll(async () => {
       fin: new Date(debut.getTime() + 2 * 3600_000),
       salleId: salles[cle],
       distanciel: cle === 'distanciel',
+      // RG-06-08 : en salle avec un lien de visio, la séance est hybride.
+      lienVisio: cle === 'hybride' ? 'https://visio.exemple.test/hybride' : null,
     });
     await owner.db
       .insert(seanceIntervenant)
@@ -256,6 +260,7 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
       expect(texte).not.toMatch(/latitude|longitude|45\.75|precision|192\.0\.2/);
     }
     expect(Object.keys(JSON.parse(flux[0] ?? '{}') as PresenceEnCache).sort()).toEqual([
+      'aDistance',
       'localisation',
       'mode',
       'organisationId',
@@ -318,6 +323,74 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
     }
   });
 
+  it('US-06-06 RG-06-08 séance à distance : émargement à distance, déclaration superflue', async () => {
+    const jeton = await jetonOuvert(seances.distanciel);
+    expect(await scanner(apprenants.max ?? '', { jeton })).toMatchObject({
+      statut: 'present',
+      localisation: null,
+      aDistance: true,
+    });
+  });
+
+  it('RG-06-08 séance hybride : seul l’apprenant qui se déclare à distance échappe au contrôle', async () => {
+    const jeton = await jetonOuvert(seances.hybride);
+    const pool = (app.get<Database>(DATABASE) as unknown as { $client: Pool }).$client;
+    let requetes = 0;
+    const query = pool.query.bind(pool);
+    pool.query = (...args: unknown[]) => {
+      requetes++;
+      return query(...args);
+    };
+    let resultats: ResultatScan[];
+    try {
+      resultats = [
+        await scanner(apprenants.lou ?? '', { jeton, position: loin, aDistance: true }),
+        await scanner(apprenants.max ?? '', { jeton, position: loin }),
+        await scanner(apprenants.zoe ?? '', { jeton, position: surPlace, aDistance: false }),
+      ];
+    } finally {
+      pool.query = query;
+    }
+    // Aucune requête SQL ajoutée sur le chemin du scan (architecture, section 5).
+    expect(requetes).toBe(0);
+    expect(resultats.map((r) => [r.localisation, r.aDistance])).toEqual([
+      [null, true],
+      ['hors-site', false],
+      ['sur-place', false],
+    ]);
+    // Un second scan garde la première déclaration.
+    expect(await scanner(apprenants.lou ?? '', { jeton, position: surPlace })).toMatchObject({
+      statut: 'deja-emarge',
+      aDistance: true,
+      localisation: null,
+    });
+    // RG-06-11 : l'intervenant voit qui a émargé à distance.
+    const direct = (
+      await appeler('GET', `/api/seances/${seances.hybride}/appel`, intervenant)
+    ).json<AppelEnDirect>();
+    const parPrenom = new Map(direct.liste.map((l) => [l.prenom, l]));
+    expect(parPrenom.get('lou')).toMatchObject({ aDistance: true, statut: 'present' });
+    expect(parPrenom.get('max')).toMatchObject({ aDistance: false, statut: 'a-verifier' });
+    // Ouverture de l'appel et liste des séances donnent le mode, jamais le lien de visio.
+    const ouverture = (
+      await appeler('POST', `/api/seances/${seances.hybride}/appel/ouverture`, intervenant)
+    ).json<OuvertureAppel>();
+    expect(ouverture.mode).toBe('hybride');
+    const liste = await appeler('GET', '/api/moi/seances', apprenants.ali ?? '');
+    expect(liste.body).not.toContain('visio.exemple.test');
+    const modes = new Map(liste.json<SeanceProche[]>().map((s) => [s.id, s.mode]));
+    expect(modes.get(seances.hybride)).toBe('hybride');
+    expect(modes.get(seances.distanciel)).toBe('distanciel');
+    expect(modes.get(seances.salle)).toBe('presentiel');
+  });
+
+  it('RG-06-08 en présentiel, une déclaration « à distance » est ignorée', async () => {
+    const jeton = await jetonOuvert(seances.campusIp);
+    expect(
+      await scanner(apprenants.eva ?? '', { jeton, aDistance: true }, '198.51.100.9'),
+    ).toMatchObject({ localisation: 'inconnu', aDistance: false });
+  });
+
   it('RGPD-03 l’apprenant sait, avant de scanner, quelles séances contrôlent sa position', async () => {
     const liste = (await appeler('GET', '/api/moi/seances', apprenants.ali ?? '')).json<
       SeanceProche[]
@@ -367,5 +440,37 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
         .from(presence)
         .where(eq(presence.personneId, fiche?.id ?? '')),
     ).toHaveLength(1);
+
+    // RG-06-08 : l'émargement à distance est écrit avec la présence ; absent du flux : en salle.
+    await enregistrerPresences(db, [
+      {
+        organisationId: ecole,
+        seanceId: seances.distanciel,
+        personneId: fiche?.id ?? '',
+        scanneLe: new Date().toISOString(),
+        mode: 'code',
+        rejoue: false,
+        localisation: null,
+        aDistance: true,
+      },
+      {
+        organisationId: ecole,
+        seanceId: seances.desactive,
+        personneId: fiche?.id ?? '',
+        scanneLe: new Date().toISOString(),
+        mode: 'qr',
+        rejoue: false,
+      },
+    ]);
+    const aDistance = new Map(
+      (
+        await owner.db
+          .select({ seanceId: presence.seanceId, aDistance: presence.aDistance })
+          .from(presence)
+          .where(eq(presence.personneId, fiche?.id ?? ''))
+      ).map((p) => [p.seanceId, p.aDistance]),
+    );
+    expect(aDistance.get(seances.distanciel)).toBe(true);
+    expect(aDistance.get(seances.desactive)).toBe(false);
   });
 });

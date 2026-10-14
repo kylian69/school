@@ -1,6 +1,7 @@
 // Preuve de charge de l'émargement (I2.2 ; module 00, section 6 ; RG-00-22).
 // Rejoue le pic d'une rentrée : N apprenants scannent en 60 secondes, les trois quarts dans les
-// 20 premières, et 5 % des scans sont des répétitions (second scan du même apprenant).
+// 20 premières, et 5 % des scans sont des répétitions (second scan du même apprenant). La séance
+// est hybride (RG-06-08) : un apprenant sur quatre déclare suivre à distance.
 // Données : fichier écrit par `pnpm charge:preparer` (séance, clé, cookies de session).
 import { check } from 'k6';
 import crypto from 'k6/crypto';
@@ -75,10 +76,11 @@ export default function () {
   const repete = position === 20;
   const apprenant = repete ? bloc * 20 : bloc * 20 + position;
   if (apprenant >= N) return;
+  const aDistance = apprenant % 4 === 0;
 
   const reponse = http.post(
     `${APIS[k % APIS.length]}/api/emargement/scan`,
-    JSON.stringify({ jeton: jeton() }),
+    JSON.stringify(aDistance ? { jeton: jeton(), aDistance } : { jeton: jeton() }),
     {
       headers: { 'content-type': 'application/json', cookie: cookies[apprenant] },
       tags: { type: repete ? 'repetition' : 'premier' },
@@ -90,6 +92,10 @@ export default function () {
   const ok = check(reponse, {
     'scan accepté (200)': (r) => r.status === 200,
     'statut attendu': () => ['present', 'retard', 'deja-emarge'].includes(statut),
+    // RG-06-08 : à distance, pas de contrôle de localisation.
+    'à distance selon la déclaration': (r) =>
+      r.status !== 200 ||
+      (r.json('aDistance') === aDistance && (!aDistance || r.json('localisation') === null)),
   });
   if (!ok && exec.vu.iterationInScenario < 3) {
     console.warn(`Réponse inattendue : ${reponse.status} ${reponse.body}`);

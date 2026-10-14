@@ -15,6 +15,7 @@ const seance: SeanceEnCache = {
   debut: Date.UTC(2026, 9, 6, 8),
   fin: Date.UTC(2026, 9, 6, 10),
   distanciel: false,
+  mode: 'presentiel',
   localisation: null,
 };
 
@@ -97,6 +98,25 @@ describe('RG-06-10 périmètre de localisation préchargé', () => {
       plagesIp: ['192.0.2.0/24'],
     });
     expect(lireSeanceEnCache(hash(seance))?.localisation).toBeNull();
+  });
+
+  it('RG-06-08 relit le mode de présence, et le déduit d’un cache écrit avant lui', () => {
+    const hash = (s: typeof seance) => {
+      const champs =
+        commandesPrechargement('s1', s, new Map())
+          .find((c) => c[0] === 'hset' && c[1] === CLES_EMARGEMENT.seance('s1'))
+          ?.slice(2) ?? [];
+      return Object.fromEntries(
+        champs.flatMap((v, i) => (i % 2 === 0 ? [[v, champs[i + 1] ?? '']] : [])),
+      );
+    };
+    expect(lireSeanceEnCache(hash({ ...seance, mode: 'hybride' }))?.mode).toBe('hybride');
+    const ancien = (distanciel: boolean) => {
+      const { mode: _mode, ...reste } = hash({ ...seance, distanciel });
+      return reste;
+    };
+    expect(lireSeanceEnCache(ancien(true))?.mode).toBe('distanciel');
+    expect(lireSeanceEnCache(ancien(false))?.mode).toBe('presentiel');
   });
 
   it('RG-06-08 aucun contrôle à distance, désactivé, ou sans coordonnées ni plage', () => {

@@ -19,7 +19,7 @@ import {
   type ScanEmargement,
   type SeanceEnCache,
 } from '@scolaly/contracts';
-import { evaluerLocalisation, evaluerScan } from '@scolaly/domain';
+import { emargementADistance, evaluerLocalisation, evaluerScan } from '@scolaly/domain';
 import { BlockList, isIPv4, isIPv6 } from 'node:net';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { IncomingHttpHeaders } from 'node:http';
@@ -177,6 +177,7 @@ export class ScanService {
       // de l'envoi ne disent où était l'apprenant (il est déjà « à vérifier »).
       position: verification.rejoue ? undefined : corps.position,
       ip: verification.rejoue ? undefined : ip,
+      aDistance: corps.aDistance ?? false,
     });
   }
 
@@ -228,6 +229,7 @@ export class ScanService {
       rejoue: false,
       position: corps.position,
       ip,
+      aDistance: corps.aDistance ?? false,
     });
   }
 
@@ -268,6 +270,8 @@ export class ScanService {
       rejoue: boolean;
       position: PositionScan | undefined;
       ip: string | undefined;
+      /** Déclaration de l'apprenant (séance hybride). */
+      aDistance: boolean;
     },
   ): Promise<ResultatScan> {
     const { mode, rejoue } = scan;
@@ -286,7 +290,9 @@ export class ScanService {
       );
     }
     const scanneLe = new Date(instant).toISOString();
-    const localisation = this.localiser(seance, scan.position, scan.ip);
+    // RG-06-08 : à distance, la localisation n'est pas contrôlée (ni position ni adresse IP lues).
+    const aDistance = emargementADistance(seance.mode, scan.aDistance);
+    const localisation = aDistance ? null : this.localiser(seance, scan.position, scan.ip);
     const existante = await magasin.enregistrer(
       {
         organisationId: seance.organisationId,
@@ -296,6 +302,7 @@ export class ScanService {
         mode,
         rejoue,
         localisation,
+        aDistance,
       },
       seance.fin,
     );
@@ -309,6 +316,7 @@ export class ScanService {
         retardMinutes: retard.ok ? retard.retardMinutes : 0,
         rejoue: existante.rejoue,
         localisation: existante.localisation ?? null,
+        aDistance: existante.aDistance ?? false,
       };
     }
     return {
@@ -318,6 +326,7 @@ export class ScanService {
       retardMinutes: evaluation.retardMinutes,
       rejoue,
       localisation,
+      aDistance,
     };
   }
 }

@@ -24,6 +24,19 @@ export const ResultatLocalisation = z.enum(['sur-place', 'hors-site', 'inconnu']
 export type ResultatLocalisation = z.infer<typeof ResultatLocalisation>;
 
 /**
+ * RG-06-08 : mode de présence de la séance, déduit de l'emploi du temps (case « à distance », lien
+ * de visio). À distance ou hybride, le QR est partagé dans la visio.
+ */
+export const ModePresence = z.enum(['presentiel', 'distanciel', 'hybride']);
+export type ModePresence = z.infer<typeof ModePresence>;
+
+/**
+ * RG-06-08 : séance hybride, l'apprenant déclare suivre à distance ; sa localisation n'est alors pas
+ * contrôlée. Ignoré pour une séance en présentiel, implicite pour une séance à distance.
+ */
+const aDistance = z.boolean().optional();
+
+/**
  * Scan du QR par l'apprenant (RG-06-06). `horsLigne` : scan conservé puis renvoyé (RG-00-19).
  * `position` : facultative, absente si l'apprenant refuse ou si le téléphone n'en donne pas.
  */
@@ -32,6 +45,7 @@ export const ScanEmargement = z
     jeton: z.string().max(200),
     horsLigne: z.boolean().optional(),
     position: PositionScan.optional(),
+    aDistance,
   })
   .meta({ id: 'ScanEmargement' });
 export type ScanEmargement = z.infer<typeof ScanEmargement>;
@@ -42,6 +56,7 @@ export const CodeEmargement = z
     seanceId: z.uuid(),
     code: z.string().regex(/^\d{6}$/, 'Saisissez les 6 chiffres.'),
     position: PositionScan.optional(),
+    aDistance,
   })
   .meta({ id: 'CodeEmargement' });
 export type CodeEmargement = z.infer<typeof CodeEmargement>;
@@ -56,6 +71,8 @@ export const ResultatScan = z
     rejoue: z.boolean(),
     /** RG-06-09 : hors site ou inconnu, la présence est enregistrée « à vérifier ». */
     localisation: ResultatLocalisation.nullable(),
+    /** RG-06-08 : émargement à distance (séance à distance, ou hybride sur déclaration). */
+    aDistance: z.boolean(),
   })
   .meta({ id: 'ResultatScan' });
 export type ResultatScan = z.infer<typeof ResultatScan>;
@@ -70,6 +87,8 @@ export const OuvertureAppel = z
     /** Clé de la séance (base64url) : le QR est calculé sur l'écran, sans appel au serveur. */
     cle: z.string(),
     periodeSecondes: z.int().positive(),
+    /** RG-06-08 : à distance ou hybride, l'écran rappelle de partager le QR dans la visio. */
+    mode: ModePresence,
     /** Heure du serveur, pour corriger l'horloge de l'écran. */
     maintenant: z.iso.datetime(),
   })
@@ -109,6 +128,8 @@ export const AppelEnDirect = z
         rejoue: z.boolean(),
         /** RG-06-11 : résultat du contrôle de localisation, null sans contrôle. */
         localisation: ResultatLocalisation.nullable(),
+        /** RG-06-08 : a émargé à distance (séance à distance, ou hybride sur déclaration). */
+        aDistance: z.boolean(),
         statut: StatutAppel,
         /** Décision de l'intervenant, qui l'emporte sur le scan ; null sans décision. */
         marquage: MarquagePresence.extend({ marqueLe: z.iso.datetime() }).nullable(),
@@ -166,6 +187,8 @@ export interface PresenceEnCache {
   rejoue: boolean;
   /** RG-06-10 : résultat du contrôle (absent : pas de contrôle, ou présence d'avant I4.3). */
   localisation?: ResultatLocalisation | null;
+  /** RG-06-08 : émargement à distance (absent : présence d'avant ce lot, en salle). */
+  aDistance?: boolean;
 }
 
 /**
@@ -186,6 +209,8 @@ export interface SeanceEnCache {
   debut: number;
   fin: number;
   distanciel: boolean;
+  /** RG-06-08 : mode de présence ; hybride, l'apprenant peut déclarer suivre à distance. */
+  mode: ModePresence;
   /** Null : pas de contrôle (désactivé, séance à distance ou périmètre non renseigné). */
   localisation: PerimetreEnCache | null;
 }
@@ -234,6 +259,8 @@ export function commandesPrechargement(
       String(seance.fin),
       'distanciel',
       seance.distanciel ? '1' : '0',
+      'mode',
+      seance.mode,
       'localisation',
       seance.localisation ? JSON.stringify(seance.localisation) : '',
     ],
@@ -268,6 +295,10 @@ export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCach
     debut: Number(valeurs.debut),
     fin: Number(valeurs.fin),
     distanciel: valeurs.distanciel === '1',
+    // Séance préchargée avant ce lot : sans mode, elle se lit comme avant (à distance ou en salle).
+    mode:
+      ModePresence.safeParse(valeurs.mode).data ??
+      (valeurs.distanciel === '1' ? 'distanciel' : 'presentiel'),
     localisation: valeurs.localisation
       ? (JSON.parse(valeurs.localisation) as PerimetreEnCache)
       : null,
@@ -308,6 +339,8 @@ export const SeanceProche = z
     debut: z.iso.datetime(),
     fin: z.iso.datetime(),
     distanciel: z.boolean(),
+    /** RG-06-08 : mode de présence (le lien de visio n'est pas transmis ici). */
+    mode: ModePresence,
     intervenant: z.string().nullable(),
     /** RG-04-14 : badge « modifié », affiché quelques jours après la dernière modification. */
     modifiee: z.boolean(),

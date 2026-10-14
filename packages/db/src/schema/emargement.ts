@@ -292,6 +292,11 @@ export const presence = pgTable(
      * `presence-localisation`).
      */
     localisation: presenceLocalisation(),
+    /**
+     * RG-06-08 : émargement à distance (séance à distance, ou hybride sur déclaration de
+     * l'apprenant) ; la localisation n'est alors pas contrôlée.
+     */
+    aDistance: boolean().notNull().default(false),
     ...trackingColumns(),
   },
   (t) => [
