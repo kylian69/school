@@ -6,6 +6,7 @@ import {
   type PresenceEnCache,
 } from '@scolaly/contracts';
 import {
+  derniereValidation,
   enregistrerPresences,
   etablissementDeSeance,
   seanceEtAttendus,
@@ -51,6 +52,10 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
       trouve.seance.distanciel,
       await withOrganisation(db, organisationId, (tx) => etablissementDeSeance(tx, trouve.seance)),
     );
+    // RG-06-13 : un appel déjà validé refuse les scans ; l'état part avec la séance.
+    const validation = await withOrganisation(db, organisationId, (tx) =>
+      derniereValidation(tx, seanceId),
+    );
     const attendus = new Map(
       trouve.attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : [])),
     );
@@ -66,6 +71,7 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
             distanciel: trouve.seance.distanciel,
             mode: modePresence(trouve.seance),
             localisation,
+            validation,
           },
           attendus,
         ),

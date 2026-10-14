@@ -5405,10 +5405,10 @@
         }
       }
     },
-    "/api/seances/{id}/appel": {
+    "/api/seances/{id}/appel/ajoutables": {
       "get": {
-        "operationId": "AppelController.enDirect",
-        "summary": "Présents et attendus en direct",
+        "operationId": "AppelController.ajoutables",
+        "summary": "Apprenants non attendus de la même promotion, que l’intervenant peut ajouter à l’appel",
         "x-scolaly-access": {
           "kind": "permission",
           "permissions": [
@@ -5422,7 +5422,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppelEnDirect"
+                  "$ref": "#/components/schemas/ApprenantsAjoutables"
                 }
               }
             }
@@ -5448,6 +5448,31 @@
               "application/json": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seances/{id}/appel/feuille": {
+      "get": {
+        "operationId": "AppelController.feuille",
+        "summary": "Feuille d’appel : liste en cours (scans et décisions) ou d’une version validée, et historique des versions",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeuilleAppel"
                 }
               }
             }
@@ -5508,7 +5533,7 @@
     "/api/seances/{id}/appel/presences/{personneId}": {
       "put": {
         "operationId": "AppelController.marquer",
-        "summary": "Marquer un attendu présent, en retard ou absent (appel manuel, correction ou décision sur un scan à vérifier)",
+        "summary": "Marquer un attendu présent, en retard ou absent (appel manuel, décision sur un scan à vérifier, ajout d’un non-attendu ; après validation, correction avec motif et nouvelle version)",
         "x-scolaly-access": {
           "kind": "permission",
           "permissions": [
@@ -5522,6 +5547,41 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MarquagePresence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppelEnDirect"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seances/{id}/appel/validation": {
+      "post": {
+        "operationId": "AppelController.valider",
+        "summary": "Valider l’appel (signature électronique simple, horodatée par le serveur) : les scans sont ensuite refusés",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:animer"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationAppel"
               }
             }
           }
@@ -6365,6 +6425,23 @@
       "AppelEnDirect": {
         "type": "object",
         "properties": {
+          "etat": {
+            "type": "string",
+            "enum": [
+              "a-venir",
+              "ouvert",
+              "valide",
+              "verrouille"
+            ]
+          },
+          "validation": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VersionAppel"
+              }
+            ]
+          },
           "presents": {
             "type": "integer",
             "minimum": 0,
@@ -6422,6 +6499,32 @@
                     "en-attente"
                   ]
                 },
+                "minutesRetard": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "raison": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "rejoue",
+                    "hors-site",
+                    "inconnu"
+                  ]
+                },
+                "decision": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "confirme",
+                    "retire"
+                  ]
+                },
+                "nonAttendu": {
+                  "type": "boolean"
+                },
                 "marquage": {
                   "nullable": true,
                   "type": "object",
@@ -6463,6 +6566,10 @@
                 "localisation",
                 "aDistance",
                 "statut",
+                "minutesRetard",
+                "raison",
+                "decision",
+                "nonAttendu",
                 "marquage"
               ],
               "additionalProperties": false
@@ -6470,11 +6577,38 @@
           }
         },
         "required": [
+          "etat",
+          "validation",
           "presents",
           "attendus",
           "liste"
         ],
         "additionalProperties": false
+      },
+      "ApprenantsAjoutables": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "personneId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "nom": {
+              "type": "string"
+            },
+            "prenom": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "personneId",
+            "nom",
+            "prenom"
+          ],
+          "additionalProperties": false
+        }
       },
       "AttributionPersonne": {
         "type": "object",
@@ -9498,6 +9632,217 @@
         ],
         "additionalProperties": false
       },
+      "FeuilleAppel": {
+        "type": "object",
+        "properties": {
+          "etat": {
+            "type": "string",
+            "enum": [
+              "a-venir",
+              "ouvert",
+              "valide",
+              "verrouille"
+            ]
+          },
+          "validation": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VersionAppel"
+              }
+            ]
+          },
+          "presents": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "attendus": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "liste": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "personneId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "nom": {
+                  "type": "string"
+                },
+                "prenom": {
+                  "type": "string"
+                },
+                "scanneLe": {
+                  "nullable": true,
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "rejoue": {
+                  "type": "boolean"
+                },
+                "localisation": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "sur-place",
+                    "hors-site",
+                    "inconnu"
+                  ]
+                },
+                "aDistance": {
+                  "type": "boolean"
+                },
+                "statut": {
+                  "type": "string",
+                  "enum": [
+                    "present",
+                    "retard",
+                    "absent",
+                    "a-verifier",
+                    "en-attente"
+                  ]
+                },
+                "minutesRetard": {
+                  "nullable": true,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "raison": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "rejoue",
+                    "hors-site",
+                    "inconnu"
+                  ]
+                },
+                "decision": {
+                  "nullable": true,
+                  "type": "string",
+                  "enum": [
+                    "confirme",
+                    "retire"
+                  ]
+                },
+                "nonAttendu": {
+                  "type": "boolean"
+                },
+                "marquage": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "statut": {
+                      "type": "string",
+                      "enum": [
+                        "present",
+                        "retard",
+                        "absent"
+                      ]
+                    },
+                    "minutesRetard": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "marqueLe": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "statut",
+                    "minutesRetard",
+                    "marqueLe"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "personneId",
+                "nom",
+                "prenom",
+                "scanneLe",
+                "rejoue",
+                "localisation",
+                "aDistance",
+                "statut",
+                "minutesRetard",
+                "raison",
+                "decision",
+                "nonAttendu",
+                "marquage"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "seance": {
+            "type": "object",
+            "properties": {
+              "libelle": {
+                "type": "string"
+              },
+              "debut": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              "fin": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "presentiel",
+                  "distanciel",
+                  "hybride"
+                ]
+              }
+            },
+            "required": [
+              "libelle",
+              "debut",
+              "fin",
+              "mode"
+            ],
+            "additionalProperties": false
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionAppel"
+            }
+          },
+          "version": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "etat",
+          "validation",
+          "presents",
+          "attendus",
+          "liste",
+          "seance",
+          "versions",
+          "version"
+        ],
+        "additionalProperties": false
+      },
       "FluxIcal": {
         "type": "object",
         "properties": {
@@ -10920,6 +11265,11 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 1440
+          },
+          "motif": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
           }
         },
         "required": [
@@ -17925,6 +18275,16 @@
         ],
         "additionalProperties": false
       },
+      "ValidationAppel": {
+        "type": "object",
+        "properties": {
+          "commentaire": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "additionalProperties": false
+      },
       "ValidationImport": {
         "type": "object",
         "properties": {
@@ -18092,6 +18452,44 @@
           "debut",
           "fin",
           "equipements"
+        ],
+        "additionalProperties": false
+      },
+      "VersionAppel": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "valideLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "validePar": {
+            "type": "string"
+          },
+          "empreinte": {
+            "type": "string"
+          },
+          "motif": {
+            "nullable": true,
+            "type": "string"
+          },
+          "commentaire": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "valideLe",
+          "validePar",
+          "empreinte",
+          "motif",
+          "commentaire"
         ],
         "additionalProperties": false
       },

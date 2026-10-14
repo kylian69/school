@@ -5,6 +5,7 @@ import {
   date,
   foreignKey,
   index,
+  jsonb,
   pgEnum,
   pgTable,
   smallint,
@@ -297,6 +298,8 @@ export const presence = pgTable(
      * l'apprenant) ; la localisation n'est alors pas contrôlée.
      */
     aDistance: boolean().notNull().default(false),
+    /** RG-06-02 : minutes de retard d'un scan tardif, calculées au scan ; null : à l'heure. */
+    retardMinutes: smallint(),
     ...trackingColumns(),
   },
   (t) => [
@@ -503,6 +506,11 @@ export const presenceMarquage = pgTable(
     /** Fiche de l'intervenant (ou de la personne habilitée) qui a marqué. */
     marquePar: uuid().notNull(),
     marqueLe: timestamp({ withTimezone: true }).notNull(),
+    /**
+     * Apprenant non attendu à la séance (mauvais groupe), ajouté par l'intervenant : l'anomalie est
+     * signalée à la scolarité (module 06, section 7).
+     */
+    nonAttendu: boolean().notNull().default(false),
     ...trackingColumns(),
   },
   (t) => [
@@ -527,6 +535,61 @@ export const presenceMarquage = pgTable(
       'presence_marquage_retard_check',
       sql`(${t.statut} = 'retard') = (${t.minutesRetard} is not null and ${t.minutesRetard} > 0)`,
     ),
+  ],
+).enableRLS();
+
+/** Ligne de la liste validée, telle que signée (packages/domain, LigneFeuille). */
+export interface LigneAppelValidee {
+  personneId: string;
+  statut: 'present' | 'retard' | 'absent' | 'a-verifier' | 'en-attente';
+  scanneLe: string | null;
+  minutesRetard: number | null;
+  aDistance: boolean;
+  localisation: string | null;
+  raison: 'rejoue' | 'hors-site' | 'inconnu' | null;
+  decision: 'confirme' | 'retire' | null;
+  nonAttendu: boolean;
+}
+
+/**
+ * Validation de l'appel (RG-06-13, signature électronique simple), une ligne par version : la
+ * première validation, puis chaque correction (RG-06-15), avec son motif. Les versions ne sont
+ * jamais modifiées ; l'ancienne reste consultable. La liste validée est gardée sans nom (les fiches
+ * font foi), avec son empreinte SHA-256.
+ */
+export const appelValidation = pgTable(
+  'appel_validation',
+  {
+    ...organisationScoped(),
+    seanceId: uuid().notNull(),
+    version: smallint().notNull(),
+    /** Fiche de la personne qui valide ou corrige. */
+    validePar: uuid().notNull(),
+    /** Heure du serveur, jamais celle de l'appareil. */
+    valideLe: timestamp({ withTimezone: true }).notNull(),
+    adresseIp: text().notNull(),
+    /** RG-06-13 et module 06, section 9 : empreinte de l'appareil, hachée (SHA-256 du User-Agent). */
+    appareil: text().notNull(),
+    empreinte: text().notNull(),
+    liste: jsonb().$type<LigneAppelValidee[]>().notNull(),
+    motif: text(),
+    commentaire: text(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('appel_validation', t),
+    uniqueIndex('appel_validation_version_key').on(t.organisationId, t.seanceId, t.version),
+    foreignKey({
+      name: 'appel_validation_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }),
+    foreignKey({
+      name: 'appel_validation_valide_par_fk',
+      columns: [t.organisationId, t.validePar],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check('appel_validation_motif_check', sql`(${t.version} = 1) = (${t.motif} is null)`),
   ],
 ).enableRLS();
 

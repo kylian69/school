@@ -179,7 +179,7 @@ describe('US-06-04, US-06-05 appel manuel par l’intervenant', () => {
     ).toContain('"present"');
     const direct = await appeler(
       'GET',
-      `/api/seances/${seances.enCours}/appel`,
+      `/api/seances/${seances.enCours}/appel/feuille`,
       cookies.iris ?? '',
     );
     expect(ligne(direct.json<AppelEnDirect>(), 'lou')?.statut).toBe('present');
@@ -203,7 +203,7 @@ describe('US-06-04, US-06-05 appel manuel par l’intervenant', () => {
     });
     expect(scan.statusCode).toBe(200);
     let appel = (
-      await appeler('GET', `/api/seances/${seances.enCours}/appel`, cookies.iris ?? '')
+      await appeler('GET', `/api/seances/${seances.enCours}/appel/feuille`, cookies.iris ?? '')
     ).json<AppelEnDirect>();
     // Sans décision, un scan à vérifier compte comme présent.
     expect(ligne(appel, 'max')).toMatchObject({ statut: 'a-verifier', localisation: 'hors-site' });

@@ -255,13 +255,34 @@ const cleAppel = (request) =>
 const marquagesAppel = new Map();
 const LEA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000001';
 const NOE_ID = '0192f0a4-1b2c-7d3e-8f40-000000000002';
+const NINA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000003';
+// RG-06-13 : validations de l'appel, par appel de test ; cookie e2e-etat=verrouille : appel de
+// plus de 7 jours, déjà validé (RG-06-01).
+const validationsAppel = new Map();
+const verrouille = (request) => /e2e-etat=verrouille/.test(request.headers.cookie ?? '');
+const versionsAppel = (request) =>
+  verrouille(request)
+    ? [
+        {
+          version: 1,
+          valideLe: '2026-10-01T08:30:00.000Z',
+          validePar: 'Camille Durand',
+          empreinte: 'c'.repeat(64),
+          motif: null,
+          commentaire: null,
+        },
+      ]
+    : (validationsAppel.get(cleAppel(request)) ?? []);
+const raisonFictive = (localisation) =>
+  localisation === 'hors-site' || localisation === 'inconnu' ? localisation : null;
 const statutFictif = (scanneLe, localisation, marquage) => {
   if (marquage) return marquage.statut;
   if (!scanneLe) return 'en-attente';
-  return localisation === 'hors-site' || localisation === 'inconnu' ? 'a-verifier' : 'present';
+  return raisonFictive(localisation) ? 'a-verifier' : 'present';
 };
 const appelFictif = (request) => {
   const cle = cleAppel(request);
+  const ajoutee = marquagesAppel.has(`${cle}|${NINA_ID}`);
   const liste = [
     {
       personneId: LEA_ID,
@@ -271,6 +292,7 @@ const appelFictif = (request) => {
       rejoue: false,
       localisation: localisationsLea.get(cle) ?? null,
       aDistance: aDistanceLea.get(cle) ?? false,
+      nonAttendu: false,
     },
     {
       personneId: NOE_ID,
@@ -280,13 +302,58 @@ const appelFictif = (request) => {
       rejoue: false,
       localisation: null,
       aDistance: false,
+      nonAttendu: false,
     },
+    ...(ajoutee
+      ? [
+          {
+            personneId: NINA_ID,
+            nom: 'Bernard',
+            prenom: 'Nina',
+            scanneLe: null,
+            rejoue: false,
+            localisation: null,
+            aDistance: false,
+            nonAttendu: true,
+          },
+        ]
+      : []),
   ].map((l) => {
     const marquage = marquagesAppel.get(`${cle}|${l.personneId}`) ?? null;
-    return { ...l, statut: statutFictif(l.scanneLe, l.localisation, marquage), marquage };
+    const statut = statutFictif(l.scanneLe, l.localisation, marquage);
+    const raison = raisonFictive(l.localisation);
+    return {
+      ...l,
+      statut,
+      minutesRetard: statut === 'retard' ? marquage.minutesRetard : null,
+      raison,
+      decision: raison && marquage ? (marquage.statut === 'absent' ? 'retire' : 'confirme') : null,
+      marquage,
+    };
   });
   const presents = liste.filter((l) => ['present', 'retard', 'a-verifier'].includes(l.statut));
-  return { presents: presents.length, attendus: 2, liste };
+  const versions = versionsAppel(request);
+  return {
+    etat: verrouille(request) ? 'verrouille' : versions.length > 0 ? 'valide' : 'ouvert',
+    validation: versions.at(-1) ?? null,
+    presents: presents.length,
+    attendus: 2,
+    liste,
+  };
+};
+const ajouterVersion = (request, motif, commentaire) => {
+  const versions = versionsAppel(request);
+  validationsAppel.set(cleAppel(request), [
+    ...versions,
+    {
+      version: versions.length + 1,
+      valideLe: new Date().toISOString(),
+      validePar: 'Camille Durand',
+      empreinte: randomUUID().replaceAll('-', '').repeat(2),
+      motif,
+      commentaire,
+    },
+  ]);
 };
 // RG-01-27 : photo fictive de Léa (Noé n'en a pas : initiales).
 const PHOTO_FICTIVE =
@@ -2276,24 +2343,56 @@ createServer(async (request, response) => {
       maintenant: new Date().toISOString(),
     });
   }
-  if (path === `/api/seances/${SEANCE_ID}/appel`) return json(200, appelFictif(request));
+  // RG-06-13 : feuille d'appel (liste en cours et versions) et validation.
+  if (path === `/api/seances/${SEANCE_ID}/appel/feuille`) {
+    const s = seanceFictive(request);
+    return json(200, {
+      ...appelFictif(request),
+      seance: { libelle: s.libelle, debut: s.debut, fin: s.fin, mode: s.mode },
+      versions: versionsAppel(request),
+      version: null,
+    });
+  }
+  if (path === `/api/seances/${SEANCE_ID}/appel/validation` && request.method === 'POST') {
+    const { commentaire } = await readBody(request);
+    if (verrouille(request) || versionsAppel(request).length > 0)
+      return json(409, { message: 'Cet appel est déjà validé.' });
+    ajouterVersion(request, null, commentaire ?? null);
+    return json(200, appelFictif(request));
+  }
+  if (path === `/api/seances/${SEANCE_ID}/appel/ajoutables`) {
+    const ajoutee = marquagesAppel.has(`${cleAppel(request)}|${NINA_ID}`);
+    return json(200, ajoutee ? [] : [{ personneId: NINA_ID, nom: 'Bernard', prenom: 'Nina' }]);
+  }
   // US-06-04, US-06-05 : appel manuel ; la décision l'emporte sur le scan.
   const marquage = path.match(
     new RegExp(`^/api/seances/${SEANCE_ID}/appel/presences/([0-9a-f-]+)$`),
   );
   if (marquage && request.method === 'PUT') {
-    const { statut, minutesRetard } = await readBody(request);
-    if ((statut === 'retard') !== (Number.isInteger(minutesRetard) && minutesRetard > 0)) {
-      return json(400, {
+    const { statut, minutesRetard, motif } = await readBody(request);
+    const invalide = (detail) =>
+      json(400, {
         message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
-        details: ['marquage : Indiquez le retard en minutes entières.'],
+        details: [detail],
       });
+    if (verrouille(request))
+      return invalide(
+        "marquage : L'appel de cette séance est verrouillé (7 jours après la séance) : demandez à la scolarité.",
+      );
+    if ((statut === 'retard') !== (Number.isInteger(minutesRetard) && minutesRetard > 0)) {
+      return invalide('marquage : Indiquez le retard en minutes entières.');
     }
+    const valide = versionsAppel(request).length > 0;
+    if (valide && !(typeof motif === 'string' && motif.trim().length >= 3))
+      return invalide(
+        'motif : Cet appel est déjà validé : indiquez le motif de la correction (3 caractères au moins), puis réessayez.',
+      );
     marquagesAppel.set(`${cleAppel(request)}|${marquage[1]}`, {
       statut,
       minutesRetard: statut === 'retard' ? minutesRetard : null,
       marqueLe: new Date().toISOString(),
     });
+    if (valide) ajouterVersion(request, motif.trim(), null);
     return json(200, appelFictif(request));
   }
   if (path === `/api/seances/${SEANCE_ID}/appel/photos`) {
@@ -2337,6 +2436,12 @@ createServer(async (request, response) => {
       });
     }
     const cle = cleAppel(request);
+    // RG-06-13 : un appel validé refuse les scans.
+    if (verrouille(request) || versionsAppel(request).length > 0)
+      return json(409, {
+        message:
+          "L'appel de cette séance est validé : l'émargement est fermé. Si vous n'êtes pas compté présent, signalez-vous à l'intervenant.",
+      });
     if (!emargementsLea.has(cle)) {
       emargementsLea.set(cle, new Date().toISOString());
       const mode = modeSeance(request);

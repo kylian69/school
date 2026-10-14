@@ -36,6 +36,10 @@ export {
   seanceEtAttendus,
   seancesAPrecharger,
   sessionsDesComptes,
+  apprenantsAjoutables,
+  derniereValidation,
+  validationsDeSeance,
+  versionAppel,
   type PresenceAEcrire,
 } from './emargement.js';
 export { isUuid, newId } from './ids.js';

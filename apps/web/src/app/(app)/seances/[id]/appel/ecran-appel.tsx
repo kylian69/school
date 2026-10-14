@@ -2,16 +2,18 @@
 
 import {
   AppelEnDirect,
+  FeuilleAppel,
   genererJeton,
   OuvertureAppel,
   type AppelEnDirect as Appel,
   type OuvertureAppel as Ouverture,
+  type VersionAppel,
 } from '@scolaly/contracts';
 import { Badge, Button, Card } from '@scolaly/ui';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { fr } from '@/i18n/fr';
-import { formatHeure } from '@/lib/format';
+import { formatDateHeure, formatHeure } from '@/lib/format';
 import { envoyer } from '@/lib/requete';
 import { ListeAppel } from './liste-appel';
 
@@ -28,6 +30,12 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
   const [qr, setQr] = useState<{ svg: string; code: string; changeA: number } | null>(null);
   const [reste, setReste] = useState(15);
   const [appel, setAppel] = useState<Appel | null>(null);
+  const [commentaire, setCommentaire] = useState('');
+  const [validation, setValidation] = useState<{ enCours: boolean; erreur: string | null }>({
+    enCours: false,
+    erreur: null,
+  });
+  const [versions, setVersions] = useState<VersionAppel[]>([]);
   const [manuel, setManuel] = useState(false);
 
   useEffect(() => {
@@ -90,6 +98,37 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
     };
   }, [ouverture, seanceId]);
 
+  // RG-06-13 : historique des versions, relu à chaque nouvelle validation.
+  const versionCourante = appel?.validation?.version ?? 0;
+  useEffect(() => {
+    if (versionCourante === 0) return;
+    void fetch(`/api/seances/${seanceId}/appel/feuille`)
+      .then(async (reponse) => FeuilleAppel.safeParse(reponse.ok ? await reponse.json() : null))
+      .then((lu) => {
+        if (lu.success) setVersions(lu.data.versions);
+      })
+      .catch(() => {
+        // Sans réseau : la dernière validation reste affichée.
+      });
+  }, [seanceId, versionCourante]);
+
+  const valider = async () => {
+    setValidation({ enCours: true, erreur: null });
+    const resultat = await envoyer(
+      `/api/seances/${seanceId}/appel/validation`,
+      'POST',
+      commentaire.trim() ? { commentaire } : {},
+      t.validationEchec,
+    );
+    const lu = resultat.ok ? AppelEnDirect.safeParse(resultat.body) : null;
+    if (!lu?.success) {
+      setValidation({ enCours: false, erreur: resultat.ok ? t.validationEchec : resultat.erreur });
+      return;
+    }
+    setValidation({ enCours: false, erreur: null });
+    setAppel(lu.data);
+  };
+
   if (erreur) {
     return (
       <Card>
@@ -101,6 +140,8 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
   }
   if (!ouverture) return <p className="text-sm text-muted">{t.appelEnCours}…</p>;
   const { mode } = ouverture.donnees;
+  // RG-06-13 : un appel validé ou verrouillé ne se scanne plus ; seul le QR disparaît.
+  const sansQr = manuel || appel?.etat === 'valide' || appel?.etat === 'verrouille';
 
   return (
     <>
@@ -122,23 +163,25 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
             <p>{t.visioIntervenant[mode]}</p>
           </div>
         ) : null}
-        <div>
-          {/* US-06-05 : appel à la main, sans QR (panne, petit groupe). */}
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setManuel(!manuel);
-            }}
-          >
-            {manuel ? t.afficherQr : t.appelManuel}
-          </Button>
-        </div>
+        {appel?.etat === 'valide' || appel?.etat === 'verrouille' ? null : (
+          <div>
+            {/* US-06-05 : appel à la main, sans QR (panne, petit groupe). */}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setManuel(!manuel);
+              }}
+            >
+              {manuel ? t.afficherQr : t.appelManuel}
+            </Button>
+          </div>
+        )}
       </div>
       <div
-        className={manuel ? 'grid gap-4' : 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'}
+        className={sansQr ? 'grid gap-4' : 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'}
       >
-        <Card className={manuel ? 'hidden' : 'flex flex-col items-center gap-3 text-center'}>
+        <Card className={sansQr ? 'hidden' : 'flex flex-col items-center gap-3 text-center'}>
           <h2 className="text-lg font-semibold">{t.scannez}</h2>
           <p className="text-sm text-muted">{t.scannezAide}</p>
           {qr ? (
@@ -170,6 +213,71 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
             appel={appel}
             surAppel={setAppel}
           />
+        </Card>
+        <Card className="flex flex-col gap-3" aria-labelledby="etat-appel">
+          <h2 id="etat-appel" className="text-lg font-semibold">
+            {t.etatsAppel[appel?.etat ?? 'ouvert']}
+          </h2>
+          {appel?.validation ? (
+            <p className="text-sm">
+              {t.valideLe(
+                formatDateHeure(appel.validation.valideLe),
+                appel.validation.validePar,
+                appel.validation.version,
+              )}
+              <br />
+              <span className="font-mono text-xs text-muted">
+                {t.empreinte(appel.validation.empreinte.slice(0, 16))}
+              </span>
+            </p>
+          ) : null}
+          {appel?.etat === 'verrouille' ? (
+            <p className="text-sm text-muted">{t.verrouilleAide}</p>
+          ) : null}
+          {appel?.etat === 'a-venir' ? <p className="text-sm text-muted">{t.aVenirAide}</p> : null}
+          {appel?.etat === 'ouvert' ? (
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={(evenement) => {
+                evenement.preventDefault();
+                void valider();
+              }}
+            >
+              <p className="text-sm text-muted">{t.validerAide}</p>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>{t.commentaire}</span>
+                <textarea
+                  value={commentaire}
+                  maxLength={1000}
+                  rows={2}
+                  onChange={(evenement) => {
+                    setCommentaire(evenement.target.value);
+                  }}
+                  className="rounded-control border border-line bg-surface p-2"
+                />
+              </label>
+              {validation.erreur ? (
+                <p role="alert" className="text-sm text-bad">
+                  {validation.erreur}
+                </p>
+              ) : null}
+              <Button type="submit" disabled={validation.enCours}>
+                {t.validerAppel}
+              </Button>
+            </form>
+          ) : null}
+          {versions.length > 0 ? (
+            <div className="flex flex-col gap-1 text-sm">
+              <h3 className="font-medium">{t.versions}</h3>
+              <ol className="flex flex-col gap-1 text-muted">
+                {versions.map((v) => (
+                  <li key={v.version}>
+                    {t.version(v.version, formatDateHeure(v.valideLe), v.validePar, v.motif)}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
         </Card>
       </div>
     </>
