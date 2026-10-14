@@ -1,4 +1,15 @@
-import { and, eq, gt, inArray, isNotNull, isNull, lte, sql, type AnyColumn } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  sql,
+  type AnyColumn,
+} from 'drizzle-orm';
 import type { Database } from './client.js';
 import { withOrganisation, type Transaction } from './organisation-context.js';
 import {
@@ -355,6 +366,7 @@ export async function validationsDeSeance(tx: Transaction, seanceId: string) {
       empreinte: appelValidation.empreinte,
       motif: appelValidation.motif,
       commentaire: appelValidation.commentaire,
+      correctionVerrouillee: appelValidation.correctionVerrouillee,
       liste: appelValidation.liste,
     })
     .from(appelValidation)
@@ -410,6 +422,7 @@ export const versionAppel = (v: {
   empreinte: string;
   motif: string | null;
   commentaire: string | null;
+  correctionVerrouillee?: 'ecole' | 'intervenant' | null;
 }) => ({
   version: v.version,
   valideLe: v.valideLe.toISOString(),
@@ -417,7 +430,49 @@ export const versionAppel = (v: {
   empreinte: v.empreinte,
   motif: v.motif,
   commentaire: v.commentaire,
+  correctionVerrouillee: v.correctionVerrouillee ?? null,
 });
+
+/**
+ * RG-06-15 : corrections d'appels verrouillés faites par des intervenants, les plus récentes
+ * d'abord, pour la scolarité et la pédagogie.
+ */
+export async function correctionsVerrouilleesIntervenants(tx: Transaction, limite = 100) {
+  return tx
+    .select({
+      seanceId: appelValidation.seanceId,
+      libelle: seance.libelle,
+      debut: seance.debut,
+      version: appelValidation.version,
+      corrigeeLe: appelValidation.valideLe,
+      nom: personne.nom,
+      prenom: personne.prenom,
+      motif: appelValidation.motif,
+    })
+    .from(appelValidation)
+    .innerJoin(
+      seance,
+      and(
+        eq(seance.organisationId, appelValidation.organisationId),
+        eq(seance.id, appelValidation.seanceId),
+      ),
+    )
+    .innerJoin(
+      personne,
+      and(
+        eq(personne.organisationId, appelValidation.organisationId),
+        eq(personne.id, appelValidation.validePar),
+      ),
+    )
+    .where(
+      and(
+        eq(appelValidation.correctionVerrouillee, 'intervenant'),
+        isNull(appelValidation.deletedAt),
+      ),
+    )
+    .orderBy(desc(appelValidation.valideLe))
+    .limit(limite);
+}
 
 /** Dernière validation de l'appel, préchargée avec la séance (le scan la lit dans le cache). */
 export async function derniereValidation(tx: Transaction, seanceId: string) {

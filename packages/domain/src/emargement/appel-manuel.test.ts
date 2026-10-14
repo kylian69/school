@@ -44,6 +44,8 @@ describe('verifierMarquage', () => {
   it('RG-06-01 refuse un marquage une fois l’appel verrouillé, 7 jours après la séance', () => {
     expect(verifierMarquage(seance, 13 * H + 7 * 24 * H, present)).toBeNull();
     expect(verifierMarquage(seance, 13 * H + 7 * 24 * H + 1, present)).toBe('verrouille');
+    // RG-06-15 : avec le droit spécifique, le délai est contrôlé par verifierModification.
+    expect(verifierMarquage(seance, 13 * H + 7 * 24 * H + 1, present, undefined, true)).toBeNull();
   });
 
   it('RG-06-12 un retard porte un nombre entier de minutes, au plus la durée de la séance', () => {

@@ -99,6 +99,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'personnel:inviter',
       'personnes:exporter',
       'emargement:animer',
+      'emargement:corriger-verrouille',
       'referentiel:lire',
       'referentiel:gerer',
       'referentiel:publier',
@@ -134,6 +135,7 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
       'comptes:desactiver',
       'corbeille:restaurer',
       'emargement:animer',
+      'emargement:corriger-verrouille',
       'referentiel:lire',
       'promotions:lire',
       'promotions:gerer',
@@ -155,7 +157,13 @@ export const ROLES_PAR_DEFAUT: readonly RoleParDefaut[] = [
     perimetre: 'soi',
     doubleAuthentificationRequise: false,
     phase: 'MVP',
-    permissions: ['emargement:animer', 'salles:lire', 'disponibilites:declarer'],
+    // RG-06-15 : correction après verrouillage sur ses propres séances, tracée et signalée.
+    permissions: [
+      'emargement:animer',
+      'emargement:corriger-verrouille',
+      'salles:lire',
+      'disponibilites:declarer',
+    ],
   },
   {
     code: 'apprenant',

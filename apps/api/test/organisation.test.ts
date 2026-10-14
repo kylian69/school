@@ -293,6 +293,40 @@ describe('E-01-02 organisation et établissements', () => {
     expect(retour.json<OrganisationDetail>().edtBadgeModifieJours).toBeNull();
   });
 
+  it('RG-06-15 règle le délai de correction d’un appel verrouillé par l’intervenant, tracé', async () => {
+    const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
+    expect(initial).toMatchObject({
+      emargementCorrectionVerrouilleeJours: null,
+      emargementCorrectionVerrouilleeJoursDefaut: 14,
+    });
+    const reponse = await requete('PATCH', '/api/organisation', admin, {
+      emargementCorrectionVerrouilleeJours: 30,
+    });
+    expect(reponse.json<OrganisationDetail>().emargementCorrectionVerrouilleeJours).toBe(30);
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, ecole),
+          eq(auditEvenement.action, 'organisation.modifier'),
+          sql`${auditEvenement.apres}->>'emargementCorrectionVerrouilleeJours' = '30'`,
+        ),
+      );
+    expect(trace?.avant).toMatchObject({ emargementCorrectionVerrouilleeJours: null });
+    for (const refus of [6, 91, 10.5])
+      expect(
+        (
+          await requete('PATCH', '/api/organisation', admin, {
+            emargementCorrectionVerrouilleeJours: refus,
+          })
+        ).statusCode,
+      ).toBe(400);
+    await requete('PATCH', '/api/organisation', admin, {
+      emargementCorrectionVerrouilleeJours: null,
+    });
+  });
+
   it('RG-01-06 paramètre le modèle de matricule, avec un exemple du prochain', async () => {
     const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
     expect(initial).toMatchObject({ modeleMatricule: '{NUM:6}', exempleMatricule: '000001' });

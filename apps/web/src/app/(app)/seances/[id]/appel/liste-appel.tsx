@@ -76,7 +76,8 @@ function etatDe(l: Ligne, hybride: boolean): { texte: string; ton: string } {
 /**
  * Liste d'appel de l'intervenant (US-06-03 à US-06-05 ; RG-06-11, RG-06-12, RG-06-15) : photos,
  * statut de chacun, et un geste pour le marquer présent, en retard ou absent. Sur un appel validé,
- * chaque changement est une correction, avec un motif ; un appel verrouillé ne se modifie plus.
+ * chaque changement est une correction, avec un motif ; un appel verrouillé ne se corrige plus
+ * qu'avec le droit spécifique (RG-06-15), toujours avec un motif.
  */
 export function ListeAppel({
   seanceId,
@@ -123,8 +124,10 @@ export function ListeAppel({
   }, [seanceId]);
 
   const etat = appel?.etat ?? 'ouvert';
-  const modifiable = etat === 'ouvert' || etat === 'valide';
-  const correction = etat === 'valide';
+  // RG-06-15 : un appel verrouillé se corrige encore avec le droit spécifique (calculé par l'API).
+  const verrouilleCorrigible = etat === 'verrouille' && (appel?.correctionVerrouillee ?? false);
+  const modifiable = etat === 'ouvert' || etat === 'valide' || verrouilleCorrigible;
+  const correction = etat === 'valide' || verrouilleCorrigible;
 
   const marquer = async (
     personneId: string,
@@ -189,7 +192,7 @@ export function ListeAppel({
             }}
           />
           <span id="motif-aide" className="text-xs text-muted">
-            {t.motifAide}
+            {verrouilleCorrigible ? t.motifAideVerrouille : t.motifAide}
           </span>
         </label>
       ) : (

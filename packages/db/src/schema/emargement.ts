@@ -566,6 +566,12 @@ export interface LigneAppelValidee {
   nonAttendu: boolean;
 }
 
+/** RG-06-15 : correction après verrouillage, par le droit de l'école ou de l'intervenant. */
+export const appelCorrectionVerrouillee = pgEnum('appel_correction_verrouillee', [
+  'ecole',
+  'intervenant',
+]);
+
 /**
  * Validation de l'appel (RG-06-13, signature électronique simple), une ligne par version : la
  * première validation, puis chaque correction (RG-06-15), avec son motif. Les versions ne sont
@@ -589,10 +595,16 @@ export const appelValidation = pgTable(
     liste: jsonb().$type<LigneAppelValidee[]>().notNull(),
     motif: text(),
     commentaire: text(),
+    /** RG-06-15 : correction faite après le verrouillage, et de quel droit ; null sinon. */
+    correctionVerrouillee: appelCorrectionVerrouillee(),
     ...trackingColumns(),
   },
   (t) => [
     ...organisationConstraints('appel_validation', t),
+    check(
+      'appel_validation_correction_verrouillee_check',
+      sql`${t.correctionVerrouillee} is null or ${t.version} > 1`,
+    ),
     uniqueIndex('appel_validation_version_key').on(t.organisationId, t.seanceId, t.version),
     foreignKey({
       name: 'appel_validation_seance_fk',

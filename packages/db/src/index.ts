@@ -39,6 +39,7 @@ export {
   apprenantsAjoutables,
   derniereValidation,
   validationsDeSeance,
+  correctionsVerrouilleesIntervenants,
   versionAppel,
   type PresenceAEcrire,
 } from './emargement.js';

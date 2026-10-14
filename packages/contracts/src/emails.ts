@@ -256,3 +256,40 @@ export function emailChangementsEdt(options: {
     }),
   };
 }
+
+/**
+ * RG-06-15 : un intervenant a corrigé un appel verrouillé ; la scolarité et la pédagogie de l'école
+ * en sont averties. Ni le motif ni les apprenants n'y figurent (minimisation) : le détail et
+ * l'historique des versions sont dans Scolaly.
+ */
+export function emailCorrectionVerrouillee(options: {
+  to: string;
+  prenom: string;
+  ecole: string;
+  lien: string;
+  intervenant: string;
+  libelle: string;
+  debut: Date;
+  fin: Date;
+  fuseau: string;
+  version: number;
+  marque?: MarqueEcole | null;
+}): EmailJob {
+  const salutation = `Bonjour ${options.prenom},`;
+  const annonce = `${options.intervenant} a corrigé l'appel verrouillé de la séance « ${options.libelle} » (${creneauEnClair(options.debut, options.fin, options.fuseau)}). Une nouvelle version signée de la feuille d'appel a été créée (version ${options.version}).`;
+  const suite =
+    "Le motif et l'historique des versions sont consultables dans Scolaly, sur la feuille d'appel de la séance.";
+  const mention =
+    "Vous recevez cet email parce que vous pouvez corriger les appels verrouillés de l'école.";
+  return {
+    to: options.to,
+    subject: `Appel verrouillé corrigé par un intervenant · ${options.ecole}`,
+    text: [salutation, '', annonce, '', suite, '', options.lien, '', mention].join('\n'),
+    html: miseEnPageEmail({
+      marque: options.marque ?? null,
+      paragraphes: [salutation, annonce, suite],
+      bouton: { libelle: "Voir la feuille d'appel", lien: options.lien },
+      mention,
+    }),
+  };
+}

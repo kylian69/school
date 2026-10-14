@@ -5,6 +5,8 @@ import {
   ROLES_PAR_DEFAUT,
   type AppelEnDirect,
   type ApprenantsAjoutables,
+  type CorrectionVerrouillee,
+  EVENEMENT_CORRECTION_VERROUILLEE,
   type FeuilleAppel,
   type OuvertureAppel,
   type PresenceEnCache,
@@ -23,16 +25,18 @@ import {
   inscrireManquants,
   newId,
   organisation,
+  outboxEvenement,
   personne,
   presence,
   promotionTechnique,
   role,
+  rolePermission,
   salle,
   seance,
   seanceIntervenant,
   seancePublic,
 } from '@scolaly/db';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, or, sql } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
@@ -52,6 +56,8 @@ const seances = {
   tardive: newId(),
   avant3Jours: newId(),
   avant8Jours: newId(),
+  avant10Jours: newId(),
+  avant20Jours: newId(),
   demain: newId(),
 };
 const fiches: Record<string, string> = {};
@@ -78,7 +84,9 @@ async function compte(nom: string, code: string, perimetreType: 'soi' | 'organis
   const [leRole] = await owner.db
     .select()
     .from(role)
-    .where(and(eq(role.organisationId, ecole), eq(role.code, code)));
+    .where(
+      and(eq(role.organisationId, ecole), or(eq(role.code, code), eq(sql`${role.id}::text`, code))),
+    );
   await owner.db.insert(attribution).values({
     organisationId: ecole,
     personneId: fiche?.id ?? '',
@@ -166,6 +174,18 @@ beforeAll(async () => {
     .returning();
   await compte('iris', 'intervenant');
   await compte('sacha', 'scolarite', 'organisation');
+  await compte('paul', 'responsable-pedagogique', 'organisation');
+  // Intervenant d'un rôle personnalisé, sans le droit de corriger un appel verrouillé.
+  const [sansDroit] = await owner.db
+    .insert(role)
+    .values({ organisationId: ecole, libelle: 'Vacataire', perimetreParDefaut: 'soi' })
+    .returning();
+  await owner.db.insert(rolePermission).values({
+    organisationId: ecole,
+    roleId: sansDroit?.id ?? '',
+    permission: 'emargement:animer',
+  });
+  await compte('remi', sansDroit?.id ?? '');
   for (const nom of ['lou', 'max', 'zoe', 'nina', 'eli']) await compte(nom, 'apprenant');
   // Lou, Max et Zoé sont dans le groupe de la séance ; Nina est de la même promotion, dans un
   // autre groupe ; Éli est d'une autre promotion.
@@ -199,6 +219,8 @@ beforeAll(async () => {
     tardive: Date.now() - 10 * 60_000,
     avant3Jours: Date.now() - 3 * J - 2 * 3600_000,
     avant8Jours: Date.now() - 8 * J - 2 * 3600_000,
+    avant10Jours: Date.now() - 10 * J - 2 * 3600_000,
+    avant20Jours: Date.now() - 20 * J - 2 * 3600_000,
     demain: Date.now() + J,
   };
   for (const [cle, id] of Object.entries(seances) as [keyof typeof seances, string][]) {
@@ -210,9 +232,10 @@ beforeAll(async () => {
       fin: new Date(debuts[cle] + 2 * 3600_000),
       salleId: laSalle?.id ?? null,
     });
-    await owner.db
-      .insert(seanceIntervenant)
-      .values({ organisationId: ecole, seanceId: id, personneId: fiches.iris ?? '' });
+    for (const nom of ['iris', 'remi'])
+      await owner.db
+        .insert(seanceIntervenant)
+        .values({ organisationId: ecole, seanceId: id, personneId: fiches[nom] ?? '' });
     await owner.db
       .insert(seancePublic)
       .values({ organisationId: ecole, seanceId: id, groupeId: groupe?.id ?? null });
@@ -231,10 +254,12 @@ describe('RG-06-01 états de l’appel', () => {
     expect((await feuille(seances.avant8Jours)).etat).toBe('verrouille');
   });
 
-  it('RG-06-01 un appel verrouillé ne se modifie ni ne se valide plus, même par la scolarité', async () => {
+  it('RG-06-01 un appel verrouillé jamais validé ne se modifie ni ne se valide plus, même par la scolarité', async () => {
     const corps = { statut: 'present', minutesRetard: null, motif: 'Oubli' };
-    expect((await marquer(seances.avant8Jours, 'lou', corps)).statusCode).toBe(400);
-    expect((await marquer(seances.avant8Jours, 'lou', corps, cookies.sacha)).statusCode).toBe(400);
+    // RG-06-15 : sans version signée, le droit spécifique ne permet pas de corriger.
+    expect((await marquer(seances.avant8Jours, 'lou', corps)).statusCode).toBe(409);
+    expect((await marquer(seances.avant8Jours, 'lou', corps, cookies.sacha)).statusCode).toBe(409);
+    expect((await marquer(seances.avant8Jours, 'lou', corps, cookies.remi)).statusCode).toBe(400);
     const refus = await valider(seances.avant8Jours);
     expect(refus.statusCode).toBe(409);
     expect(refus.json<{ message: string }>().message).toContain('verrouillé');
@@ -427,5 +452,152 @@ describe('RG-06-13 validation de l’appel', () => {
       version: 2,
       validePar: 'sacha Fictif',
     });
+  });
+});
+
+describe('RG-06-15 correction d’un appel verrouillé (droit spécifique)', () => {
+  const versionSignee = (seanceId: string, depuisJours: number) =>
+    owner.db.insert(appelValidation).values({
+      organisationId: ecole,
+      seanceId,
+      version: 1,
+      validePar: fiches.iris ?? '',
+      valideLe: new Date(Date.now() - depuisJours * J),
+      adresseIp: '192.0.2.1',
+      appareil: 'a'.repeat(64),
+      empreinte: 'c'.repeat(64),
+      liste: [],
+    });
+  const corrections = (cookie: string) =>
+    appeler('GET', '/api/emargement/corrections-verrouillees', cookie);
+  const evenements = async (seanceId: string) =>
+    (
+      await owner.db
+        .select()
+        .from(outboxEvenement)
+        .where(eq(outboxEvenement.type, EVENEMENT_CORRECTION_VERROUILLEE))
+    ).filter((e) => (e.charge as { seanceId: string }).seanceId === seanceId);
+
+  beforeAll(async () => {
+    await versionSignee(seances.avant10Jours, 10);
+    await versionSignee(seances.avant20Jours, 20);
+  });
+
+  it('RG-06-15 sans le droit spécifique, un appel verrouillé ne se corrige pas', async () => {
+    const corps = { statut: 'absent', minutesRetard: null, motif: 'Départ signalé' };
+    const refus = await marquer(seances.avant10Jours, 'lou', corps, cookies.remi);
+    expect(refus.statusCode).toBe(400);
+    expect(JSON.stringify(refus.json())).toContain('verrouillé');
+    const direct = await appeler(
+      'GET',
+      `/api/seances/${seances.avant10Jours}/appel/feuille`,
+      cookies.remi ?? '',
+    );
+    expect(direct.json<FeuilleAppel>()).toMatchObject({
+      etat: 'verrouille',
+      correctionVerrouillee: false,
+    });
+    expect((await corrections(cookies.remi ?? '')).statusCode).toBe(403);
+  });
+
+  it('RG-06-15 correction par un intervenant tracée : motif, version signée, action dédiée, signalement', async () => {
+    expect((await feuille(seances.avant10Jours)).correctionVerrouillee).toBe(true);
+    const sansMotif = await marquer(seances.avant10Jours, 'lou', {
+      statut: 'absent',
+      minutesRetard: null,
+    });
+    expect(sansMotif.statusCode).toBe(400);
+    const corps = { statut: 'absent', minutesRetard: null, motif: 'Feuille papier retrouvée' };
+    const reponse = await marquer(seances.avant10Jours, 'lou', corps);
+    expect(reponse.statusCode).toBe(200);
+    expect(reponse.json<AppelEnDirect>().validation).toMatchObject({
+      version: 2,
+      validePar: 'iris Fictif',
+      motif: 'Feuille papier retrouvée',
+      correctionVerrouillee: 'intervenant',
+    });
+    const trace = await derniereTrace('appel.corriger-verrouille-intervenant');
+    expect(trace?.auteurId).toBeTruthy();
+    expect(trace?.avant).toMatchObject({ seanceId: seances.avant10Jours, version: 1 });
+    expect(trace?.apres).toMatchObject({
+      version: 2,
+      motif: 'Feuille papier retrouvée',
+      correctionVerrouillee: 'intervenant',
+    });
+    const marquage = await derniereTrace('presence.marquer');
+    expect(marquage?.apres).toMatchObject({
+      personneId: fiches.lou,
+      statut: 'absent',
+      correctionVerrouillee: 'intervenant',
+    });
+    // Signalement : un événement pour l'email de la scolarité et de la pédagogie…
+    expect(await evenements(seances.avant10Jours)).toHaveLength(1);
+    // … la liste des corrections des intervenants, et l'historique des versions.
+    const liste = await corrections(cookies.sacha ?? '');
+    expect(liste.statusCode).toBe(200);
+    expect(liste.json<CorrectionVerrouillee[]>()).toContainEqual(
+      expect.objectContaining({
+        seanceId: seances.avant10Jours,
+        version: 2,
+        corrigeePar: 'iris Fictif',
+        motif: 'Feuille papier retrouvée',
+      }),
+    );
+    const parScolarite = await appeler(
+      'GET',
+      `/api/seances/${seances.avant10Jours}/appel/feuille`,
+      cookies.sacha ?? '',
+    );
+    expect(parScolarite.json<FeuilleAppel>().versions.map((v) => v.correctionVerrouillee)).toEqual([
+      null,
+      'intervenant',
+    ]);
+    expect((await corrections(cookies.iris ?? '')).statusCode).toBe(403);
+  });
+
+  it('RG-06-15 l’intervenant ne corrige plus au-delà du délai de son école, réglable', async () => {
+    const corps = { statut: 'present', minutesRetard: null, motif: 'Erreur de saisie' };
+    const refus = await marquer(seances.avant20Jours, 'lou', corps);
+    expect(refus.statusCode).toBe(409);
+    expect(refus.json<{ message: string }>().message).toContain('délai');
+    expect((await feuille(seances.avant20Jours)).correctionVerrouillee).toBe(false);
+    // Délai réglé à 7 jours par l'école : plus rien après le verrouillage.
+    await owner.db
+      .update(organisation)
+      .set({ emargementCorrectionVerrouilleeJours: 7 })
+      .where(eq(organisation.id, ecole));
+    expect((await marquer(seances.avant10Jours, 'lou', corps)).statusCode).toBe(409);
+    await owner.db
+      .update(organisation)
+      .set({ emargementCorrectionVerrouilleeJours: 30 })
+      .where(eq(organisation.id, ecole));
+    expect((await marquer(seances.avant20Jours, 'max', corps)).statusCode).toBe(200);
+    await owner.db
+      .update(organisation)
+      .set({ emargementCorrectionVerrouilleeJours: null })
+      .where(eq(organisation.id, ecole));
+  });
+
+  it('RG-06-15 correction par le corps pédagogique, sans limite de délai, tracée', async () => {
+    const corps = { statut: 'retard', minutesRetard: 15, motif: 'Retard signalé par le tuteur' };
+    const reponse = await marquer(seances.avant20Jours, 'zoe', corps, cookies.paul);
+    expect(reponse.statusCode).toBe(200);
+    const validation = reponse.json<AppelEnDirect>().validation;
+    expect(validation).toMatchObject({
+      validePar: 'paul Fictif',
+      correctionVerrouillee: 'ecole',
+    });
+    const trace = await derniereTrace('appel.corriger-verrouille');
+    expect(trace?.apres).toMatchObject({
+      version: validation?.version,
+      motif: 'Retard signalé par le tuteur',
+      correctionVerrouillee: 'ecole',
+    });
+    // Seules les corrections des intervenants sont signalées.
+    expect(await evenements(seances.avant20Jours)).toHaveLength(1);
+    const parScolarite = await marquer(seances.avant20Jours, 'zoe', corps, cookies.sacha);
+    expect(parScolarite.statusCode).toBe(200);
+    // Un appel verrouillé ne se valide toujours pas une seconde fois.
+    expect((await valider(seances.avant20Jours, cookies.paul)).statusCode).toBe(409);
   });
 });

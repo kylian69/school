@@ -1,4 +1,10 @@
-import { EmailJob, EVENEMENT_CHANGEMENT_EDT, EvenementJob, QUEUES } from '@scolaly/contracts';
+import {
+  EmailJob,
+  EVENEMENT_CHANGEMENT_EDT,
+  EVENEMENT_CORRECTION_VERROUILLEE,
+  EvenementJob,
+  QUEUES,
+} from '@scolaly/contracts';
 import {
   creerPartitionsAudit,
   purgerCorbeille,
@@ -12,6 +18,7 @@ import { Worker, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
 import { effacerLocalisationsPassees, purgerIndisponibilitesPassees } from './conservation.js';
+import { signalerCorrectionVerrouillee } from './correction-verrouillee.js';
 import { prechargerSeances } from './emargement.js';
 import type { Mailer } from './mailer.js';
 import { enregistrerChangementEdt, envoyerNotificationsEdt } from './notifications-edt.js';
@@ -167,6 +174,8 @@ export function startWorkers(options: {
       const evenement = EvenementJob.parse(job.data);
       if (evenement.type === EVENEMENT_CHANGEMENT_EDT)
         await enregistrerChangementEdt(db, evenement);
+      else if (evenement.type === EVENEMENT_CORRECTION_VERROUILLEE)
+        await signalerCorrectionVerrouillee(db, evenement, confier, options.publicUrl);
     },
     { ...common, concurrency: 5 },
   );

@@ -40,3 +40,15 @@ export const ChargeChangementEdt = z.object({
   retraits: z.array(z.object({ seanceId: z.uuid(), personneId: z.uuid() })).default([]),
 });
 export type ChargeChangementEdt = z.infer<typeof ChargeChangementEdt>;
+
+/**
+ * RG-06-15 : un intervenant a corrigé un appel verrouillé ; la scolarité et la pédagogie de
+ * l'école en sont averties. La charge ne porte que des identifiants (ni motif ni nom).
+ */
+export const EVENEMENT_CORRECTION_VERROUILLEE = 'emargement.correction-verrouillee';
+
+export const ChargeCorrectionVerrouillee = z.object({
+  seanceId: z.uuid(),
+  version: z.int().min(2),
+});
+export type ChargeCorrectionVerrouillee = z.infer<typeof ChargeCorrectionVerrouillee>;

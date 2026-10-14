@@ -123,6 +123,9 @@ export type EtatAppel = z.infer<typeof EtatAppel>;
 export const RaisonAVerifier = z.enum(['rejoue', 'hors-site', 'inconnu']);
 export const DecisionAVerifier = z.enum(['confirme', 'retire']);
 
+/** RG-06-15 : d'où vient le droit spécifique de corriger un appel verrouillé. */
+export const DroitVerrouille = z.enum(['ecole', 'intervenant']);
+
 /** RG-06-13 : une validation de l'appel (signature électronique simple), version par version. */
 export const VersionAppel = z
   .object({
@@ -135,9 +138,32 @@ export const VersionAppel = z
     /** Motif de la correction ; null pour la première validation. */
     motif: z.string().nullable(),
     commentaire: z.string().nullable(),
+    /**
+     * RG-06-15 : correction faite après le verrouillage, par le droit spécifique de l'école
+     * (corps pédagogique) ou de l'intervenant de la séance ; null sinon.
+     */
+    correctionVerrouillee: DroitVerrouille.nullable().default(null),
   })
   .meta({ id: 'VersionAppel' });
 export type VersionAppel = z.infer<typeof VersionAppel>;
+
+/**
+ * RG-06-15 : correction d'un appel verrouillé par un intervenant, signalée à la scolarité et à la
+ * pédagogie. Le motif est montré aux gestionnaires, jamais envoyé par email.
+ */
+export const CorrectionVerrouillee = z
+  .object({
+    seanceId: z.uuid(),
+    libelle: z.string(),
+    debut: z.iso.datetime(),
+    version: z.int().min(2),
+    corrigeeLe: z.iso.datetime(),
+    /** Nom de l'intervenant qui a corrigé. */
+    corrigeePar: z.string(),
+    motif: z.string(),
+  })
+  .meta({ id: 'CorrectionVerrouillee' });
+export type CorrectionVerrouillee = z.infer<typeof CorrectionVerrouillee>;
 
 /** Liste d'appel en direct (RG-06-03, RG-06-05 : compteur présents / attendus). */
 export const AppelEnDirect = z
@@ -145,6 +171,11 @@ export const AppelEnDirect = z
     etat: EtatAppel,
     /** Dernière validation ; null tant que l'appel n'est pas validé. */
     validation: VersionAppel.nullable(),
+    /**
+     * RG-06-15 : l'appel est verrouillé et la personne connectée peut encore le corriger (droit
+     * spécifique, dans le délai de l'école pour un intervenant), avec un motif.
+     */
+    correctionVerrouillee: z.boolean().default(false),
     /** Présents, en retard et scans à vérifier sans décision (RG-06-11). */
     presents: z.int().min(0),
     attendus: z.int().min(0),

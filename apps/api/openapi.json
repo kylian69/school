@@ -1650,6 +1650,79 @@
         }
       }
     },
+    "/api/emargement/corrections-verrouillees": {
+      "get": {
+        "operationId": "SeancesController.correctionsVerrouillees",
+        "summary": "Corrections d’appels verrouillés faites par des intervenants, les plus récentes d’abord",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:corriger-verrouille"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/CorrectionVerrouillee"
+                  },
+                  "definitions": {
+                    "CorrectionVerrouillee": {
+                      "type": "object",
+                      "properties": {
+                        "seanceId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "libelle": {
+                          "type": "string"
+                        },
+                        "debut": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 9007199254740991
+                        },
+                        "corrigeeLe": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "corrigeePar": {
+                          "type": "string"
+                        },
+                        "motif": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "seanceId",
+                        "libelle",
+                        "debut",
+                        "version",
+                        "corrigeeLe",
+                        "corrigeePar",
+                        "motif"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/emargement/scan": {
       "post": {
         "operationId": "ScanController.scanner",
@@ -6442,6 +6515,10 @@
               }
             ]
           },
+          "correctionVerrouillee": {
+            "default": false,
+            "type": "boolean"
+          },
           "presents": {
             "type": "integer",
             "minimum": 0,
@@ -6579,6 +6656,7 @@
         "required": [
           "etat",
           "validation",
+          "correctionVerrouillee",
           "presents",
           "attendus",
           "liste"
@@ -8025,7 +8103,8 @@
                 "edt:gerer",
                 "edt:forcer",
                 "disponibilites:declarer",
-                "emargement:animer"
+                "emargement:animer",
+                "emargement:corriger-verrouille"
               ]
             }
           },
@@ -8638,6 +8717,50 @@
         },
         "required": [
           "elements"
+        ],
+        "additionalProperties": false
+      },
+      "CorrectionVerrouillee": {
+        "type": "object",
+        "properties": {
+          "seanceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 9007199254740991
+          },
+          "corrigeeLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "corrigeePar": {
+            "type": "string"
+          },
+          "motif": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "seanceId",
+          "libelle",
+          "debut",
+          "version",
+          "corrigeeLe",
+          "corrigeePar",
+          "motif"
         ],
         "additionalProperties": false
       },
@@ -9652,6 +9775,10 @@
               }
             ]
           },
+          "correctionVerrouillee": {
+            "default": false,
+            "type": "boolean"
+          },
           "presents": {
             "type": "integer",
             "minimum": 0,
@@ -9834,6 +9961,7 @@
         "required": [
           "etat",
           "validation",
+          "correctionVerrouillee",
           "presents",
           "attendus",
           "liste",
@@ -12239,6 +12367,12 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 60
+          },
+          "emargementCorrectionVerrouilleeJours": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 90
           }
         },
         "additionalProperties": false
@@ -12363,7 +12497,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 37,
+            "maxItems": 38,
             "type": "array",
             "items": {
               "type": "string",
@@ -12404,7 +12538,8 @@
                 "edt:gerer",
                 "edt:forcer",
                 "disponibilites:declarer",
-                "emargement:animer"
+                "emargement:animer",
+                "emargement:corriger-verrouille"
               ]
             }
           },
@@ -13101,7 +13236,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 37,
+            "maxItems": 38,
             "type": "array",
             "items": {
               "type": "string",
@@ -13142,7 +13277,8 @@
                 "edt:gerer",
                 "edt:forcer",
                 "disponibilites:declarer",
-                "emargement:animer"
+                "emargement:animer",
+                "emargement:corriger-verrouille"
               ]
             }
           },
@@ -13822,6 +13958,17 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "emargementCorrectionVerrouilleeJours": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "emargementCorrectionVerrouilleeJoursDefaut": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "etablissements": {
             "type": "array",
             "items": {
@@ -13838,6 +13985,8 @@
           "exempleMatricule",
           "edtBadgeModifieJours",
           "edtBadgeModifieJoursDefaut",
+          "emargementCorrectionVerrouilleeJours",
+          "emargementCorrectionVerrouilleeJoursDefaut",
           "etablissements"
         ],
         "additionalProperties": false
@@ -16292,7 +16441,8 @@
                 "edt:gerer",
                 "edt:forcer",
                 "disponibilites:declarer",
-                "emargement:animer"
+                "emargement:animer",
+                "emargement:corriger-verrouille"
               ]
             }
           },
@@ -18506,6 +18656,15 @@
           "commentaire": {
             "nullable": true,
             "type": "string"
+          },
+          "correctionVerrouillee": {
+            "default": null,
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "ecole",
+              "intervenant"
+            ]
           }
         },
         "required": [
@@ -18514,7 +18673,8 @@
           "validePar",
           "empreinte",
           "motif",
-          "commentaire"
+          "commentaire",
+          "correctionVerrouillee"
         ],
         "additionalProperties": false
       },
