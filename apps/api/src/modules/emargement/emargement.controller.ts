@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   ForbiddenException,
@@ -15,13 +16,16 @@ import {
 } from '@nestjs/common';
 import {
   AppelEnDirect,
+  ApprenantsAjoutables,
   CodeEmargement,
+  FeuilleAppel,
   MarquagePresence,
   OuvertureAppel,
   PhotosAppel,
   ResultatScan,
   ScanEmargement,
   SeanceProche,
+  ValidationAppel,
 } from '@scolaly/contracts';
 import { withOrganisation, type Database } from '@scolaly/db';
 import type { FastifyReply } from 'fastify';
@@ -85,18 +89,60 @@ export class AppelController {
     return this.appels.ouvrir(RequestContext.tx(), RequestContext.access(), id);
   }
 
-  @Get()
+  @Get('feuille')
   @RequirePermission('emargement:animer')
-  @ApiContract({ summary: 'Présents et attendus en direct', response: AppelEnDirect })
-  enDirect(@Param('id', ParseUUIDPipe) id: string) {
-    return this.appels.enDirect(RequestContext.tx(), RequestContext.access(), id);
+  @ApiContract({
+    summary:
+      'Feuille d’appel : liste en cours (scans et décisions) ou d’une version validée, et historique des versions',
+    query: z.object({ version: z.coerce.number().int().min(1).optional() }),
+    response: FeuilleAppel,
+  })
+  feuille(@Param('id', ParseUUIDPipe) id: string, @Query('version') version: string | undefined) {
+    const numero = version === undefined ? null : Number(version);
+    if (numero !== null && !(Number.isInteger(numero) && numero >= 1))
+      throw new BadRequestException({
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: ['version : Indiquez un numéro de version entier, à partir de 1.'],
+      });
+    return this.appels.feuille(RequestContext.tx(), RequestContext.access(), id, numero);
+  }
+
+  @Post('validation')
+  @HttpCode(200)
+  @RequirePermission('emargement:animer')
+  @ApiContract({
+    summary:
+      'Valider l’appel (signature électronique simple, horodatée par le serveur) : les scans sont ensuite refusés',
+    body: ValidationAppel,
+    response: AppelEnDirect,
+  })
+  valider(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() corps: ValidationAppel,
+    @Req() request: ScolalyRequest,
+  ) {
+    return this.appels.valider(RequestContext.tx(), RequestContext.access(), id, corps, {
+      adresseIp: request.ip,
+      userAgent: request.headers['user-agent'],
+    });
+  }
+
+  @Get('ajoutables')
+  @RequirePermission('emargement:animer')
+  @ApiContract({
+    summary:
+      'Apprenants non attendus de la même promotion, que l’intervenant peut ajouter à l’appel',
+    response: ApprenantsAjoutables,
+  })
+  ajoutables(@Param('id', ParseUUIDPipe) id: string) {
+    return this.appels.ajoutables(RequestContext.tx(), RequestContext.access(), id);
   }
 
   @Put('presences/:personneId')
   @RequirePermission('emargement:animer')
   @ApiContract({
     summary:
-      'Marquer un attendu présent, en retard ou absent (appel manuel, correction ou décision sur un scan à vérifier)',
+      'Marquer un attendu présent, en retard ou absent (appel manuel, décision sur un scan à vérifier, ajout d’un non-attendu ; après validation, correction avec motif et nouvelle version)',
     body: MarquagePresence,
     response: AppelEnDirect,
   })
@@ -112,7 +158,10 @@ export class AppelController {
       id,
       personneId,
       corps,
-      request.ip,
+      {
+        adresseIp: request.ip,
+        userAgent: request.headers['user-agent'],
+      },
     );
   }
 

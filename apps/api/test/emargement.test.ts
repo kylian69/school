@@ -322,7 +322,7 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
 
   it('US-06-03 l’intervenant suit les présents en direct ; un autre intervenant ne peut pas ouvrir', async () => {
     const direct = (
-      await appeler('GET', `/api/seances/${seanceId}/appel`, intervenant)
+      await appeler('GET', `/api/seances/${seanceId}/appel/feuille`, intervenant)
     ).json<AppelEnDirect>();
     expect(direct.attendus).toBe(2);
     expect(direct.presents).toBe(2);
@@ -474,7 +474,7 @@ describe('Mode dégradé (architecture, section 5)', () => {
         .where(eq(presence.seanceId, seanceDegradeeId));
       expect(lignes).toHaveLength(1);
       const direct = (
-        await appeler('GET', `/api/seances/${seanceDegradeeId}/appel`, intervenant)
+        await appeler('GET', `/api/seances/${seanceDegradeeId}/appel/feuille`, intervenant)
       ).json<AppelEnDirect>();
       expect(direct.presents).toBe(1);
     } finally {

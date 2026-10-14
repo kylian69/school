@@ -109,13 +109,42 @@ export const MarquagePresence = z
     statut: StatutMarque,
     /** Minutes de retard, pour un retard seulement. */
     minutesRetard: z.int().min(1).max(1440).nullable(),
+    /** RG-06-13, RG-06-15 : motif, exigé pour corriger un appel déjà validé. */
+    motif: z.string().trim().min(3).max(500).optional(),
   })
   .meta({ id: 'MarquagePresence' });
 export type MarquagePresence = z.infer<typeof MarquagePresence>;
 
+/** RG-06-01 : à venir, ouvert (dès la fenêtre de scan), validé, verrouillé (7 jours après). */
+export const EtatAppel = z.enum(['a-venir', 'ouvert', 'valide', 'verrouille']);
+export type EtatAppel = z.infer<typeof EtatAppel>;
+
+/** RG-06-11 : raison d'un scan « à vérifier » et décision de l'intervenant. */
+export const RaisonAVerifier = z.enum(['rejoue', 'hors-site', 'inconnu']);
+export const DecisionAVerifier = z.enum(['confirme', 'retire']);
+
+/** RG-06-13 : une validation de l'appel (signature électronique simple), version par version. */
+export const VersionAppel = z
+  .object({
+    version: z.int().min(1),
+    valideLe: z.iso.datetime(),
+    /** Nom de la personne qui a validé ou corrigé. */
+    validePar: z.string(),
+    /** Hachage SHA-256 (hexadécimal) de la liste validée. */
+    empreinte: z.string(),
+    /** Motif de la correction ; null pour la première validation. */
+    motif: z.string().nullable(),
+    commentaire: z.string().nullable(),
+  })
+  .meta({ id: 'VersionAppel' });
+export type VersionAppel = z.infer<typeof VersionAppel>;
+
 /** Liste d'appel en direct (RG-06-03, RG-06-05 : compteur présents / attendus). */
 export const AppelEnDirect = z
   .object({
+    etat: EtatAppel,
+    /** Dernière validation ; null tant que l'appel n'est pas validé. */
+    validation: VersionAppel.nullable(),
     /** Présents, en retard et scans à vérifier sans décision (RG-06-11). */
     presents: z.int().min(0),
     attendus: z.int().min(0),
@@ -131,13 +160,54 @@ export const AppelEnDirect = z
         /** RG-06-08 : a émargé à distance (séance à distance, ou hybride sur déclaration). */
         aDistance: z.boolean(),
         statut: StatutAppel,
+        /** RG-06-02 : minutes de retard (décision de l'intervenant, sinon scan tardif). */
+        minutesRetard: z.int().min(1).nullable(),
+        /** RG-06-11 : pourquoi le scan est à vérifier, et ce qu'en a décidé l'intervenant. */
+        raison: RaisonAVerifier.nullable(),
+        decision: DecisionAVerifier.nullable(),
+        /** Apprenant non attendu ajouté par l'intervenant (anomalie signalée à la scolarité). */
+        nonAttendu: z.boolean(),
         /** Décision de l'intervenant, qui l'emporte sur le scan ; null sans décision. */
-        marquage: MarquagePresence.extend({ marqueLe: z.iso.datetime() }).nullable(),
+        marquage: MarquagePresence.omit({ motif: true })
+          .extend({ marqueLe: z.iso.datetime() })
+          .nullable(),
       }),
     ),
   })
   .meta({ id: 'AppelEnDirect' });
 export type AppelEnDirect = z.infer<typeof AppelEnDirect>;
+
+/** RG-06-12, RG-06-13 : validation de l'appel par l'intervenant, avec un commentaire facultatif. */
+export const ValidationAppel = z
+  .object({ commentaire: z.string().trim().max(1000).optional() })
+  .meta({ id: 'ValidationAppel' });
+export type ValidationAppel = z.infer<typeof ValidationAppel>;
+
+/**
+ * Feuille d'appel de l'intervenant : la séance, l'historique des validations (RG-06-13 : l'ancienne
+ * version reste consultable) et la liste combinant scans et décisions, en cours ou d'une version.
+ */
+export const FeuilleAppel = AppelEnDirect.extend({
+  seance: z.object({
+    libelle: z.string(),
+    debut: z.iso.datetime(),
+    fin: z.iso.datetime(),
+    mode: ModePresence,
+  }),
+  versions: z.array(VersionAppel),
+  /** Version affichée ; null : liste en cours. */
+  version: z.int().min(1).nullable(),
+}).meta({ id: 'FeuilleAppel' });
+export type FeuilleAppel = z.infer<typeof FeuilleAppel>;
+
+/**
+ * Apprenants que l'intervenant peut ajouter à son appel (cas « mauvais groupe ») : inscrits dans
+ * une promotion des attendus, mais pas attendus à cette séance.
+ */
+export const ApprenantsAjoutables = z
+  .array(z.object({ personneId: z.uuid(), nom: z.string(), prenom: z.string() }))
+  .meta({ id: 'ApprenantsAjoutables' });
+export type ApprenantsAjoutables = z.infer<typeof ApprenantsAjoutables>;
 
 /**
  * Photos des attendus pour la liste d'appel (RG-01-27, RG-06-11) : adresses signées, valables
@@ -156,6 +226,8 @@ export interface MarquageEnCache {
   statut: StatutMarque;
   minutesRetard: number | null;
   marqueLe: string;
+  /** Apprenant non attendu ajouté par l'intervenant. */
+  nonAttendu?: boolean;
 }
 
 /** Clés Valkey du chemin rapide ; la durée de vie suit la fin de la séance. */
@@ -189,6 +261,8 @@ export interface PresenceEnCache {
   localisation?: ResultatLocalisation | null;
   /** RG-06-08 : émargement à distance (absent : présence d'avant ce lot, en salle). */
   aDistance?: boolean;
+  /** RG-06-02 : minutes de retard du scan (absent ou 0 : à l'heure, ou présence plus ancienne). */
+  retardMinutes?: number;
 }
 
 /**
@@ -213,6 +287,11 @@ export interface SeanceEnCache {
   mode: ModePresence;
   /** Null : pas de contrôle (désactivé, séance à distance ou périmètre non renseigné). */
   localisation: PerimetreEnCache | null;
+  /**
+   * RG-06-01, RG-06-13 : dernière validation de l'appel ; un appel validé refuse les scans, sans
+   * requête SQL. Null : appel pas encore validé.
+   */
+  validation: VersionAppel | null;
 }
 
 /** Les clés du cache vivent jusqu'à une heure après la fin de la séance (secondes Unix). */
@@ -266,7 +345,14 @@ export function commandesPrechargement(
     ],
     ['expireat', CLES_EMARGEMENT.seance(seanceId), fin],
   );
+  // Une validation n'est jamais retirée : un préchargement lu avant elle ne l'efface pas.
+  if (seance.validation) commandes.push(commandeValidation(seanceId, seance.validation));
   return commandes;
+}
+
+/** RG-06-13 : marque l'appel validé dans le cache ; le scan le refuse alors sans requête. */
+export function commandeValidation(seanceId: string, validation: VersionAppel): string[] {
+  return ['hset', CLES_EMARGEMENT.seance(seanceId), 'validation', JSON.stringify(validation)];
 }
 
 /**
@@ -302,6 +388,7 @@ export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCach
     localisation: valeurs.localisation
       ? (JSON.parse(valeurs.localisation) as PerimetreEnCache)
       : null,
+    validation: valeurs.validation ? (JSON.parse(valeurs.validation) as VersionAppel) : null,
   };
 }
 

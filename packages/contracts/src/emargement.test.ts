@@ -17,7 +17,37 @@ const seance: SeanceEnCache = {
   distanciel: false,
   mode: 'presentiel',
   localisation: null,
+  validation: null,
 };
+
+describe('RG-06-13 appel validé dans le cache', () => {
+  const validation = {
+    version: 1,
+    valideLe: '2026-10-06T08:20:00.000Z',
+    validePar: 'Iris Fictif',
+    empreinte: 'a'.repeat(64),
+    motif: null,
+    commentaire: null,
+  };
+
+  it('RG-06-13 précharge la validation, et ne l’efface jamais quand l’appel n’est pas validé', () => {
+    const avec = commandesPrechargement('s1', { ...seance, validation }, new Map());
+    const commande = avec.find((c) => c.includes('validation'));
+    expect(commande).toEqual([
+      'hset',
+      CLES_EMARGEMENT.seance('s1'),
+      'validation',
+      JSON.stringify(validation),
+    ]);
+    expect(
+      lireSeanceEnCache({ organisationId: 'ecole', validation: JSON.stringify(validation) })
+        ?.validation,
+    ).toEqual(validation);
+    // Un préchargement lu avant la validation ne retire pas celle écrite entre-temps.
+    expect(commandesPrechargement('s1', seance, new Map()).flat()).not.toContain('validation');
+    expect(lireSeanceEnCache({ organisationId: 'ecole' })?.validation).toBeNull();
+  });
+});
 
 describe('RG-00-17 préchargement léger', () => {
   it('écrit les attendus par paquets dans une clé de chargement, puis les bascule d’un coup', () => {

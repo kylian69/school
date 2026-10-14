@@ -275,6 +275,12 @@ export class ScanService {
     },
   ): Promise<ResultatScan> {
     const { mode, rejoue } = scan;
+    // RG-06-01, RG-06-13 : l'appel validé est signé ; l'état vient avec la séance, sans requête.
+    if (seance.validation) {
+      throw new ConflictException(
+        "L'appel de cette séance est validé : l'émargement est fermé. Si vous n'êtes pas compté présent, signalez-vous à l'intervenant.",
+      );
+    }
     const personneId = await magasin.attendu(seanceId, userId);
     if (!personneId) {
       throw new ForbiddenException(
@@ -303,6 +309,8 @@ export class ScanService {
         rejoue,
         localisation,
         aDistance,
+        // RG-06-02 : le retard d'un scan tardif est enregistré avec la présence (#108).
+        ...(evaluation.retardMinutes > 0 ? { retardMinutes: evaluation.retardMinutes } : {}),
       },
       seance.fin,
     );

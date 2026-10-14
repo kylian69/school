@@ -1,12 +1,14 @@
 import { hkdfSync } from 'node:crypto';
 import {
   CLES_EMARGEMENT,
+  commandeValidation,
   commandesPrechargement,
   expirationCache,
   lireSeanceEnCache,
   type MarquageEnCache,
   type PresenceEnCache,
   type SeanceEnCache,
+  type VersionAppel,
 } from '@scolaly/contracts';
 import type { Redis } from 'ioredis';
 
@@ -116,6 +118,29 @@ export class CacheEmargement implements Magasin {
         .expireat(cle, Math.max(expirationCache(finMs), Math.ceil(Date.now() / 1000) + 3600))
         .exec(),
     );
+  }
+
+  /**
+   * RG-06-13 : appel validé, copié après validation de la transaction ; le scan le lit avec la
+   * séance et refuse alors, sans requête SQL. Le hash garde la durée de vie de la séance.
+   */
+  async valider(seanceId: string, validation: VersionAppel, finMs: number) {
+    const cle = CLES_EMARGEMENT.seance(seanceId);
+    await surValkey(() =>
+      this.valkey
+        .multi()
+        .hset(cle, ...commandeValidation(seanceId, validation).slice(2))
+        .expireat(cle, expirationCache(finMs))
+        .exec(),
+    );
+  }
+
+  /** Dernière validation copiée dans le cache, pour la liste en direct. */
+  async validation(seanceId: string): Promise<VersionAppel | null> {
+    const valeur = await surValkey(() =>
+      this.valkey.hget(CLES_EMARGEMENT.seance(seanceId), 'validation'),
+    );
+    return valeur ? (JSON.parse(valeur) as VersionAppel) : null;
   }
 
   async marquages(seanceId: string): Promise<Map<string, MarquageEnCache>> {

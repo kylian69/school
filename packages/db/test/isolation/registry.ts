@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
 import {
+  appelValidation,
   anneeScolaire,
   attribution,
   correspondanceEdt,
@@ -642,6 +643,22 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         personneId: await insertPersonne(db, organisationId),
         scanneLe: new Date('2026-10-05T08:01:00Z'),
         mode: 'qr',
+      });
+    },
+  },
+  appel_validation: {
+    appAccess: 'append-only',
+    insert: async (db, organisationId) => {
+      await db.insert(appelValidation).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        version: 1,
+        validePar: await insertPersonne(db, organisationId),
+        valideLe: new Date('2026-10-05T08:30:00Z'),
+        adresseIp: '192.0.2.10',
+        appareil: 'a'.repeat(64),
+        empreinte: 'b'.repeat(64),
+        liste: [],
       });
     },
   },

@@ -1,6 +1,7 @@
 import { perimetreAControler, type PresenceEnCache, type SeanceEnCache } from '@scolaly/contracts';
 import {
   attenduDeSeance,
+  derniereValidation,
   enregistrerPresenceDirecte,
   etablissementDeSeance,
   organisationDeSeance,
@@ -46,6 +47,7 @@ export class MagasinDegrade implements Magasin {
             ligne.distanciel,
             await etablissementDeSeance(tx, ligne),
           ),
+          validation: await derniereValidation(tx, seanceId),
         };
       });
     })();

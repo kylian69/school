@@ -272,7 +272,7 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
 
     // RG-06-11 : l'intervenant voit le résultat de chaque scan.
     const direct = (
-      await appeler('GET', `/api/seances/${seances.salle}/appel`, intervenant)
+      await appeler('GET', `/api/seances/${seances.salle}/appel/feuille`, intervenant)
     ).json<AppelEnDirect>();
     const parPrenom = new Map(direct.liste.map((l) => [l.prenom, l.localisation]));
     expect(parPrenom.get('lou')).toBe('sur-place');
@@ -366,7 +366,7 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
     });
     // RG-06-11 : l'intervenant voit qui a émargé à distance.
     const direct = (
-      await appeler('GET', `/api/seances/${seances.hybride}/appel`, intervenant)
+      await appeler('GET', `/api/seances/${seances.hybride}/appel/feuille`, intervenant)
     ).json<AppelEnDirect>();
     const parPrenom = new Map(direct.liste.map((l) => [l.prenom, l]));
     expect(parPrenom.get('lou')).toMatchObject({ aDistance: true, statut: 'present' });

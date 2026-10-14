@@ -1,7 +1,13 @@
 import { and, eq, gt, inArray, isNotNull, isNull, lte, sql, type AnyColumn } from 'drizzle-orm';
 import type { Database } from './client.js';
 import { withOrganisation, type Transaction } from './organisation-context.js';
-import { presence, seance, seanceAttenduCalcule, seanceSerie } from './schema/emargement.js';
+import {
+  appelValidation,
+  presence,
+  seance,
+  seanceAttenduCalcule,
+  seanceSerie,
+} from './schema/emargement.js';
 import { salle } from './schema/scolarite.js';
 import { etablissement } from './schema/structure.js';
 import { authSession, authUser } from './schema/auth.js';
@@ -19,6 +25,8 @@ export interface PresenceAEcrire {
   localisation?: 'sur-place' | 'hors-site' | 'inconnu' | null;
   /** RG-06-08 : émargement à distance ; absent : en salle. */
   aDistance?: boolean;
+  /** RG-06-02 : minutes de retard du scan ; absent ou 0 : à l'heure. */
+  retardMinutes?: number;
 }
 
 /**
@@ -226,6 +234,7 @@ export async function enregistrerPresences(
             rejoue: p.rejoue,
             localisation: p.localisation ?? null,
             aDistance: p.aDistance ?? false,
+            retardMinutes: p.retardMinutes || null,
           })),
         )
         .onConflictDoNothing({
@@ -258,6 +267,7 @@ export async function enregistrerPresenceDirecte(
   rejoue: boolean;
   localisation: NonNullable<PresenceAEcrire['localisation']> | null;
   aDistance: boolean;
+  retardMinutes: number | null;
 } | null> {
   const [ajoutee] = await tx
     .insert(presence)
@@ -270,6 +280,7 @@ export async function enregistrerPresenceDirecte(
       rejoue: p.rejoue,
       localisation: p.localisation ?? null,
       aDistance: p.aDistance ?? false,
+      retardMinutes: p.retardMinutes || null,
     })
     .onConflictDoNothing({
       target: [presence.organisationId, presence.seanceId, presence.personneId],
@@ -282,6 +293,7 @@ export async function enregistrerPresenceDirecte(
       rejoue: presence.rejoue,
       localisation: presence.localisation,
       aDistance: presence.aDistance,
+      retardMinutes: presence.retardMinutes,
     })
     .from(presence)
     .where(and(eq(presence.seanceId, p.seanceId), eq(presence.personneId, p.personneId)));
@@ -330,4 +342,86 @@ export async function sessionsDesComptes(db: Database, userIds: readonly string[
     sessions.push(...lignes);
   }
   return sessions;
+}
+
+/** Validations de l'appel d'une séance (RG-06-13), de la première à la dernière version. */
+export async function validationsDeSeance(tx: Transaction, seanceId: string) {
+  return tx
+    .select({
+      version: appelValidation.version,
+      valideLe: appelValidation.valideLe,
+      nom: personne.nom,
+      prenom: personne.prenom,
+      empreinte: appelValidation.empreinte,
+      motif: appelValidation.motif,
+      commentaire: appelValidation.commentaire,
+      liste: appelValidation.liste,
+    })
+    .from(appelValidation)
+    .innerJoin(
+      personne,
+      and(
+        eq(personne.organisationId, appelValidation.organisationId),
+        eq(personne.id, appelValidation.validePar),
+      ),
+    )
+    .where(and(eq(appelValidation.seanceId, seanceId), isNull(appelValidation.deletedAt)))
+    .orderBy(appelValidation.version);
+}
+
+/**
+ * Apprenants que l'intervenant peut ajouter à l'appel (module 06, section 7 : inscrit dans le
+ * mauvais groupe) : inscrits le jour de la séance dans une promotion d'un attendu, sans être
+ * attendus. La liste reste limitée à ces promotions : l'intervenant ne voit pas toute l'école.
+ */
+export async function apprenantsAjoutables(tx: Transaction, seanceId: string) {
+  const resultat = await tx.execute<{ personne_id: string; nom: string; prenom: string }>(sql`
+    select distinct p.id as personne_id, p.nom, p.prenom
+    from seance s
+    join inscription i
+      on i.organisation_id = s.organisation_id
+      and i.deleted_at is null
+      and i.etat <> 'preinscrit'
+      and i.date_entree <= (s.debut at time zone 'Europe/Paris')::date
+      and (i.date_sortie is null or (s.debut at time zone 'Europe/Paris')::date < i.date_sortie)
+    join personne p
+      on p.organisation_id = i.organisation_id and p.id = i.personne_id and p.deleted_at is null
+    where s.id = ${seanceId}
+      and i.promotion_id in (
+        select i2.promotion_id from inscription i2
+        join seance_attendu_calcule a
+          on a.organisation_id = i2.organisation_id and a.personne_id = i2.personne_id
+        where a.seance_id = s.id and i2.deleted_at is null
+      )
+      and not exists (
+        select 1 from seance_attendu_calcule a
+        where a.seance_id = s.id and a.personne_id = p.id
+      )
+    order by p.nom, p.prenom`);
+  return resultat.rows.map((r) => ({ personneId: r.personne_id, nom: r.nom, prenom: r.prenom }));
+}
+
+/** Une validation telle que l'API la renvoie et que le cache la garde (contrat VersionAppel). */
+export const versionAppel = (v: {
+  version: number;
+  valideLe: Date;
+  nom: string;
+  prenom: string;
+  empreinte: string;
+  motif: string | null;
+  commentaire: string | null;
+}) => ({
+  version: v.version,
+  valideLe: v.valideLe.toISOString(),
+  validePar: `${v.prenom} ${v.nom}`,
+  empreinte: v.empreinte,
+  motif: v.motif,
+  commentaire: v.commentaire,
+});
+
+/** Dernière validation de l'appel, préchargée avec la séance (le scan la lit dans le cache). */
+export async function derniereValidation(tx: Transaction, seanceId: string) {
+  const versions = await validationsDeSeance(tx, seanceId);
+  const derniere = versions.at(-1);
+  return derniere ? versionAppel(derniere) : null;
 }

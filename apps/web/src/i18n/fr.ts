@@ -897,6 +897,40 @@ export const fr = {
     suiviDistanceAide:
       'À distance, votre position n’est pas demandée : scannez le QR partagé dans la visio ou saisissez le code. L’intervenant voit que vous suivez à distance.',
     enregistreeADistance: 'Émargement à distance',
+    // RG-06-01, RG-06-12 à RG-06-15 : états, validation et correction de l'appel.
+    etatsAppel: {
+      'a-venir': 'Appel à venir',
+      ouvert: 'Appel ouvert',
+      valide: 'Appel validé',
+      verrouille: 'Appel verrouillé',
+    },
+    validerAppel: 'Valider l’appel',
+    validerAide:
+      'Vérifiez la liste, puis validez : la validation vaut signature. Les scans sont ensuite refusés, et toute correction demande un motif.',
+    commentaire: 'Commentaire (facultatif)',
+    validationEchec: 'L’appel n’a pas pu être validé. Vérifiez votre connexion, puis réessayez.',
+    valideLe: (date: string, nom: string, version: number) =>
+      `Validé le ${date} par ${nom} · version ${version}`,
+    empreinte: (empreinte: string) => `Empreinte ${empreinte}`,
+    motifCorrection: 'Motif de la correction',
+    motifAide:
+      'L’appel est validé : indiquez le motif avant de changer un statut. Chaque correction crée une nouvelle version de la feuille.',
+    verrouilleAide:
+      'L’appel est verrouillé 7 jours après la séance : il ne se modifie plus. Demandez à la scolarité en cas d’erreur.',
+    aVenirAide: 'L’appel s’ouvre 10 minutes avant le début de la séance.',
+    versions: 'Versions de la feuille',
+    version: (v: number, date: string, nom: string, motif: string | null) =>
+      `Version ${v} · ${date} · ${nom}${motif ? ` · ${motif}` : ''}`,
+    scanConfirme: 'scan confirmé',
+    rejoueListe: 'envoyé hors ligne',
+    nonAttendu: 'non attendu, signalé à la scolarité',
+    ajouterTitre: 'Ajouter un apprenant non attendu',
+    ajouterAide:
+      'Un apprenant de la même promotion assiste au cours sans être attendu (mauvais groupe) : ajoutez-le, la scolarité en sera informée.',
+    ajouterChoix: 'Apprenant',
+    ajouterChoisir: 'Choisissez un apprenant',
+    ajouter: 'Ajouter présent',
+    aucunAjoutable: 'Aucun autre apprenant de la promotion à ajouter.',
   },
   referentiel: {
     titre: 'Formations',

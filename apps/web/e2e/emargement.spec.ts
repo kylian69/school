@@ -288,6 +288,86 @@ test.describe('Module 06 Émargement', () => {
     });
   });
 
+  test.describe('RG-06-01, RG-06-13 validation et états de l’appel', () => {
+    const cookie = async (page: Page, context: BrowserContext, name: string, value: string) => {
+      await context.addCookies([{ name, value, url: new URL(page.url()).origin }]);
+    };
+
+    test('RG-06-13 valide l’appel avec horodatage : ouvrir, scanner, corriger, valider, puis corriger avec motif', async ({
+      page,
+      context,
+    }) => {
+      await cookie(
+        page,
+        context,
+        'e2e-appel',
+        `v${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`,
+      );
+      await page.goto('/seances');
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await expect(page.getByRole('heading', { name: 'Appel ouvert' })).toBeVisible();
+
+      // L'apprenante émarge.
+      const apprenant = await context.newPage();
+      await apprenant.goto('/emarger');
+      await apprenant.getByLabel('Code à 6 chiffres').fill('123456');
+      await apprenant.getByRole('button', { name: 'Valider le code' }).click();
+      await expect(apprenant.getByText('Présence enregistrée')).toBeVisible();
+      await expect(page.getByText('1 / 2 présents')).toBeVisible();
+
+      // Correction avant validation : Noé absent, Nina (autre groupe) ajoutée avec signalement.
+      const noe = page.getByRole('listitem').filter({ hasText: 'Noé Petit' });
+      await noe.getByRole('button', { name: 'Absent' }).click();
+      await expect(noe).toContainText('absent');
+      await page.getByText('Ajouter un apprenant non attendu').click();
+      await page
+        .getByRole('combobox', { name: 'Apprenant' })
+        .selectOption({ label: 'Nina Bernard' });
+      await page.getByRole('button', { name: 'Ajouter présent' }).click();
+      await expect(page.getByRole('listitem').filter({ hasText: 'Nina Bernard' })).toContainText(
+        'non attendu, signalé à la scolarité',
+      );
+      await expectNoAccessibilityViolations(page);
+
+      // Validation : signée et horodatée par le serveur ; le QR disparaît.
+      await page.getByLabel('Commentaire (facultatif)').fill('RAS');
+      await page.getByRole('button', { name: 'Valider l’appel' }).click();
+      await expect(page.getByRole('heading', { name: 'Appel validé' })).toBeVisible();
+      await expect(page.getByText(/Validé le \d{2}\/\d{2}\/\d{4}.* · version 1/)).toBeVisible();
+      await expect(page.getByRole('img', { name: /QR code d’émargement/ })).toBeHidden();
+      await expectNoAccessibilityViolations(page);
+
+      // Après validation, l'émargement est fermé.
+      await apprenant.reload();
+      await apprenant.getByLabel('Code à 6 chiffres').fill('123456');
+      await apprenant.getByRole('button', { name: 'Valider le code' }).click();
+      await expect(apprenant.getByText(/L'appel de cette séance est validé/)).toBeVisible();
+      await apprenant.close();
+
+      // RG-06-15 : une correction exige un motif et crée une version.
+      await noe.getByRole('button', { name: 'Présent' }).click();
+      await expect(page.getByRole('alert').filter({ hasText: 'indiquez le motif' })).toBeVisible();
+      await page.getByLabel('Motif de la correction').fill('Arrivé sans téléphone');
+      await noe.getByRole('button', { name: 'Présent' }).click();
+      await expect(page.getByText(/· version 2/)).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Versions de la feuille' })).toBeVisible();
+      await expect(page.getByText(/Version 2 · .* · Arrivé sans téléphone/)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+    });
+
+    test('RG-06-01 un appel verrouillé se consulte sans se modifier', async ({ page, context }) => {
+      await cookie(page, context, 'e2e-etat', 'verrouille');
+      await page.goto('/seances');
+      await page.getByRole('link', { name: 'Ouvrir l’appel' }).click();
+      await expect(page.getByRole('heading', { name: 'Appel verrouillé' })).toBeVisible();
+      await expect(page.getByText(/il ne se modifie plus/)).toBeVisible();
+      await expect(page.getByRole('img', { name: /QR code d’émargement/ })).toBeHidden();
+      await expect(page.getByRole('group', { name: 'Statut de Noé Petit' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Valider l’appel' })).toHaveCount(0);
+      await expectNoAccessibilityViolations(page);
+    });
+  });
+
   test('US-06-02 l’apprenant émarge avec le code à 6 chiffres', async ({ page }) => {
     await page.goto('/emarger');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Émarger');
