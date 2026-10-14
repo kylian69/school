@@ -176,14 +176,9 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
   test('RG-06-08 choisit le mode de présence : un lien de visio ne rend pas la séance hybride', async ({
     page,
   }) => {
-    const { semaine, salles } = await preparerGrille(page, '2061');
-    const [salle = ''] = salles;
-    const dialogue = await nouvelleSeance(page, {
-      jour: semaine,
-      debut: '09:00',
-      fin: '11:00',
-      salle,
-    });
+    // Sans salle créée : la fausse API ne propose que les premières salles libres (US-04-01).
+    const { semaine } = await preparerGrille(page, '2061', false);
+    const dialogue = await nouvelleSeance(page, { jour: semaine, debut: '09:00', fin: '11:00' });
     await dialogue.getByLabel('Lien de visio (facultatif)').fill('https://visio.exemple.test/bois');
     const mode = dialogue.getByRole('group', { name: 'Mode de présence' });
     await expect(mode.getByRole('radio', { name: 'Présentiel' })).toBeChecked();
@@ -192,7 +187,7 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await dialogue.getByRole('button', { name: 'Enregistrer en brouillon' }).click();
     await expect(dialogue).toBeHidden();
     const seance = page.getByRole('button', { name: /^Bois, 09:00 – 11:00/ });
-    await expect(seance).toHaveAccessibleName(new RegExp(`, ${salle}$`));
+    await expect(seance).toHaveAccessibleName(/, Brouillon$/);
     await seance.click();
     const fiche = page.getByRole('region', { name: 'Séance choisie' });
     await expect(fiche.getByText('Présentiel')).toBeVisible();
@@ -206,8 +201,8 @@ test.describe('Module 04 · grille de l’emploi du temps', () => {
     await expect(modification.getByText(/s’il suit à distance/)).toBeVisible();
     await modification.getByRole('button', { name: 'Enregistrer', exact: true }).click();
     await expect(modification).toBeHidden();
-    await expect(seance).toHaveAccessibleName(new RegExp(`${salle} · hybride`));
-    await expect(seance.getByText(`${salle} · hybride`)).toBeVisible();
+    await expect(seance).toHaveAccessibleName(/, Brouillon, Hybride$/);
+    await expect(seance.getByText('Hybride')).toBeVisible();
     await expect(fiche.getByText('Hybride')).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });
