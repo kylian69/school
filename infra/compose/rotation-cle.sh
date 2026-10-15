@@ -48,6 +48,7 @@ case "${1:-}" in
     fi
     sed -i "s/^ENCRYPTION_KEY_VERSION=.*/ENCRYPTION_KEY_VERSION=${cible}/" .env
     redemarrer
+    echo "Les appels déjà ouverts gardent leur clé d'émargement ; ceux ouverts désormais utilisent la v${cible} (ADR 0006)."
     echo "Chiffrement des nouvelles valeurs en v${cible}. Rechiffrement de l'existant (repris chaque heure par le worker) :"
     chiffrement rechiffrer || echo "Des valeurs illisibles restent à examiner (voir « etat »)." >&2
     chiffrement etat
@@ -66,6 +67,7 @@ case "${1:-}" in
     sed -i "s/^ENCRYPTION_MASTER_KEY_V${version}=/# Retirée le $(date -u +%Y-%m-%d), garder tant que des sauvegardes antérieures existent : ENCRYPTION_MASTER_KEY_V${version}=/" .env
     redemarrer
     echo "Clé v${version} retirée de l'API et du worker. Sauvegarder infra/compose/.env."
+    echo "Un appel encore ouvert avec la v${version} refuse les scans jusqu'à ce que l'intervenant le rouvre (à faire hors des heures de cours)."
     ;;
   *)
     echo "Usage : sh infra/compose/rotation-cle.sh ajouter | basculer | etat | retirer <version>" >&2

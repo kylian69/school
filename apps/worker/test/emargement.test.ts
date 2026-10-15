@@ -115,6 +115,25 @@ describe('RG-00-17 préchargement des séances', () => {
     expect(JSON.parse(enCacheLou ?? '{}')).toMatchObject({ session: { token: jetonLou } });
   });
 
+  it('ADR 0006 précharge la version de clé mémorisée à l’ouverture, sans effacer celle du cache', async () => {
+    const versionEnCache = async () =>
+      lireSeanceEnCache(await valkey.hgetall(CLES_EMARGEMENT.seance(seanceId)))?.versionCle;
+    expect(await versionEnCache()).toBeNull();
+    // Cache vidé (Valkey redémarré) après l'ouverture : la version revient de la base.
+    await owner.db.update(seance).set({ emargementCleVersion: 3 }).where(eq(seance.id, seanceId));
+    await valkey.del(CLES_EMARGEMENT.prechargee(seanceId), CLES_EMARGEMENT.seance(seanceId));
+    await prechargerSeances(app.db, valkey);
+    expect(await versionEnCache()).toBe(3);
+    // Version encore inconnue en base (lue avant l'ouverture) : celle du cache reste.
+    await owner.db
+      .update(seance)
+      .set({ emargementCleVersion: null })
+      .where(eq(seance.id, seanceId));
+    await valkey.del(CLES_EMARGEMENT.prechargee(seanceId));
+    await prechargerSeances(app.db, valkey);
+    expect(await versionEnCache()).toBe(3);
+  });
+
   it('US-04-11 ne précharge pas une séance annulée ou en brouillon', async () => {
     const debut = new Date(Date.now() + 5 * 60_000);
     const ids = [newId(), newId()];

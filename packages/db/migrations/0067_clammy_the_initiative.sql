@@ -1,0 +1,2 @@
+ALTER TABLE "seance" ADD COLUMN "emargement_cle_version" integer;--> statement-breakpoint
+ALTER TABLE "seance" ADD CONSTRAINT "seance_emargement_cle_version_check" CHECK ("seance"."emargement_cle_version" is null or "seance"."emargement_cle_version" > 0);

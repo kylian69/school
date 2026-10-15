@@ -71,6 +71,8 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
             mode: trouve.seance.modePresence,
             localisation,
             validation,
+            // ADR 0006 : version mémorisée à l'ouverture de l'appel (null : rien n'est écrit).
+            versionCle: trouve.seance.emargementCleVersion,
           },
           attendus,
         ),

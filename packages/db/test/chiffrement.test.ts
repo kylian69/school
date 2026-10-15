@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   cleMaitresseCourante,
-  clesMaitressesParPriorite,
+  cleMaitresseDeVersion,
   FieldEncryption,
   FieldEncryptionError,
   lireClesDeChiffrement,
@@ -99,14 +99,17 @@ describe('Lecture des clés au démarrage (ADR 0006)', () => {
     expect([...lecture.keys.masterKeys.keys()].sort()).toEqual([1, 2]);
     expect(lecture.keys.currentVersion).toBe(2);
     expect(lecture.keys.masterKeys.get(1)?.equals(v1)).toBe(true);
-    expect(clesMaitressesParPriorite(lecture.keys)).toEqual([v2, v1]);
     expect(cleMaitresseCourante(lecture.keys).equals(v2)).toBe(true);
+    // Émargement : une seule clé par appel, celle de la version mémorisée (courante sinon).
+    expect(cleMaitresseDeVersion(lecture.keys, 1)).toEqual(v1);
+    expect(cleMaitresseDeVersion(lecture.keys, null)).toEqual(v2);
+    expect(cleMaitresseDeVersion(lecture.keys, 3)).toBeUndefined();
     const ancienne = lireClesDeChiffrement({
       ENCRYPTION_MASTER_KEY_V1: b64(v1),
       ENCRYPTION_MASTER_KEY_V2: b64(v2),
       ENCRYPTION_KEY_VERSION: '1',
     });
-    expect(ancienne.ok && clesMaitressesParPriorite(ancienne.keys)).toEqual([v1, v2]);
+    expect(ancienne.ok && cleMaitresseDeVersion(ancienne.keys, null)).toEqual(v1);
   });
 
   it('une seule clé : elle est la version courante, sans ENCRYPTION_KEY_VERSION', () => {

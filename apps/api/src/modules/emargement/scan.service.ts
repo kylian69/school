@@ -26,7 +26,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import type { Auth } from '../../auth/auth.js';
 import type { Env } from '../../config/env.js';
 import { AUTH, DATABASE, ENV, VALKEY } from '../../shared/tokens.js';
-import { clesMaitressesParPriorite, type Database } from '@scolaly/db';
+import { cleMaitresseDeVersion, type Database, type FieldEncryptionKeys } from '@scolaly/db';
 import type { Redis } from 'ioredis';
 import {
   CacheEmargement,
@@ -81,8 +81,8 @@ export function reseauDuCampus(plages: readonly string[], ip: string): boolean {
 @Injectable()
 export class ScanService {
   private readonly cache: CacheEmargement;
-  /** Clé maîtresse courante d'abord : un QR dérivé d'une autre version reste valable (ADR 0006). */
-  private readonly clesMaitresses: Buffer[];
+  /** Clés maîtresses présentes ; chaque appel n'est vérifié qu'avec la sienne (ADR 0006). */
+  private readonly cles: FieldEncryptionKeys;
   private readonly logger = new Logger('Emargement');
 
   constructor(
@@ -92,7 +92,7 @@ export class ScanService {
     @Inject(ENV) env: Env,
   ) {
     this.cache = new CacheEmargement(valkey);
-    this.clesMaitresses = clesMaitressesParPriorite(env.chiffrement);
+    this.cles = env.chiffrement;
   }
 
   scanner(headers: IncomingHttpHeaders, corps: ScanEmargement, ip: string): Promise<ResultatScan> {
@@ -153,11 +153,13 @@ export class ScanService {
     ]);
     if (!seance) throw pasOuvert();
     const maintenant = Date.now();
-    const verification = await this.avecChaqueCle(
-      seance.organisationId,
-      lu.seanceId,
-      (cle) => verifierJeton(cle, lu, maintenant, { horsLigne: corps.horsLigne ?? false }),
-      (resultat) => resultat.ok || resultat.refus !== 'signature',
+    const verification = await verifierJeton(
+      this.cleDeSeance(seance, lu.seanceId),
+      lu,
+      maintenant,
+      {
+        horsLigne: corps.horsLigne ?? false,
+      },
     );
     if (!verification.ok) {
       throw new BadRequestException(
@@ -182,23 +184,20 @@ export class ScanService {
   }
 
   /**
-   * Vérifie avec la clé de séance dérivée de la clé maîtresse courante, puis, pendant une rotation,
-   * avec les autres versions présentes : un appel ouvert avant la bascule reste valable (calcul en
-   * mémoire seulement, aucune requête).
+   * ADR 0006 : clé de séance dérivée de la seule version mémorisée à l'ouverture de l'appel (lue
+   * avec la séance, aucune requête) ; inconnue, la version courante. Jamais plusieurs essais : un
+   * appel ouvert après une bascule n'accepte pas un code de l'ancienne clé. Version retirée depuis
+   * l'ouverture : l'intervenant doit rouvrir l'appel, qui reçoit alors la version courante.
    */
-  private async avecChaqueCle<T>(
-    organisationId: string,
-    seanceId: string,
-    verifier: (cle: Uint8Array) => Promise<T>,
-    concluant: (resultat: T) => boolean,
-  ): Promise<T> {
-    let resultat: T | undefined;
-    for (const cleMaitresse of this.clesMaitresses) {
-      resultat = await verifier(cleDeSeance(cleMaitresse, organisationId, seanceId));
-      if (concluant(resultat)) return resultat;
+  private cleDeSeance(seance: SeanceEnCache, seanceId: string) {
+    const cleMaitresse = cleMaitresseDeVersion(this.cles, seance.versionCle);
+    if (!cleMaitresse) {
+      this.logger.warn(`Appel ${seanceId} : clé maîtresse v${seance.versionCle} retirée.`);
+      throw new ConflictException(
+        'Cet appel ne peut plus être vérifié : demandez à l’intervenant de rouvrir l’appel, puis scannez le nouveau QR code.',
+      );
     }
-    if (resultat === undefined) throw new Error('Aucune clé maîtresse.');
-    return resultat;
+    return cleDeSeance(cleMaitresse, seance.organisationId, seanceId);
   }
 
   private async saisirCodeAvec(
@@ -213,11 +212,11 @@ export class ScanService {
     ]);
     if (!seance) throw pasOuvert();
     const maintenant = Date.now();
-    const valide = await this.avecChaqueCle(
-      seance.organisationId,
+    const valide = await verifierCode(
+      this.cleDeSeance(seance, corps.seanceId),
       corps.seanceId,
-      (cle) => verifierCode(cle, corps.seanceId, corps.code, maintenant),
-      (resultat) => resultat,
+      corps.code,
+      maintenant,
     );
     if (!valide) {
       throw new BadRequestException(

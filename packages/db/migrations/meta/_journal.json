@@ -470,6 +470,13 @@
       "when": 1792016900045,
       "tag": "0066_gigantic_aaron_stack",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792059722556,
+      "tag": "0067_clammy_the_initiative",
+      "breakpoints": true
     }
   ]
 }

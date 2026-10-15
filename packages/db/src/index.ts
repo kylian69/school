@@ -1,7 +1,7 @@
 export { bootstrapRoles, type BootstrapOptions } from './bootstrap.js';
 export {
   cleMaitresseCourante,
-  clesMaitressesParPriorite,
+  cleMaitresseDeVersion,
   FieldEncryption,
   FieldEncryptionError,
   lireClesDeChiffrement,

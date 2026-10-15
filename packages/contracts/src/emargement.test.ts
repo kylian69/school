@@ -18,7 +18,21 @@ const seance: SeanceEnCache = {
   mode: 'presentiel',
   localisation: null,
   validation: null,
+  versionCle: null,
 };
+
+describe('ADR 0006 version de clé de l’appel dans le cache', () => {
+  it('la précharge si elle est connue, sans jamais effacer celle mémorisée par l’ouverture', () => {
+    const avec = commandesPrechargement('s1', { ...seance, versionCle: 2 }, new Map());
+    const hash = avec.find((c) => c[0] === 'hset' && c[1] === CLES_EMARGEMENT.seance('s1'));
+    expect(hash?.slice(-2)).toEqual(['versionCle', '2']);
+    expect(commandesPrechargement('s1', seance, new Map()).flat()).not.toContain('versionCle');
+    expect(lireSeanceEnCache({ organisationId: 'ecole', versionCle: '2' })?.versionCle).toBe(2);
+    // Préchargée avant ce lot, ou valeur inattendue : inconnue (le scan prend la courante).
+    expect(lireSeanceEnCache({ organisationId: 'ecole' })?.versionCle).toBeNull();
+    expect(lireSeanceEnCache({ organisationId: 'ecole', versionCle: '0' })?.versionCle).toBeNull();
+  });
+});
 
 describe('RG-06-13 appel validé dans le cache', () => {
   const validation = {
