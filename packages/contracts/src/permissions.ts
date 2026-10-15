@@ -56,6 +56,8 @@ export const PERMISSIONS = {
     'Corriger un appel verrouillé (plus de 7 jours après la séance), avec un motif ; sur ses seules séances pour un intervenant, dans le délai fixé par l’école',
   'assiduite:lire':
     'Consulter les absences et les retards des apprenants de son périmètre, avec leur décompte en heures et en demi-journées',
+  'assiduite:alertes':
+    'Recevoir les alertes d’assiduité des apprenants de son périmètre (seuils d’absences) et les marquer comme traitées',
   'justificatifs:deposer':
     'Déposer un justificatif d’absence pour un apprenant de son périmètre (document reçu par email ou par courrier)',
   'justificatifs:traiter':

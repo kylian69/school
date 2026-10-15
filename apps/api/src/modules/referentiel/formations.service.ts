@@ -15,7 +15,9 @@ import type {
   VersionResume,
 } from '@scolaly/contracts';
 import {
+  colonnesSeuils,
   enregistrerAudit,
+  lireSeuils,
   etablissement,
   formation,
   formationEtablissement,
@@ -299,13 +301,13 @@ export class FormationsService {
       versions: versions.filter((v) => v.formationId === f.id).map(resumeVersion(utilisees)),
       modifiable: couvre(gestion, f.id),
       publiable: couvre(publication, f.id),
-      emargement: { localisation: f.localisationActive, parametrable },
+      emargement: { localisation: f.localisationActive, seuils: lireSeuils(f), parametrable },
     }));
   }
 
   /**
-   * RG-06-09 : contrôle de localisation de l'émargement propre à la formation, réglé comme celui
-   * de l'établissement (droit de paramétrer l'école). Les séances déjà préchargées le prennent en
+   * RG-06-09, RG-06-23 : contrôle de localisation de l'émargement et seuils d'alerte d'assiduité
+   * propres à la formation, réglés comme ceux de l'école (droit de paramétrer l'école). Les séances déjà préchargées le prennent en
    * compte au préchargement suivant (5 minutes au plus).
    */
   async parametrerEmargement(
@@ -316,10 +318,20 @@ export class FormationsService {
     adresseIp: string,
   ): Promise<Formation> {
     const avant = await this.lire(tx, access, id);
-    if (avant.emargement.localisation !== reglage.localisation) {
+    // RG-06-23 : seuils absents de la demande, inchangés.
+    const seuils = reglage.seuils === undefined ? avant.emargement.seuils : reglage.seuils;
+    const identiques = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    if (
+      avant.emargement.localisation !== reglage.localisation ||
+      !identiques(avant.emargement.seuils, seuils)
+    ) {
       await tx
         .update(formation)
-        .set({ localisationActive: reglage.localisation, updatedBy: access.userId })
+        .set({
+          localisationActive: reglage.localisation,
+          ...colonnesSeuils(seuils),
+          updatedBy: access.userId,
+        })
         .where(eq(formation.id, id));
       await enregistrerAudit(tx, {
         action: 'formation.parametrer-emargement',
@@ -327,8 +339,8 @@ export class FormationsService {
         objetId: id,
         auteurId: access.userId,
         adresseIp,
-        avant: { localisation: avant.emargement.localisation },
-        apres: { localisation: reglage.localisation },
+        avant: { localisation: avant.emargement.localisation, seuils: avant.emargement.seuils },
+        apres: { localisation: reglage.localisation, seuils },
       });
     }
     return this.lire(tx, access, id);

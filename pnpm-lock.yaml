@@ -542,6 +542,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: 'catalog:'
+        version: 3.1146.0
       '@scolaly/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

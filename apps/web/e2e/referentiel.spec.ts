@@ -127,6 +127,32 @@ test.describe('Module 02 · formations et maquettes', () => {
     await expect(reglage).toBeChecked();
   });
 
+  test('RG-06-23 règle les seuils d’alerte d’assiduité propres à la formation', async ({
+    page,
+  }) => {
+    const intitule = `BTS seuils ${Math.random().toString(36).slice(2, 7)}`;
+    await page.goto('/formations');
+    await page.getByRole('button', { name: 'Nouvelle formation' }).click();
+    const dialogue = page.getByRole('dialog', { name: 'Nouvelle formation' });
+    await dialogue.getByLabel('Intitulé').fill(intitule);
+    await dialogue.getByRole('button', { name: 'Enregistrer' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(intitule);
+
+    const seuils = page.getByRole('form', {
+      name: 'Seuils d’alerte d’assiduité propres à la formation',
+    });
+    await seuils.getByLabel('Niveau 1 (demi-journées)').fill('2');
+    await seuils.getByRole('button', { name: 'Enregistrer les seuils' }).click();
+    await expect(page.getByText('remplissez les trois champs')).toBeVisible();
+    await seuils.getByLabel('Niveau 2 (demi-journées)').fill('4');
+    await seuils.getByLabel('Période glissante (jours)').fill('15');
+    await seuils.getByRole('button', { name: 'Enregistrer les seuils' }).click();
+    await expect(page.getByText('remplissez les trois champs')).toBeHidden();
+    await page.reload();
+    await expect(seuils.getByLabel('Période glissante (jours)')).toHaveValue('15');
+    await expectNoAccessibilityViolations(page);
+  });
+
   test('US-02-02 vérifie puis importe une maquette depuis un fichier', async ({ page }) => {
     await page.goto('/formations');
     await page.getByRole('button', { name: 'Nouvelle formation' }).click();

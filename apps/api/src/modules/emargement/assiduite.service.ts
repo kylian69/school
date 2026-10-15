@@ -1,16 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   FUSEAU_PAR_DEFAUT,
   LIMITE_SUIVI_ASSIDUITE,
   PLAGE_EDT_PAR_DEFAUT,
   type Absence,
+  type AlerteAssiduite,
   type FiltreAssiduite,
+  type FiltreTableauAssiduite,
+  type TableauAssiduite,
   type MesAbsences,
   type SuiviAssiduite,
 } from '@scolaly/contracts';
 import {
   absence,
+  alerteAssiduite,
+  donneesSeuilsAssiduite,
   enregistrerAudit,
+  formation,
+  justificatif,
+  lireSeuils,
   etablissementDeSeance,
   inscription,
   inscriptionStatut,
@@ -21,7 +29,11 @@ import {
 } from '@scolaly/db';
 import {
   absencesDeLAppel,
+  BORNES_SEUILS_ASSIDUITE,
   changementsAbsences,
+  debutFenetre,
+  evaluerAssiduite,
+  seuilsApplicables,
   decompteAssiduite,
   estAlternant,
   STATUTS_ALTERNANT,
@@ -84,6 +96,17 @@ async function presenter<T extends LigneLue>(tx: Transaction, lignes: readonly T
     justificatif: justificatifs.get(l.id) ?? null,
   }));
 }
+
+const presenterAlerte = (a: typeof alerteAssiduite.$inferSelect): AlerteAssiduite => ({
+  id: a.id,
+  niveau: a.niveau === 2 ? 2 : 1,
+  declencheeLe: a.declencheeLe.toISOString(),
+  demiJournees: a.demiJournees,
+  seuil: a.seuil,
+  fenetreJours: a.fenetreJours,
+  statut: a.statut,
+  traiteeLe: a.traiteeLe?.toISOString() ?? null,
+});
 
 /** Jour UTC courant (AAAA-MM-JJ) : statut d’'alternance en cours. */
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
@@ -335,5 +358,203 @@ export class AssiduiteService {
       absences: await presenter(tx, lignes.slice(0, LIMITE_SUIVI_ASSIDUITE)),
       tronque: lignes.length > LIMITE_SUIVI_ASSIDUITE,
     };
+  }
+
+  /**
+   * E-06-07, US-06-10, RG-06-23 : tableau de bord de l'assiduité. Apprenants de mon périmètre au
+   * niveau 1 ou 2 aujourd'hui (demi-journées non justifiées sur leur période glissante, seuils de
+   * leur formation ou de l'école) ou qui ont une alerte ouverte, avec les indicateurs.
+   */
+  async tableauDeBord(
+    tx: Transaction,
+    access: Access,
+    filtre: FiltreTableauAssiduite,
+  ): Promise<TableauAssiduite> {
+    const couvertes = await promotionsCouvertes(tx, access, ['assiduite:lire']);
+    const promotions = (
+      await tx
+        .select({ id: promotion.id, libelle: promotion.libelle })
+        .from(promotion)
+        .where(isNull(promotion.deletedAt))
+        .orderBy(asc(promotion.libelle))
+    ).filter((p) => couvrePromotion(couvertes, p.id));
+    const visibles = new Set(
+      promotions.filter((p) => !filtre.promotionId || p.id === filtre.promotionId).map((p) => p.id),
+    );
+    const toutes = couvertes === null && !filtre.promotionId;
+    const traitable = access.permissions.has('assiduite:alertes');
+    if (!toutes && visibles.size === 0) {
+      const zero = { niveau1: 0, niveau2: 0, alertesOuvertes: 0, demiJourneesNonJustifiees: 0 };
+      return {
+        promotions,
+        indicateurs: { ...zero, justificatifsATraiter: 0 },
+        apprenants: [],
+        traitable,
+      };
+    }
+    const aujourdHui = aujourdhui();
+    const { ecole, apprenants } = await donneesSeuilsAssiduite(
+      tx,
+      debutFenetre(aujourdHui, BORNES_SEUILS_ASSIDUITE.fenetreJours.max),
+      aujourdHui,
+    );
+    const ouvertes = await tx
+      .select()
+      .from(alerteAssiduite)
+      .where(eq(alerteAssiduite.statut, 'ouverte'))
+      .orderBy(desc(alerteAssiduite.declencheeLe));
+    const ids = [
+      ...new Set([...apprenants.map((a) => a.personneId), ...ouvertes.map((a) => a.personneId)]),
+    ];
+    const inscrits =
+      ids.length === 0
+        ? []
+        : await tx
+            .select({
+              personneId: inscription.personneId,
+              promotionId: inscription.promotionId,
+              promotion: promotion.libelle,
+              nom: sql<string>`coalesce(${personne.nomUsage}, ${personne.nom})`,
+              prenom: personne.prenom,
+              statut: inscriptionStatut.statut,
+              assiduiteSeuilNiveau1: formation.assiduiteSeuilNiveau1,
+              assiduiteSeuilNiveau2: formation.assiduiteSeuilNiveau2,
+              assiduiteFenetreJours: formation.assiduiteFenetreJours,
+            })
+            .from(inscription)
+            .innerJoin(personne, eq(personne.id, inscription.personneId))
+            .innerJoin(promotion, eq(promotion.id, inscription.promotionId))
+            .innerJoin(formation, eq(formation.id, promotion.formationId))
+            .leftJoin(
+              inscriptionStatut,
+              and(
+                eq(inscriptionStatut.inscriptionId, inscription.id),
+                isNull(inscriptionStatut.deletedAt),
+                lte(inscriptionStatut.debut, aujourdHui),
+                or(isNull(inscriptionStatut.fin), gte(inscriptionStatut.fin, aujourdHui)),
+              ),
+            )
+            .where(
+              and(
+                inArray(inscription.personneId, ids),
+                isNull(inscription.deletedAt),
+                isNull(personne.deletedAt),
+                lte(inscription.dateEntree, aujourdHui),
+                or(isNull(inscription.dateSortie), gt(inscription.dateSortie, aujourdHui)),
+              ),
+            )
+            .orderBy(desc(inscription.dateEntree));
+    const suivis = ids.flatMap((personneId) => {
+      const siennes = inscrits.filter((i) => i.personneId === personneId);
+      // Suivi par ses inscriptions en cours, dans une promotion visible.
+      const premiere = siennes[0];
+      if (!premiere || !(toutes || siennes.some((i) => visibles.has(i.promotionId)))) return [];
+      const seuils = seuilsApplicables(ecole, siennes.map(lireSeuils));
+      const absences = apprenants.find((a) => a.personneId === personneId)?.absences ?? [];
+      const e = evaluerAssiduite(absences, seuils, aujourdHui);
+      return [
+        {
+          personneId,
+          nom: premiere.nom,
+          prenom: premiere.prenom,
+          promotion: premiere.promotion,
+          alternant: siennes.some((i) => estAlternant(i.statut)),
+          seuils,
+          demiJourneesNonJustifiees: e.demiJourneesNonJustifiees,
+          niveau: e.niveau,
+          alertes: ouvertes.filter((a) => a.personneId === personneId).map(presenterAlerte),
+        },
+      ];
+    });
+    const enAlerte = suivis.filter((a) => a.niveau > 0 || a.alertes.length > 0);
+    const [aTraiter] = await tx
+      .select({ nombre: sql<number>`count(*)::int` })
+      .from(justificatif)
+      .where(
+        and(
+          eq(justificatif.statut, 'a-traiter'),
+          isNull(justificatif.deletedAt),
+          toutes
+            ? undefined
+            : exists(
+                tx
+                  .select({ un: sql`1` })
+                  .from(inscription)
+                  .where(
+                    and(
+                      eq(inscription.personneId, justificatif.personneId),
+                      inArray(inscription.promotionId, [...visibles]),
+                      isNull(inscription.deletedAt),
+                    ),
+                  ),
+              ),
+        ),
+      );
+    const niveauMin = filtre.niveau ? Number(filtre.niveau) : 0;
+    return {
+      promotions,
+      indicateurs: {
+        niveau1: suivis.filter((a) => a.niveau === 1).length,
+        niveau2: suivis.filter((a) => a.niveau === 2).length,
+        alertesOuvertes: suivis.reduce((n, a) => n + a.alertes.length, 0),
+        demiJourneesNonJustifiees: suivis.reduce((n, a) => n + a.demiJourneesNonJustifiees, 0),
+        justificatifsATraiter: aTraiter?.nombre ?? 0,
+      },
+      apprenants: enAlerte
+        .filter((a) => a.niveau >= niveauMin && (!filtre.alertes || a.alertes.length > 0))
+        .sort(
+          (a, b) =>
+            b.niveau - a.niveau ||
+            b.demiJourneesNonJustifiees - a.demiJourneesNonJustifiees ||
+            a.nom.localeCompare(b.nom, 'fr') ||
+            a.prenom.localeCompare(b.prenom, 'fr'),
+        ),
+      traitable,
+    };
+  }
+
+  /**
+   * RG-06-23 : marque une alerte traitée (apprenant d'une promotion du périmètre de
+   * `assiduite:alertes`, sinon 404). Une alerte déjà traitée est rendue telle quelle.
+   */
+  async traiterAlerte(
+    tx: Transaction,
+    access: Access,
+    id: string,
+    adresseIp: string,
+  ): Promise<AlerteAssiduite> {
+    const [alerte] = await tx.select().from(alerteAssiduite).where(eq(alerteAssiduite.id, id));
+    const couvertes = await promotionsCouvertes(tx, access, ['assiduite:alertes']);
+    const inscriptions = alerte
+      ? await tx
+          .select({ promotionId: inscription.promotionId })
+          .from(inscription)
+          .where(and(eq(inscription.personneId, alerte.personneId), isNull(inscription.deletedAt)))
+      : [];
+    const couverte =
+      couvertes === null || inscriptions.some((i) => couvrePromotion(couvertes, i.promotionId));
+    if (!alerte || alerte.deletedAt || !couverte)
+      throw new NotFoundException('Alerte introuvable. Actualisez le tableau de bord.');
+    if (alerte.statut === 'traitee') return presenterAlerte(alerte);
+    const [apres] = await tx
+      .update(alerteAssiduite)
+      .set({
+        statut: 'traitee',
+        traiteeLe: new Date(),
+        traiteePar: access.personneId,
+        updatedBy: access.userId,
+      })
+      .where(eq(alerteAssiduite.id, id))
+      .returning();
+    await enregistrerAudit(tx, {
+      action: 'alerte-assiduite.traiter',
+      objetType: 'alerte_assiduite',
+      objetId: id,
+      auteurId: access.userId,
+      adresseIp,
+      avant: { statut: alerte.statut, personneId: alerte.personneId, niveau: alerte.niveau },
+      apres: { statut: 'traitee', personneId: alerte.personneId, niveau: alerte.niveau },
+    });
+    return presenterAlerte(apres ?? alerte);
   }
 }

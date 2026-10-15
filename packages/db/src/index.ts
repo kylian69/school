@@ -20,6 +20,17 @@ export {
 } from './droits.js';
 export { purgerCorbeille, type BilanPurge } from './corbeille.js';
 export {
+  colonnesSeuils,
+  destinatairesAlertesAssiduite,
+  donneesSeuilsAssiduite,
+  ecolesAvecAbsencesNonJustifiees,
+  effacerJustificatifsEchus,
+  lireSeuils,
+  type BilanEffacementJustificatifs,
+  type DestinataireAlerte,
+  type DonneesSeuilsApprenant,
+} from './assiduite.js';
+export {
   purgerIndisponibilites,
   type BilanConservationIndisponibilites,
 } from './indisponibilites.js';

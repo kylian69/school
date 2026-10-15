@@ -3,6 +3,7 @@ import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
 import {
   absence,
+  alerteAssiduite,
   justificatif,
   justificatifAbsence,
   appelValidation,
@@ -711,6 +712,19 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         matin: true,
         apresMidi: false,
         versionAppel: 1,
+      });
+    },
+  },
+  alerte_assiduite: {
+    insert: async (db, organisationId) => {
+      await db.insert(alerteAssiduite).values({
+        organisationId,
+        personneId: await insertPersonne(db, organisationId),
+        niveau: 1,
+        declencheeLe: new Date('2026-10-15T08:00:00Z'),
+        demiJournees: 3,
+        seuil: 3,
+        fenetreJours: 30,
       });
     },
   },

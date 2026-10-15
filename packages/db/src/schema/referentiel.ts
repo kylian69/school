@@ -16,7 +16,7 @@ import {
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import { trackingColumns } from './columns.js';
+import { seuilsAssiduiteCheck, seuilsAssiduiteColumns, trackingColumns } from './columns.js';
 import { organisationConstraints, organisationScoped } from './organisation.js';
 import { etablissement } from './structure.js';
 
@@ -71,10 +71,13 @@ export const formation = pgTable(
      * seulement le désactiver : sans contrôle actif à l'établissement, rien n'est contrôlé.
      */
     localisationActive: boolean().notNull().default(true),
+    /** RG-06-23 : seuils d'alerte propres à la formation ; null : ceux de l'école. */
+    ...seuilsAssiduiteColumns(),
     ...trackingColumns(),
   },
   (t) => [
     ...organisationConstraints('formation', t),
+    seuilsAssiduiteCheck('formation', t),
     check('formation_niveau_check', sql`${t.niveau} between 5 and 8`),
     check('formation_duree_check', sql`${t.dureeAnnees} between 1 and 8`),
     check('formation_modes_check', sql`cardinality(${t.modes}) > 0`),

@@ -1,7 +1,14 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ROLES_PAR_DEFAUT, type MesAbsences, type SuiviAssiduite } from '@scolaly/contracts';
+import {
+  ROLES_PAR_DEFAUT,
+  type AlerteAssiduite,
+  type MesAbsences,
+  type SuiviAssiduite,
+  type TableauAssiduite,
+} from '@scolaly/contracts';
 import {
   absence,
+  alerteAssiduite,
   attribution,
   auditEvenement,
   createDatabase,
@@ -285,5 +292,96 @@ describe('E-06-07 suivi de l’assiduité', () => {
   it('refuse un filtre mal formé', async () => {
     const reponse = await appeler('GET', '/api/assiduite?du=hier', cookies.sacha ?? '');
     expect(reponse.statusCode).toBe(400);
+  });
+});
+
+describe('US-06-10 tableau de bord de l’assiduité', () => {
+  const tableau = async (nom: string, filtre = '') => {
+    const reponse = await appeler(
+      'GET',
+      `/api/assiduite/tableau-de-bord${filtre}`,
+      cookies[nom] ?? '',
+    );
+    expect(reponse.statusCode, reponse.body).toBe(200);
+    return reponse.json<TableauAssiduite>();
+  };
+
+  it('US-06-10 sous les seuils par défaut, aucun apprenant n’est signalé', async () => {
+    const t = await tableau('sacha');
+    expect(t.apprenants).toEqual([]);
+    expect(t.indicateurs).toMatchObject({ niveau1: 0, niveau2: 0, alertesOuvertes: 0 });
+    expect(t.traitable).toBe(true);
+  });
+
+  it('RG-06-23 signale les apprenants au-dessus des seuils de l’école, avec leur niveau', async () => {
+    await owner.db
+      .update(organisation)
+      .set({ assiduiteSeuilNiveau1: 1, assiduiteSeuilNiveau2: 2, assiduiteFenetreJours: 30 })
+      .where(eq(organisation.id, ecole));
+    const t = await tableau('sacha');
+    expect(t.apprenants.map((a) => [a.prenom, a.niveau, a.demiJourneesNonJustifiees])).toEqual([
+      ['eli', 1, 1],
+      ['zoe', 1, 1],
+    ]);
+    expect(t.apprenants[1]).toMatchObject({ alternant: true, promotion: 'Promotion A' });
+    expect(t.indicateurs).toMatchObject({ niveau1: 2, niveau2: 0, demiJourneesNonJustifiees: 2 });
+    expect((await tableau('sacha', '?niveau=2')).apprenants).toEqual([]);
+    const b = await tableau('sacha', `?promotionId=${promotions.b ?? ''}`);
+    expect(b.apprenants.map((a) => a.prenom)).toEqual(['eli']);
+  });
+
+  it('RG-00-10 le responsable pédagogique ne voit que son périmètre ; l’apprenant n’y a pas accès', async () => {
+    expect((await tableau('paul')).apprenants.map((a) => a.prenom)).toEqual(['zoe']);
+    const refus = await appeler('GET', '/api/assiduite/tableau-de-bord', cookies.lou ?? '');
+    expect(refus.statusCode).toBe(403);
+  });
+
+  it('RG-06-23 une alerte ouverte se traite une fois, dans le périmètre, avec audit', async () => {
+    const [alerte] = await owner.db
+      .insert(alerteAssiduite)
+      .values({
+        organisationId: ecole,
+        personneId: fiches.eli ?? '',
+        niveau: 1,
+        declencheeLe: new Date(),
+        demiJournees: 1,
+        seuil: 1,
+        fenetreJours: 30,
+        notifieeLe: new Date(),
+      })
+      .returning();
+    const id = alerte?.id ?? '';
+    const avec = await tableau('sacha', '?alertes=ouvertes');
+    expect(avec.apprenants.map((a) => [a.prenom, a.alertes.length])).toEqual([['eli', 1]]);
+    expect(avec.indicateurs.alertesOuvertes).toBe(1);
+    // Paul (promotion A) ne traite pas l'alerte d'Éli (promotion B).
+    const horsPerimetre = await appeler(
+      'POST',
+      `/api/assiduite/alertes/${id}/traitement`,
+      cookies.paul ?? '',
+    );
+    expect(horsPerimetre.statusCode).toBe(404);
+    const reponse = await appeler(
+      'POST',
+      `/api/assiduite/alertes/${id}/traitement`,
+      cookies.sacha ?? '',
+    );
+    expect(reponse.statusCode, reponse.body).toBe(200);
+    expect(reponse.json<AlerteAssiduite>()).toMatchObject({ statut: 'traitee', niveau: 1 });
+    const encore = await appeler(
+      'POST',
+      `/api/assiduite/alertes/${id}/traitement`,
+      cookies.sacha ?? '',
+    );
+    expect(encore.json<AlerteAssiduite>().statut).toBe('traitee');
+    const traces = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(eq(auditEvenement.objetId, id), eq(auditEvenement.action, 'alerte-assiduite.traiter')),
+      );
+    expect(traces).toHaveLength(1);
+    expect(traces[0]).toMatchObject({ avant: { statut: 'ouverte' }, apres: { statut: 'traitee' } });
+    expect((await tableau('sacha', '?alertes=ouvertes')).apprenants).toEqual([]);
   });
 });

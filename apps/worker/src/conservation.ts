@@ -1,4 +1,5 @@
 import {
+  effacerJustificatifsEchus,
   effacerLocalisationsEchues,
   purgerIndisponibilites,
   type BilanConservationIndisponibilites,
@@ -31,4 +32,18 @@ export function effacerLocalisationsPassees(db: Database, maintenant = new Date(
   const jour = maintenant.toISOString().slice(0, 10);
   const { duree } = valueAt(dureesConservation, jour, 'presence-localisation').valeur;
   return effacerLocalisationsEchues(db, reculerDuree(maintenant, duree));
+}
+
+/**
+ * RG-06-20, conservation des justificatifs d'absence : document, précision et message effacés
+ * depuis la durée en vigueur après le dépôt (packages/referentials, `justificatif-absence`).
+ */
+export function effacerJustificatifsPasses(
+  db: Database,
+  supprimerDocument: (cle: string) => Promise<void>,
+  maintenant = new Date(),
+) {
+  const jour = maintenant.toISOString().slice(0, 10);
+  const { duree } = valueAt(dureesConservation, jour, 'justificatif-absence').valeur;
+  return effacerJustificatifsEchus(db, reculerDuree(maintenant, duree), supprimerDocument);
 }

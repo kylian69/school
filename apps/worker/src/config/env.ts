@@ -13,6 +13,16 @@ const EnvSchema = z.object({
   PUBLIC_URL: z.url(),
   /** Intervalle de lecture de la boîte d'envoi, en millisecondes. */
   OUTBOX_POLL_MS: z.coerce.number().int().min(100).default(1000),
+  /**
+   * Stockage des fichiers, pour effacer les documents échus (justificatifs, RG-06-20). Sans lui,
+   * l'effacement attend : rien n'est effacé à moitié.
+   */
+  S3_ENDPOINT: z.url().optional(),
+  S3_REGION: z.string().default('garage'),
+  S3_BUCKET: z.string().min(3).optional(),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  S3_FORCE_PATH_STYLE: z.stringbool().default(true),
 });
 
 export type WorkerEnv = z.infer<typeof EnvSchema> & {

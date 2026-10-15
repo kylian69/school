@@ -36,6 +36,7 @@ export const fr = {
       mesDisponibilites: 'Mes disponibilités',
       mesAbsences: 'Mes absences',
       assiduite: 'Assiduité',
+      alertesAssiduite: 'Alertes d’assiduité',
       justificatifs: 'Justificatifs',
       entreprises: 'Entreprises',
       contrats: 'Contrats et stages',
@@ -50,6 +51,12 @@ export const fr = {
       'Votre compte n’est rattaché à aucune école. Si vous attendez un accès, contactez l’administrateur de votre établissement.',
     suite:
       'Les modules de votre établissement apparaîtront ici au fur et à mesure de leur activation : structure de l’école, personnes, emplois du temps, émargement, notes.',
+    alertes: 'Alertes d’assiduité',
+    alertesOuvertes: (n: number) =>
+      n > 1
+        ? `${n} alertes d’assiduité attendent votre suivi.`
+        : 'Une alerte d’assiduité attend votre suivi.',
+    voirAlertes: 'Voir les alertes',
   },
   console: {
     nom: 'Console',
@@ -635,6 +642,14 @@ export const fr = {
     delaiJustificatif: 'Délai de dépôt d’un justificatif d’absence (heures)',
     aideDelaiJustificatif: (defaut: number) =>
       `Heures après la fin de la séance pour déposer un justificatif, de 1 à 720 (30 jours). Un dépôt plus tardif reste possible, mais il est signalé. Laissez vide pour la valeur par défaut : ${defaut} heures.`,
+    seuilsAssiduite: 'Seuils d’alerte d’assiduité',
+    seuilsAssiduiteAide: (d: { niveau1: number; niveau2: number; fenetreJours: number }) =>
+      `Demi-journées d’absence non justifiées sur une période glissante. Niveau 1 : alerte à la scolarité et à la pédagogie ; niveau 2 : alerte aussi à la direction. Une formation peut définir les siens. Laissez les trois champs vides pour les valeurs par défaut : ${d.niveau1} puis ${d.niveau2} demi-journées sur ${d.fenetreJours} jours.`,
+    seuilNiveau1: 'Niveau 1 (demi-journées)',
+    seuilNiveau2: 'Niveau 2 (demi-journées)',
+    seuilFenetre: 'Période glissante (jours)',
+    seuilsIncomplets:
+      'Seuils d’alerte : remplissez les trois champs, ou videz-les tous pour les valeurs par défaut.',
     aideCorrectionVerrouillee: (defaut: number) =>
       `Jours après la séance pendant lesquels un intervenant qui en a le droit corrige encore son appel verrouillé, de 7 (jamais après le verrouillage) à 90. Chaque correction est signalée à la scolarité et à la pédagogie. Laissez vide pour la valeur par défaut : ${defaut} jours.`,
     enregistrer: 'Enregistrer',
@@ -1023,6 +1038,13 @@ export const fr = {
       active:
         'Contrôle de localisation à l’émargement : actif, selon le réglage de l’établissement.',
       inactive: 'Contrôle de localisation à l’émargement : désactivé pour cette formation.',
+      seuils: 'Seuils d’alerte d’assiduité propres à la formation',
+      seuilsAide:
+        'Demi-journées d’absence non justifiées sur une période glissante. Laissez les trois champs vides pour appliquer les seuils de l’école.',
+      seuilsEcole: 'Seuils d’alerte d’assiduité : ceux de l’école.',
+      seuilsFormation: (n1: number, n2: number, jours: number) =>
+        `Seuils d’alerte d’assiduité : ${n1} puis ${n2} demi-journées non justifiées sur ${jours} jours.`,
+      enregistrerSeuils: 'Enregistrer les seuils',
     },
     vues: { maquette: 'Maquette', regles: 'Règles de validation', competences: 'Compétences' },
     navigationVues: 'Vues de la formation',
@@ -2345,6 +2367,30 @@ export const fr = {
     tableau: 'Tableau des retards et absences, défilant horizontalement',
     tronque: (n: number) =>
       `Seuls les ${n} plus récents sont affichés. Réduisez la période pour voir les autres.`,
+    tableauDeBord: {
+      titre: 'Alertes d’assiduité',
+      aide: 'Apprenants de votre périmètre qui atteignent un seuil de demi-journées d’absence non justifiées sur leur période glissante, ou qui ont une alerte à suivre.',
+      lienSuivi: 'Voir le détail des retards et absences',
+      indicateurs: 'Indicateurs',
+      niveau1: 'Apprenants au niveau 1',
+      niveau2: 'Apprenants au niveau 2',
+      alertesOuvertes: 'Alertes à traiter',
+      demiJournees: 'Demi-journées non justifiées',
+      justificatifs: 'Justificatifs à traiter',
+      niveauFiltre: 'Niveau atteint',
+      niveaux: { '1': 'Niveau 1 ou plus', '2': 'Niveau 2' } as Record<string, string>,
+      alertesFiltre: 'Alertes',
+      seulementOuvertes: 'À traiter seulement',
+      apprenants: 'Apprenants à suivre',
+      aucun: 'Aucun apprenant n’atteint un seuil d’alerte pour ces critères.',
+      niveau: (n: number) => (n === 0 ? 'Sous les seuils' : `Niveau ${n}`),
+      compte: (n: number, jours: number) =>
+        `${n} demi-journée${n > 1 ? 's' : ''} non justifiée${n > 1 ? 's' : ''} sur ${jours} jours`,
+      seuils: (n1: number, n2: number) => `Seuils : ${n1} puis ${n2}`,
+      alerte: (niveau: number, date: string) => `Alerte de niveau ${niveau} du ${date}`,
+      traiter: 'Marquer comme traitée',
+      traiterLibelle: (nom: string) => `Marquer comme traitée l’alerte de ${nom}`,
+    },
   },
   justificatifs: {
     titre: 'Justificatifs d’absence',

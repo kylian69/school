@@ -336,3 +336,46 @@ export function emailDecisionJustificatif(options: {
     }),
   };
 }
+
+/**
+ * RG-06-23, RG-03-20 : des apprenants du périmètre ont atteint un seuil d'absences non justifiées.
+ * Un seul email par destinataire et par passage regroupe les nouvelles alertes ; ni nom ni motif
+ * n'y figurent (minimisation) : la liste est sur le tableau de bord de l'assiduité.
+ */
+export function emailAlertesAssiduite(options: {
+  to: string;
+  prenom: string;
+  ecole: string;
+  lien: string;
+  niveau1: number;
+  niveau2: number;
+  marque?: MarqueEcole | null;
+}): EmailJob {
+  const salutation = `Bonjour ${options.prenom},`;
+  const apprenants = (n: number) => (n > 1 ? `${n} apprenants ont` : `${n} apprenant a`);
+  const lignes = [
+    ...(options.niveau1 > 0
+      ? [`${apprenants(options.niveau1)} atteint le premier seuil d'absences non justifiées.`]
+      : []),
+    ...(options.niveau2 > 0
+      ? [
+          `${apprenants(options.niveau2)} atteint le second seuil : un avertissement est à envisager.`,
+        ]
+      : []),
+  ];
+  const suite =
+    'Le détail est sur le tableau de bord de l’assiduité, où vous pouvez marquer chaque alerte comme traitée.';
+  const mention =
+    'Vous recevez cet email parce que vous suivez l’assiduité des apprenants de votre périmètre.';
+  return {
+    to: options.to,
+    subject: `Alertes d’assiduité · ${options.ecole}`,
+    text: [salutation, '', ...lignes, '', suite, '', options.lien, '', mention].join('\n'),
+    html: miseEnPageEmail({
+      marque: options.marque ?? null,
+      paragraphes: [salutation, ...lignes, suite],
+      bouton: { libelle: 'Voir le tableau de bord', lien: options.lien },
+      mention,
+    }),
+  };
+}

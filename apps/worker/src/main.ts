@@ -7,6 +7,7 @@ import { createLogger } from './logger.js';
 import { createSmtpMailer } from './mailer.js';
 import { startPersistancePresences } from './emargement.js';
 import { startOutboxPublisher } from './outbox-publisher.js';
+import { suppressionStockage } from './stockage.js';
 import { registerSchedules, startWorkers } from './workers.js';
 
 const env = loadWorkerEnv();
@@ -29,6 +30,7 @@ const workers = startWorkers({
   logger,
   publicUrl: env.PUBLIC_URL,
   chiffrement: new FieldEncryption(env.chiffrement),
+  supprimerDocument: suppressionStockage(env),
 });
 const publisher = startOutboxPublisher({
   db: database.db,

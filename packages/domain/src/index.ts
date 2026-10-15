@@ -28,6 +28,7 @@ export * from './emargement/etat-appel.js';
 export * from './emargement/fenetre-scan.js';
 export * from './emargement/justificatifs.js';
 export * from './emargement/localisation.js';
+export * from './emargement/seuils.js';
 export * from './referentiel/maquette.js';
 export * from './referentiel/versions.js';
 export * from './referentiel/regles.js';

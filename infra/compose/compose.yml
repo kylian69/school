@@ -145,6 +145,11 @@ services:
       SMTP_URL: ${SMTP_URL}
       MAIL_FROM: ${MAIL_FROM}
       PUBLIC_URL: https://${SCOLALY_DOMAIN}
+      # Effacement des documents échus (justificatifs d'absence, RG-06-20).
+      S3_ENDPOINT: http://garage:3900
+      S3_BUCKET: scolaly
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
     depends_on:
       api: { condition: service_healthy }
 

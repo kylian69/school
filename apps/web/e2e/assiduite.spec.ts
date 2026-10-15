@@ -61,4 +61,43 @@ test.describe('I4.4 Assiduité : retards et absences', () => {
     await page.goto('/assiduite?du=2026-11-01');
     await expect(page.getByText('Aucun retard ni aucune absence pour ces critères.')).toBeVisible();
   });
+
+  test('US-06-10 RG-06-23 la scolarité voit les apprenants au-dessus des seuils et traite l’alerte', async ({
+    page,
+    context,
+  }) => {
+    // Alerte propre à ce test : la fausse API garde un état par jeu (projets en parallèle).
+    await context.addCookies([
+      {
+        name: 'e2e-alertes',
+        value: `a${String(Date.now())}${String(Math.floor(Math.random() * 1e6))}`,
+        url: new URL(page.url()).origin,
+      },
+    ]);
+    // RG-03-20 : l'alerte apparaît sur l'accueil.
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Voir les alertes' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Alertes d’assiduité');
+    const indicateurs = page.getByRole('region', { name: 'Indicateurs' });
+    await expect(indicateurs.getByText('Alertes à traiter')).toBeVisible();
+    const apprenants = page.getByRole('region', { name: 'Apprenants à suivre' });
+    const noe = apprenants.getByRole('listitem').filter({ hasText: 'Noé Petit' }).first();
+    await expect(noe).toContainText('Niveau 1');
+    await expect(noe).toContainText('2 demi-journées non justifiées sur 30 jours');
+    await expect(noe).toContainText('Alerte de niveau 1 du 09/10/2026');
+    await expectNoAccessibilityViolations(page);
+
+    await page.getByLabel('Niveau atteint').selectOption('2');
+    await page.getByRole('button', { name: 'Filtrer' }).click();
+    await expect(page).toHaveURL(/niveau=2/);
+    await expect(
+      page.getByText('Aucun apprenant n’atteint un seuil d’alerte pour ces critères.'),
+    ).toBeVisible();
+
+    await page.goto('/assiduite/tableau-de-bord?alertes=ouvertes');
+    await page.getByRole('button', { name: 'Marquer comme traitée l’alerte de Noé Petit' }).click();
+    await expect(
+      page.getByText('Aucun apprenant n’atteint un seuil d’alerte pour ces critères.'),
+    ).toBeVisible();
+  });
 });

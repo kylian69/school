@@ -31,6 +31,23 @@ export type StatutJustificatif = z.infer<typeof StatutJustificatif>;
 export const JUSTIFICATIF_TAILLE_MAX = 10 * 1024 * 1024;
 export const TYPES_JUSTIFICATIF = ['application/pdf', 'image/jpeg', 'image/png'] as const;
 
+/**
+ * RG-06-23 : seuils d'alerte en demi-journées non justifiées sur une période glissante (bornes du
+ * domaine, BORNES_SEUILS_ASSIDUITE ; le niveau 2 au-dessus du niveau 1).
+ */
+export const SeuilsAssiduite = z
+  .object({
+    niveau1: z.int().min(1).max(100),
+    niveau2: z.int().min(1).max(100),
+    fenetreJours: z.int().min(7).max(365),
+  })
+  .refine((s) => s.niveau1 < s.niveau2, {
+    message: 'Le seuil du niveau 2 doit être supérieur à celui du niveau 1.',
+    path: ['niveau2'],
+  })
+  .meta({ id: 'SeuilsAssiduite' });
+export type SeuilsAssiduite = z.infer<typeof SeuilsAssiduite>;
+
 /** RG-06-18 : décompte d'un apprenant (heures en minutes, demi-journées distinctes). */
 export const DecompteAssiduite = z
   .object({
@@ -212,3 +229,67 @@ export const DecisionJustificatif = z
   })
   .meta({ id: 'DecisionJustificatif' });
 export type DecisionJustificatif = z.infer<typeof DecisionJustificatif>;
+
+/** RG-06-23 : alerte d'assiduité, ouverte jusqu'à son traitement. */
+export const StatutAlerteAssiduite = z.enum(['ouverte', 'traitee']);
+export type StatutAlerteAssiduite = z.infer<typeof StatutAlerteAssiduite>;
+
+export const AlerteAssiduite = z
+  .object({
+    id: z.uuid(),
+    niveau: z.union([z.literal(1), z.literal(2)]),
+    declencheeLe: z.iso.datetime(),
+    demiJournees: z.int(),
+    seuil: z.int(),
+    fenetreJours: z.int(),
+    statut: StatutAlerteAssiduite,
+    traiteeLe: z.iso.datetime().nullable(),
+  })
+  .meta({ id: 'AlerteAssiduite' });
+export type AlerteAssiduite = z.infer<typeof AlerteAssiduite>;
+
+/** E-06-07 : filtres du tableau de bord. `niveau` : niveau atteint au moins. */
+export const FiltreTableauAssiduite = z.object({
+  promotionId: z.uuid().optional(),
+  niveau: z.enum(['1', '2']).optional(),
+  alertes: z.enum(['ouvertes']).optional(),
+});
+export type FiltreTableauAssiduite = z.infer<typeof FiltreTableauAssiduite>;
+
+/** Apprenant au-dessus d'un seuil sur sa période glissante, ou avec une alerte ouverte. */
+export const ApprenantSurveille = z
+  .object({
+    personneId: z.uuid(),
+    nom: z.string(),
+    prenom: z.string(),
+    promotion: z.string().nullable(),
+    alternant: z.boolean(),
+    seuils: SeuilsAssiduite,
+    demiJourneesNonJustifiees: z.int(),
+    /** Niveau atteint aujourd'hui (0 : sous les seuils). */
+    niveau: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+    /** Alertes ouvertes, la plus récente d'abord. */
+    alertes: z.array(AlerteAssiduite),
+  })
+  .meta({ id: 'ApprenantSurveille' });
+export type ApprenantSurveille = z.infer<typeof ApprenantSurveille>;
+
+/** E-06-07, US-06-10 : tableau de bord de l'assiduité (scolarité, pédagogie, direction). */
+export const TableauAssiduite = z
+  .object({
+    promotions: z.array(z.object({ id: z.uuid(), libelle: z.string() })),
+    indicateurs: z.object({
+      /** Apprenants au niveau 1 ou 2 aujourd'hui. */
+      niveau1: z.int(),
+      niveau2: z.int(),
+      alertesOuvertes: z.int(),
+      /** Demi-journées non justifiées sur la période de chacun, tous apprenants suivis. */
+      demiJourneesNonJustifiees: z.int(),
+      justificatifsATraiter: z.int(),
+    }),
+    apprenants: z.array(ApprenantSurveille),
+    /** La personne peut marquer les alertes traitées (`assiduite:alertes`). */
+    traitable: z.boolean(),
+  })
+  .meta({ id: 'TableauAssiduite' });
+export type TableauAssiduite = z.infer<typeof TableauAssiduite>;

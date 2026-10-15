@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SeuilsAssiduite } from './assiduite.js';
 
 /** Contrats de l'écran « Organisation et établissements » (E-01-02 ; US-01-02, RG-01-01, RG-01-02). */
 
@@ -143,6 +144,9 @@ export const OrganisationDetail = z
     /** RG-06-19 : heures après la séance pour déposer un justificatif ; null : valeur par défaut. */
     justificatifDelaiHeures: z.int().nullable(),
     justificatifDelaiHeuresDefaut: z.int(),
+    /** RG-06-23 : seuils d'alerte d'assiduité de l'école ; null : valeurs par défaut. */
+    seuilsAssiduite: SeuilsAssiduite.nullable(),
+    seuilsAssiduiteDefaut: SeuilsAssiduite,
     etablissements: z.array(Etablissement),
   })
   .meta({ id: 'OrganisationDetail' });
@@ -161,6 +165,8 @@ export const ModificationOrganisation = z
     emargementCorrectionVerrouilleeJours: z.int().min(7).max(90).nullable().optional(),
     /** RG-06-19 : de 1 à 720 heures (30 jours) ; null : valeur par défaut (48 h). */
     justificatifDelaiHeures: z.int().min(1).max(720).nullable().optional(),
+    /** RG-06-23 : null : valeurs par défaut (3 et 6 demi-journées sur 30 jours). */
+    seuilsAssiduite: SeuilsAssiduite.nullable().optional(),
   })
   .meta({ id: 'ModificationOrganisation' });
 export type ModificationOrganisation = z.infer<typeof ModificationOrganisation>;

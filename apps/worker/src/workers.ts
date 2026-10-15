@@ -18,7 +18,12 @@ import type { Queue } from 'bullmq';
 import { Worker, type ConnectionOptions } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
-import { effacerLocalisationsPassees, purgerIndisponibilitesPassees } from './conservation.js';
+import { declencherAlertesAssiduite } from './assiduite.js';
+import {
+  effacerJustificatifsPasses,
+  effacerLocalisationsPassees,
+  purgerIndisponibilitesPassees,
+} from './conservation.js';
 import { signalerCorrectionVerrouillee } from './correction-verrouillee.js';
 import { signalerDecisionJustificatif } from './decision-justificatif.js';
 import { prechargerSeances } from './emargement.js';
@@ -35,6 +40,7 @@ export const MAINTENANCE_JOBS = {
   recapitulatifEdt: 'recapitulatif-edt',
   conservationIndisponibilites: 'conservation-indisponibilites',
   rechiffrement: 'rechiffrement',
+  alertesAssiduite: 'alertes-assiduite',
 } as const;
 
 /** Tâches planifiées (architecture section 6). Idempotent : à appeler à chaque démarrage. */
@@ -77,6 +83,12 @@ export async function registerSchedules(maintenance: Queue): Promise<void> {
     { pattern: '45 * * * *', tz: 'UTC' },
     { name: MAINTENANCE_JOBS.rechiffrement, opts: { removeOnComplete: 30, removeOnFail: 100 } },
   );
+  // Chaque heure à 20 : seuils d'assiduité évalués, alertes créées et notifiées (RG-06-23).
+  await maintenance.upsertJobScheduler(
+    MAINTENANCE_JOBS.alertesAssiduite,
+    { pattern: '20 * * * *', tz: 'UTC' },
+    { name: MAINTENANCE_JOBS.alertesAssiduite, opts: { removeOnComplete: 30, removeOnFail: 100 } },
+  );
   // Chaque minute : séances des 15 prochaines minutes chargées dans Valkey (RG-00-17).
   await maintenance.upsertJobScheduler(
     MAINTENANCE_JOBS.prechargementEmargement,
@@ -116,6 +128,8 @@ export function startWorkers(options: {
   publicUrl: string;
   /** Chiffrement par champ, pour rechiffrer après une rotation de la clé maîtresse. */
   chiffrement: FieldEncryption;
+  /** Suppression d'un objet du stockage (effacements de conservation) ; null sans stockage. */
+  supprimerDocument: ((cle: string) => Promise<void>) | null;
 }): Worker[] {
   const { connection, db, mailer, logger } = options;
   const common = { connection, ...(options.prefix ? { prefix: options.prefix } : {}) };
@@ -146,12 +160,21 @@ export function startWorkers(options: {
         // Même passage nocturne : résultats de localisation échus (RGPD-03), comptes seulement.
         const effaces = await effacerLocalisationsPassees(db);
         if (effaces > 0) logger.info({ effaces }, 'Résultats de localisation effacés');
+        // Puis justificatifs d'absence échus (RG-06-20) : document, précision et message.
+        if (options.supprimerDocument) {
+          const justificatifs = await effacerJustificatifsPasses(db, options.supprimerDocument);
+          if (justificatifs.justificatifs > 0)
+            logger.info({ bilan: justificatifs }, 'Justificatifs échus effacés');
+        } else logger.warn('Stockage non configuré : justificatifs échus non effacés');
       } else if (job.name === MAINTENANCE_JOBS.rechiffrement) {
         // Comptes seulement : ni valeur ni clé dans les journaux.
         const bilan = await rechiffrerValeurs(db, options.chiffrement);
         if (bilan.echecs > 0)
           logger.warn({ bilan }, 'Valeurs chiffrées illisibles laissées en place');
         else if (bilan.rechiffrees > 0) logger.info({ bilan }, 'Valeurs rechiffrées');
+      } else if (job.name === MAINTENANCE_JOBS.alertesAssiduite) {
+        const bilan = await declencherAlertesAssiduite(db, confier, options.publicUrl);
+        if (bilan.alertes + bilan.emails > 0) logger.info({ bilan }, 'Alertes d’assiduité');
       } else if (job.name === MAINTENANCE_JOBS.prechargementEmargement) {
         await prechargerSeances(db, options.valkey);
       } else if (job.name === MAINTENANCE_JOBS.notificationsEdt) {

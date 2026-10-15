@@ -293,6 +293,39 @@ describe('E-01-02 organisation et établissements', () => {
     expect(retour.json<OrganisationDetail>().edtBadgeModifieJours).toBeNull();
   });
 
+  it('RG-06-23 règle les seuils d’alerte d’assiduité de l’école, cohérents, tracés', async () => {
+    const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
+    expect(initial).toMatchObject({
+      seuilsAssiduite: null,
+      seuilsAssiduiteDefaut: { niveau1: 3, niveau2: 6, fenetreJours: 30 },
+    });
+    const seuils = { niveau1: 4, niveau2: 8, fenetreJours: 60 };
+    const reponse = await requete('PATCH', '/api/organisation', admin, { seuilsAssiduite: seuils });
+    expect(reponse.json<OrganisationDetail>().seuilsAssiduite).toEqual(seuils);
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, ecole),
+          eq(auditEvenement.action, 'organisation.modifier'),
+          sql`${auditEvenement.apres}->'seuilsAssiduite'->>'niveau1' = '4'`,
+        ),
+      );
+    expect(trace?.avant).toMatchObject({ seuilsAssiduite: null });
+    for (const refus of [
+      { niveau1: 6, niveau2: 6, fenetreJours: 30 },
+      { niveau1: 0, niveau2: 6, fenetreJours: 30 },
+      { niveau1: 3, niveau2: 6, fenetreJours: 400 },
+      { niveau1: 3, niveau2: 6 },
+    ])
+      expect(
+        (await requete('PATCH', '/api/organisation', admin, { seuilsAssiduite: refus })).statusCode,
+      ).toBe(400);
+    const retour = await requete('PATCH', '/api/organisation', admin, { seuilsAssiduite: null });
+    expect(retour.json<OrganisationDetail>().seuilsAssiduite).toBeNull();
+  });
+
   it('RG-06-15 règle le délai de correction d’un appel verrouillé par l’intervenant, tracé', async () => {
     const initial = (await requete('GET', '/api/organisation', admin)).json<OrganisationDetail>();
     expect(initial).toMatchObject({
