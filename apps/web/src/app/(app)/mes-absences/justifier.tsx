@@ -3,7 +3,7 @@
 import { MotifJustificatif, type Absence, type Justificatif } from '@scolaly/contracts';
 import { Button, Card, Label } from '@scolaly/ui';
 import { useRouter } from 'next/navigation';
-import { useId, useState, type FormEvent } from 'react';
+import { useId, useState, type SyntheticEvent } from 'react';
 import { MessageErreur, SANS_ERREUR, type Erreurs } from '@/components/formulaire';
 import { fr } from '@/i18n/fr';
 import { formatDate, formatHeure } from '@/lib/format';
@@ -33,7 +33,7 @@ export function Justifier({
   const [succes, setSucces] = useState(false);
   const [envoi, setEnvoi] = useState(false);
 
-  async function soumettre(e: FormEvent<HTMLFormElement>) {
+  async function soumettre(e: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     e.preventDefault();
     const form = e.currentTarget;
     const donnees = new FormData(form);

@@ -35,11 +35,12 @@ export function Traitement({
     } else setErreurs({ message: t.erreur, details: [] });
   }
 
-  const decider = (decision: 'accepter' | 'refuser' | 'completer') =>
+  function decider(decision: 'accepter' | 'refuser' | 'completer') {
     void executer(`/api/justificatifs/${justificatifId}/decision`, 'POST', {
       decision,
       ...(message.trim() ? { message } : {}),
     });
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -59,7 +60,9 @@ export function Traitement({
               rows={2}
               maxLength={500}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+              }}
               aria-describedby={`${id}-message-aide`}
               className="rounded-control border border-line bg-surface px-3 py-2 text-base md:text-sm"
             />
@@ -68,13 +71,30 @@ export function Traitement({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button disabled={envoi} onClick={() => decider('accepter')}>
+            <Button
+              disabled={envoi}
+              onClick={() => {
+                decider('accepter');
+              }}
+            >
               {t.accepter}
             </Button>
-            <Button variant="secondary" disabled={envoi} onClick={() => decider('completer')}>
+            <Button
+              variant="secondary"
+              disabled={envoi}
+              onClick={() => {
+                decider('completer');
+              }}
+            >
               {t.completer}
             </Button>
-            <Button variant="secondary" disabled={envoi} onClick={() => decider('refuser')}>
+            <Button
+              variant="secondary"
+              disabled={envoi}
+              onClick={() => {
+                decider('refuser');
+              }}
+            >
               {t.refuser}
             </Button>
           </div>

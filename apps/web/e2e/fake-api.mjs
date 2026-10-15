@@ -333,11 +333,13 @@ const jeuJustificatifs = (request) => {
   if (!justificatifsParJeu.has(cle)) justificatifsParJeu.set(cle, []);
   return justificatifsParJeu.get(cle);
 };
-const vueAbsenceJustifiee = (a, justificatifs) => {
+const vueAbsenceJustifiee = (
+  { personneId: _p, nom: _n, prenom: _pr, promotionId: _pi, ...a },
+  justificatifs,
+) => {
   const lie = justificatifs.find((j) => j.absenceIds.includes(a.id));
-  const { personneId: _p, nom: _n, prenom: _pr, promotionId: _pi, ...reste } = a;
   return {
-    ...reste,
+    ...a,
     statut: lie?.statut === 'accepte' ? 'justifiee' : a.statut,
     justificatif: lie ? { id: lie.id, statut: lie.statut } : null,
   };
