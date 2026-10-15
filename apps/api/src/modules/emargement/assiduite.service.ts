@@ -300,13 +300,12 @@ export class AssiduiteService {
               ),
             )
             .orderBy(desc(inscription.dateEntree));
-    const apprenants = [...parApprenant.values()].map((absences) => {
-      const premiere = absences[0]!;
-      const siennes = inscriptions.filter((i) => i.personneId === premiere.personneId);
+    const apprenants = [...parApprenant].map(([personneId, absences]) => {
+      const siennes = inscriptions.filter((i) => i.personneId === personneId);
       return {
-        personneId: premiere.personneId,
-        nom: premiere.nom,
-        prenom: premiere.prenom,
+        personneId,
+        nom: absences[0]?.nom ?? '',
+        prenom: absences[0]?.prenom ?? '',
         promotion: siennes[0]?.promotion ?? null,
         alternant: siennes.some((i) => estAlternant(i.statut)),
         decompte: decompteAssiduite(absences),

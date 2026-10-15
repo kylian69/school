@@ -163,7 +163,7 @@ beforeAll(async () => {
       .values({ organisationId: ecole, seanceId: id, personneId: fiches.iris ?? '' });
     await owner.db
       .insert(seancePublic)
-      .values({ organisationId: ecole, seanceId: id, promotionId: promotionId ?? null });
+      .values({ organisationId: ecole, seanceId: id, promotionId });
   }
   // Lou en retard, Max absent, Zoé jamais scannée : absente à la validation.
   await marquer(seanceMatin, 'lou', { statut: 'retard', minutesRetard: 20 });
@@ -181,9 +181,9 @@ afterAll(async () => {
 describe('RG-06-16 à RG-06-18 calcul à la validation de l’appel', () => {
   it('RG-06-16 la validation enregistre retards et absences, non justifiés, avec leurs demi-journées', async () => {
     const lignes = await owner.db.select().from(absence).where(eq(absence.seanceId, seanceMatin));
-    const parPrenom = Object.fromEntries(
-      lignes.map((l) => [Object.keys(fiches).find((n) => fiches[n] === l.personneId), l]),
-    );
+    const parPrenom: Record<string, (typeof lignes)[number]> = {};
+    for (const l of lignes)
+      parPrenom[Object.keys(fiches).find((n) => fiches[n] === l.personneId) ?? ''] = l;
     expect(Object.keys(parPrenom).sort()).toEqual(['lou', 'max', 'zoe']);
     expect(parPrenom.lou).toMatchObject({ nature: 'retard', minutes: 20, matin: true });
     expect(parPrenom.max).toMatchObject({
