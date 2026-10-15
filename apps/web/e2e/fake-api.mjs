@@ -2466,7 +2466,7 @@ createServer(async (request, response) => {
       decompte: decompteFictif(ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID)),
       alternant: true,
       absences: ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID).map(
-        ({ personneId, nom, prenom, promotionId, ...a }) => a,
+        ({ personneId: _p, nom: _n, prenom: _pr, promotionId: _pi, ...a }) => a,
       ),
     });
   }
@@ -2495,7 +2495,7 @@ createServer(async (request, response) => {
           decompte: decompteFictif(siennes),
         };
       }),
-      absences: retenues.map(({ promotionId, ...a }) => a),
+      absences: retenues.map(({ promotionId: _pi, ...a }) => a),
       tronque: false,
     });
   }
