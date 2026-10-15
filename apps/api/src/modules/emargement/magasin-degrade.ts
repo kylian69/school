@@ -4,6 +4,7 @@ import {
   derniereValidation,
   enregistrerPresenceDirecte,
   etablissementDeSeance,
+  localisationDesFormations,
   organisationDeSeance,
   seance,
   withOrganisation,
@@ -45,6 +46,7 @@ export class MagasinDegrade implements Magasin {
           localisation: perimetreAControler(
             ligne.modePresence === 'distanciel',
             await etablissementDeSeance(tx, ligne),
+            (await localisationDesFormations(tx, [seanceId])).get(seanceId),
           ),
           validation: await derniereValidation(tx, seanceId),
           // ADR 0006 : même version de clé que le cache, lue avec la séance.

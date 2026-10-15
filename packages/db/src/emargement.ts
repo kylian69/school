@@ -17,9 +17,11 @@ import {
   presence,
   seance,
   seanceAttenduCalcule,
+  seancePublic,
   seanceSerie,
 } from './schema/emargement.js';
-import { salle } from './schema/scolarite.js';
+import { formation } from './schema/referentiel.js';
+import { groupePromotion, promotion, salle } from './schema/scolarite.js';
 import { etablissement } from './schema/structure.js';
 import { authSession, authUser } from './schema/auth.js';
 import { personne } from './schema/personne.js';
@@ -38,6 +40,75 @@ export interface PresenceAEcrire {
   aDistance?: boolean;
   /** RG-06-02 : minutes de retard du scan ; absent ou 0 : à l'heure. */
   retardMinutes?: number;
+}
+
+/**
+ * RG-06-09 : réglage du contrôle de localisation des formations du public de chaque séance
+ * (promotions du public, et promotions des groupes du public). Une séance sans formation connue
+ * n'a pas d'entrée. Lu au préchargement, jamais pendant le scan.
+ */
+export async function localisationDesFormations(
+  tx: Transaction,
+  seanceIds: readonly string[],
+): Promise<Map<string, boolean[]>> {
+  const parSeance = new Map<string, Map<string, boolean>>();
+  if (seanceIds.length === 0) return new Map();
+  const colonnes = {
+    seanceId: seancePublic.seanceId,
+    formationId: formation.id,
+    active: formation.localisationActive,
+  };
+  // Requêtes successives : une transaction ne traite qu'une requête à la fois.
+  const directes = await tx
+    .select(colonnes)
+    .from(seancePublic)
+    .innerJoin(
+      promotion,
+      and(
+        eq(promotion.organisationId, seancePublic.organisationId),
+        eq(promotion.id, seancePublic.promotionId),
+      ),
+    )
+    .innerJoin(
+      formation,
+      and(
+        eq(formation.organisationId, promotion.organisationId),
+        eq(formation.id, promotion.formationId),
+      ),
+    )
+    .where(and(inArray(seancePublic.seanceId, [...seanceIds]), isNull(seancePublic.deletedAt)));
+  const parGroupe = await tx
+    .select(colonnes)
+    .from(seancePublic)
+    .innerJoin(
+      groupePromotion,
+      and(
+        eq(groupePromotion.organisationId, seancePublic.organisationId),
+        eq(groupePromotion.groupeId, seancePublic.groupeId),
+        isNull(groupePromotion.deletedAt),
+      ),
+    )
+    .innerJoin(
+      promotion,
+      and(
+        eq(promotion.organisationId, groupePromotion.organisationId),
+        eq(promotion.id, groupePromotion.promotionId),
+      ),
+    )
+    .innerJoin(
+      formation,
+      and(
+        eq(formation.organisationId, promotion.organisationId),
+        eq(formation.id, promotion.formationId),
+      ),
+    )
+    .where(and(inArray(seancePublic.seanceId, [...seanceIds]), isNull(seancePublic.deletedAt)));
+  for (const l of [...directes, ...parGroupe]) {
+    const formations = parSeance.get(l.seanceId) ?? new Map<string, boolean>();
+    formations.set(l.formationId, l.active);
+    parSeance.set(l.seanceId, formations);
+  }
+  return new Map([...parSeance].map(([id, f]) => [id, [...f.values()]]));
 }
 
 /**

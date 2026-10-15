@@ -16,6 +16,7 @@ import {
   DuplicationFormation,
   EchelleMaitrise,
   ElementCree,
+  EmargementFormation,
   Formation,
   ListeFormations,
   ListeReglesBibliotheque,
@@ -116,6 +117,21 @@ export class FormationsController {
     @Req() request: ScolalyRequest,
   ) {
     return this.formations.dupliquer(...ctx(), id, entree, request.ip);
+  }
+
+  @Put(':id/emargement')
+  @RequirePermission('organisation:modifier')
+  @ApiContract({
+    summary: 'Régler les contrôles de l’émargement de la formation (RG-06-09)',
+    body: EmargementFormation,
+    response: Formation,
+  })
+  parametrerEmargement(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() reglage: EmargementFormation,
+    @Req() request: ScolalyRequest,
+  ) {
+    return this.formations.parametrerEmargement(...ctx(), id, reglage, request.ip);
   }
 }
 

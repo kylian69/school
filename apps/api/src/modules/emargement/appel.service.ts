@@ -36,6 +36,7 @@ import {
   correctionsVerrouilleesIntervenants,
   enregistrerAudit,
   etablissementDeSeance,
+  localisationDesFormations,
   organisation,
   personne,
   presence,
@@ -396,6 +397,7 @@ export class AppelService implements OnModuleDestroy {
           localisation: perimetreAControler(
             ligne.modePresence === 'distanciel',
             await etablissementDeSeance(tx, ligne),
+            (await localisationDesFormations(tx, [seanceId])).get(seanceId),
           ),
           // RG-06-13 : un appel validé refuse les scans, sans requête SQL.
           validation: validation ? versionAppel(validation) : null,

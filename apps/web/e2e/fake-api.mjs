@@ -574,11 +574,12 @@ const versionsDe = (formationId) =>
   [...maquettes.values()]
     .filter((m) => m.formationId === formationId)
     .sort((a, b) => a.numero - b.numero);
-const detailFormation = (f) => ({
+const detailFormation = ({ localisationEmargement = true, ...f }) => ({
   ...f,
   versions: versionsDe(f.id).map(resumeVersion),
   modifiable: true,
   publiable: true,
+  emargement: { localisation: localisationEmargement, parametrable: true },
 });
 const heuresVides = () => Object.fromEntries(TYPES_H.map((t) => [t, 0]));
 function detailMaquette(m) {
@@ -693,9 +694,10 @@ async function routeReferentiel(path, request, json, response, url) {
     bibliotheque[rang] = { id: regle[1], ...(await readBody(request)) };
     return json(200, bibliotheque[rang]);
   }
-  const formation = path.match(/^\/api\/formations(?:\/([^/]+))?(\/duplication)?$/);
+  const formation = path.match(/^\/api\/formations(?:\/([^/]+))?(\/duplication|\/emargement)?$/);
   if (formation) {
-    const [, id, duplication] = formation;
+    const [, id, sousRoute] = formation;
+    const duplication = sousRoute === '/duplication';
     if (!id && request.method === 'GET')
       return json(200, { formations: formations.map(detailFormation), creation: true });
     if (!id) {
@@ -724,6 +726,10 @@ async function routeReferentiel(path, request, json, response, url) {
       formations.push(copie);
       nouvelleVersion(copie, 1, versionsDe(f.id).at(-1));
       return json(201, detailFormation(copie));
+    }
+    // RG-06-09 : contrôle de localisation propre à la formation.
+    if (sousRoute === '/emargement' && request.method === 'PUT') {
+      f.localisationEmargement = (await readBody(request)).localisation;
     }
     if (request.method === 'PATCH') Object.assign(f, await readBody(request));
     return json(200, detailFormation(f));

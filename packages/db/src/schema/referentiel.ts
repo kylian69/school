@@ -66,6 +66,11 @@ export const formation = pgTable(
     statut: formationStatut().notNull().default('active'),
     /** Formation dont celle-ci est la copie (US-02-04), tracée. */
     dupliqueDe: uuid(),
+    /**
+     * RG-06-09 : contrôle de localisation à l'émargement (actif par défaut). La formation peut
+     * seulement le désactiver : sans contrôle actif à l'établissement, rien n'est contrôlé.
+     */
+    localisationActive: boolean().notNull().default(true),
     ...trackingColumns(),
   },
   (t) => [

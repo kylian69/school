@@ -1,0 +1,1 @@
+ALTER TABLE "formation" ADD COLUMN "localisation_active" boolean DEFAULT true NOT NULL;

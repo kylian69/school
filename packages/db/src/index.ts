@@ -30,6 +30,7 @@ export {
   etablissementDeSeance,
   enregistrerPresences,
   fuseauDeSeance,
+  localisationDesFormations,
   notificationsEdtEnAttente,
   notificationsEdtParFuseau,
   organisationDeSeance,

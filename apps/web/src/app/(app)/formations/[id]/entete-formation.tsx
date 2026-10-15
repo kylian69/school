@@ -105,6 +105,7 @@ export function EnteteFormation({
         )}
       </div>
       <MessageErreur erreurs={statut.erreurs} />
+      <EmargementFormation formation={formation} />
 
       <FormationDialog
         ouvert={edition}
@@ -149,5 +150,46 @@ export function EnteteFormation({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** RG-06-09 : contrôle de localisation à l'émargement, désactivable pour la formation. */
+function EmargementFormation({ formation }: { formation: Formation }) {
+  const te = t.emargement;
+  const reglage = useEnvoi();
+  const [active, setActive] = useState(formation.emargement.localisation);
+  if (!formation.emargement.parametrable) {
+    return (
+      <p className="text-sm text-muted">
+        {formation.emargement.localisation ? te.active : te.inactive}
+      </p>
+    );
+  }
+  return (
+    <fieldset className="flex flex-col gap-2 rounded-control border border-line p-4">
+      <legend className="px-1 text-sm font-semibold">{te.titre}</legend>
+      <label className="flex min-h-11 items-center gap-2 text-sm md:min-h-0">
+        <input
+          type="checkbox"
+          checked={active}
+          disabled={reglage.envoi}
+          onChange={(event) => {
+            const demande = event.currentTarget.checked;
+            setActive(demande);
+            void reglage
+              .executer(`/api/formations/${formation.id}/emargement`, 'PUT', {
+                localisation: demande,
+              })
+              .then((resultat) => {
+                if (!resultat.ok) setActive(!demande);
+              });
+          }}
+          className="size-4"
+        />
+        {te.localisation}
+      </label>
+      <p className="text-xs text-muted">{te.aide}</p>
+      <MessageErreur erreurs={reglage.erreurs} />
+    </fieldset>
   );
 }

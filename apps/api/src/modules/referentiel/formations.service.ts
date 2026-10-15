@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type {
   DuplicationFormation,
+  EmargementFormation,
   Formation,
   ListeFormations,
   ModificationFormation,
@@ -279,6 +280,10 @@ export class FormationsService {
     const publication = access.permissions.has('referentiel:publier')
       ? await formationsCouvertes(tx, access, ['referentiel:publier'])
       : new Set<string>();
+    // RG-06-09 : même droit que le contrôle de localisation de l'établissement.
+    const parametrable = (access.perimetres.get('organisation:modifier') ?? []).some(
+      (p) => p.type === 'organisation',
+    );
     return lignes.map((f) => ({
       id: f.id,
       intitule: f.intitule,
@@ -294,7 +299,39 @@ export class FormationsService {
       versions: versions.filter((v) => v.formationId === f.id).map(resumeVersion(utilisees)),
       modifiable: couvre(gestion, f.id),
       publiable: couvre(publication, f.id),
+      emargement: { localisation: f.localisationActive, parametrable },
     }));
+  }
+
+  /**
+   * RG-06-09 : contrôle de localisation de l'émargement propre à la formation, réglé comme celui
+   * de l'établissement (droit de paramétrer l'école). Les séances déjà préchargées le prennent en
+   * compte au préchargement suivant (5 minutes au plus).
+   */
+  async parametrerEmargement(
+    tx: Transaction,
+    access: Access,
+    id: string,
+    reglage: EmargementFormation,
+    adresseIp: string,
+  ): Promise<Formation> {
+    const avant = await this.lire(tx, access, id);
+    if (avant.emargement.localisation !== reglage.localisation) {
+      await tx
+        .update(formation)
+        .set({ localisationActive: reglage.localisation, updatedBy: access.userId })
+        .where(eq(formation.id, id));
+      await enregistrerAudit(tx, {
+        action: 'formation.parametrer-emargement',
+        objetType: 'formation',
+        objetId: id,
+        auteurId: access.userId,
+        adresseIp,
+        avant: { localisation: avant.emargement.localisation },
+        apres: { localisation: reglage.localisation },
+      });
+    }
+    return this.lire(tx, access, id);
   }
 
   /**
@@ -357,5 +394,11 @@ export class FormationsService {
     );
   }
 
-  private trace = ({ versions: _v, modifiable: _m, publiable: _p, ...reste }: Formation) => reste;
+  private trace = ({
+    versions: _v,
+    modifiable: _m,
+    publiable: _p,
+    emargement: _e,
+    ...reste
+  }: Formation) => reste;
 }

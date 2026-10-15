@@ -2351,6 +2351,41 @@
         }
       }
     },
+    "/api/formations/{id}/emargement": {
+      "put": {
+        "operationId": "FormationsController.parametrerEmargement",
+        "summary": "Régler les contrôles de l’émargement de la formation (RG-06-09)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "organisation:modifier"
+          ],
+          "scope": "organisation"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmargementFormation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Formation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/groupes/{id}": {
       "patch": {
         "operationId": "ScolariteController.modifierGroupe",
@@ -9336,6 +9371,18 @@
         ],
         "additionalProperties": false
       },
+      "EmargementFormation": {
+        "type": "object",
+        "properties": {
+          "localisation": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "localisation"
+        ],
+        "additionalProperties": false
+      },
       "Entreprise": {
         "type": "object",
         "properties": {
@@ -10102,6 +10149,22 @@
           },
           "publiable": {
             "type": "boolean"
+          },
+          "emargement": {
+            "type": "object",
+            "properties": {
+              "localisation": {
+                "type": "boolean"
+              },
+              "parametrable": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "localisation",
+              "parametrable"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -10116,7 +10179,8 @@
           "etablissementIds",
           "versions",
           "modifiable",
-          "publiable"
+          "publiable",
+          "emargement"
         ],
         "additionalProperties": false
       },
