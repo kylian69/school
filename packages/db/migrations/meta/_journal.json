@@ -484,6 +484,13 @@
       "when": 1792062457863,
       "tag": "0068_talented_giant_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792065035427,
+      "tag": "0069_omniscient_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

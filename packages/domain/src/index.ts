@@ -21,6 +21,7 @@ export * from './imports/validation.js';
 export * from './corbeille/corbeille.js';
 export * from './conservation/conservation.js';
 export * from './photos/photo.js';
+export * from './emargement/absences.js';
 export * from './emargement/appel-manuel.js';
 export * from './emargement/distanciel.js';
 export * from './emargement/etat-appel.js';

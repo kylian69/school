@@ -80,6 +80,7 @@ import type { Env } from '../../config/env.js';
 import { ObjectStorage, SIGNED_URL_TTL_SECONDS } from '../../shared/storage/object-storage.js';
 import { DATABASE, ENV, OBJECT_STORAGE, VALKEY } from '../../shared/tokens.js';
 import { UrlSignee } from '../../shared/url-signee.js';
+import { AssiduiteService, type SeanceAbsences } from './assiduite.service.js';
 import { CacheEmargement, CacheIndisponible, cleDeSeance } from './cache-emargement.js';
 
 /** Adresse des photos signées de la liste d'appel (servies par PhotosAppelController). */
@@ -305,6 +306,7 @@ export class AppelService implements OnModuleDestroy {
     @Inject(ENV) env: Env,
     @Inject(DATABASE) private readonly db: Database,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly assiduite: AssiduiteService,
   ) {
     this.cache = new CacheEmargement(valkey);
     this.cles = env.chiffrement;
@@ -674,7 +676,7 @@ export class AppelService implements OnModuleDestroy {
     const appel = await this.enDirect(tx, access, seanceId);
     if (!derniere) return appel;
     // RG-06-13 : toute modification après validation crée une nouvelle version de la feuille.
-    const version = await this.signer(tx, access, seanceId, ligne.fin, appel, client, {
+    const version = await this.signer(tx, access, ligne, appel, client, {
       version: derniere.version + 1,
       motif,
       commentaire: null,
@@ -703,7 +705,7 @@ export class AppelService implements OnModuleDestroy {
       );
     await this.controlerModification(tx, seanceId, ligne, { gestionnaire, motif: null });
     const appel = await this.enDirect(tx, access, seanceId);
-    const version = await this.signer(tx, access, seanceId, ligne.fin, appel, client, {
+    const version = await this.signer(tx, access, ligne, appel, client, {
       version: 1,
       motif: null,
       commentaire: corps.commentaire || null,
@@ -717,8 +719,7 @@ export class AppelService implements OnModuleDestroy {
   private async signer(
     tx: Transaction,
     access: Access,
-    seanceId: string,
-    fin: Date,
+    ligne: SeanceAbsences,
     appel: AppelEnDirect,
     client: ClientValidation,
     v: {
@@ -729,6 +730,7 @@ export class AppelService implements OnModuleDestroy {
       verrouillee: DroitVerrouille | null;
     },
   ): Promise<VersionAppel> {
+    const seanceId = ligne.id;
     const liste = appel.liste.map(ligneValidee);
     const empreinte = sha256(listeCanonique(seanceId, v.version, liste));
     const valideLe = new Date();
@@ -769,6 +771,8 @@ export class AppelService implements OnModuleDestroy {
         correctionVerrouillee: v.verrouillee,
       },
     });
+    // I4.4 : retards et absences recalculés sur la liste signée, dans la même transaction.
+    await this.assiduite.recalculer(tx, access, ligne, v.version, liste, client.adresseIp);
     // RG-06-15 : la correction d'un intervenant après verrouillage est signalée à la scolarité et
     // à la pédagogie (email, par la boîte d'envoi : rien ne part si la transaction échoue).
     if (v.verrouillee === 'intervenant')
@@ -788,7 +792,7 @@ export class AppelService implements OnModuleDestroy {
       correctionVerrouillee: v.verrouillee,
     });
     RequestContext.apresValidation(() =>
-      this.cache.valider(seanceId, version, fin.getTime()).catch((erreur: unknown) => {
+      this.cache.valider(seanceId, version, ligne.fin.getTime()).catch((erreur: unknown) => {
         // Sans Valkey, le mode dégradé lit la validation en base.
         if (!(erreur instanceof CacheIndisponible)) throw erreur;
       }),

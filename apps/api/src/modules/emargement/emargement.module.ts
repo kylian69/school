@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppelService } from './appel.service.js';
+import { AssiduiteController } from './assiduite.controller.js';
+import { AssiduiteService } from './assiduite.service.js';
 import {
   AppelController,
   PhotosAppelController,
@@ -11,7 +13,13 @@ import { SeancesService } from './seances.service.js';
 
 /** Émargement : chemin rapide du scan et appel de l'intervenant (P2). */
 @Module({
-  controllers: [ScanController, AppelController, PhotosAppelController, SeancesController],
-  providers: [ScanService, AppelService, SeancesService],
+  controllers: [
+    ScanController,
+    AppelController,
+    PhotosAppelController,
+    SeancesController,
+    AssiduiteController,
+  ],
+  providers: [ScanService, AppelService, SeancesService, AssiduiteService],
 })
 export class EmargementModule {}

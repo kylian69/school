@@ -115,6 +115,20 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
   },
   {
+    label: fr.coquille.entrees.mesAbsences,
+    href: '/mes-absences',
+    module: 'emargement',
+    parcours: 'apprenant',
+    icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M10 13l4 4M14 13l-4 4',
+  },
+  {
+    label: fr.coquille.entrees.assiduite,
+    href: '/assiduite',
+    module: 'emargement',
+    permissions: ['assiduite:lire'],
+    icon: 'M4 20V10M10 20V4M16 20v-7M20 20H3',
+  },
+  {
     label: fr.coquille.entrees.parametres,
     href: '/parametres',
     module: 'socle',

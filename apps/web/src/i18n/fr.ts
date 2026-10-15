@@ -34,6 +34,8 @@ export const fr = {
       maFormation: 'Ma formation',
       mesEnseignements: 'Mes enseignements',
       mesDisponibilites: 'Mes disponibilités',
+      mesAbsences: 'Mes absences',
+      assiduite: 'Assiduité',
       entreprises: 'Entreprises',
       contrats: 'Contrats et stages',
       parametres: 'Paramètres',
@@ -386,6 +388,7 @@ export const fr = {
       'demarrage.': 'Liste de démarrage',
       'audit.': 'Journal d’audit',
       'telechargement.': 'Téléchargements de fichiers',
+      'absence.': 'Absences et retards',
     } as Record<string, string>,
     actions: {
       'personne.creer': 'Création d’une fiche',
@@ -405,6 +408,7 @@ export const fr = {
       'telechargement.fichier': 'Fichier téléchargé',
       'telechargement.rapport-import': 'Rapport d’import téléchargé',
       'telechargement.photos-appel': 'Photos de la liste d’appel remises',
+      'absence.recalculer': 'Absences et retards recalculés après l’appel',
       'organisation.modifier': 'Organisation modifiée',
       'etablissement.creer': 'Établissement créé',
       'etablissement.modifier': 'Établissement modifié',
@@ -2288,5 +2292,54 @@ export const fr = {
       reseau: 'Le service est injoignable. Vérifiez votre connexion internet puis réessayez.',
       inattendue: 'Une erreur inattendue est survenue. Réessayez dans quelques instants.',
     },
+  },
+  assiduite: {
+    mesAbsences: 'Mes absences',
+    mesAbsencesAide:
+      'Retards et absences relevés aux appels validés par vos intervenants. Une absence est « non justifiée » tant qu’aucun justificatif n’a été accepté.',
+    titre: 'Assiduité',
+    aide: 'Retards et absences des apprenants de votre périmètre, calculés à partir des appels validés.',
+    indisponible:
+      'L’assiduité est momentanément indisponible. Réessayez dans quelques instants ; si le problème persiste, contactez votre établissement.',
+    aucune: 'Aucun retard ni aucune absence.',
+    aucuneFiltre:
+      'Aucun retard ni aucune absence pour ces critères. Élargissez la période ou retirez un filtre.',
+    decompte: 'Décompte',
+    absences: 'Absences',
+    retards: 'Retards',
+    heuresAbsence: 'Heures d’absence',
+    heuresRetard: 'Temps de retard',
+    demiJournees: 'Demi-journées d’absence',
+    demiJourneesNonJustifiees: 'dont non justifiées',
+    alternant:
+      'Vous êtes alternant : ces heures manquées sont suivies par votre école et comptent pour le suivi de votre contrat.',
+    alternantBadge: 'Alternant',
+    nature: { absence: 'Absence', retard: 'Retard' } as Record<string, string>,
+    statut: { 'non-justifiee': 'Non justifiée' } as Record<string, string>,
+    matin: 'matin',
+    apresMidi: 'après-midi',
+    journee: 'journée',
+    duree: (minutes: number) => {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`;
+    },
+    seance: 'Séance',
+    date: 'Date',
+    demiJournee: 'Demi-journée',
+    apprenant: 'Apprenant',
+    promotion: 'Promotion',
+    toutes: 'Toutes',
+    tous: 'Tous',
+    du: 'Du',
+    au: 'Au',
+    natureFiltre: 'Retard ou absence',
+    statutFiltre: 'Statut',
+    filtrer: 'Filtrer',
+    parApprenant: 'Par apprenant',
+    detail: 'Détail des retards et absences',
+    tableau: 'Tableau des retards et absences, défilant horizontalement',
+    tronque: (n: number) =>
+      `Seuls les ${n} plus récents sont affichés. Réduisez la période pour voir les autres.`,
   },
 } as const;

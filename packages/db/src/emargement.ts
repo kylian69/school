@@ -126,6 +126,9 @@ export async function etablissementDeSeance(
     localisationLongitude: etablissement.localisationLongitude,
     localisationRayon: etablissement.localisationRayon,
     localisationPlagesIp: etablissement.localisationPlagesIp,
+    // RG-04-02, RG-06-18 : demi-journées des absences.
+    fuseauHoraire: etablissement.fuseauHoraire,
+    edtLimiteMidi: etablissement.edtLimiteMidi,
   };
   if (s.salleId) {
     const [trouve] = await tx

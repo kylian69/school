@@ -1,0 +1,328 @@
+import { Injectable } from '@nestjs/common';
+import {
+  FUSEAU_PAR_DEFAUT,
+  LIMITE_SUIVI_ASSIDUITE,
+  PLAGE_EDT_PAR_DEFAUT,
+  type Absence,
+  type FiltreAssiduite,
+  type MesAbsences,
+  type SuiviAssiduite,
+} from '@scolaly/contracts';
+import {
+  absence,
+  enregistrerAudit,
+  etablissementDeSeance,
+  inscription,
+  inscriptionStatut,
+  personne,
+  promotion,
+  seance,
+  type Transaction,
+} from '@scolaly/db';
+import {
+  absencesDeLAppel,
+  changementsAbsences,
+  decompteAssiduite,
+  estAlternant,
+  STATUTS_ALTERNANT,
+  type LigneAbsence,
+} from '@scolaly/domain';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
+import type { Access } from '../../access/access-resolver.js';
+import { couvrePromotion, promotionsCouvertes } from '../scolarite/index.js';
+
+/** Séance d'un appel validé, telle que le calcul des absences la lit. */
+export interface SeanceAbsences {
+  id: string;
+  debut: Date;
+  fin: Date;
+  salleId: string | null;
+  serieId: string | null;
+}
+
+const colonnesAbsence = {
+  id: absence.id,
+  seanceId: absence.seanceId,
+  libelle: seance.libelle,
+  debut: seance.debut,
+  fin: seance.fin,
+  jour: absence.jour,
+  matin: absence.matin,
+  apresMidi: absence.apresMidi,
+  nature: absence.nature,
+  minutes: absence.minutes,
+  statut: absence.statut,
+};
+
+type LigneLue = { debut: Date; fin: Date } & Omit<Absence, 'debut' | 'fin'>;
+
+const presenter = <T extends LigneLue>(l: T) => ({
+  ...l,
+  debut: l.debut.toISOString(),
+  fin: l.fin.toISOString(),
+});
+
+/** Jour UTC courant (AAAA-MM-JJ) : statut d’'alternance en cours. */
+const aujourdhui = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Retards et absences (I4.4 ; RG-06-16 à RG-06-18) : calculés à chaque version validée de l'appel,
+ * dans sa transaction (jamais sur le chemin du scan), puis consultés par l'apprenant (US-06-13)
+ * et, dans leur périmètre, par la scolarité et la pédagogie (E-06-07).
+ */
+@Injectable()
+export class AssiduiteService {
+  /**
+   * Recalcule les absences d'une séance à partir de sa liste validée : une absence qui reste garde
+   * son statut de justification (RG-06-21). Le changement est tracé avec l'avant et l'après.
+   */
+  async recalculer(
+    tx: Transaction,
+    access: Access,
+    s: SeanceAbsences,
+    version: number,
+    liste: readonly LigneAbsence[],
+    adresseIp: string,
+  ): Promise<void> {
+    const etab = await etablissementDeSeance(tx, s);
+    const calculees = absencesDeLAppel(
+      {
+        debut: s.debut,
+        fin: s.fin,
+        fuseau: etab?.fuseauHoraire ?? FUSEAU_PAR_DEFAUT,
+        limiteMidi: etab?.edtLimiteMidi.slice(0, 5) ?? PLAGE_EDT_PAR_DEFAUT.limiteMidi,
+      },
+      liste,
+    );
+    const enregistrees = await tx
+      .select({
+        id: absence.id,
+        personneId: absence.personneId,
+        nature: absence.nature,
+        minutes: absence.minutes,
+        jour: absence.jour,
+        matin: absence.matin,
+        apresMidi: absence.apresMidi,
+      })
+      .from(absence)
+      .where(eq(absence.seanceId, s.id));
+    const c = changementsAbsences(enregistrees, calculees);
+    if (c.ajouts.length + c.modifications.length + c.retraits.length === 0) return;
+    if (c.retraits.length > 0)
+      await tx.delete(absence).where(
+        inArray(
+          absence.id,
+          c.retraits.map((r) => r.id),
+        ),
+      );
+    for (const { avant, apres } of c.modifications) {
+      await tx
+        .update(absence)
+        .set({
+          nature: apres.nature,
+          minutes: apres.minutes,
+          jour: apres.jour,
+          matin: apres.matin,
+          apresMidi: apres.apresMidi,
+          versionAppel: version,
+          updatedBy: access.userId,
+        })
+        .where(eq(absence.id, avant.id));
+    }
+    if (c.ajouts.length > 0)
+      await tx.insert(absence).values(
+        c.ajouts.map((a) => ({
+          organisationId: access.organisationId,
+          seanceId: s.id,
+          ...a,
+          versionAppel: version,
+          createdBy: access.userId,
+        })),
+      );
+    const resume = (a: { personneId: string; nature: string; minutes: number }) => ({
+      personneId: a.personneId,
+      nature: a.nature,
+      minutes: a.minutes,
+    });
+    await enregistrerAudit(tx, {
+      action: 'absence.recalculer',
+      objetType: 'seance',
+      objetId: s.id,
+      auteurId: access.userId,
+      adresseIp,
+      avant: {
+        absences: [...c.retraits, ...c.modifications.map((m) => m.avant)].map(resume),
+      },
+      apres: {
+        version,
+        absences: [...c.ajouts, ...c.modifications.map((m) => m.apres)].map(resume),
+      },
+    });
+  }
+
+  /** US-06-13, E-06-04 : ses propres retards et absences, avec son décompte. */
+  async mesAbsences(tx: Transaction, access: Access): Promise<MesAbsences> {
+    const lignes = await tx
+      .select(colonnesAbsence)
+      .from(absence)
+      .innerJoin(seance, eq(seance.id, absence.seanceId))
+      .where(eq(absence.personneId, access.personneId))
+      .orderBy(desc(seance.debut));
+    const aujourdHui = aujourdhui();
+    const [alternance] = await tx
+      .select({ statut: inscriptionStatut.statut })
+      .from(inscriptionStatut)
+      .innerJoin(inscription, eq(inscription.id, inscriptionStatut.inscriptionId))
+      .where(
+        and(
+          eq(inscription.personneId, access.personneId),
+          isNull(inscription.deletedAt),
+          isNull(inscriptionStatut.deletedAt),
+          inArray(inscriptionStatut.statut, [...STATUTS_ALTERNANT]),
+          lte(inscriptionStatut.debut, aujourdHui),
+          or(isNull(inscriptionStatut.fin), gte(inscriptionStatut.fin, aujourdHui)),
+        ),
+      )
+      .limit(1);
+    return {
+      decompte: decompteAssiduite(lignes),
+      alternant: estAlternant(alternance?.statut),
+      absences: lignes.map(presenter),
+    };
+  }
+
+  /**
+   * E-06-07 : retards et absences des apprenants inscrits (le jour de la séance) dans une promotion
+   * du périmètre de `assiduite:lire`, filtrés par promotion, période, nature et statut.
+   */
+  async suivi(tx: Transaction, access: Access, filtre: FiltreAssiduite): Promise<SuiviAssiduite> {
+    const couvertes = await promotionsCouvertes(tx, access, ['assiduite:lire']);
+    const promotions = (
+      await tx
+        .select({ id: promotion.id, libelle: promotion.libelle })
+        .from(promotion)
+        .where(isNull(promotion.deletedAt))
+        .orderBy(asc(promotion.libelle))
+    ).filter((p) => couvrePromotion(couvertes, p.id));
+    const visibles = filtre.promotionId
+      ? promotions.filter((p) => p.id === filtre.promotionId)
+      : promotions;
+    const vide: SuiviAssiduite = { promotions, apprenants: [], absences: [], tronque: false };
+    if (visibles.length === 0) return vide;
+    // L'apprenant était inscrit dans une promotion visible le jour de la séance.
+    const inscritCeJour = (promotionIds: string[]): SQL =>
+      exists(
+        tx
+          .select({ un: sql`1` })
+          .from(inscription)
+          .where(
+            and(
+              eq(inscription.personneId, absence.personneId),
+              inArray(inscription.promotionId, promotionIds),
+              isNull(inscription.deletedAt),
+              lte(inscription.dateEntree, absence.jour),
+              or(isNull(inscription.dateSortie), gt(inscription.dateSortie, absence.jour)),
+            ),
+          ),
+      );
+    const conditions = and(
+      couvertes === null && !filtre.promotionId
+        ? undefined
+        : inscritCeJour(visibles.map((p) => p.id)),
+      filtre.du ? gte(absence.jour, filtre.du) : undefined,
+      filtre.au ? lte(absence.jour, filtre.au) : undefined,
+      filtre.statut ? eq(absence.statut, filtre.statut) : undefined,
+      filtre.nature ? eq(absence.nature, filtre.nature) : undefined,
+    );
+    const lignes = await tx
+      .select({
+        ...colonnesAbsence,
+        personneId: absence.personneId,
+        nom: sql<string>`coalesce(${personne.nomUsage}, ${personne.nom})`,
+        prenom: personne.prenom,
+      })
+      .from(absence)
+      .innerJoin(seance, eq(seance.id, absence.seanceId))
+      .innerJoin(personne, eq(personne.id, absence.personneId))
+      .where(conditions)
+      .orderBy(desc(seance.debut), asc(personne.nom), asc(personne.prenom));
+    // Décompte par apprenant, sur toutes les lignes retenues.
+    const parApprenant = new Map<string, typeof lignes>();
+    for (const l of lignes) {
+      const liste = parApprenant.get(l.personneId) ?? [];
+      liste.push(l);
+      parApprenant.set(l.personneId, liste);
+    }
+    const ids = [...parApprenant.keys()];
+    const aujourdHui = aujourdhui();
+    const inscriptions =
+      ids.length === 0
+        ? []
+        : await tx
+            .select({
+              personneId: inscription.personneId,
+              promotion: promotion.libelle,
+              statut: inscriptionStatut.statut,
+            })
+            .from(inscription)
+            .innerJoin(promotion, eq(promotion.id, inscription.promotionId))
+            .leftJoin(
+              inscriptionStatut,
+              and(
+                eq(inscriptionStatut.inscriptionId, inscription.id),
+                isNull(inscriptionStatut.deletedAt),
+                lte(inscriptionStatut.debut, aujourdHui),
+                or(isNull(inscriptionStatut.fin), gte(inscriptionStatut.fin, aujourdHui)),
+              ),
+            )
+            .where(
+              and(
+                inArray(inscription.personneId, ids),
+                inArray(
+                  inscription.promotionId,
+                  visibles.map((p) => p.id),
+                ),
+                isNull(inscription.deletedAt),
+              ),
+            )
+            .orderBy(desc(inscription.dateEntree));
+    const apprenants = [...parApprenant.values()].map((absences) => {
+      const premiere = absences[0]!;
+      const siennes = inscriptions.filter((i) => i.personneId === premiere.personneId);
+      return {
+        personneId: premiere.personneId,
+        nom: premiere.nom,
+        prenom: premiere.prenom,
+        promotion: siennes[0]?.promotion ?? null,
+        alternant: siennes.some((i) => estAlternant(i.statut)),
+        decompte: decompteAssiduite(absences),
+      };
+    });
+    apprenants.sort(
+      (a, b) =>
+        b.decompte.demiJourneesNonJustifiees - a.decompte.demiJourneesNonJustifiees ||
+        a.nom.localeCompare(b.nom, 'fr') ||
+        a.prenom.localeCompare(b.prenom, 'fr'),
+    );
+    return {
+      promotions,
+      apprenants,
+      absences: lignes.slice(0, LIMITE_SUIVI_ASSIDUITE).map(presenter),
+      tronque: lignes.length > LIMITE_SUIVI_ASSIDUITE,
+    };
+  }
+}
