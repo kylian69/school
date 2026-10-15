@@ -14,6 +14,9 @@ export const NATURES_ABSENCE = ['absence', 'retard'] as const satisfies readonly
 export type StatutAbsence = 'non-justifiee';
 export const STATUTS_ABSENCE = ['non-justifiee'] as const satisfies readonly StatutAbsence[];
 
+/** Statuts comptés dans les demi-journées non justifiées (seuils, RG-06-23). */
+export const STATUTS_NON_JUSTIFIES: readonly StatutAbsence[] = ['non-justifiee'];
+
 /** Séance vue par le calcul : horaires, fuseau et limite matin / après-midi de l'établissement. */
 export interface CadreAbsence {
   debut: Date;
@@ -139,7 +142,7 @@ export function decompteAssiduite(absences: readonly AbsenceEnregistree[]): Deco
     for (const cle of cles) {
       if (!cle) continue;
       toutes.add(cle);
-      if (a.statut === 'non-justifiee') nonJustifiees.add(cle);
+      if (STATUTS_NON_JUSTIFIES.includes(a.statut)) nonJustifiees.add(cle);
     }
   }
   d.demiJournees = toutes.size;
