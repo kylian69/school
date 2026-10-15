@@ -3,6 +3,7 @@ import { perimetreAControler, type SeanceProche } from '@scolaly/contracts';
 import {
   etablissement,
   etablissementDeSeance,
+  localisationDesFormations,
   personne,
   salle,
   seance,
@@ -94,12 +95,21 @@ export class SeancesService {
     // Une lecture par salle ou série distincte, pas par séance.
     const parLieu = new Map<string, Awaited<ReturnType<typeof etablissementDeSeance>>>();
     const controles = new Map<string, boolean>();
+    // RG-06-09 : réglages des formations du public, lus en une fois pour toutes les séances.
+    const formations = await localisationDesFormations(
+      tx,
+      lignes.map((l) => l.id),
+    );
     for (const l of lignes) {
       const lieu = `${l.salleId ?? ''}|${l.serieId ?? ''}`;
       if (!parLieu.has(lieu)) parLieu.set(lieu, await etablissementDeSeance(tx, l));
       controles.set(
         l.id,
-        perimetreAControler(l.modePresence === 'distanciel', parLieu.get(lieu) ?? null) !== null,
+        perimetreAControler(
+          l.modePresence === 'distanciel',
+          parLieu.get(lieu) ?? null,
+          formations.get(l.id),
+        ) !== null,
       );
     }
     return lignes.map((l) => ({

@@ -15,12 +15,16 @@ import {
   effacerLocalisationsEchues,
   enregistrerPresences,
   etablissement,
+  formation,
+  groupeEleves,
+  groupePromotion,
   initialiserRolesParDefaut,
   inscrireManquants,
   newId,
   organisation,
   personne,
   presence,
+  promotion,
   promotionTechnique,
   role,
   salle,
@@ -57,6 +61,12 @@ const seances = {
   code: newId(),
   campusIp: newId(),
   hybride: newId(),
+  /** RG-06-09 : public d'une formation qui a désactivé le contrôle. */
+  formation: newId(),
+  /** RG-06-09 : séance commune à cette formation et à une formation qui contrôle. */
+  commune: newId(),
+  /** RG-06-09 : public d'un groupe de cette formation. */
+  groupe: newId(),
 };
 const apprenants: Record<string, string> = {};
 let intervenant: string;
@@ -160,6 +170,25 @@ beforeAll(async () => {
   }
   const promo = await promotionTechnique(owner.db, ecole, 'Promotion localisation');
   await inscrireManquants(owner.db, ecole, promo, ids);
+  const promoSans = await promotionTechnique(owner.db, ecole, 'Promotion sans localisation');
+  await inscrireManquants(owner.db, ecole, promoSans, ids);
+  const [suivie] = await owner.db.select().from(promotion).where(eq(promotion.id, promoSans));
+  await owner.db
+    .update(formation)
+    .set({ localisationActive: false })
+    .where(eq(formation.id, suivie?.formationId ?? ''));
+  const [groupe] = await owner.db
+    .insert(groupeEleves)
+    .values({ organisationId: ecole, libelle: 'TD sans localisation', type: 'td' })
+    .returning();
+  await owner.db
+    .insert(groupePromotion)
+    .values({ organisationId: ecole, groupeId: groupe?.id ?? '', promotionId: promoSans });
+  const publics: Partial<Record<keyof typeof seances, string[]>> = {
+    formation: [promoSans],
+    commune: [promoSans, promo],
+    groupe: [],
+  };
   const debut = new Date(Date.now() - 60_000);
   const salles: Record<keyof typeof seances, string | null> = {
     salle: salleCampus?.id ?? null,
@@ -168,6 +197,9 @@ beforeAll(async () => {
     code: salleCampus?.id ?? null,
     campusIp: salleCampus?.id ?? null,
     hybride: salleCampus?.id ?? null,
+    formation: salleCampus?.id ?? null,
+    commune: salleCampus?.id ?? null,
+    groupe: salleCampus?.id ?? null,
   };
   for (const [cle, id] of Object.entries(seances) as [keyof typeof seances, string][]) {
     await owner.db.insert(seance).values({
@@ -185,9 +217,16 @@ beforeAll(async () => {
     await owner.db
       .insert(seanceIntervenant)
       .values({ organisationId: ecole, seanceId: id, personneId: intervenantId });
-    await owner.db
-      .insert(seancePublic)
-      .values({ organisationId: ecole, seanceId: id, promotionId: promo });
+    for (const promotionId of publics[cle] ?? [promo]) {
+      await owner.db
+        .insert(seancePublic)
+        .values({ organisationId: ecole, seanceId: id, promotionId });
+    }
+    if (cle === 'groupe') {
+      await owner.db
+        .insert(seancePublic)
+        .values({ organisationId: ecole, seanceId: id, groupeId: groupe?.id ?? '' });
+    }
   }
   intervenant = await connexion('iris.intervenante@exemple.test');
   for (const nom of ['lou', 'max', 'zoe', 'eva', 'ali']) {
@@ -391,6 +430,40 @@ describe('RG-06-09, RG-06-10 contrôle de localisation au scan', () => {
     expect(
       await scanner(apprenants.eva ?? '', { jeton, aDistance: true }, '198.51.100.9'),
     ).toMatchObject({ localisation: 'inconnu', aDistance: false });
+  });
+
+  it('RG-06-09 la formation qui désactive le contrôle : position ignorée, rien dans le cache', async () => {
+    const jeton = await jetonOuvert(seances.formation);
+    const valkey = app.get<Redis>(VALKEY);
+    expect(await valkey.hget(CLES_EMARGEMENT.seance(seances.formation), 'localisation')).toBe('');
+    expect(await scanner(apprenants.max ?? '', { jeton, position: loin })).toMatchObject({
+      statut: 'present',
+      localisation: null,
+    });
+  });
+
+  it('RG-06-09 un groupe de la formation suit le réglage de sa formation', async () => {
+    await jetonOuvert(seances.groupe);
+    const valkey = app.get<Redis>(VALKEY);
+    expect(await valkey.hget(CLES_EMARGEMENT.seance(seances.groupe), 'localisation')).toBe('');
+    expect(await valkey.hget(CLES_EMARGEMENT.seance(seances.salle), 'localisation')).not.toBe('');
+  });
+
+  it('RG-06-09 séance commune : contrôlée dès qu’une formation du public le demande', async () => {
+    const jeton = await jetonOuvert(seances.commune);
+    expect(await scanner(apprenants.max ?? '', { jeton, position: loin })).toMatchObject({
+      statut: 'present',
+      localisation: 'hors-site',
+    });
+  });
+
+  it('RG-06-09 l’apprenant voit le réglage de la formation avant de scanner', async () => {
+    const liste = (await appeler('GET', '/api/moi/seances', apprenants.eva ?? '')).json<
+      SeanceProche[]
+    >();
+    const controle = new Map(liste.map((s) => [s.id, s.localisation]));
+    expect(controle.get(seances.formation)).toBe(false);
+    expect(controle.get(seances.commune)).toBe(true);
   });
 
   it('RGPD-03 l’apprenant sait, avant de scanner, quelles séances contrôlent sa position', async () => {

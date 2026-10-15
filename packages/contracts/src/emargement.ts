@@ -433,8 +433,19 @@ export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCach
 }
 
 /**
- * RG-06-08, RG-06-10 : périmètre à contrôler pour une séance ; null si le contrôle est désactivé,
- * si la séance est à distance, ou si l'établissement n'a ni coordonnées ni plage d'adresses IP.
+ * RG-06-09 : le contrôle de localisation est demandé par l'établissement et par les formations du
+ * public. La formation peut seulement le désactiver ; une séance commune à plusieurs formations
+ * reste contrôlée dès que l'une d'elles le demande ; sans formation connue, l'établissement décide.
+ */
+export const localisationDemandee = (
+  etablissementActive: boolean,
+  formations: readonly boolean[],
+): boolean => etablissementActive && (formations.length === 0 || formations.some((f) => f));
+
+/**
+ * RG-06-08, RG-06-09, RG-06-10 : périmètre à contrôler pour une séance ; null si le contrôle est
+ * désactivé (établissement, ou toutes les formations du public), si la séance est à distance, ou
+ * si l'établissement n'a ni coordonnées ni plage d'adresses IP.
  */
 export function perimetreAControler(
   distanciel: boolean,
@@ -445,8 +456,10 @@ export function perimetreAControler(
     localisationRayon: number;
     localisationPlagesIp: string[];
   } | null,
+  formations: readonly boolean[] = [],
 ): PerimetreEnCache | null {
-  if (distanciel || !etablissement?.localisationActive) return null;
+  if (distanciel || !etablissement) return null;
+  if (!localisationDemandee(etablissement.localisationActive, formations)) return null;
   const coordonnees =
     etablissement.localisationLatitude !== null && etablissement.localisationLongitude !== null;
   if (!coordonnees && etablissement.localisationPlagesIp.length === 0) return null;

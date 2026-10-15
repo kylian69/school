@@ -183,6 +183,51 @@ describe('E-02-01 et E-02-02 formations et maquettes', () => {
     expect(trace?.apres).toMatchObject({ intitule: 'Bachelor Gestion' });
   });
 
+  it('RG-06-09 désactive le contrôle de localisation de la formation, droit de l’école et audit', async () => {
+    expect(bachelor.emargement).toEqual({ localisation: true, parametrable: true });
+    const scolarite = cookies.get('scolarite') ?? '';
+    const refus = await requete('PUT', `/api/formations/${bachelor.id}/emargement`, scolarite, {
+      localisation: false,
+    });
+    expect(refus.statusCode).toBe(403);
+    expect(
+      (await requete('GET', `/api/formations/${bachelor.id}`, scolarite)).json<Formation>()
+        .emargement.parametrable,
+    ).toBe(false);
+    const reponse = await requete('PUT', `/api/formations/${bachelor.id}/emargement`, admin(), {
+      localisation: false,
+    });
+    expect(reponse.statusCode, reponse.body).toBe(200);
+    expect(reponse.json<Formation>().emargement.localisation).toBe(false);
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, bachelor.id),
+          eq(auditEvenement.action, 'formation.parametrer-emargement'),
+        ),
+      );
+    expect(trace).toMatchObject({ avant: { localisation: true }, apres: { localisation: false } });
+    // Rétabli pour la suite ; un réglage inchangé n'écrit rien de plus.
+    await requete('PUT', `/api/formations/${bachelor.id}/emargement`, admin(), {
+      localisation: true,
+    });
+    await requete('PUT', `/api/formations/${bachelor.id}/emargement`, admin(), {
+      localisation: true,
+    });
+    const traces = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, bachelor.id),
+          eq(auditEvenement.action, 'formation.parametrer-emargement'),
+        ),
+      );
+    expect(traces).toHaveLength(2);
+  });
+
   it('RG-02-01 refuse un niveau, un code RNCP ou un établissement invalides, avec le champ en cause', async () => {
     for (const [corps, champ] of [
       [{ ...BACHELOR, niveau: 4 }, 'niveau'],

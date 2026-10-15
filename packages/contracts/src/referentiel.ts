@@ -61,9 +61,22 @@ export const Formation = z
     /** Droits de la personne sur cette formation (périmètre, RG-00-10). */
     modifiable: z.boolean(),
     publiable: z.boolean(),
+    /** RG-06-09 : contrôles de l'émargement propres à la formation. */
+    emargement: z.object({
+      /** Contrôle de localisation demandé ; sans effet si l'établissement l'a désactivé. */
+      localisation: z.boolean(),
+      /** La personne peut changer ces réglages (droit de paramétrer l'école). */
+      parametrable: z.boolean(),
+    }),
   })
   .meta({ id: 'Formation' });
 export type Formation = z.infer<typeof Formation>;
+
+/** RG-06-09 : réglage des contrôles de l'émargement d'une formation. */
+export const EmargementFormation = z
+  .object({ localisation: z.boolean() })
+  .meta({ id: 'EmargementFormation' });
+export type EmargementFormation = z.infer<typeof EmargementFormation>;
 
 export const ListeFormations = z
   .object({

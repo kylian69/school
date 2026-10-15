@@ -9,6 +9,7 @@ import {
   derniereValidation,
   enregistrerPresences,
   etablissementDeSeance,
+  localisationDesFormations,
   seanceEtAttendus,
   seancesAPrecharger,
   sessionsDesComptes,
@@ -46,10 +47,14 @@ export async function prechargerSeances(db: Database, valkey: Redis, maintenant 
     );
     // Séance annulée ou reportée entre-temps : elle ne s'émarge plus (US-04-11).
     if (trouve?.seance.statut !== 'publiee') continue;
-    // RG-06-10 : périmètre de localisation préchargé avec la séance (aucune requête au scan).
-    const localisation = perimetreAControler(
-      trouve.seance.modePresence === 'distanciel',
-      await withOrganisation(db, organisationId, (tx) => etablissementDeSeance(tx, trouve.seance)),
+    // RG-06-09, RG-06-10 : périmètre de localisation préchargé avec la séance, réglages de
+    // l'établissement et des formations du public compris (aucune requête au scan).
+    const localisation = await withOrganisation(db, organisationId, async (tx) =>
+      perimetreAControler(
+        trouve.seance.modePresence === 'distanciel',
+        await etablissementDeSeance(tx, trouve.seance),
+        (await localisationDesFormations(tx, [seanceId])).get(seanceId),
+      ),
     );
     // RG-06-13 : un appel déjà validé refuse les scans ; l'état part avec la séance.
     const validation = await withOrganisation(db, organisationId, (tx) =>

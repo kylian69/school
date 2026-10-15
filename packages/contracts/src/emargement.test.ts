@@ -5,6 +5,7 @@ import {
   commandesRetraitSeance,
   commandesSessions,
   lireSeanceEnCache,
+  localisationDemandee,
   perimetreAControler,
   type SeanceEnCache,
 } from './emargement.js';
@@ -179,5 +180,24 @@ describe('RG-06-10 périmètre de localisation préchargé', () => {
     expect(
       perimetreAControler(false, { ...etablissement, localisationLongitude: null }),
     ).toMatchObject({ latitude: null, longitude: null, plagesIp: ['192.0.2.0/24'] });
+  });
+
+  it('RG-06-09 la formation peut seulement désactiver le contrôle de l’établissement', () => {
+    expect(localisationDemandee(true, [])).toBe(true);
+    expect(localisationDemandee(true, [true])).toBe(true);
+    expect(localisationDemandee(true, [false])).toBe(false);
+    expect(localisationDemandee(false, [true])).toBe(false);
+    expect(localisationDemandee(false, [])).toBe(false);
+    expect(perimetreAControler(false, etablissement, [false])).toBeNull();
+    expect(perimetreAControler(false, etablissement, [true])).not.toBeNull();
+    expect(
+      perimetreAControler(false, { ...etablissement, localisationActive: false }, [true]),
+    ).toBeNull();
+  });
+
+  it('RG-06-09 séance commune : contrôlée dès qu’une formation du public le demande', () => {
+    expect(localisationDemandee(true, [false, true])).toBe(true);
+    expect(localisationDemandee(true, [false, false])).toBe(false);
+    expect(perimetreAControler(false, etablissement, [false, true])).not.toBeNull();
   });
 });

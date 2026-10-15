@@ -1008,6 +1008,14 @@ export const fr = {
     supprimer: 'Supprimer',
     confirmer: 'Confirmer',
     lectureSeule: 'Consultation seule : vous ne pouvez pas modifier cette formation.',
+    emargement: {
+      titre: 'Émargement',
+      localisation: 'Contrôler la localisation à l’émargement',
+      aide: 'Sans effet si l’établissement a désactivé ce contrôle. Une séance commune à plusieurs formations reste contrôlée dès que l’une d’elles le demande. Les séances déjà ouvertes prennent le réglage en compte sous 5 minutes.',
+      active:
+        'Contrôle de localisation à l’émargement : actif, selon le réglage de l’établissement.',
+      inactive: 'Contrôle de localisation à l’émargement : désactivé pour cette formation.',
+    },
     vues: { maquette: 'Maquette', regles: 'Règles de validation', competences: 'Compétences' },
     navigationVues: 'Vues de la formation',
     choixVersion: 'Choisir la version',

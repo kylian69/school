@@ -101,6 +101,32 @@ test.describe('Module 02 · formations et maquettes', () => {
     await expectNoAccessibilityViolations(page);
   });
 
+  test('RG-06-09 désactive le contrôle de localisation à l’émargement pour la formation', async ({
+    page,
+  }) => {
+    const intitule = `BTS fictif ${Math.random().toString(36).slice(2, 7)}`;
+    await page.goto('/formations');
+    await page.getByRole('button', { name: 'Nouvelle formation' }).click();
+    const dialogue = page.getByRole('dialog', { name: 'Nouvelle formation' });
+    await dialogue.getByLabel('Intitulé').fill(intitule);
+    await dialogue.getByRole('button', { name: 'Enregistrer' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(intitule);
+
+    const reglage = page
+      .getByRole('group', { name: 'Émargement' })
+      .getByLabel('Contrôler la localisation à l’émargement');
+    await expect(reglage).toBeChecked();
+    await expectNoAccessibilityViolations(page);
+    await reglage.uncheck();
+    await expect(reglage).toBeEnabled();
+    await page.reload();
+    await expect(reglage).not.toBeChecked();
+    await reglage.check();
+    await expect(reglage).toBeEnabled();
+    await page.reload();
+    await expect(reglage).toBeChecked();
+  });
+
   test('US-02-02 vérifie puis importe une maquette depuis un fichier', async ({ page }) => {
     await page.goto('/formations');
     await page.getByRole('button', { name: 'Nouvelle formation' }).click();
