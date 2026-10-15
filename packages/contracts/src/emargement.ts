@@ -323,6 +323,12 @@ export interface SeanceEnCache {
    * requête SQL. Null : appel pas encore validé.
    */
   validation: VersionAppel | null;
+  /**
+   * ADR 0006 : version de la clé maîtresse mémorisée à l'ouverture de l'appel ; le scan ne vérifie
+   * qu'avec elle. Null : inconnue (appel pas encore ouvert, ou préchargé avant ce lot) ; le scan
+   * prend alors la version courante, jamais plusieurs.
+   */
+  versionCle: number | null;
 }
 
 /** Les clés du cache vivent jusqu'à une heure après la fin de la séance (secondes Unix). */
@@ -373,6 +379,8 @@ export function commandesPrechargement(
       seance.mode,
       'localisation',
       seance.localisation ? JSON.stringify(seance.localisation) : '',
+      // Version inconnue : rien n'est écrit, celle mémorisée par l'ouverture reste.
+      ...(seance.versionCle === null ? [] : ['versionCle', String(seance.versionCle)]),
     ],
     ['expireat', CLES_EMARGEMENT.seance(seanceId), fin],
   );
@@ -420,6 +428,7 @@ export function lireSeanceEnCache(valeurs: Record<string, string>): SeanceEnCach
       ? (JSON.parse(valeurs.localisation) as PerimetreEnCache)
       : null,
     validation: valeurs.validation ? (JSON.parse(valeurs.validation) as VersionAppel) : null,
+    versionCle: /^[1-9]\d*$/.test(valeurs.versionCle ?? '') ? Number(valeurs.versionCle) : null,
   };
 }
 

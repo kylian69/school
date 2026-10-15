@@ -184,15 +184,13 @@ export function cleMaitresseCourante(keys: FieldEncryptionKeys): Buffer {
 }
 
 /**
- * Clés maîtresses, la version courante d'abord puis les autres de la plus récente à la plus
- * ancienne : on dérive avec la première, on vérifie avec chacune (clés de séance de l'émargement).
+ * Clé maîtresse d'une version donnée, ou rien si cette version n'est pas (ou plus) présente. Sans
+ * version, la courante. L'émargement vérifie un appel avec la seule version mémorisée à son
+ * ouverture (ADR 0006).
  */
-export function clesMaitressesParPriorite(keys: FieldEncryptionKeys): Buffer[] {
-  const autres = [...keys.masterKeys.keys()]
-    .filter((version) => version !== keys.currentVersion)
-    .sort((a, b) => b - a);
-  return [keys.currentVersion, ...autres].flatMap((version) => {
-    const key = keys.masterKeys.get(version);
-    return key ? [key] : [];
-  });
+export function cleMaitresseDeVersion(
+  keys: FieldEncryptionKeys,
+  version: number | null,
+): Buffer | undefined {
+  return keys.masterKeys.get(version ?? keys.currentVersion);
 }

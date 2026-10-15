@@ -5,6 +5,7 @@ import {
   date,
   foreignKey,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -121,6 +122,12 @@ export const seance = pgTable(
     identifiantExterne: text(),
     /** RG-04-12 : empreinte du contenu au dernier import ; différente : modifiée dans Scolaly. */
     empreinteImport: text(),
+    /**
+     * ADR 0006 : version de la clé maîtresse dont dérive la clé de séance (QR et code à 6 chiffres),
+     * mémorisée à l'ouverture de l'appel ; le scan ne vérifie qu'avec elle. Null : appel jamais
+     * ouvert depuis cette colonne (version courante).
+     */
+    emargementCleVersion: integer(),
     ...trackingColumns(),
   },
   (t) => [
@@ -154,6 +161,10 @@ export const seance = pgTable(
     check(
       'seance_report_check',
       sql`${t.statut} <> 'reportee' or (${t.reporteeVersId} is not null and ${t.motifAnnulation} is not null)`,
+    ),
+    check(
+      'seance_emargement_cle_version_check',
+      sql`${t.emargementCleVersion} is null or ${t.emargementCleVersion} > 0`,
     ),
     check(
       'seance_annulation_check',

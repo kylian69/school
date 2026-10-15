@@ -47,6 +47,8 @@ export class MagasinDegrade implements Magasin {
             await etablissementDeSeance(tx, ligne),
           ),
           validation: await derniereValidation(tx, seanceId),
+          // ADR 0006 : même version de clé que le cache, lue avec la séance.
+          versionCle: ligne.emargementCleVersion,
         };
       });
     })();

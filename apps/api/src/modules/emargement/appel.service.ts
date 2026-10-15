@@ -31,6 +31,7 @@ import {
   apprenantsAjoutables,
   appelValidation,
   cleMaitresseCourante,
+  cleMaitresseDeVersion,
   ajouterEvenement,
   correctionsVerrouilleesIntervenants,
   enregistrerAudit,
@@ -39,6 +40,7 @@ import {
   personne,
   presence,
   presenceMarquage,
+  seance,
   seanceEtAttendus,
   seanceIntervenant,
   sessionsDesComptes,
@@ -46,6 +48,7 @@ import {
   versionAppel,
   withOrganisation,
   type Database,
+  type FieldEncryptionKeys,
   type LigneAppelValidee,
   type Transaction,
 } from '@scolaly/db';
@@ -289,6 +292,7 @@ export interface ClientValidation {
 export class AppelService implements OnModuleDestroy {
   private readonly cache: CacheEmargement;
   private readonly cleMaitresse: Buffer;
+  private readonly cles: FieldEncryptionKeys;
   private readonly logger = new Logger('Emargement');
   /** Flux en direct ouverts, refermés à l'arrêt de l'API. */
   private readonly flux = new Set<() => void>();
@@ -302,7 +306,7 @@ export class AppelService implements OnModuleDestroy {
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {
     this.cache = new CacheEmargement(valkey);
-    // Clé de séance dérivée de la clé maîtresse courante (ADR 0006).
+    this.cles = env.chiffrement;
     this.cleMaitresse = cleMaitresseCourante(env.chiffrement);
     this.signature = new UrlSignee(this.cleMaitresse, 'photos-appel');
   }
@@ -369,6 +373,14 @@ export class AppelService implements OnModuleDestroy {
           : "Cette séance est annulée ou reportée : son appel ne s'ouvre plus. Ouvrez celui de la séance de remplacement s'il y en a une.",
       );
     const validation = (await validationsDeSeance(tx, seanceId)).at(-1);
+    const { versionCle, cleMaitresse } = this.cleDeLAppel(ligne.emargementCleVersion);
+    if (versionCle !== ligne.emargementCleVersion) {
+      // Mémorisée sans toucher à la date de modification : ce n'est pas un changement de la séance.
+      await tx
+        .update(seance)
+        .set({ emargementCleVersion: versionCle, updatedAt: ligne.updatedAt })
+        .where(and(eq(seance.organisationId, access.organisationId), eq(seance.id, seanceId)));
+    }
     // Sans Valkey, l'appel s'ouvre quand même : le scan passera en mode dégradé.
     await this.cache
       .precharger(
@@ -387,6 +399,8 @@ export class AppelService implements OnModuleDestroy {
           ),
           // RG-06-13 : un appel validé refuse les scans, sans requête SQL.
           validation: validation ? versionAppel(validation) : null,
+          // ADR 0006 : le scan ne vérifie qu'avec cette version, sans requête SQL.
+          versionCle,
         },
         new Map(attendus.flatMap((a) => (a.userId ? [[a.userId, a.personneId] as const] : []))),
       )
@@ -405,13 +419,24 @@ export class AppelService implements OnModuleDestroy {
       libelle: ligne.libelle,
       debut: ligne.debut.toISOString(),
       fin: ligne.fin.toISOString(),
-      cle: Buffer.from(cleDeSeance(this.cleMaitresse, access.organisationId, seanceId)).toString(
+      cle: Buffer.from(cleDeSeance(cleMaitresse, access.organisationId, seanceId)).toString(
         'base64url',
       ),
       periodeSecondes: JETON_PERIODE_SECONDES,
       mode: ligne.modePresence,
       maintenant: new Date().toISOString(),
     };
+  }
+
+  /**
+   * ADR 0006 : version de clé maîtresse de l'appel. Celle mémorisée à la première ouverture reste
+   * tant que sa clé est présente (un appel ouvert avant une bascule garde ses QR et son code) ;
+   * sinon (jamais ouvert, ou clé retirée) la version courante.
+   */
+  private cleDeLAppel(memorisee: number | null) {
+    const ancienne = memorisee === null ? undefined : cleMaitresseDeVersion(this.cles, memorisee);
+    if (memorisee !== null && ancienne) return { versionCle: memorisee, cleMaitresse: ancienne };
+    return { versionCle: this.cles.currentVersion, cleMaitresse: cleMaitresseCourante(this.cles) };
   }
 
   private static scansEnBase(lignes: (typeof presence.$inferSelect)[]): Scans {

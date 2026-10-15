@@ -251,8 +251,16 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
     expect(reponse.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
   });
 
-  it('ADR 0006 après la bascule de clé maîtresse, un appel ouvert avant reste valable', async () => {
+  it('ADR 0006 après la bascule, seul un appel ouvert avant accepte l’ancienne clé, sans SQL au scan', async () => {
     const { ouverture: avant } = await ouvrir();
+    const versionEnBase = async () =>
+      (
+        await owner.db
+          .select({ version: seance.emargementCleVersion })
+          .from(seance)
+          .where(eq(seance.id, seanceId))
+      )[0]?.version;
+    expect(await versionEnBase()).toBe(1);
     const apres = await startApp({
       chiffrement: {
         masterKeys: new Map([
@@ -262,39 +270,99 @@ describe('US-06-02 émargement par QR, chemin rapide', () => {
         currentVersion: 2,
       },
     });
+    const codeDe = (cle: string) =>
+      codeDeFenetre(Buffer.from(cle, 'base64url'), seanceId, fenetreDe(Date.now()));
     try {
-      const scanner = (payload: Record<string, unknown>, url = '/api/emargement/scan') =>
-        apres.inject({
+      const scanner = (
+        payload: Record<string, unknown>,
+        url = '/api/emargement/scan',
+        instance: NestFastifyApplication = apres,
+      ) =>
+        instance.inject({
           method: 'POST',
           url,
           headers: { cookie: lea, origin: WEB_ORIGIN },
           payload,
         });
-      // QR et code issus de la clé v1 : vérifiés avec la v2 puis avec la v1.
-      const scan = await scanner({ jeton: await jetonDe(avant) });
+      const rouvrir = async (instance: NestFastifyApplication) =>
+        (
+          await instance.inject({
+            method: 'POST',
+            url: `/api/seances/${seanceId}/appel/ouverture`,
+            headers: { cookie: intervenant, origin: WEB_ORIGIN },
+          })
+        ).json<OuvertureAppel>();
+
+      // Appel ouvert avant la bascule : QR et code de la clé v1 vérifiés avec la seule v1 mémorisée,
+      // sans aucune requête SQL.
+      const pool = (apres.get<Database>(DATABASE) as unknown as { $client: Pool }).$client;
+      let requetes = 0;
+      const query = pool.query.bind(pool);
+      const connect = pool.connect.bind(pool);
+      pool.query = (...args: unknown[]) => {
+        requetes++;
+        return query(...args);
+      };
+      pool.connect = (...args: unknown[]) => {
+        requetes++;
+        return connect(...args);
+      };
+      let scan;
+      let parCode;
+      try {
+        scan = await scanner({ jeton: await jetonDe(avant) });
+        parCode = await scanner(
+          { seanceId, code: await codeDe(avant.cle) },
+          '/api/emargement/code',
+        );
+      } finally {
+        pool.query = query;
+        pool.connect = connect;
+      }
+      expect(requetes).toBe(0);
       expect(scan.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
-      const code = await codeDeFenetre(
-        Buffer.from(avant.cle, 'base64url'),
-        seanceId,
-        fenetreDe(Date.now()),
-      );
-      const parCode = await scanner({ seanceId, code }, '/api/emargement/code');
       expect(parCode.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
-      // Les nouveaux appels utilisent la clé courante (v2).
-      const nouvelle = await apres.inject({
-        method: 'POST',
-        url: `/api/seances/${seanceId}/appel/ouverture`,
-        headers: { cookie: intervenant, origin: WEB_ORIGIN },
-      });
-      const cle = nouvelle.json<OuvertureAppel>().cle;
-      expect(cle).not.toBe(avant.cle);
-      const scanV2 = await scanner({
-        jeton: await jetonDe({ ...avant, cle }),
-      });
-      expect(scanV2.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
+      // Rouvert après la bascule, il garde sa version : les écrans déjà ouverts restent justes.
+      expect((await rouvrir(apres)).cle).toBe(avant.cle);
+
+      // Appel ouvert après la bascule (ou ouvert avant ce lot, sans version mémorisée) : la
+      // version courante seule, l'ancienne clé n'est plus essayée.
+      await owner.db
+        .update(seance)
+        .set({ emargementCleVersion: null })
+        .where(eq(seance.id, seanceId));
+      await app.get<Redis>(VALKEY).hdel(CLES_EMARGEMENT.seance(seanceId), 'versionCle');
+      expect((await scanner({ jeton: await jetonDe(avant) })).statusCode).toBe(400);
+      const nouvelle = await rouvrir(apres);
+      expect(nouvelle.cle).not.toBe(avant.cle);
+      expect(await versionEnBase()).toBe(2);
+      expect((await scanner({ jeton: await jetonDe(avant) })).statusCode).toBe(400);
+      const [ancienCode, nouveauCode] = await Promise.all([
+        codeDe(avant.cle),
+        codeDe(nouvelle.cle),
+      ]);
+      const refus = await scanner({ seanceId, code: ancienCode }, '/api/emargement/code');
+      expect(refus.statusCode).toBe(ancienCode === nouveauCode ? 200 : 400);
+      const accepte = await scanner({ jeton: await jetonDe(nouvelle) });
+      expect(accepte.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
       // Un QR signé d'une clé inconnue reste refusé.
       const inconnu = await genererJeton(new Uint8Array(32).fill(9), seanceId, Date.now());
       expect((await scanner({ jeton: inconnu.jeton })).statusCode).toBe(400);
+
+      // La version de l'appel n'est plus présente (clé retirée) : refus explicite, puis l'appel
+      // rouvert reçoit la version courante.
+      const retiree = await scanner(
+        { jeton: await jetonDe(nouvelle) },
+        '/api/emargement/scan',
+        app,
+      );
+      expect(retiree.statusCode).toBe(409);
+      expect(retiree.json<{ message: string }>().message).toMatch(/rouvrir l’appel/);
+      const rouverte = await rouvrir(app);
+      expect(rouverte.cle).toBe(avant.cle);
+      expect(await versionEnBase()).toBe(1);
+      const retour = await scanner({ jeton: await jetonDe(rouverte) }, '/api/emargement/scan', app);
+      expect(retour.json<ResultatScan>().statut).toMatch(/present|deja-emarge/);
     } finally {
       await apres.close();
     }
