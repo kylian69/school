@@ -5,6 +5,7 @@ import { fr } from '@/i18n/fr';
 import { apiGet } from '@/lib/api';
 import { formatDate, formatHeure } from '@/lib/format';
 import { BadgeJustificatif, BadgesAbsence, Decompte, demiJournee } from '../assiduite/presentation';
+import { MonRecapitulatif } from '../assiduite/feuilles';
 import { JoindreDocument, Justifier } from './justifier';
 
 const t = fr.assiduite;
@@ -39,6 +40,8 @@ export default async function MesAbsencesPage() {
             </h2>
             <Decompte decompte={data.decompte} />
             {data.alternant ? <p className="text-sm text-muted">{t.alternant}</p> : null}
+            <p className="text-sm text-muted">{fr.feuilles.recapitulatifAide}</p>
+            <MonRecapitulatif />
           </section>
           <section aria-labelledby="detail" className="flex flex-col gap-3">
             <h2 id="detail" className="text-lg font-semibold">

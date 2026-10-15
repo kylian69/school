@@ -156,6 +156,23 @@ export const FiltreAssiduite = z.object({
 });
 export type FiltreAssiduite = z.infer<typeof FiltreAssiduite>;
 
+/** Mois AAAA-MM d'une feuille ou d'un récapitulatif (RG-06-26). */
+export const MoisFeuille = z
+  .string()
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Choisissez un mois au format AAAA-MM.');
+
+/**
+ * E-06-09, US-06-11 : feuilles d'émargement d'une promotion pour un mois, par séance (feuilles
+ * signées) ou par apprenant (récapitulatifs mensuels, éventuellement d'un seul apprenant).
+ */
+export const FiltreFeuilles = z.object({
+  promotionId: z.uuid(),
+  mois: MoisFeuille,
+  format: z.enum(['seances', 'apprenants']),
+  personneId: z.uuid().optional(),
+});
+export type FiltreFeuilles = z.infer<typeof FiltreFeuilles>;
+
 export const ApprenantAssiduite = z
   .object({
     personneId: z.uuid(),

@@ -7,6 +7,7 @@ import { apiGet } from '@/lib/api';
 import { getContexte } from '@/lib/contexte';
 import { formatDate, formatHeure } from '@/lib/format';
 import { SELECT } from '../formations/envoi';
+import { FeuillesPromotion } from './feuilles';
 import { BadgesAbsence, Decompte, demiJournee } from './presentation';
 
 const t = fr.assiduite;
@@ -75,6 +76,16 @@ export default async function AssiduitePage({ searchParams }: { searchParams: Pr
           {t.filtrer}
         </Button>
       </form>
+
+      {permissions.includes('emargement:feuilles') && data && data.promotions.length > 0 ? (
+        <section aria-labelledby="feuilles" className="flex flex-col gap-3">
+          <h2 id="feuilles" className="text-lg font-semibold">
+            {fr.feuilles.titre}
+          </h2>
+          <p className="text-sm text-muted">{fr.feuilles.aide}</p>
+          <FeuillesPromotion promotions={data.promotions} />
+        </section>
+      ) : null}
 
       {!data ? (
         <Card>

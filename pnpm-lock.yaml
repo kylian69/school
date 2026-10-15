@@ -396,6 +396,9 @@ importers:
       '@scolaly/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@scolaly/pdf':
+        specifier: workspace:*
+        version: link:../../packages/pdf
       '@scolaly/referentials':
         specifier: workspace:*
         version: link:../../packages/referentials

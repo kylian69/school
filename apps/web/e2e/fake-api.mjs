@@ -2290,6 +2290,7 @@ createServer(async (request, response) => {
             'calendrier:lire',
             'emargement:animer',
             'emargement:corriger-verrouille',
+            'emargement:feuilles',
             'assiduite:lire',
             'assiduite:alertes',
             'justificatifs:deposer',
@@ -2480,6 +2481,40 @@ createServer(async (request, response) => {
       periodeSecondes: 15,
       maintenant: new Date().toISOString(),
     });
+  }
+  // I4.4 : feuilles PDF (le contenu est testé par l'API) ; un faux PDF suffit au téléchargement.
+  const pdfFictif = (nom) => {
+    response.writeHead(200, {
+      'content-type': 'application/pdf',
+      'content-disposition': `attachment; filename="${nom}"; filename*=UTF-8''${encodeURIComponent(nom)}`,
+      'x-empreinte-sha256': 'a'.repeat(64),
+    });
+    return response.end('%PDF-1.7\n% feuille fictive\n%%EOF\n');
+  };
+  if (path === `/api/seances/${SEANCE_ID}/appel/feuille/pdf`) {
+    if (versionsAppel(request).length === 0)
+      return json(409, {
+        message:
+          "L'appel de cette séance n'est pas encore validé : la feuille sera disponible dès que l'intervenant l'aura validé.",
+      });
+    return pdfFictif(`feuille-emargement-v${versionsAppel(request).length}.pdf`);
+  }
+  if (path === '/api/assiduite/feuilles') {
+    const mois = url.searchParams.get('mois') ?? '';
+    if (mois < '2026-01')
+      return json(404, {
+        message:
+          'Aucun appel validé pour cette promotion ce mois-ci : choisissez un autre mois, ou relancez les intervenants.',
+      });
+    const sorte =
+      url.searchParams.get('format') === 'apprenants'
+        ? 'recapitulatifs-assiduite'
+        : 'feuilles-emargement';
+    return pdfFictif(`${sorte}-${mois}.pdf`);
+  }
+  if (path === '/api/moi/recapitulatif') {
+    if (!user) return json(401, { message: 'Session absente' });
+    return pdfFictif(`recapitulatif-assiduite-${url.searchParams.get('mois') ?? ''}.pdf`);
   }
   // RG-06-13 : feuille d'appel (liste en cours et versions) et validation.
   if (path === `/api/seances/${SEANCE_ID}/appel/feuille`) {

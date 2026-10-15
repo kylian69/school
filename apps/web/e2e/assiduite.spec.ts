@@ -46,7 +46,9 @@ test.describe('I4.4 Assiduité : retards et absences', () => {
     );
     await expectNoAccessibilityViolations(page);
 
-    await page.getByLabel('Promotion').selectOption({ label: 'Bachelor Web 2e année' });
+    await page
+      .getByLabel('Promotion', { exact: true })
+      .selectOption({ label: 'Bachelor Web 2e année' });
     await page.getByRole('button', { name: 'Filtrer' }).click();
     await expect(page).toHaveURL(/promotionId=/);
     await expect(detail.getByRole('row')).toHaveCount(2);
@@ -60,6 +62,40 @@ test.describe('I4.4 Assiduité : retards et absences', () => {
 
     await page.goto('/assiduite?du=2026-11-01');
     await expect(page.getByText('Aucun retard ni aucune absence pour ces critères.')).toBeVisible();
+  });
+
+  test('US-06-11 E-06-09 la scolarité télécharge les feuilles d’une promotion pour un mois', async ({
+    page,
+  }) => {
+    await page.goto('/assiduite');
+    const feuilles = page.getByRole('region', { name: 'Feuilles d’émargement' });
+    await feuilles
+      .getByLabel('Promotion des feuilles')
+      .selectOption({ label: 'BTS SIO 1re année' });
+    await feuilles.getByLabel('Mois').fill('2026-10');
+    let telechargement = page.waitForEvent('download');
+    await feuilles.getByRole('button', { name: 'Télécharger le PDF' }).click();
+    expect((await telechargement).suggestedFilename()).toBe('feuilles-emargement-2026-10.pdf');
+
+    await feuilles.getByLabel('Par apprenant').check();
+    telechargement = page.waitForEvent('download');
+    await feuilles.getByRole('button', { name: 'Télécharger le PDF' }).click();
+    expect((await telechargement).suggestedFilename()).toBe('recapitulatifs-assiduite-2026-10.pdf');
+    await expectNoAccessibilityViolations(page);
+
+    // Sans appel validé ce mois-là : l'erreur de l'API s'affiche, avec la marche à suivre.
+    await feuilles.getByLabel('Mois').fill('2025-09');
+    await feuilles.getByRole('button', { name: 'Télécharger le PDF' }).click();
+    await expect(feuilles.getByRole('alert')).toContainText('relancez les intervenants');
+  });
+
+  test('RG-06-26 l’apprenant télécharge son récapitulatif mensuel', async ({ page }) => {
+    await page.goto('/mes-absences');
+    await page.getByLabel('Mois').fill('2026-10');
+    const telechargement = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Mon récapitulatif du mois' }).click();
+    expect((await telechargement).suggestedFilename()).toBe('recapitulatif-assiduite-2026-10.pdf');
+    await expectNoAccessibilityViolations(page);
   });
 
   test('US-06-10 RG-06-23 la scolarité voit les apprenants au-dessus des seuils et traite l’alerte', async ({

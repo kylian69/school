@@ -449,6 +449,31 @@
         }
       }
     },
+    "/api/assiduite/feuilles": {
+      "get": {
+        "operationId": "FeuillesController.promotion",
+        "summary": "Feuilles d’émargement ou récapitulatifs mensuels PDF d’une promotion, tracés",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:feuilles"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/assiduite/tableau-de-bord": {
       "get": {
         "operationId": "AssiduiteController.tableauDeBord",
@@ -3977,6 +4002,27 @@
         }
       }
     },
+    "/api/moi/recapitulatif": {
+      "get": {
+        "operationId": "FeuillesController.mien",
+        "summary": "Mon récapitulatif mensuel d’assiduité PDF, tracé",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/moi/seances": {
       "get": {
         "operationId": "SeancesController.aEmarger",
@@ -5870,6 +5916,31 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FeuilleAppel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seances/{id}/appel/feuille/pdf": {
+      "get": {
+        "operationId": "FeuillesController.seance",
+        "summary": "Feuille d’émargement PDF d’une séance (version signée, la dernière par défaut), tracée",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "emargement:feuilles"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -8747,6 +8818,7 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
+                "emargement:feuilles",
                 "assiduite:lire",
                 "assiduite:alertes",
                 "justificatifs:deposer",
@@ -13672,7 +13744,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 42,
+            "maxItems": 43,
             "type": "array",
             "items": {
               "type": "string",
@@ -13715,6 +13787,7 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
+                "emargement:feuilles",
                 "assiduite:lire",
                 "assiduite:alertes",
                 "justificatifs:deposer",
@@ -14451,7 +14524,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 42,
+            "maxItems": 43,
             "type": "array",
             "items": {
               "type": "string",
@@ -14494,6 +14567,7 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
+                "emargement:feuilles",
                 "assiduite:lire",
                 "assiduite:alertes",
                 "justificatifs:deposer",
@@ -17688,6 +17762,7 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
+                "emargement:feuilles",
                 "assiduite:lire",
                 "assiduite:alertes",
                 "justificatifs:deposer",

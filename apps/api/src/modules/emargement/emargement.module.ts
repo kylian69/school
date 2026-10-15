@@ -9,6 +9,8 @@ import {
   ScanController,
   SeancesController,
 } from './emargement.controller.js';
+import { FeuillesController } from './feuilles.controller.js';
+import { FeuillesService } from './feuilles.service.js';
 import { JustificatifsController } from './justificatifs.controller.js';
 import { JustificatifsService } from './justificatifs.service.js';
 import { ScanService } from './scan.service.js';
@@ -24,7 +26,15 @@ import { SeancesService } from './seances.service.js';
     SeancesController,
     AssiduiteController,
     JustificatifsController,
+    FeuillesController,
   ],
-  providers: [ScanService, AppelService, SeancesService, AssiduiteService, JustificatifsService],
+  providers: [
+    ScanService,
+    AppelService,
+    SeancesService,
+    AssiduiteService,
+    JustificatifsService,
+    FeuillesService,
+  ],
 })
 export class EmargementModule {}
