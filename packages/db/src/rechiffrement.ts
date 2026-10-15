@@ -20,6 +20,16 @@ export const CHAMPS_CHIFFRES = {
     colonne: 'jeton_chiffre',
     colonneContexte: 'personne_id',
   },
+  'justificatif.precision': {
+    table: 'justificatif',
+    colonne: 'precision_chiffre',
+    colonneContexte: 'id',
+  },
+  'justificatif.message': {
+    table: 'justificatif',
+    colonne: 'message_chiffre',
+    colonneContexte: 'id',
+  },
 } as const;
 
 export type ChampChiffre = keyof typeof CHAMPS_CHIFFRES;

@@ -66,9 +66,18 @@ export const organisation = pgTable(
      * défaut (domaine, CORRECTION_VERROUILLEE_INTERVENANT_JOURS).
      */
     emargementCorrectionVerrouilleeJours: smallint(),
+    /**
+     * RG-06-19 : heures après la fin de la séance pour déposer un justificatif dans le délai (un
+     * dépôt plus tardif est signalé) ; null : valeur par défaut (domaine, JUSTIFICATIF_DELAI_HEURES).
+     */
+    justificatifDelaiHeures: smallint(),
     ...trackingColumns(),
   },
   (t) => [
+    check(
+      'organisation_justificatif_delai_heures_check',
+      sql`${t.justificatifDelaiHeures} between 1 and 720`,
+    ),
     check(
       'organisation_edt_badge_modifie_jours_check',
       sql`${t.edtBadgeModifieJours} between 0 and 60`,

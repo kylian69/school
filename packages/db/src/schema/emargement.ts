@@ -645,7 +645,7 @@ export const seanceAttenduCalcule = pgView('seance_attendu_calcule', {
 /** RG-06-16, RG-06-17 : absence à toute la séance, ou retard (minutes manquées). */
 export const absenceNature = pgEnum('absence_nature', ['absence', 'retard']);
 /** RG-06-21 : statut de justification ; une absence naît non justifiée. */
-export const absenceStatut = pgEnum('absence_statut', ['non-justifiee']);
+export const absenceStatut = pgEnum('absence_statut', ['non-justifiee', 'justifiee']);
 
 /**
  * Retard ou absence d'un apprenant à une séance (I4.4 ; RG-06-16 à RG-06-18), calculé à chaque
@@ -690,5 +690,112 @@ export const absence = pgTable(
     }),
     check('absence_minutes_check', sql`${t.minutes} > 0`),
     check('absence_demi_journee_check', sql`${t.matin} or ${t.apresMidi}`),
+  ],
+).enableRLS();
+
+/** RG-06-19 : motif choisi dans la liste par défaut de l'école (aucun détail médical, RG-06-20). */
+export const justificatifMotif = pgEnum('justificatif_motif', [
+  'maladie',
+  'rendez-vous-medical',
+  'transport',
+  'convocation',
+  'evenement-familial',
+  'raison-professionnelle',
+  'autre',
+]);
+/** RG-06-21 : à traiter ⇄ complément demandé → accepté ou refusé. */
+export const justificatifStatut = pgEnum('justificatif_statut', [
+  'a-traiter',
+  'complement-demande',
+  'accepte',
+  'refuse',
+]);
+
+/**
+ * Justificatif d'absence (I4.4 ; RG-06-19 à RG-06-21) déposé par l'apprenant, ou par la scolarité
+ * pour lui, pour un ou plusieurs retards et absences. Données de santé possibles (RG-06-20) : le
+ * document reste dans le stockage privé (clé seule ici), la précision libre de l'apprenant et le
+ * message de la scolarité sont chiffrés par champ ; ni l'un ni l'autre ne va au journal d'audit.
+ */
+export const justificatif = pgTable(
+  'justificatif',
+  {
+    ...organisationScoped(),
+    /** Apprenant concerné. */
+    personneId: uuid().notNull(),
+    motif: justificatifMotif().notNull(),
+    /** Précision facultative de l'apprenant, chiffrée (contexte : identifiant de la ligne). */
+    precisionChiffre: text(),
+    /** Photo ou PDF dans le stockage privé ; null tant qu'il n'est pas joint. */
+    documentCle: text(),
+    documentType: text(),
+    documentTaille: integer(),
+    documentSha256: text(),
+    deposeLe: timestamp({ withTimezone: true }).notNull(),
+    /** Fiche de la personne qui a déposé : l'apprenant, ou la scolarité pour lui. */
+    deposePar: uuid().notNull(),
+    /** RG-06-19 : déposé après le délai de l'école (signalé, jamais bloquant). */
+    horsDelai: boolean().notNull(),
+    statut: justificatifStatut().notNull().default('a-traiter'),
+    /** Motif du refus ou complément demandé, chiffré ; montré à l'apprenant. */
+    messageChiffre: text(),
+    decideLe: timestamp({ withTimezone: true }),
+    decidePar: uuid(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('justificatif', t),
+    /** File de traitement : les justificatifs d'un statut, les plus anciens d'abord. */
+    index('justificatif_statut_idx').on(t.organisationId, t.statut, t.deposeLe),
+    /** Justificatifs d'un apprenant (« Mes absences »). */
+    index('justificatif_personne_idx').on(t.organisationId, t.personneId),
+    foreignKey({
+      name: 'justificatif_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    foreignKey({
+      name: 'justificatif_depose_par_fk',
+      columns: [t.organisationId, t.deposePar],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check(
+      'justificatif_document_check',
+      sql`(${t.documentCle} is null) = (${t.documentType} is null)`,
+    ),
+    check(
+      'justificatif_decision_check',
+      sql`(${t.statut} in ('accepte', 'refuse')) = (${t.decideLe} is not null)`,
+    ),
+  ],
+).enableRLS();
+
+/**
+ * Retards et absences couverts par un justificatif. Une absence retirée par la correction de
+ * l'appel quitte le justificatif (suppression en cascade).
+ */
+export const justificatifAbsence = pgTable(
+  'justificatif_absence',
+  {
+    ...organisationScoped(),
+    justificatifId: uuid().notNull(),
+    absenceId: uuid().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('justificatif_absence', t),
+    uniqueIndex('justificatif_absence_key').on(t.organisationId, t.justificatifId, t.absenceId),
+    /** Justificatifs d'une absence (un seul ouvert ou accepté à la fois). */
+    index('justificatif_absence_absence_idx').on(t.organisationId, t.absenceId),
+    foreignKey({
+      name: 'justificatif_absence_justificatif_fk',
+      columns: [t.organisationId, t.justificatifId],
+      foreignColumns: [justificatif.organisationId, justificatif.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'justificatif_absence_absence_fk',
+      columns: [t.organisationId, t.absenceId],
+      foreignColumns: [absence.organisationId, absence.id],
+    }).onDelete('cascade'),
   ],
 ).enableRLS();

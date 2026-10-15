@@ -1,4 +1,4 @@
-import type { Absence, DecompteAssiduite } from '@scolaly/contracts';
+import type { Absence, DecompteAssiduite, StatutJustificatif } from '@scolaly/contracts';
 import { Badge } from '@scolaly/ui';
 import { fr } from '@/i18n/fr';
 
@@ -12,9 +12,23 @@ export function BadgesAbsence({ absence }: { absence: Pick<Absence, 'nature' | '
   return (
     <span className="flex flex-wrap gap-1">
       <Badge tone={absence.nature === 'absence' ? 'bad' : 'warn'}>{t.nature[absence.nature]}</Badge>
-      <Badge tone="neutral">{t.statut[absence.statut]}</Badge>
+      <Badge tone={absence.statut === 'justifiee' ? 'ok' : 'neutral'}>
+        {t.statut[absence.statut]}
+      </Badge>
     </span>
   );
+}
+
+const TONS_JUSTIFICATIF = {
+  'a-traiter': 'accent',
+  'complement-demande': 'warn',
+  accepte: 'ok',
+  refuse: 'bad',
+} as const;
+
+/** RG-06-21 : statut d'un justificatif. */
+export function BadgeJustificatif({ statut }: { statut: StatutJustificatif }) {
+  return <Badge tone={TONS_JUSTIFICATIF[statut]}>{fr.justificatifs.statut[statut]}</Badge>;
 }
 
 /** RG-06-18 : décompte en heures et en demi-journées (E-06-04, E-06-07). */

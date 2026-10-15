@@ -10,9 +10,12 @@ import type { StatutAppel } from './appel-manuel.js';
 export type NatureAbsence = 'absence' | 'retard';
 export const NATURES_ABSENCE = ['absence', 'retard'] as const satisfies readonly NatureAbsence[];
 
-/** Statut de justification ; les justificatifs (lot suivant) ajouteront les leurs. */
-export type StatutAbsence = 'non-justifiee';
-export const STATUTS_ABSENCE = ['non-justifiee'] as const satisfies readonly StatutAbsence[];
+/** Statut de justification (RG-06-21) : « justifiée » quand un justificatif est accepté. */
+export type StatutAbsence = 'non-justifiee' | 'justifiee';
+export const STATUTS_ABSENCE = [
+  'non-justifiee',
+  'justifiee',
+] as const satisfies readonly StatutAbsence[];
 
 /** Statuts comptés dans les demi-journées non justifiées (seuils, RG-06-23). */
 export const STATUTS_NON_JUSTIFIES: readonly StatutAbsence[] = ['non-justifiee'];

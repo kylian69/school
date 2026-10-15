@@ -24,6 +24,7 @@ import {
   controlerSiren,
   controlerSiret,
   CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
+  JUSTIFICATIF_DELAI_HEURES,
   controlerUai,
   informationsManquantes,
   analyserModeleMatricule,
@@ -130,6 +131,8 @@ export class OrganisationService {
       edtBadgeModifieJoursDefaut: this.env.EDT_BADGE_MODIFIE_JOURS,
       emargementCorrectionVerrouilleeJours: ecole.emargementCorrectionVerrouilleeJours,
       emargementCorrectionVerrouilleeJoursDefaut: CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
+      justificatifDelaiHeures: ecole.justificatifDelaiHeures,
+      justificatifDelaiHeuresDefaut: JUSTIFICATIF_DELAI_HEURES,
       etablissements: etablissements.map((e) => this.detail(e)),
     };
   }
@@ -170,6 +173,9 @@ export class OrganisationService {
               emargementCorrectionVerrouilleeJours: changement.emargementCorrectionVerrouilleeJours,
             }
           : {}),
+        ...(changement.justificatifDelaiHeures !== undefined
+          ? { justificatifDelaiHeures: changement.justificatifDelaiHeures }
+          : {}),
         updatedBy: access.userId,
       })
       .where(eq(organisation.id, access.organisationId));
@@ -187,6 +193,7 @@ export class OrganisationService {
         modeleMatricule: avant.modeleMatricule,
         edtBadgeModifieJours: avant.edtBadgeModifieJours,
         emargementCorrectionVerrouilleeJours: avant.emargementCorrectionVerrouilleeJours,
+        justificatifDelaiHeures: avant.justificatifDelaiHeures,
       },
       apres: {
         nom: apres.nom,
@@ -195,6 +202,7 @@ export class OrganisationService {
         modeleMatricule: apres.modeleMatricule,
         edtBadgeModifieJours: apres.edtBadgeModifieJours,
         emargementCorrectionVerrouilleeJours: apres.emargementCorrectionVerrouilleeJours,
+        justificatifDelaiHeures: apres.justificatifDelaiHeures,
       },
     });
     return apres;

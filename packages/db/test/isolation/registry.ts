@@ -3,6 +3,8 @@ import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
 import {
   absence,
+  justificatif,
+  justificatifAbsence,
   appelValidation,
   anneeScolaire,
   attribution,
@@ -86,6 +88,26 @@ async function insertPersonne(db: Database, organisationId: string): Promise<str
     email: `camille.${id}@exemple.test`,
   });
   return id;
+}
+
+async function insertJustificatif(
+  db: Database,
+  organisationId: string,
+  personneId?: string,
+): Promise<string> {
+  const apprenant = personneId ?? (await insertPersonne(db, organisationId));
+  const [ligne] = await db
+    .insert(justificatif)
+    .values({
+      organisationId,
+      personneId: apprenant,
+      motif: 'transport',
+      deposeLe: new Date('2026-10-05T18:00:00Z'),
+      deposePar: apprenant,
+      horsDelai: false,
+    })
+    .returning();
+  return ligne?.id ?? '';
 }
 
 async function insertSeance(db: Database, organisationId: string): Promise<string> {
@@ -689,6 +711,35 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         matin: true,
         apresMidi: false,
         versionAppel: 1,
+      });
+    },
+  },
+  justificatif: {
+    insert: async (db, organisationId) => {
+      await insertJustificatif(db, organisationId);
+    },
+  },
+  justificatif_absence: {
+    insert: async (db, organisationId) => {
+      const personneId = await insertPersonne(db, organisationId);
+      const [a] = await db
+        .insert(absence)
+        .values({
+          organisationId,
+          seanceId: await insertSeance(db, organisationId),
+          personneId,
+          nature: 'retard',
+          minutes: 10,
+          jour: '2026-10-05',
+          matin: true,
+          apresMidi: false,
+          versionAppel: 1,
+        })
+        .returning();
+      await db.insert(justificatifAbsence).values({
+        organisationId,
+        justificatifId: await insertJustificatif(db, organisationId, personneId),
+        absenceId: a?.id ?? '',
       });
     },
   },

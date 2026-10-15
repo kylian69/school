@@ -77,5 +77,15 @@ export const dureesConservation: DatedTable<DureeConservation> = {
       source: "Décision de l'établissement / pilote 10/10/2026",
       valeur: { duree: 'P2M', apres: 'creation', echeance: 'effacement' },
     },
+    {
+      // RG-06-20 : le document d'un justificatif d'absence (données de santé possibles), la
+      // précision de l'apprenant et le message de la scolarité ne servent qu'au traitement et aux
+      // contestations de l'année ; la décision et le statut des absences restent (dossier).
+      cle: 'justificatif-absence',
+      debut: '2026-10-15',
+      fin: null,
+      source: 'Proposition Scolaly I4.4, à valider par un juriste ou un DPO (RGPD-04, RG-06-20)',
+      valeur: { duree: 'P12M', apres: 'creation', echeance: 'effacement' },
+    },
   ],
 };

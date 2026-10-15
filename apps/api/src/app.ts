@@ -6,6 +6,7 @@ import {
   ARCHIVE_PHOTOS_TAILLE_MAX,
   DOCUMENT_CONTRAT_TAILLE_MAX,
   IMPORT_TAILLE_MAX,
+  JUSTIFICATIF_TAILLE_MAX,
   LOGO_TAILLE_MAX,
   TYPES_ARCHIVE_PHOTOS,
   TYPES_FICHIER_IMPORT,
@@ -165,20 +166,21 @@ export async function createApp(
   });
   registerAuthRoutes(app.getHttpAdapter().getInstance(), auth, env.PUBLIC_URL);
   // Logo de l'école envoyé tel quel (US-01-14) ; la limite métier de 2 Mo est contrôlée par le
-  // service, avec un message clair, sous cette limite technique.
+  // service, avec un message clair, sous cette limite technique. Un justificatif d'absence en PNG
+  // passe aussi par ce lecteur (RG-06-19 : 10 Mo contrôlés par le service).
   const fastify = app.getHttpAdapter().getInstance();
   fastify.addContentTypeParser(
     Object.keys(TYPES_LOGO),
-    { parseAs: 'buffer', bodyLimit: 4 * LOGO_TAILLE_MAX },
+    { parseAs: 'buffer', bodyLimit: Math.max(4 * LOGO_TAILLE_MAX, 2 * JUSTIFICATIF_TAILLE_MAX) },
     (_request, body, done) => {
       done(null, body);
     },
   );
-  // Photo JPEG d'une personne (RG-01-26 : 5 Mo contrôlés par le service) ; le PNG passe par le
-  // lecteur du logo ci-dessus.
+  // Photo JPEG d'une personne (RG-01-26 : 5 Mo contrôlés par le service) ou justificatif
+  // d'absence (RG-06-19 : 10 Mo) ; le PNG passe par le lecteur du logo ci-dessus.
   fastify.addContentTypeParser(
     'image/jpeg',
-    { parseAs: 'buffer', bodyLimit: 2 * PHOTO_TAILLE_MAX },
+    { parseAs: 'buffer', bodyLimit: 2 * Math.max(PHOTO_TAILLE_MAX, JUSTIFICATIF_TAILLE_MAX) },
     (_request, body, done) => {
       done(null, body);
     },
@@ -200,7 +202,7 @@ export async function createApp(
       done(null, body);
     },
   );
-  // Contrat ou convention de stage signés (10 Mo contrôlés par le service).
+  // Contrat ou convention de stage signés, justificatif d'absence (10 Mo contrôlés par le service).
   fastify.addContentTypeParser(
     'application/pdf',
     { parseAs: 'buffer', bodyLimit: 2 * DOCUMENT_CONTRAT_TAILLE_MAX },

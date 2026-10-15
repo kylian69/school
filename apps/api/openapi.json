@@ -2835,6 +2835,147 @@
         }
       }
     },
+    "/api/justificatifs": {
+      "post": {
+        "operationId": "JustificatifsController.deposerPourApprenant",
+        "summary": "Déposer un justificatif pour un apprenant de mon périmètre (le document suit)",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "justificatifs:deposer"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepotJustificatif"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Justificatif"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "JustificatifsController.file",
+        "summary": "File des justificatifs d’absence de mon périmètre",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "justificatifs:traiter"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileJustificatifs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/justificatifs/{id}/decision": {
+      "post": {
+        "operationId": "JustificatifsController.decider",
+        "summary": "Accepter, refuser ou demander un complément",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "justificatifs:traiter"
+          ],
+          "scope": "promotion"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionJustificatif"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JustificatifATraiter"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/justificatifs/{id}/document": {
+      "put": {
+        "operationId": "JustificatifsController.documentEcole",
+        "summary": "Joindre le document d’un justificatif déposé pour un apprenant",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "justificatifs:deposer"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Justificatif"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "JustificatifsController.document",
+        "summary": "Lien de téléchargement du document",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "justificatifs:traiter"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LienDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/maquettes/{version}": {
       "get": {
         "operationId": "MaquettesController.lire",
@@ -3666,6 +3807,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MaFormation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/justificatifs": {
+      "post": {
+        "operationId": "JustificatifsController.deposer",
+        "summary": "Déposer un justificatif pour mes retards ou absences (le document suit)",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NouveauJustificatif"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Justificatif"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moi/justificatifs/{id}/document": {
+      "put": {
+        "operationId": "JustificatifsController.documentMien",
+        "summary": "Joindre le document de mon justificatif (corps PDF, JPEG ou PNG, 10 Mo au plus)",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Justificatif"
                 }
               }
             }
@@ -5882,8 +6075,34 @@
           "statut": {
             "type": "string",
             "enum": [
-              "non-justifiee"
+              "non-justifiee",
+              "justifiee"
             ]
+          },
+          "justificatif": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "statut": {
+                "type": "string",
+                "enum": [
+                  "a-traiter",
+                  "complement-demande",
+                  "accepte",
+                  "refuse"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "statut"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -5897,7 +6116,52 @@
           "apresMidi",
           "nature",
           "minutes",
-          "statut"
+          "statut",
+          "justificatif"
+        ],
+        "additionalProperties": false
+      },
+      "AbsenceJustifiee": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "nature": {
+            "type": "string",
+            "enum": [
+              "absence",
+              "retard"
+            ]
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "libelle",
+          "debut",
+          "fin",
+          "nature",
+          "minutes"
         ],
         "additionalProperties": false
       },
@@ -8292,7 +8556,9 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
-                "assiduite:lire"
+                "assiduite:lire",
+                "justificatifs:deposer",
+                "justificatifs:traiter"
               ]
             }
           },
@@ -9027,6 +9293,27 @@
         ],
         "additionalProperties": false
       },
+      "DecisionJustificatif": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepter",
+              "refuser",
+              "completer"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false
+      },
       "DecisionPhoto": {
         "type": "object",
         "properties": {
@@ -9188,6 +9475,48 @@
           "avancement",
           "termine",
           "constats"
+        ],
+        "additionalProperties": false
+      },
+      "DepotJustificatif": {
+        "type": "object",
+        "properties": {
+          "absenceIds": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "motif": {
+            "type": "string",
+            "enum": [
+              "maladie",
+              "rendez-vous-medical",
+              "transport",
+              "convocation",
+              "evenement-familial",
+              "raison-professionnelle",
+              "autre"
+            ]
+          },
+          "precision": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "absenceIds",
+          "motif",
+          "personneId"
         ],
         "additionalProperties": false
       },
@@ -10215,6 +10544,47 @@
         ],
         "additionalProperties": false
       },
+      "FileJustificatifs": {
+        "type": "object",
+        "properties": {
+          "promotions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "libelle"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "justificatifs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JustificatifATraiter"
+            }
+          },
+          "tronque": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "promotions",
+          "justificatifs",
+          "tronque"
+        ],
+        "additionalProperties": false
+      },
       "FluxIcal": {
         "type": "object",
         "properties": {
@@ -10786,6 +11156,179 @@
         ],
         "additionalProperties": false
       },
+      "Justificatif": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "motif": {
+            "type": "string",
+            "enum": [
+              "maladie",
+              "rendez-vous-medical",
+              "transport",
+              "convocation",
+              "evenement-familial",
+              "raison-professionnelle",
+              "autre"
+            ]
+          },
+          "precision": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "a-traiter",
+              "complement-demande",
+              "accepte",
+              "refuse"
+            ]
+          },
+          "deposeLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "horsDelai": {
+            "type": "boolean"
+          },
+          "document": {
+            "type": "boolean"
+          },
+          "message": {
+            "nullable": true,
+            "type": "string"
+          },
+          "decideLe": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "absences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbsenceJustifiee"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "motif",
+          "precision",
+          "statut",
+          "deposeLe",
+          "horsDelai",
+          "document",
+          "message",
+          "decideLe",
+          "absences"
+        ],
+        "additionalProperties": false
+      },
+      "JustificatifATraiter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "motif": {
+            "type": "string",
+            "enum": [
+              "maladie",
+              "rendez-vous-medical",
+              "transport",
+              "convocation",
+              "evenement-familial",
+              "raison-professionnelle",
+              "autre"
+            ]
+          },
+          "precision": {
+            "nullable": true,
+            "type": "string"
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "a-traiter",
+              "complement-demande",
+              "accepte",
+              "refuse"
+            ]
+          },
+          "deposeLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "horsDelai": {
+            "type": "boolean"
+          },
+          "document": {
+            "type": "boolean"
+          },
+          "message": {
+            "nullable": true,
+            "type": "string"
+          },
+          "decideLe": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "absences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbsenceJustifiee"
+            }
+          },
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "prenom": {
+            "type": "string"
+          },
+          "promotion": {
+            "nullable": true,
+            "type": "string"
+          },
+          "deposeParEcole": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "motif",
+          "precision",
+          "statut",
+          "deposeLe",
+          "horsDelai",
+          "document",
+          "message",
+          "decideLe",
+          "absences",
+          "personneId",
+          "nom",
+          "prenom",
+          "promotion",
+          "deposeParEcole"
+        ],
+        "additionalProperties": false
+      },
       "LienDocument": {
         "type": "object",
         "properties": {
@@ -10850,8 +11393,34 @@
           "statut": {
             "type": "string",
             "enum": [
-              "non-justifiee"
+              "non-justifiee",
+              "justifiee"
             ]
+          },
+          "justificatif": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "statut": {
+                "type": "string",
+                "enum": [
+                  "a-traiter",
+                  "complement-demande",
+                  "accepte",
+                  "refuse"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "statut"
+            ],
+            "additionalProperties": false
           },
           "personneId": {
             "type": "string",
@@ -10877,6 +11446,7 @@
           "nature",
           "minutes",
           "statut",
+          "justificatif",
           "personneId",
           "nom",
           "prenom"
@@ -11782,12 +12352,25 @@
             "items": {
               "$ref": "#/components/schemas/Absence"
             }
+          },
+          "justificatifs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Justificatif"
+            }
+          },
+          "delaiHeures": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "decompte",
           "alternant",
-          "absences"
+          "absences",
+          "justificatifs",
+          "delaiHeures"
         ],
         "additionalProperties": false
       },
@@ -12742,6 +13325,12 @@
             "type": "integer",
             "minimum": 7,
             "maximum": 90
+          },
+          "justificatifDelaiHeures": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
           }
         },
         "additionalProperties": false
@@ -12866,7 +13455,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 39,
+            "maxItems": 41,
             "type": "array",
             "items": {
               "type": "string",
@@ -12909,7 +13498,9 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
-                "assiduite:lire"
+                "assiduite:lire",
+                "justificatifs:deposer",
+                "justificatifs:traiter"
               ]
             }
           },
@@ -13554,6 +14145,42 @@
         ],
         "additionalProperties": false
       },
+      "NouveauJustificatif": {
+        "type": "object",
+        "properties": {
+          "absenceIds": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "motif": {
+            "type": "string",
+            "enum": [
+              "maladie",
+              "rendez-vous-medical",
+              "transport",
+              "convocation",
+              "evenement-familial",
+              "raison-professionnelle",
+              "autre"
+            ]
+          },
+          "precision": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "absenceIds",
+          "motif"
+        ],
+        "additionalProperties": false
+      },
       "NouveauModeleRythme": {
         "type": "object",
         "properties": {
@@ -13606,7 +14233,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 39,
+            "maxItems": 41,
             "type": "array",
             "items": {
               "type": "string",
@@ -13649,7 +14276,9 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
-                "assiduite:lire"
+                "assiduite:lire",
+                "justificatifs:deposer",
+                "justificatifs:traiter"
               ]
             }
           },
@@ -14340,6 +14969,17 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "justificatifDelaiHeures": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "justificatifDelaiHeuresDefaut": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "etablissements": {
             "type": "array",
             "items": {
@@ -14358,6 +14998,8 @@
           "edtBadgeModifieJoursDefaut",
           "emargementCorrectionVerrouilleeJours",
           "emargementCorrectionVerrouilleeJoursDefaut",
+          "justificatifDelaiHeures",
+          "justificatifDelaiHeuresDefaut",
           "etablissements"
         ],
         "additionalProperties": false
@@ -16814,7 +17456,9 @@
                 "disponibilites:declarer",
                 "emargement:animer",
                 "emargement:corriger-verrouille",
-                "assiduite:lire"
+                "assiduite:lire",
+                "justificatifs:deposer",
+                "justificatifs:traiter"
               ]
             }
           },

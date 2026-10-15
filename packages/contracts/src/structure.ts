@@ -140,6 +140,9 @@ export const OrganisationDetail = z
      */
     emargementCorrectionVerrouilleeJours: z.int().nullable(),
     emargementCorrectionVerrouilleeJoursDefaut: z.int(),
+    /** RG-06-19 : heures après la séance pour déposer un justificatif ; null : valeur par défaut. */
+    justificatifDelaiHeures: z.int().nullable(),
+    justificatifDelaiHeuresDefaut: z.int(),
     etablissements: z.array(Etablissement),
   })
   .meta({ id: 'OrganisationDetail' });
@@ -156,6 +159,8 @@ export const ModificationOrganisation = z
     edtBadgeModifieJours: z.int().min(0).max(60).nullable().optional(),
     /** RG-06-15 : de 7 (rien après le verrouillage) à 90 jours ; null : valeur par défaut. */
     emargementCorrectionVerrouilleeJours: z.int().min(7).max(90).nullable().optional(),
+    /** RG-06-19 : de 1 à 720 heures (30 jours) ; null : valeur par défaut (48 h). */
+    justificatifDelaiHeures: z.int().min(1).max(720).nullable().optional(),
   })
   .meta({ id: 'ModificationOrganisation' });
 export type ModificationOrganisation = z.infer<typeof ModificationOrganisation>;

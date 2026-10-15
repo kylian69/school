@@ -56,6 +56,10 @@ export const PERMISSIONS = {
     'Corriger un appel verrouillé (plus de 7 jours après la séance), avec un motif ; sur ses seules séances pour un intervenant, dans le délai fixé par l’école',
   'assiduite:lire':
     'Consulter les absences et les retards des apprenants de son périmètre, avec leur décompte en heures et en demi-journées',
+  'justificatifs:deposer':
+    'Déposer un justificatif d’absence pour un apprenant de son périmètre (document reçu par email ou par courrier)',
+  'justificatifs:traiter':
+    'Ouvrir les justificatifs d’absence des apprenants de son périmètre, les accepter, les refuser ou demander un complément',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

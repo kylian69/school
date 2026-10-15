@@ -34,7 +34,7 @@ export interface FichierATelecharger {
   /** Nom proposé au navigateur. */
   nom: string;
   /** Type MIME envoyé avec le fichier. */
-  type: 'application/pdf' | 'text/csv; charset=utf-8';
+  type: 'application/pdf' | 'image/jpeg' | 'image/png' | 'text/csv; charset=utf-8';
   /** Objet métier du fichier, inscrit au journal d'audit à chaque téléchargement. */
   objet: { type: string; id: string };
 }

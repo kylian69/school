@@ -2,6 +2,7 @@ import {
   EmailJob,
   EVENEMENT_CHANGEMENT_EDT,
   EVENEMENT_CORRECTION_VERROUILLEE,
+  EVENEMENT_DECISION_JUSTIFICATIF,
   EvenementJob,
   QUEUES,
 } from '@scolaly/contracts';
@@ -19,6 +20,7 @@ import type { Redis } from 'ioredis';
 import type { Logger } from 'pino';
 import { effacerLocalisationsPassees, purgerIndisponibilitesPassees } from './conservation.js';
 import { signalerCorrectionVerrouillee } from './correction-verrouillee.js';
+import { signalerDecisionJustificatif } from './decision-justificatif.js';
 import { prechargerSeances } from './emargement.js';
 import type { Mailer } from './mailer.js';
 import { enregistrerChangementEdt, envoyerNotificationsEdt } from './notifications-edt.js';
@@ -176,6 +178,8 @@ export function startWorkers(options: {
         await enregistrerChangementEdt(db, evenement);
       else if (evenement.type === EVENEMENT_CORRECTION_VERROUILLEE)
         await signalerCorrectionVerrouillee(db, evenement, confier, options.publicUrl);
+      else if (evenement.type === EVENEMENT_DECISION_JUSTIFICATIF)
+        await signalerDecisionJustificatif(db, evenement, confier, options.publicUrl);
     },
     { ...common, concurrency: 5 },
   );

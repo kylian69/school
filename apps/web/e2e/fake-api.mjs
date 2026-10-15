@@ -124,6 +124,8 @@ const ecole = {
   edtBadgeModifieJoursDefaut: 7,
   emargementCorrectionVerrouilleeJours: null,
   emargementCorrectionVerrouilleeJoursDefaut: 14,
+  justificatifDelaiHeures: null,
+  justificatifDelaiHeuresDefaut: 48,
   etablissements: [
     {
       id: '01a10000-0000-7000-8000-0000000000b1',
@@ -322,6 +324,37 @@ const decompteFictif = (absences) => {
     demiJourneesNonJustifiees: demi.size,
   };
 };
+// I4.4 : justificatifs par jeu de test (cookie e2e-justificatifs), pour ne pas changer les absences
+// des autres scénarios ; les règles (délai, droits, décisions) sont testées par l'API.
+const justificatifsParJeu = new Map();
+const jeuJustificatifs = (request) => {
+  const cle = (request.headers.cookie ?? '').match(/e2e-justificatifs=(\w+)/)?.[1];
+  if (!cle) return [];
+  if (!justificatifsParJeu.has(cle)) justificatifsParJeu.set(cle, []);
+  return justificatifsParJeu.get(cle);
+};
+const vueAbsenceJustifiee = (
+  { personneId: _p, nom: _n, prenom: _pr, promotionId: _pi, ...a },
+  justificatifs,
+) => {
+  const lie = justificatifs.find((j) => j.absenceIds.includes(a.id));
+  return {
+    ...a,
+    statut: lie?.statut === 'accepte' ? 'justifiee' : a.statut,
+    justificatif: lie ? { id: lie.id, statut: lie.statut } : null,
+  };
+};
+const vueJustificatif = ({ absenceIds, ...j }) => ({
+  ...j,
+  absences: ABSENCES_FICTIVES.filter((a) => absenceIds.includes(a.id)).map((a) => ({
+    id: a.id,
+    libelle: a.libelle,
+    debut: a.debut,
+    fin: a.fin,
+    nature: a.nature,
+    minutes: a.minutes,
+  })),
+});
 // RG-06-13 : validations de l'appel, par appel de test ; cookie e2e-etat=verrouille : appel de
 // plus de 7 jours, déjà validé (RG-06-01). RG-06-15 : cookie e2e-droit-verrouille=ecole ou
 // intervenant : la personne a le droit de corriger l'appel verrouillé ; sans lui, elle ne l'a pas.
@@ -2247,6 +2280,8 @@ createServer(async (request, response) => {
             'emargement:animer',
             'emargement:corriger-verrouille',
             'assiduite:lire',
+            'justificatifs:deposer',
+            'justificatifs:traiter',
             'edt:forcer',
             'edt:gerer',
             'edt:lire',
@@ -2462,13 +2497,76 @@ createServer(async (request, response) => {
   // I4.4 : retards et absences calculés à la validation de l'appel (le calcul est testé par l'API).
   if (path === '/api/moi/absences') {
     if (!user) return json(401, { message: 'Session absente' });
+    const justificatifs = jeuJustificatifs(request);
     return json(200, {
       decompte: decompteFictif(ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID)),
       alternant: true,
-      absences: ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID).map(
-        ({ personneId: _p, nom: _n, prenom: _pr, promotionId: _pi, ...a }) => a,
+      absences: ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID).map((a) =>
+        vueAbsenceJustifiee(a, justificatifs),
       ),
+      justificatifs: justificatifs.map(vueJustificatif).reverse(),
+      delaiHeures: 48,
     });
+  }
+  if (path === '/api/moi/justificatifs' && request.method === 'POST') {
+    const corps = await readBody(request);
+    const j = {
+      id: randomUUID(),
+      motif: corps.motif,
+      precision: corps.precision ?? null,
+      statut: 'a-traiter',
+      deposeLe: new Date().toISOString(),
+      horsDelai: true,
+      document: false,
+      message: null,
+      decideLe: null,
+      absenceIds: corps.absenceIds,
+    };
+    jeuJustificatifs(request).push(j);
+    return json(201, vueJustificatif(j));
+  }
+  const documentMien = path.match(/^\/api\/moi\/justificatifs\/([^/]+)\/document$/);
+  if (documentMien && request.method === 'PUT') {
+    const j = jeuJustificatifs(request).find((x) => x.id === documentMien[1]);
+    await lireCorps(request);
+    if (!j) return json(404, { message: 'Justificatif introuvable.' });
+    Object.assign(j, { document: true, statut: 'a-traiter' });
+    return json(200, vueJustificatif(j));
+  }
+  if (path === '/api/justificatifs' && request.method === 'GET') {
+    if (!user) return json(401, { message: 'Session absente' });
+    const statut = url.searchParams.get('statut') ?? 'a-traiter';
+    return json(200, {
+      promotions: PROMOTIONS_ASSIDUITE,
+      justificatifs: jeuJustificatifs(request)
+        .filter((j) => j.statut === statut)
+        .map((j) => ({
+          ...vueJustificatif(j),
+          personneId: LEA_ID,
+          nom: 'Martin',
+          prenom: 'Léa',
+          promotion: PROMOTIONS_ASSIDUITE[0].libelle,
+          deposeParEcole: false,
+        })),
+      tronque: false,
+    });
+  }
+  const traitement = path.match(/^\/api\/justificatifs\/([^/]+)\/(document|decision)$/);
+  if (traitement) {
+    const j = jeuJustificatifs(request).find((x) => x.id === traitement[1]);
+    if (!j) return json(404, { message: 'Justificatif introuvable.' });
+    if (traitement[2] === 'document') return json(200, { url: '/fake-document.pdf' });
+    const { decision, message } = await readBody(request);
+    if (decision !== 'accepter' && !message)
+      return json(400, {
+        message: 'Données invalides. Corrigez les champs signalés puis réessayez.',
+        details: ['message : Indiquez le motif du refus : il sera montré à l’apprenant.'],
+      });
+    j.statut = { accepter: 'accepte', refuser: 'refuse', completer: 'complement-demande' }[
+      decision
+    ];
+    j.message = message ?? null;
+    return json(201, vueJustificatif(j));
   }
   if (path === '/api/assiduite') {
     if (!user) return json(401, { message: 'Session absente' });
@@ -2495,7 +2593,7 @@ createServer(async (request, response) => {
           decompte: decompteFictif(siennes),
         };
       }),
-      absences: retenues.map(({ promotionId: _pi, ...a }) => a),
+      absences: retenues.map(({ promotionId: _pi, ...a }) => ({ ...a, justificatif: null })),
       tronque: false,
     });
   }
