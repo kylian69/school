@@ -13,8 +13,10 @@ import type {
   OrganisationDetail,
 } from '@scolaly/contracts';
 import {
+  colonnesSeuils,
   enregistrerAudit,
   etablissement,
+  lireSeuils,
   organisation,
   type Transaction,
   salle,
@@ -25,6 +27,7 @@ import {
   controlerSiret,
   CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
   JUSTIFICATIF_DELAI_HEURES,
+  SEUILS_ASSIDUITE_DEFAUT,
   controlerUai,
   informationsManquantes,
   analyserModeleMatricule,
@@ -133,6 +136,8 @@ export class OrganisationService {
       emargementCorrectionVerrouilleeJoursDefaut: CORRECTION_VERROUILLEE_INTERVENANT_JOURS,
       justificatifDelaiHeures: ecole.justificatifDelaiHeures,
       justificatifDelaiHeuresDefaut: JUSTIFICATIF_DELAI_HEURES,
+      seuilsAssiduite: lireSeuils(ecole),
+      seuilsAssiduiteDefaut: SEUILS_ASSIDUITE_DEFAUT,
       etablissements: etablissements.map((e) => this.detail(e)),
     };
   }
@@ -176,6 +181,9 @@ export class OrganisationService {
         ...(changement.justificatifDelaiHeures !== undefined
           ? { justificatifDelaiHeures: changement.justificatifDelaiHeures }
           : {}),
+        ...(changement.seuilsAssiduite !== undefined
+          ? colonnesSeuils(changement.seuilsAssiduite)
+          : {}),
         updatedBy: access.userId,
       })
       .where(eq(organisation.id, access.organisationId));
@@ -194,6 +202,7 @@ export class OrganisationService {
         edtBadgeModifieJours: avant.edtBadgeModifieJours,
         emargementCorrectionVerrouilleeJours: avant.emargementCorrectionVerrouilleeJours,
         justificatifDelaiHeures: avant.justificatifDelaiHeures,
+        seuilsAssiduite: avant.seuilsAssiduite,
       },
       apres: {
         nom: apres.nom,
@@ -203,6 +212,7 @@ export class OrganisationService {
         edtBadgeModifieJours: apres.edtBadgeModifieJours,
         emargementCorrectionVerrouilleeJours: apres.emargementCorrectionVerrouilleeJours,
         justificatifDelaiHeures: apres.justificatifDelaiHeures,
+        seuilsAssiduite: apres.seuilsAssiduite,
       },
     });
     return apres;

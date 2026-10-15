@@ -158,12 +158,35 @@ function EmargementFormation({ formation }: { formation: Formation }) {
   const te = t.emargement;
   const reglage = useEnvoi();
   const [active, setActive] = useState(formation.emargement.localisation);
+  const seuils = formation.emargement.seuils;
   if (!formation.emargement.parametrable) {
     return (
-      <p className="text-sm text-muted">
-        {formation.emargement.localisation ? te.active : te.inactive}
-      </p>
+      <div className="flex flex-col gap-1 text-sm text-muted">
+        <p>{formation.emargement.localisation ? te.active : te.inactive}</p>
+        <p>
+          {seuils
+            ? te.seuilsFormation(seuils.niveau1, seuils.niveau2, seuils.fenetreJours)
+            : te.seuilsEcole}
+        </p>
+      </div>
     );
+  }
+
+  /** RG-06-23 : trois champs remplis, ou tous vides pour les seuils de l'école. */
+  function enregistrerSeuils(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const champs = ['niveau1', 'niveau2', 'fenetreJours'].map((nom) => texte(form.get(nom)));
+    const remplis = champs.filter(Boolean).length;
+    if (remplis !== 0 && remplis !== 3) {
+      reglage.setErreurs({ message: fr.organisation.seuilsIncomplets, details: [] });
+      return;
+    }
+    const [niveau1, niveau2, fenetreJours] = champs.map(Number);
+    void reglage.executer(`/api/formations/${formation.id}/emargement`, 'PUT', {
+      localisation: active,
+      seuils: remplis === 3 ? { niveau1, niveau2, fenetreJours } : null,
+    });
   }
   return (
     <fieldset className="flex flex-col gap-2 rounded-control border border-line p-4">
@@ -189,6 +212,37 @@ function EmargementFormation({ formation }: { formation: Formation }) {
         {te.localisation}
       </label>
       <p className="text-xs text-muted">{te.aide}</p>
+      <form className="flex flex-col gap-2" aria-label={te.seuils} onSubmit={enregistrerSeuils}>
+        <p className="text-sm font-medium">{te.seuils}</p>
+        <p className="text-xs text-muted">{te.seuilsAide}</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {(
+            [
+              ['niveau1', fr.organisation.seuilNiveau1, 1, 100],
+              ['niveau2', fr.organisation.seuilNiveau2, 1, 100],
+              ['fenetreJours', fr.organisation.seuilFenetre, 7, 365],
+            ] as const
+          ).map(([nom, label, min, max]) => (
+            <Champ
+              key={nom}
+              nom={nom}
+              label={label}
+              erreurs={reglage.erreurs}
+              defaultValue={seuils?.[nom] ?? ''}
+              type="number"
+              inputMode="numeric"
+              min={min}
+              max={max}
+              step={1}
+            />
+          ))}
+        </div>
+        <div>
+          <Button type="submit" variant="secondary" disabled={reglage.envoi}>
+            {te.enregistrerSeuils}
+          </Button>
+        </div>
+      </form>
       <MessageErreur erreurs={reglage.erreurs} />
     </fieldset>
   );

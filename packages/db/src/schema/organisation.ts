@@ -13,7 +13,13 @@ import {
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { platformRole } from '../roles.js';
-import { isolationPolicy, primaryId, trackingColumns } from './columns.js';
+import {
+  isolationPolicy,
+  primaryId,
+  seuilsAssiduiteCheck,
+  seuilsAssiduiteColumns,
+  trackingColumns,
+} from './columns.js';
 
 /**
  * Groupe d'écoles (RG-00-23) : table de plateforme, sans organisation_id (module 01, section 6).
@@ -71,9 +77,11 @@ export const organisation = pgTable(
      * dépôt plus tardif est signalé) ; null : valeur par défaut (domaine, JUSTIFICATIF_DELAI_HEURES).
      */
     justificatifDelaiHeures: smallint(),
+    ...seuilsAssiduiteColumns(),
     ...trackingColumns(),
   },
   (t) => [
+    seuilsAssiduiteCheck('organisation', t),
     check(
       'organisation_justificatif_delai_heures_check',
       sql`${t.justificatifDelaiHeures} between 1 and 720`,

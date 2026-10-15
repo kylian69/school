@@ -498,6 +498,13 @@
       "when": 1792096087615,
       "tag": "0070_blushing_ego",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792098286967,
+      "tag": "0071_salty_taskmaster",
+      "breakpoints": true
     }
   ]
 }

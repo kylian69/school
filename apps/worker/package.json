@@ -25,6 +25,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
     "@scolaly/contracts": "workspace:*",
     "@scolaly/db": "workspace:*",
     "@scolaly/domain": "workspace:*",

@@ -100,6 +100,7 @@ describe('Tâches planifiées et workers', () => {
       masterKeys: new Map([[1, Buffer.alloc(32, 1)]]),
       currentVersion: 1,
     }),
+    supprimerDocument: null,
   });
 
   afterAll(async () => {
@@ -128,6 +129,7 @@ describe('Tâches planifiées et workers', () => {
     await registerSchedules(maintenance);
     const schedulers = await maintenance.getJobSchedulers();
     expect(schedulers.map((s) => [s.key, s.pattern]).sort()).toEqual([
+      [MAINTENANCE_JOBS.alertesAssiduite, '20 * * * *'],
       [MAINTENANCE_JOBS.conservationIndisponibilites, '30 3 * * *'],
       [MAINTENANCE_JOBS.notificationsEdt, undefined],
       [MAINTENANCE_JOBS.partitionsAudit, '15 2 * * *'],

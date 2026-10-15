@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SeuilsAssiduite } from './assiduite.js';
 
 /**
  * Contrats du référentiel pédagogique (module 02) : catalogue des formations (E-02-01), éditeur de
@@ -65,6 +66,8 @@ export const Formation = z
     emargement: z.object({
       /** Contrôle de localisation demandé ; sans effet si l'établissement l'a désactivé. */
       localisation: z.boolean(),
+      /** RG-06-23 : seuils d'alerte propres à la formation ; null : ceux de l'école. */
+      seuils: SeuilsAssiduite.nullable(),
       /** La personne peut changer ces réglages (droit de paramétrer l'école). */
       parametrable: z.boolean(),
     }),
@@ -74,7 +77,11 @@ export type Formation = z.infer<typeof Formation>;
 
 /** RG-06-09 : réglage des contrôles de l'émargement d'une formation. */
 export const EmargementFormation = z
-  .object({ localisation: z.boolean() })
+  .object({
+    localisation: z.boolean(),
+    /** RG-06-23 : absent, inchangé ; null, seuils de l'école. */
+    seuils: SeuilsAssiduite.nullable().optional(),
+  })
   .meta({ id: 'EmargementFormation' });
 export type EmargementFormation = z.infer<typeof EmargementFormation>;
 

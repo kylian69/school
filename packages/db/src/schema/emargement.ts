@@ -799,3 +799,54 @@ export const justificatifAbsence = pgTable(
     }).onDelete('cascade'),
   ],
 ).enableRLS();
+
+/** RG-06-23 : une alerte reste « ouverte » jusqu'à ce que la scolarité ou la pédagogie la traite. */
+export const alerteAssiduiteStatut = pgEnum('alerte_assiduite_statut', ['ouverte', 'traitee']);
+
+/**
+ * Alerte d'assiduité (I4.4 ; RG-06-23, RG-03-20) : un apprenant a atteint un niveau de seuil de
+ * demi-journées non justifiées sur la période glissante. Créée par le worker au plus une fois par
+ * niveau et par période (domaine, alertesADeclencher) ; `notifieeLe` marque l'email envoyé à la
+ * scolarité, à la pédagogie (niveau 1) et à la direction (niveau 2). Les seuils sont recopiés :
+ * l'alerte reste lisible si l'école les change ensuite.
+ */
+export const alerteAssiduite = pgTable(
+  'alerte_assiduite',
+  {
+    ...organisationScoped(),
+    personneId: uuid().notNull(),
+    niveau: smallint().notNull(),
+    declencheeLe: timestamp({ withTimezone: true }).notNull(),
+    /** Demi-journées non justifiées constatées, seuil franchi et période, au déclenchement. */
+    demiJournees: smallint().notNull(),
+    seuil: smallint().notNull(),
+    fenetreJours: smallint().notNull(),
+    notifieeLe: timestamp({ withTimezone: true }),
+    statut: alerteAssiduiteStatut().notNull().default('ouverte'),
+    traiteeLe: timestamp({ withTimezone: true }),
+    traiteePar: uuid(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('alerte_assiduite', t),
+    /** Dernières alertes d'un apprenant par niveau (anti-rafale). */
+    index('alerte_assiduite_personne_idx').on(
+      t.organisationId,
+      t.personneId,
+      t.niveau,
+      t.declencheeLe,
+    ),
+    /** Alertes ouvertes, et alertes à notifier. */
+    index('alerte_assiduite_statut_idx').on(t.organisationId, t.statut, t.declencheeLe),
+    foreignKey({
+      name: 'alerte_assiduite_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check('alerte_assiduite_niveau_check', sql`${t.niveau} in (1, 2)`),
+    check(
+      'alerte_assiduite_traitement_check',
+      sql`(${t.statut} = 'traitee') = (${t.traiteeLe} is not null)`,
+    ),
+  ],
+).enableRLS();

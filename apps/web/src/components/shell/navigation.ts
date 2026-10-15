@@ -129,6 +129,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M4 20V10M10 20V4M16 20v-7M20 20H3',
   },
   {
+    label: fr.coquille.entrees.alertesAssiduite,
+    href: '/assiduite/tableau-de-bord',
+    module: 'emargement',
+    permissions: ['assiduite:lire'],
+    icon: 'M12 3l9 16H3zM12 10v4M12 17v.5',
+  },
+  {
     label: fr.coquille.entrees.justificatifs,
     href: '/assiduite/justificatifs',
     module: 'emargement',

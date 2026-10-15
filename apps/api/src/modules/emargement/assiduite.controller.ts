@@ -1,5 +1,23 @@
-import { Controller, ForbiddenException, Get, Inject, Query, Req } from '@nestjs/common';
-import { FiltreAssiduite, MesAbsences, SuiviAssiduite } from '@scolaly/contracts';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import {
+  AlerteAssiduite,
+  FiltreAssiduite,
+  FiltreTableauAssiduite,
+  MesAbsences,
+  SuiviAssiduite,
+  TableauAssiduite,
+} from '@scolaly/contracts';
 import { withOrganisation, type Database } from '@scolaly/db';
 import { ACCESS_RESOLVER, type AccessResolver } from '../../access/access-resolver.js';
 import { Authenticated, RequirePermission } from '../../access/access.decorators.js';
@@ -51,5 +69,34 @@ export class AssiduiteController {
   })
   suivi(@Query() filtre: FiltreAssiduite) {
     return this.assiduite.suivi(RequestContext.tx(), RequestContext.access(), filtre);
+  }
+
+  /** E-06-07, US-06-10 : périmètre contrôlé par le service, comme le suivi. */
+  @Get('assiduite/tableau-de-bord')
+  @RequirePermission('assiduite:lire')
+  @ApiContract({
+    summary: 'Tableau de bord de l’assiduité : indicateurs et apprenants au-dessus des seuils',
+    query: FiltreTableauAssiduite,
+    response: TableauAssiduite,
+  })
+  tableauDeBord(@Query() filtre: FiltreTableauAssiduite) {
+    return this.assiduite.tableauDeBord(RequestContext.tx(), RequestContext.access(), filtre);
+  }
+
+  /** RG-06-23 : alerte d'un apprenant de mon périmètre marquée traitée. */
+  @Post('assiduite/alertes/:id/traitement')
+  @HttpCode(200)
+  @RequirePermission('assiduite:alertes', 'promotion')
+  @ApiContract({
+    summary: 'Marquer une alerte d’assiduité comme traitée',
+    response: AlerteAssiduite,
+  })
+  traiterAlerte(@Param('id', ParseUUIDPipe) id: string, @Req() request: ScolalyRequest) {
+    return this.assiduite.traiterAlerte(
+      RequestContext.tx(),
+      RequestContext.access(),
+      id,
+      request.ip,
+    );
   }
 }

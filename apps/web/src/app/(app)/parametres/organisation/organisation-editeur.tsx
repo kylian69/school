@@ -233,8 +233,17 @@ function FicheOrganisation({
 
   async function onSubmit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
+    const { seuilNiveau1, seuilNiveau2, seuilFenetre, ...saisie } = valeurs(event.currentTarget);
+    // RG-06-23 : les trois seuils ensemble, ou aucun (valeurs par défaut).
+    const seuils = [seuilNiveau1, seuilNiveau2, seuilFenetre].map((v) => v?.trim() ?? '');
+    const remplis = seuils.filter(Boolean).length;
+    if (remplis !== 0 && remplis !== 3) {
+      setEnregistre(false);
+      setErreurs({ message: t.seuilsIncomplets, details: [] });
+      return;
+    }
+    const [niveau1, niveau2, fenetreJours] = seuils.map(Number);
     setEnvoi(true);
-    const saisie = valeurs(event.currentTarget);
     const jours = saisie.edtBadgeModifieJours?.trim();
     const correction = saisie.emargementCorrectionVerrouilleeJours?.trim();
     const delai = saisie.justificatifDelaiHeures?.trim();
@@ -247,6 +256,7 @@ function FicheOrganisation({
         edtBadgeModifieJours: jours ? Number(jours) : null,
         emargementCorrectionVerrouilleeJours: correction ? Number(correction) : null,
         justificatifDelaiHeures: delai ? Number(delai) : null,
+        seuilsAssiduite: remplis === 3 ? { niveau1, niveau2, fenetreJours } : null,
       },
       t.erreur,
     );
@@ -336,6 +346,35 @@ function FicheOrganisation({
             max={720}
             step={1}
           />
+        </fieldset>
+        <fieldset disabled={!modifiable} className="flex flex-col gap-3">
+          <legend className="text-sm font-semibold">{t.seuilsAssiduite}</legend>
+          <p className="text-xs text-muted">
+            {t.seuilsAssiduiteAide(organisation.seuilsAssiduiteDefaut)}
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            {(
+              [
+                ['seuilNiveau1', t.seuilNiveau1, 'niveau1', 1, 100],
+                ['seuilNiveau2', t.seuilNiveau2, 'niveau2', 1, 100],
+                ['seuilFenetre', t.seuilFenetre, 'fenetreJours', 7, 365],
+              ] as const
+            ).map(([nom, label, cle, min, max]) => (
+              <Champ
+                key={nom}
+                nom={nom}
+                label={label}
+                erreurs={erreurs}
+                defaultValue={organisation.seuilsAssiduite?.[cle] ?? ''}
+                placeholder={String(organisation.seuilsAssiduiteDefaut[cle])}
+                type="number"
+                inputMode="numeric"
+                min={min}
+                max={max}
+                step={1}
+              />
+            ))}
+          </div>
         </fieldset>
         <p role="alert" aria-live="polite" className="text-sm text-bad empty:hidden">
           {erreurs.message}

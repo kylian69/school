@@ -126,6 +126,8 @@ const ecole = {
   emargementCorrectionVerrouilleeJoursDefaut: 14,
   justificatifDelaiHeures: null,
   justificatifDelaiHeuresDefaut: 48,
+  seuilsAssiduite: null,
+  seuilsAssiduiteDefaut: { niveau1: 3, niveau2: 6, fenetreJours: 30 },
   etablissements: [
     {
       id: '01a10000-0000-7000-8000-0000000000b1',
@@ -324,6 +326,12 @@ const decompteFictif = (absences) => {
     demiJourneesNonJustifiees: demi.size,
   };
 };
+// RG-06-23 : alerte fictive de Noé (niveau 1, seuils de sa formation : 2 puis 4 demi-journées) ;
+// traitée par jeu de test (cookie e2e-alertes), pour ne pas changer les autres scénarios.
+const ALERTE_NOE = '0192f0a4-1b2c-7d3e-8f40-0000000000e1';
+const alertesTraitees = new Set();
+const jeuAlertes = (request) =>
+  (request.headers.cookie ?? '').match(/e2e-alertes=(\w+)/)?.[1] ?? 'commun';
 // I4.4 : justificatifs par jeu de test (cookie e2e-justificatifs), pour ne pas changer les absences
 // des autres scénarios ; les règles (délai, droits, décisions) sont testées par l'API.
 const justificatifsParJeu = new Map();
@@ -671,12 +679,12 @@ const versionsDe = (formationId) =>
   [...maquettes.values()]
     .filter((m) => m.formationId === formationId)
     .sort((a, b) => a.numero - b.numero);
-const detailFormation = ({ localisationEmargement = true, ...f }) => ({
+const detailFormation = ({ localisationEmargement = true, seuilsAssiduite = null, ...f }) => ({
   ...f,
   versions: versionsDe(f.id).map(resumeVersion),
   modifiable: true,
   publiable: true,
-  emargement: { localisation: localisationEmargement, parametrable: true },
+  emargement: { localisation: localisationEmargement, seuils: seuilsAssiduite, parametrable: true },
 });
 const heuresVides = () => Object.fromEntries(TYPES_H.map((t) => [t, 0]));
 function detailMaquette(m) {
@@ -826,7 +834,10 @@ async function routeReferentiel(path, request, json, response, url) {
     }
     // RG-06-09 : contrôle de localisation propre à la formation.
     if (sousRoute === '/emargement' && request.method === 'PUT') {
-      f.localisationEmargement = (await readBody(request)).localisation;
+      const reglage = await readBody(request);
+      f.localisationEmargement = reglage.localisation;
+      // RG-06-23 : seuils absents, inchangés.
+      if (reglage.seuils !== undefined) f.seuilsAssiduite = reglage.seuils;
     }
     if (request.method === 'PATCH') Object.assign(f, await readBody(request));
     return json(200, detailFormation(f));
@@ -2280,6 +2291,7 @@ createServer(async (request, response) => {
             'emargement:animer',
             'emargement:corriger-verrouille',
             'assiduite:lire',
+            'assiduite:alertes',
             'justificatifs:deposer',
             'justificatifs:traiter',
             'edt:forcer',
@@ -2567,6 +2579,65 @@ createServer(async (request, response) => {
     ];
     j.message = message ?? null;
     return json(201, vueJustificatif(j));
+  }
+  if (path === '/api/assiduite/tableau-de-bord') {
+    if (!user) return json(401, { message: 'Session absente' });
+    const filtre = Object.fromEntries(url.searchParams);
+    const ouverte = !alertesTraitees.has(`${jeuAlertes(request)}|${ALERTE_NOE}`);
+    const noe = {
+      personneId: NOE_ID,
+      nom: 'Petit',
+      prenom: 'Noé',
+      promotion: PROMOTIONS_ASSIDUITE[1].libelle,
+      alternant: false,
+      seuils: { niveau1: 2, niveau2: 4, fenetreJours: 30 },
+      demiJourneesNonJustifiees: 2,
+      niveau: 1,
+      alertes: ouverte
+        ? [
+            {
+              id: ALERTE_NOE,
+              niveau: 1,
+              declencheeLe: '2026-10-09T16:20:00.000Z',
+              demiJournees: 2,
+              seuil: 2,
+              fenetreJours: 30,
+              statut: 'ouverte',
+              traiteeLe: null,
+            },
+          ]
+        : [],
+    };
+    const retenu =
+      (!filtre.promotionId || filtre.promotionId === PROMOTIONS_ASSIDUITE[1].id) &&
+      filtre.niveau !== '2' &&
+      (!filtre.alertes || ouverte);
+    return json(200, {
+      promotions: PROMOTIONS_ASSIDUITE,
+      indicateurs: {
+        niveau1: 1,
+        niveau2: 0,
+        alertesOuvertes: ouverte ? 1 : 0,
+        demiJourneesNonJustifiees: 3,
+        justificatifsATraiter: 0,
+      },
+      apprenants: retenu ? [noe] : [],
+      traitable: true,
+    });
+  }
+  if (path === `/api/assiduite/alertes/${ALERTE_NOE}/traitement` && request.method === 'POST') {
+    if (!user) return json(401, { message: 'Session absente' });
+    alertesTraitees.add(`${jeuAlertes(request)}|${ALERTE_NOE}`);
+    return json(200, {
+      id: ALERTE_NOE,
+      niveau: 1,
+      declencheeLe: '2026-10-09T16:20:00.000Z',
+      demiJournees: 2,
+      seuil: 2,
+      fenetreJours: 30,
+      statut: 'traitee',
+      traiteeLe: new Date().toISOString(),
+    });
   }
   if (path === '/api/assiduite') {
     if (!user) return json(401, { message: 'Session absente' });

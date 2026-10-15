@@ -22,7 +22,7 @@ import {
   role,
 } from '@scolaly/db';
 import { REGLES_VALIDATION_PAR_DEFAUT } from '@scolaly/domain';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { createPasswordAccount, type Auth } from '../src/auth/auth.js';
 import { AUTH } from '../src/shared/tokens.js';
@@ -184,7 +184,7 @@ describe('E-02-01 et E-02-02 formations et maquettes', () => {
   });
 
   it('RG-06-09 désactive le contrôle de localisation de la formation, droit de l’école et audit', async () => {
-    expect(bachelor.emargement).toEqual({ localisation: true, parametrable: true });
+    expect(bachelor.emargement).toEqual({ localisation: true, seuils: null, parametrable: true });
     const scolarite = cookies.get('scolarite') ?? '';
     const refus = await requete('PUT', `/api/formations/${bachelor.id}/emargement`, scolarite, {
       localisation: false,
@@ -226,6 +226,34 @@ describe('E-02-01 et E-02-02 formations et maquettes', () => {
         ),
       );
     expect(traces).toHaveLength(2);
+  });
+
+  it('RG-06-23 règle les seuils d’alerte propres à la formation, puis revient à ceux de l’école', async () => {
+    const url = `/api/formations/${bachelor.id}/emargement`;
+    const seuils = { niveau1: 2, niveau2: 4, fenetreJours: 14 };
+    const reponse = await requete('PUT', url, admin(), { localisation: true, seuils });
+    expect(reponse.statusCode, reponse.body).toBe(200);
+    expect(reponse.json<Formation>().emargement.seuils).toEqual(seuils);
+    // Seuils absents de la demande : inchangés.
+    const inchange = await requete('PUT', url, admin(), { localisation: true });
+    expect(inchange.json<Formation>().emargement.seuils).toEqual(seuils);
+    const incoherents = { niveau1: 4, niveau2: 2, fenetreJours: 14 };
+    expect(
+      (await requete('PUT', url, admin(), { localisation: true, seuils: incoherents })).statusCode,
+    ).toBe(400);
+    const retour = await requete('PUT', url, admin(), { localisation: true, seuils: null });
+    expect(retour.json<Formation>().emargement.seuils).toBeNull();
+    const [trace] = await owner.db
+      .select()
+      .from(auditEvenement)
+      .where(
+        and(
+          eq(auditEvenement.objetId, bachelor.id),
+          eq(auditEvenement.action, 'formation.parametrer-emargement'),
+          sql`${auditEvenement.avant}->'seuils' is not null and ${auditEvenement.avant}->'seuils' <> 'null'::jsonb`,
+        ),
+      );
+    expect(trace).toMatchObject({ avant: { seuils }, apres: { seuils: null } });
   });
 
   it('RG-02-01 refuse un niveau, un code RNCP ou un établissement invalides, avec le champ en cause', async () => {

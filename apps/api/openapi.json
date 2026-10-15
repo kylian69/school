@@ -424,6 +424,56 @@
         }
       }
     },
+    "/api/assiduite/alertes/{id}/traitement": {
+      "post": {
+        "operationId": "AssiduiteController.traiterAlerte",
+        "summary": "Marquer une alerte d’assiduité comme traitée",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "assiduite:alertes"
+          ],
+          "scope": "promotion"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlerteAssiduite"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assiduite/tableau-de-bord": {
+      "get": {
+        "operationId": "AssiduiteController.tableauDeBord",
+        "summary": "Tableau de bord de l’assiduité : indicateurs et apprenants au-dessus des seuils",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "assiduite:lire"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableauAssiduite"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/attributions/{id}/retrait": {
       "post": {
         "operationId": "AttributionsController.retirer",
@@ -6472,6 +6522,76 @@
         ],
         "additionalProperties": false
       },
+      "AlerteAssiduite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "niveau": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "declencheeLe": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "demiJournees": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "seuil": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "fenetreJours": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "ouverte",
+              "traitee"
+            ]
+          },
+          "traiteeLe": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "niveau",
+          "declencheeLe",
+          "demiJournees",
+          "seuil",
+          "fenetreJours",
+          "statut",
+          "traiteeLe"
+        ],
+        "additionalProperties": false
+      },
       "AnneeScolaire": {
         "type": "object",
         "properties": {
@@ -7138,6 +7258,77 @@
           ],
           "additionalProperties": false
         }
+      },
+      "ApprenantSurveille": {
+        "type": "object",
+        "properties": {
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "prenom": {
+            "type": "string"
+          },
+          "promotion": {
+            "nullable": true,
+            "type": "string"
+          },
+          "alternant": {
+            "type": "boolean"
+          },
+          "seuils": {
+            "$ref": "#/components/schemas/SeuilsAssiduite"
+          },
+          "demiJourneesNonJustifiees": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "niveau": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "alertes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlerteAssiduite"
+            }
+          }
+        },
+        "required": [
+          "personneId",
+          "nom",
+          "prenom",
+          "promotion",
+          "alternant",
+          "seuils",
+          "demiJourneesNonJustifiees",
+          "niveau",
+          "alertes"
+        ],
+        "additionalProperties": false
       },
       "AttributionPersonne": {
         "type": "object",
@@ -8557,6 +8748,7 @@
                 "emargement:animer",
                 "emargement:corriger-verrouille",
                 "assiduite:lire",
+                "assiduite:alertes",
                 "justificatifs:deposer",
                 "justificatifs:traiter"
               ]
@@ -9902,6 +10094,14 @@
         "properties": {
           "localisation": {
             "type": "boolean"
+          },
+          "seuils": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SeuilsAssiduite"
+              }
+            ]
           }
         },
         "required": [
@@ -10723,12 +10923,21 @@
               "localisation": {
                 "type": "boolean"
               },
+              "seuils": {
+                "nullable": true,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SeuilsAssiduite"
+                  }
+                ]
+              },
               "parametrable": {
                 "type": "boolean"
               }
             },
             "required": [
               "localisation",
+              "seuils",
               "parametrable"
             ],
             "additionalProperties": false
@@ -13331,6 +13540,14 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 720
+          },
+          "seuilsAssiduite": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SeuilsAssiduite"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -13455,7 +13672,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 41,
+            "maxItems": 42,
             "type": "array",
             "items": {
               "type": "string",
@@ -13499,6 +13716,7 @@
                 "emargement:animer",
                 "emargement:corriger-verrouille",
                 "assiduite:lire",
+                "assiduite:alertes",
                 "justificatifs:deposer",
                 "justificatifs:traiter"
               ]
@@ -14233,7 +14451,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 41,
+            "maxItems": 42,
             "type": "array",
             "items": {
               "type": "string",
@@ -14277,6 +14495,7 @@
                 "emargement:animer",
                 "emargement:corriger-verrouille",
                 "assiduite:lire",
+                "assiduite:alertes",
                 "justificatifs:deposer",
                 "justificatifs:traiter"
               ]
@@ -14980,6 +15199,17 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "seuilsAssiduite": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SeuilsAssiduite"
+              }
+            ]
+          },
+          "seuilsAssiduiteDefaut": {
+            "$ref": "#/components/schemas/SeuilsAssiduite"
+          },
           "etablissements": {
             "type": "array",
             "items": {
@@ -15000,6 +15230,8 @@
           "emargementCorrectionVerrouilleeJoursDefaut",
           "justificatifDelaiHeures",
           "justificatifDelaiHeuresDefaut",
+          "seuilsAssiduite",
+          "seuilsAssiduiteDefaut",
           "etablissements"
         ],
         "additionalProperties": false
@@ -17457,6 +17689,7 @@
                 "emargement:animer",
                 "emargement:corriger-verrouille",
                 "assiduite:lire",
+                "assiduite:alertes",
                 "justificatifs:deposer",
                 "justificatifs:traiter"
               ]
@@ -19140,6 +19373,32 @@
         ],
         "additionalProperties": false
       },
+      "SeuilsAssiduite": {
+        "type": "object",
+        "properties": {
+          "niveau1": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "niveau2": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "fenetreJours": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365
+          }
+        },
+        "required": [
+          "niveau1",
+          "niveau2",
+          "fenetreJours"
+        ],
+        "additionalProperties": false
+      },
       "SuiviAssiduite": {
         "type": "object",
         "properties": {
@@ -19185,6 +19444,86 @@
           "apprenants",
           "absences",
           "tronque"
+        ],
+        "additionalProperties": false
+      },
+      "TableauAssiduite": {
+        "type": "object",
+        "properties": {
+          "promotions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "libelle"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "indicateurs": {
+            "type": "object",
+            "properties": {
+              "niveau1": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "niveau2": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "alertesOuvertes": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "demiJourneesNonJustifiees": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "justificatifsATraiter": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "niveau1",
+              "niveau2",
+              "alertesOuvertes",
+              "demiJourneesNonJustifiees",
+              "justificatifsATraiter"
+            ],
+            "additionalProperties": false
+          },
+          "apprenants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApprenantSurveille"
+            }
+          },
+          "traitable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "promotions",
+          "indicateurs",
+          "apprenants",
+          "traitable"
         ],
         "additionalProperties": false
       },
