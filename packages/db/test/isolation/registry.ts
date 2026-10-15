@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../../src/client.js';
 import { newId } from '../../src/ids.js';
 import {
+  absence,
   appelValidation,
   anneeScolaire,
   attribution,
@@ -673,6 +674,21 @@ export const sampleRows: Record<string, ScopedTableSample> = {
         minutesRetard: 12,
         marquePar: personneId,
         marqueLe: new Date('2026-10-05T08:12:00Z'),
+      });
+    },
+  },
+  absence: {
+    insert: async (db, organisationId) => {
+      await db.insert(absence).values({
+        organisationId,
+        seanceId: await insertSeance(db, organisationId),
+        personneId: await insertPersonne(db, organisationId),
+        nature: 'absence',
+        minutes: 180,
+        jour: '2026-10-05',
+        matin: true,
+        apresMidi: false,
+        versionAppel: 1,
       });
     },
   },

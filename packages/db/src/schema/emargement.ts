@@ -641,3 +641,54 @@ export const seanceAttenduCalcule = pgView('seance_attendu_calcule', {
   seanceId: uuid().notNull(),
   personneId: uuid().notNull(),
 }).existing();
+
+/** RG-06-16, RG-06-17 : absence à toute la séance, ou retard (minutes manquées). */
+export const absenceNature = pgEnum('absence_nature', ['absence', 'retard']);
+/** RG-06-21 : statut de justification ; une absence naît non justifiée. */
+export const absenceStatut = pgEnum('absence_statut', ['non-justifiee']);
+
+/**
+ * Retard ou absence d'un apprenant à une séance (I4.4 ; RG-06-16 à RG-06-18), calculé à chaque
+ * version validée de l'appel (packages/domain, absencesDeLAppel), jamais sur le chemin du scan. La
+ * feuille signée fait foi ; cette table la complète des demi-journées (limite matin / après-midi de
+ * l'établissement, RG-04-02) et du statut de justification, couche ajoutée (RG-06-21).
+ */
+export const absence = pgTable(
+  'absence',
+  {
+    ...organisationScoped(),
+    seanceId: uuid().notNull(),
+    personneId: uuid().notNull(),
+    nature: absenceNature().notNull(),
+    statut: absenceStatut().notNull().default('non-justifiee'),
+    /** Durée manquée : la séance entière, ou les minutes de retard. */
+    minutes: integer().notNull(),
+    /** Jour de la séance dans le fuseau de l'établissement, et demi-journées touchées. */
+    jour: date().notNull(),
+    matin: boolean().notNull(),
+    apresMidi: boolean().notNull(),
+    /** Version de l'appel validé dont l'absence est issue (RG-06-13). */
+    versionAppel: smallint().notNull(),
+    ...trackingColumns(),
+  },
+  (t) => [
+    ...organisationConstraints('absence', t),
+    uniqueIndex('absence_seance_personne_key').on(t.organisationId, t.seanceId, t.personneId),
+    /** « Mes absences » et décompte d'un apprenant sur une période. */
+    index('absence_personne_jour_idx').on(t.organisationId, t.personneId, t.jour),
+    /** Suivi de la scolarité sur une période. */
+    index('absence_jour_idx').on(t.organisationId, t.jour),
+    foreignKey({
+      name: 'absence_seance_fk',
+      columns: [t.organisationId, t.seanceId],
+      foreignColumns: [seance.organisationId, seance.id],
+    }),
+    foreignKey({
+      name: 'absence_personne_fk',
+      columns: [t.organisationId, t.personneId],
+      foreignColumns: [personne.organisationId, personne.id],
+    }),
+    check('absence_minutes_check', sql`${t.minutes} > 0`),
+    check('absence_demi_journee_check', sql`${t.matin} or ${t.apresMidi}`),
+  ],
+).enableRLS();

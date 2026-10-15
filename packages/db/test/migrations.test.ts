@@ -195,6 +195,89 @@ describe('Migrations depuis une version antérieure', () => {
     }
   });
 
+  it('RG-06-18 0069 reprend les absences des appels validés, sur la dernière version', async () => {
+    const index = tags.indexOf('0069_omniscient_gabe_jones');
+    expect(index).toBeGreaterThan(0);
+    const database = await createTestDatabase(undefined, {
+      migrationsFolder: migrationsUpTo(index),
+    });
+    databases.push(database);
+    const client = new pg.Client({ connectionString: database.migratorUrl });
+    await client.connect();
+    const id = (n: number) => `00000000-0000-7000-8000-0000000000${String(n).padStart(2, '0')}`;
+    const ligne = (
+      personne: number,
+      statut: string,
+      minutes: number | null = null,
+      nonAttendu = false,
+    ) => ({
+      personneId: id(personne),
+      statut,
+      minutesRetard: minutes,
+      nonAttendu,
+    });
+    try {
+      // Établissement à midi ; séance de 9 h à 12 h 30 (heure d'été de Paris) : matin et après-midi.
+      await client.query(`
+        insert into organisation (id, nom, nom_affichage) values ('${id(1)}', 'École', 'EC');
+        insert into etablissement (id, organisation_id, nom, edt_limite_midi)
+          values ('${id(2)}', '${id(1)}', 'Campus', '12:00');
+        insert into salle (id, organisation_id, etablissement_id, nom)
+          values ('${id(3)}', '${id(1)}', '${id(2)}', 'Salle 1');
+        insert into personne (id, organisation_id, nom, prenom, email)
+          select ('00000000-0000-7000-8000-0000000000' || n)::uuid, '${id(1)}', 'Fictif', 'P' || n,
+            'p' || n || '@exemple.test'
+          from generate_series(10, 15) n;
+        insert into seance (id, organisation_id, libelle, debut, fin, salle_id)
+          values ('${id(4)}', '${id(1)}', 'Algorithmique', '2026-10-05T07:00:00Z',
+                  '2026-10-05T10:30:00Z', '${id(3)}')`);
+      const valider = (version: number, liste: unknown[]) =>
+        client.query(
+          `insert into appel_validation (id, organisation_id, seance_id, version, valide_par,
+             valide_le, adresse_ip, appareil, empreinte, liste, motif)
+           values ($1, '${id(1)}', '${id(4)}', $2, '${id(10)}', now(), '192.0.2.1', 'a', 'b', $3, $4)`,
+          [id(20 + version), version, JSON.stringify(liste), version === 1 ? null : 'Correction'],
+        );
+      await valider(1, [ligne(11, 'absent'), ligne(12, 'present')]);
+      await valider(2, [
+        ligne(11, 'present'),
+        ligne(12, 'absent'),
+        ligne(13, 'retard', 15),
+        ligne(14, 'en-attente', null, true),
+        ligne(15, 'a-verifier'),
+      ]);
+      await runMigrations(database.migratorUrl);
+      const { rows } = await client.query<Record<string, unknown>>(
+        `select personne_id, nature, minutes, to_char(jour, 'YYYY-MM-DD') as jour, matin,
+           apres_midi, statut, version_appel from absence order by personne_id`,
+      );
+      expect(rows).toEqual([
+        {
+          personne_id: id(12),
+          nature: 'absence',
+          minutes: 210,
+          jour: '2026-10-05',
+          matin: true,
+          apres_midi: true,
+          statut: 'non-justifiee',
+          version_appel: 2,
+        },
+        {
+          personne_id: id(13),
+          nature: 'retard',
+          minutes: 15,
+          jour: '2026-10-05',
+          matin: true,
+          apres_midi: false,
+          statut: 'non-justifiee',
+          version_appel: 2,
+        },
+      ]);
+    } finally {
+      await client.end();
+    }
+  });
+
   it('une base à jour ne rejoue aucune migration', async () => {
     const database = await upgradeFrom(tags.length);
     await runMigrations(database.migratorUrl);

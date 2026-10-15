@@ -258,6 +258,70 @@ const marquagesAppel = new Map();
 const LEA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000001';
 const NOE_ID = '0192f0a4-1b2c-7d3e-8f40-000000000002';
 const NINA_ID = '0192f0a4-1b2c-7d3e-8f40-000000000003';
+// I4.4 : retards et absences fictifs (Léa, alternante, et Noé, de deux promotions).
+const PROMOTIONS_ASSIDUITE = [
+  { id: '0192f0a4-1b2c-7d3e-8f40-0000000000c1', libelle: 'BTS SIO 1re année' },
+  { id: '0192f0a4-1b2c-7d3e-8f40-0000000000c2', libelle: 'Bachelor Web 2e année' },
+];
+const absenceFictive = (n, personneId, nom, prenom, promo, a) => ({
+  id: `0192f0a4-1b2c-7d3e-8f40-0000000000d${n}`,
+  seanceId: SEANCE_ID,
+  personneId,
+  nom,
+  prenom,
+  promotionId: PROMOTIONS_ASSIDUITE[promo].id,
+  statut: 'non-justifiee',
+  ...a,
+});
+const ABSENCES_FICTIVES = [
+  absenceFictive(1, LEA_ID, 'Martin', 'Léa', 0, {
+    libelle: 'Algorithmique',
+    debut: '2026-10-12T07:00:00.000Z',
+    fin: '2026-10-12T10:00:00.000Z',
+    jour: '2026-10-12',
+    matin: true,
+    apresMidi: false,
+    nature: 'absence',
+    minutes: 180,
+  }),
+  absenceFictive(2, LEA_ID, 'Martin', 'Léa', 0, {
+    libelle: 'Réseaux',
+    debut: '2026-10-08T12:00:00.000Z',
+    fin: '2026-10-08T15:00:00.000Z',
+    jour: '2026-10-08',
+    matin: false,
+    apresMidi: true,
+    nature: 'retard',
+    minutes: 20,
+  }),
+  absenceFictive(3, NOE_ID, 'Petit', 'Noé', 1, {
+    libelle: 'Projet web',
+    debut: '2026-10-09T07:00:00.000Z',
+    fin: '2026-10-09T15:00:00.000Z',
+    jour: '2026-10-09',
+    matin: true,
+    apresMidi: true,
+    nature: 'absence',
+    minutes: 480,
+  }),
+];
+const decompteFictif = (absences) => {
+  const demi = new Set(
+    absences
+      .filter((a) => a.nature === 'absence')
+      .flatMap((a) => [a.matin && `${a.jour}m`, a.apresMidi && `${a.jour}a`].filter(Boolean)),
+  );
+  const somme = (nature) =>
+    absences.filter((a) => a.nature === nature).reduce((s, a) => s + a.minutes, 0);
+  return {
+    absences: absences.filter((a) => a.nature === 'absence').length,
+    retards: absences.filter((a) => a.nature === 'retard').length,
+    minutesAbsence: somme('absence'),
+    minutesRetard: somme('retard'),
+    demiJournees: demi.size,
+    demiJourneesNonJustifiees: demi.size,
+  };
+};
 // RG-06-13 : validations de l'appel, par appel de test ; cookie e2e-etat=verrouille : appel de
 // plus de 7 jours, déjà validé (RG-06-01). RG-06-15 : cookie e2e-droit-verrouille=ecole ou
 // intervenant : la personne a le droit de corriger l'appel verrouillé ; sans lui, elle ne l'a pas.
@@ -2182,6 +2246,7 @@ createServer(async (request, response) => {
             'calendrier:lire',
             'emargement:animer',
             'emargement:corriger-verrouille',
+            'assiduite:lire',
             'edt:forcer',
             'edt:gerer',
             'edt:lire',
@@ -2393,6 +2458,46 @@ createServer(async (request, response) => {
           "Seules la scolarité et la pédagogie de l'école voient les corrections des intervenants : demandez-leur le détail.",
       });
     return json(200, correctionsVerrouillees);
+  }
+  // I4.4 : retards et absences calculés à la validation de l'appel (le calcul est testé par l'API).
+  if (path === '/api/moi/absences') {
+    if (!user) return json(401, { message: 'Session absente' });
+    return json(200, {
+      decompte: decompteFictif(ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID)),
+      alternant: true,
+      absences: ABSENCES_FICTIVES.filter((a) => a.personneId === LEA_ID).map(
+        ({ personneId: _p, nom: _n, prenom: _pr, promotionId: _pi, ...a }) => a,
+      ),
+    });
+  }
+  if (path === '/api/assiduite') {
+    if (!user) return json(401, { message: 'Session absente' });
+    const filtre = Object.fromEntries(url.searchParams);
+    const retenues = ABSENCES_FICTIVES.filter(
+      (a) =>
+        (!filtre.promotionId || a.promotionId === filtre.promotionId) &&
+        (!filtre.nature || a.nature === filtre.nature) &&
+        (!filtre.statut || a.statut === filtre.statut) &&
+        (!filtre.du || a.jour >= filtre.du) &&
+        (!filtre.au || a.jour <= filtre.au),
+    );
+    const personnes = [...new Set(retenues.map((a) => a.personneId))];
+    return json(200, {
+      promotions: PROMOTIONS_ASSIDUITE,
+      apprenants: personnes.map((id) => {
+        const siennes = retenues.filter((a) => a.personneId === id);
+        return {
+          personneId: id,
+          nom: siennes[0].nom,
+          prenom: siennes[0].prenom,
+          promotion: PROMOTIONS_ASSIDUITE.find((p) => p.id === siennes[0].promotionId).libelle,
+          alternant: id === LEA_ID,
+          decompte: decompteFictif(siennes),
+        };
+      }),
+      absences: retenues.map(({ promotionId: _pi, ...a }) => a),
+      tronque: false,
+    });
   }
   if (path === `/api/seances/${SEANCE_ID}/appel/ajoutables`) {
     const ajoutee = marquagesAppel.has(`${cleAppel(request)}|${NINA_ID}`);

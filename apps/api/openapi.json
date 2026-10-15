@@ -399,6 +399,31 @@
         }
       }
     },
+    "/api/assiduite": {
+      "get": {
+        "operationId": "AssiduiteController.suivi",
+        "summary": "Retards et absences des apprenants de mon périmètre, avec leur décompte",
+        "x-scolaly-access": {
+          "kind": "permission",
+          "permissions": [
+            "assiduite:lire"
+          ],
+          "scope": "organisation"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuiviAssiduite"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/attributions/{id}/retrait": {
       "post": {
         "operationId": "AttributionsController.retirer",
@@ -3381,6 +3406,27 @@
         }
       }
     },
+    "/api/moi/absences": {
+      "get": {
+        "operationId": "AssiduiteController.miennes",
+        "summary": "Mes retards et absences, avec leur décompte",
+        "x-scolaly-access": {
+          "kind": "authenticated"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesAbsences"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/moi/agenda": {
       "get": {
         "operationId": "FluxIcalController.etat",
@@ -5784,6 +5830,77 @@
   },
   "components": {
     "schemas": {
+      "Absence": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "seanceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "jour": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "matin": {
+            "type": "boolean"
+          },
+          "apresMidi": {
+            "type": "boolean"
+          },
+          "nature": {
+            "type": "string",
+            "enum": [
+              "absence",
+              "retard"
+            ]
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "non-justifiee"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "seanceId",
+          "libelle",
+          "debut",
+          "fin",
+          "jour",
+          "matin",
+          "apresMidi",
+          "nature",
+          "minutes",
+          "statut"
+        ],
+        "additionalProperties": false
+      },
       "ActionsPersonnes": {
         "type": "object",
         "properties": {
@@ -6695,6 +6812,41 @@
           "presents",
           "attendus",
           "liste"
+        ],
+        "additionalProperties": false
+      },
+      "ApprenantAssiduite": {
+        "type": "object",
+        "properties": {
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "prenom": {
+            "type": "string"
+          },
+          "promotion": {
+            "nullable": true,
+            "type": "string"
+          },
+          "alternant": {
+            "type": "boolean"
+          },
+          "decompte": {
+            "$ref": "#/components/schemas/DecompteAssiduite"
+          }
+        },
+        "required": [
+          "personneId",
+          "nom",
+          "prenom",
+          "promotion",
+          "alternant",
+          "decompte"
         ],
         "additionalProperties": false
       },
@@ -8139,7 +8291,8 @@
                 "edt:forcer",
                 "disponibilites:declarer",
                 "emargement:animer",
-                "emargement:corriger-verrouille"
+                "emargement:corriger-verrouille",
+                "assiduite:lire"
               ]
             }
           },
@@ -8891,6 +9044,50 @@
         },
         "required": [
           "decision"
+        ],
+        "additionalProperties": false
+      },
+      "DecompteAssiduite": {
+        "type": "object",
+        "properties": {
+          "absences": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "retards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "minutesAbsence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "minutesRetard": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "demiJournees": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "demiJourneesNonJustifiees": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "absences",
+          "retards",
+          "minutesAbsence",
+          "minutesRetard",
+          "demiJournees",
+          "demiJourneesNonJustifiees"
         ],
         "additionalProperties": false
       },
@@ -10601,6 +10798,91 @@
         ],
         "additionalProperties": false
       },
+      "LigneAssiduite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "seanceId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "libelle": {
+            "type": "string"
+          },
+          "debut": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "jour": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "matin": {
+            "type": "boolean"
+          },
+          "apresMidi": {
+            "type": "boolean"
+          },
+          "nature": {
+            "type": "string",
+            "enum": [
+              "absence",
+              "retard"
+            ]
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "statut": {
+            "type": "string",
+            "enum": [
+              "non-justifiee"
+            ]
+          },
+          "personneId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "nom": {
+            "type": "string"
+          },
+          "prenom": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "seanceId",
+          "libelle",
+          "debut",
+          "fin",
+          "jour",
+          "matin",
+          "apresMidi",
+          "nature",
+          "minutes",
+          "statut",
+          "personneId",
+          "nom",
+          "prenom"
+        ],
+        "additionalProperties": false
+      },
       "ListeAnnees": {
         "type": "object",
         "properties": {
@@ -11483,6 +11765,29 @@
         },
         "required": [
           "role"
+        ],
+        "additionalProperties": false
+      },
+      "MesAbsences": {
+        "type": "object",
+        "properties": {
+          "decompte": {
+            "$ref": "#/components/schemas/DecompteAssiduite"
+          },
+          "alternant": {
+            "type": "boolean"
+          },
+          "absences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Absence"
+            }
+          }
+        },
+        "required": [
+          "decompte",
+          "alternant",
+          "absences"
         ],
         "additionalProperties": false
       },
@@ -12561,7 +12866,7 @@
             "maxLength": 200
           },
           "permissions": {
-            "maxItems": 38,
+            "maxItems": 39,
             "type": "array",
             "items": {
               "type": "string",
@@ -12603,7 +12908,8 @@
                 "edt:forcer",
                 "disponibilites:declarer",
                 "emargement:animer",
-                "emargement:corriger-verrouille"
+                "emargement:corriger-verrouille",
+                "assiduite:lire"
               ]
             }
           },
@@ -13300,7 +13606,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "permissions": {
-            "maxItems": 38,
+            "maxItems": 39,
             "type": "array",
             "items": {
               "type": "string",
@@ -13342,7 +13648,8 @@
                 "edt:forcer",
                 "disponibilites:declarer",
                 "emargement:animer",
-                "emargement:corriger-verrouille"
+                "emargement:corriger-verrouille",
+                "assiduite:lire"
               ]
             }
           },
@@ -16506,7 +16813,8 @@
                 "edt:forcer",
                 "disponibilites:declarer",
                 "emargement:animer",
-                "emargement:corriger-verrouille"
+                "emargement:corriger-verrouille",
+                "assiduite:lire"
               ]
             }
           },
@@ -18185,6 +18493,54 @@
           "serieId",
           "seances",
           "sautees"
+        ],
+        "additionalProperties": false
+      },
+      "SuiviAssiduite": {
+        "type": "object",
+        "properties": {
+          "promotions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "libelle": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "libelle"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "apprenants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApprenantAssiduite"
+            }
+          },
+          "absences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LigneAssiduite"
+            }
+          },
+          "tronque": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "promotions",
+          "apprenants",
+          "absences",
+          "tronque"
         ],
         "additionalProperties": false
       },
