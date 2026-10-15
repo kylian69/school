@@ -180,6 +180,16 @@ describe('decompteAssiduite', () => {
     expect(d).toMatchObject({ retards: 1, minutesRetard: 15, absences: 0, demiJournees: 0 });
   });
 
+  it('RG-06-21 une demi-journée justifiée sort du compte des non justifiées', () => {
+    // Statut des justificatifs (lot suivant) : seules les absences non justifiées comptent ici.
+    const justifiee = 'justifiee' as AbsenceEnregistree['statut'];
+    const d = decompteAssiduite([
+      enregistree({ statut: justifiee }),
+      enregistree({ matin: false, apresMidi: true }),
+    ]);
+    expect(d).toMatchObject({ demiJournees: 2, demiJourneesNonJustifiees: 1 });
+  });
+
   it('RG-06-18 aucune absence : décompte nul', () => {
     expect(decompteAssiduite([])).toMatchObject({ absences: 0, demiJournees: 0 });
   });

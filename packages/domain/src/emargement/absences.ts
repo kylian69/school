@@ -76,13 +76,14 @@ export function absencesDeLAppel(
   const resultat: AbsenceCalculee[] = [];
   for (const l of liste) {
     if (l.nonAttendu) continue;
+    const retard = l.statut === 'retard' ? (l.minutesRetard ?? 0) : 0;
     if (l.statut === 'absent' || l.statut === 'en-attente') {
       resultat.push({ personneId: l.personneId, nature: 'absence', minutes: duree, ...demi });
-    } else if (l.statut === 'retard' && (l.minutesRetard ?? 0) > 0) {
+    } else if (retard > 0) {
       resultat.push({
         personneId: l.personneId,
         nature: 'retard',
-        minutes: Math.min(l.minutesRetard ?? 0, duree),
+        minutes: Math.min(retard, duree),
         jour: demi.jour,
         matin: demi.matin,
         apresMidi: !demi.matin,
