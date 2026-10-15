@@ -237,6 +237,7 @@ function FicheOrganisation({
     const saisie = valeurs(event.currentTarget);
     const jours = saisie.edtBadgeModifieJours?.trim();
     const correction = saisie.emargementCorrectionVerrouilleeJours?.trim();
+    const delai = saisie.justificatifDelaiHeures?.trim();
     const resultat = await envoyer(
       '/api/organisation',
       'PATCH',
@@ -245,6 +246,7 @@ function FicheOrganisation({
         ...saisie,
         edtBadgeModifieJours: jours ? Number(jours) : null,
         emargementCorrectionVerrouilleeJours: correction ? Number(correction) : null,
+        justificatifDelaiHeures: delai ? Number(delai) : null,
       },
       t.erreur,
     );
@@ -319,6 +321,19 @@ function FicheOrganisation({
             inputMode="numeric"
             min={7}
             max={90}
+            step={1}
+          />
+          <Champ
+            nom="justificatifDelaiHeures"
+            label={t.delaiJustificatif}
+            erreurs={erreurs}
+            aide={t.aideDelaiJustificatif(organisation.justificatifDelaiHeuresDefaut)}
+            defaultValue={organisation.justificatifDelaiHeures ?? ''}
+            placeholder={String(organisation.justificatifDelaiHeuresDefaut)}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={720}
             step={1}
           />
         </fieldset>

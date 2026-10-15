@@ -129,6 +129,13 @@ export const NAVIGATION: readonly NavigationEntry[] = [
     icon: 'M4 20V10M10 20V4M16 20v-7M20 20H3',
   },
   {
+    label: fr.coquille.entrees.justificatifs,
+    href: '/assiduite/justificatifs',
+    module: 'emargement',
+    permissions: ['justificatifs:traiter'],
+    icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 14l2 2 4-4',
+  },
+  {
     label: fr.coquille.entrees.parametres,
     href: '/parametres',
     module: 'socle',

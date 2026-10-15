@@ -8,12 +8,14 @@ import { RequestContext } from '../../access/request-context.js';
 import { ApiContract } from '../../contracts/api-contract.js';
 import { DATABASE } from '../../shared/tokens.js';
 import { AssiduiteService } from './assiduite.service.js';
+import { JustificatifsService } from './justificatifs.service.js';
 
 /** Assiduité (I4.4) : retards et absences calculés à partir des appels validés. */
 @Controller('api')
 export class AssiduiteController {
   constructor(
     private readonly assiduite: AssiduiteService,
+    private readonly justificatifs: JustificatifsService,
     @Inject(ACCESS_RESOLVER) private readonly resolver: AccessResolver,
     @Inject(DATABASE) private readonly db: Database,
   ) {}
@@ -32,9 +34,11 @@ export class AssiduiteController {
         "Vous n'avez de fiche dans aucune école active. Choisissez votre école, puis réessayez.",
       );
     }
-    return withOrganisation(this.db, access.organisationId, (tx) =>
-      this.assiduite.mesAbsences(tx, access),
-    );
+    return withOrganisation(this.db, access.organisationId, async (tx) => ({
+      ...(await this.assiduite.mesAbsences(tx, access)),
+      justificatifs: await this.justificatifs.miens(tx, access),
+      delaiHeures: await this.justificatifs.delaiHeures(tx, access),
+    }));
   }
 
   /** E-06-07 : périmètre contrôlé par le service (promotions couvertes par la permission). */

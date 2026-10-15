@@ -52,3 +52,12 @@ export const ChargeCorrectionVerrouillee = z.object({
   version: z.int().min(2),
 });
 export type ChargeCorrectionVerrouillee = z.infer<typeof ChargeCorrectionVerrouillee>;
+
+/**
+ * RG-06-21 : la scolarité a décidé d'un justificatif ; l'apprenant en est averti par email. La
+ * charge ne porte que l'identifiant (ni motif ni message).
+ */
+export const EVENEMENT_DECISION_JUSTIFICATIF = 'assiduite.decision-justificatif';
+
+export const ChargeDecisionJustificatif = z.object({ justificatifId: z.uuid() });
+export type ChargeDecisionJustificatif = z.infer<typeof ChargeDecisionJustificatif>;

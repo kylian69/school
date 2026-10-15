@@ -44,6 +44,7 @@ import {
 } from 'drizzle-orm';
 import type { Access } from '../../access/access-resolver.js';
 import { couvrePromotion, promotionsCouvertes } from '../scolarite/index.js';
+import { justificatifsDesAbsences } from './justificatifs.service.js';
 
 /** Séance d'un appel validé, telle que le calcul des absences la lit. */
 export interface SeanceAbsences {
@@ -68,13 +69,21 @@ const colonnesAbsence = {
   statut: absence.statut,
 };
 
-type LigneLue = { debut: Date; fin: Date } & Omit<Absence, 'debut' | 'fin'>;
+type LigneLue = { debut: Date; fin: Date } & Omit<Absence, 'debut' | 'fin' | 'justificatif'>;
 
-const presenter = <T extends LigneLue>(l: T) => ({
-  ...l,
-  debut: l.debut.toISOString(),
-  fin: l.fin.toISOString(),
-});
+/** Absences présentées, avec leur dernier justificatif (RG-06-21). */
+async function presenter<T extends LigneLue>(tx: Transaction, lignes: readonly T[]) {
+  const justificatifs = await justificatifsDesAbsences(
+    tx,
+    lignes.map((l) => l.id),
+  );
+  return lignes.map((l) => ({
+    ...l,
+    debut: l.debut.toISOString(),
+    fin: l.fin.toISOString(),
+    justificatif: justificatifs.get(l.id) ?? null,
+  }));
+}
 
 /** Jour UTC courant (AAAA-MM-JJ) : statut d’'alternance en cours. */
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
@@ -175,7 +184,10 @@ export class AssiduiteService {
   }
 
   /** US-06-13, E-06-04 : ses propres retards et absences, avec son décompte. */
-  async mesAbsences(tx: Transaction, access: Access): Promise<MesAbsences> {
+  async mesAbsences(
+    tx: Transaction,
+    access: Access,
+  ): Promise<Omit<MesAbsences, 'justificatifs' | 'delaiHeures'>> {
     const lignes = await tx
       .select(colonnesAbsence)
       .from(absence)
@@ -201,7 +213,7 @@ export class AssiduiteService {
     return {
       decompte: decompteAssiduite(lignes),
       alternant: estAlternant(alternance?.statut),
-      absences: lignes.map(presenter),
+      absences: await presenter(tx, lignes),
     };
   }
 
@@ -320,7 +332,7 @@ export class AssiduiteService {
     return {
       promotions,
       apprenants,
-      absences: lignes.slice(0, LIMITE_SUIVI_ASSIDUITE).map(presenter),
+      absences: await presenter(tx, lignes.slice(0, LIMITE_SUIVI_ASSIDUITE)),
       tronque: lignes.length > LIMITE_SUIVI_ASSIDUITE,
     };
   }

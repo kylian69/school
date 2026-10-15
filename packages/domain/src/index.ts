@@ -26,6 +26,7 @@ export * from './emargement/appel-manuel.js';
 export * from './emargement/distanciel.js';
 export * from './emargement/etat-appel.js';
 export * from './emargement/fenetre-scan.js';
+export * from './emargement/justificatifs.js';
 export * from './emargement/localisation.js';
 export * from './referentiel/maquette.js';
 export * from './referentiel/versions.js';

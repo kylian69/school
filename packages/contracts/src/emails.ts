@@ -293,3 +293,46 @@ export function emailCorrectionVerrouillee(options: {
     }),
   };
 }
+
+/**
+ * RG-06-21 : la scolarité a décidé d'un justificatif d'absence. Ni le motif, ni le message de la
+ * scolarité, ni les séances n'y figurent (données de santé possibles, RG-06-20) : le détail est
+ * dans Scolaly, sur « Mes absences ».
+ */
+export function emailDecisionJustificatif(options: {
+  to: string;
+  prenom: string;
+  ecole: string;
+  lien: string;
+  statut: 'accepte' | 'refuse' | 'complement-demande';
+  marque?: MarqueEcole | null;
+}): EmailJob {
+  const salutation = `Bonjour ${options.prenom},`;
+  const annonces = {
+    accepte:
+      'Votre justificatif d’absence a été accepté : les absences concernées sont désormais justifiées.',
+    refuse:
+      'Votre justificatif d’absence a été refusé. Le motif du refus est indiqué dans Scolaly ; vous pouvez déposer un autre justificatif.',
+    'complement-demande':
+      'La scolarité demande un complément pour votre justificatif d’absence. Consultez sa demande dans Scolaly, puis joignez le document attendu.',
+  } as const;
+  const sujets = {
+    accepte: 'Justificatif d’absence accepté',
+    refuse: 'Justificatif d’absence refusé',
+    'complement-demande': 'Complément demandé pour votre justificatif d’absence',
+  } as const;
+  const annonce = annonces[options.statut];
+  const mention =
+    'Vous recevez cet email parce que vous avez déposé un justificatif d’absence, ou que votre école l’a déposé pour vous.';
+  return {
+    to: options.to,
+    subject: `${sujets[options.statut]} · ${options.ecole}`,
+    text: [salutation, '', annonce, '', options.lien, '', mention].join('\n'),
+    html: miseEnPageEmail({
+      marque: options.marque ?? null,
+      paragraphes: [salutation, annonce],
+      bouton: { libelle: 'Voir mes absences', lien: options.lien },
+      mention,
+    }),
+  };
+}

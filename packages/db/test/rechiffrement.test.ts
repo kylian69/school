@@ -11,7 +11,12 @@ import {
   retraitPossible,
   type ChampChiffre,
 } from '../src/rechiffrement.js';
-import { fluxIcal, indisponibiliteIntervenant, personne } from '../src/schema/index.js';
+import {
+  fluxIcal,
+  indisponibiliteIntervenant,
+  justificatif,
+  personne,
+} from '../src/schema/index.js';
 import { auditEvenement } from '../src/schema/journal.js';
 import { createOrganisations, openApp, openOwner } from './fixtures.js';
 
@@ -51,7 +56,10 @@ async function intervenant(organisationId: string): Promise<string> {
   return id;
 }
 
-/** Une indisponibilité et un flux iCal par intervenant, chiffrés avec la clé v1. */
+/**
+ * Une indisponibilité, un flux iCal et un justificatif (précision et message) par personne,
+ * chiffrés avec la clé v1.
+ */
 async function preparer(organisationId: string, nombre: number) {
   for (let i = 0; i < nombre; i += 1) {
     const personneId = await intervenant(organisationId);
@@ -96,10 +104,48 @@ async function preparer(organisationId: string, nombre: number) {
       cle: personneId,
       clair: jeton,
     });
+    const justificatifId = newId();
+    const textes = {
+      'justificatif.precision': `Précision fictive ${i}`,
+      'justificatif.message': `Message fictif ${i}`,
+    } as const;
+    const chiffrer = (champ: keyof typeof textes) =>
+      avantRotation.encrypt(
+        textes[champ],
+        organisationId,
+        contexteChiffrement(champ, justificatifId),
+      );
+    await owner.db.insert(justificatif).values({
+      id: justificatifId,
+      organisationId,
+      personneId,
+      motif: 'autre',
+      precisionChiffre: chiffrer('justificatif.precision'),
+      messageChiffre: chiffrer('justificatif.message'),
+      deposeLe: new Date('2027-01-05T08:00:00Z'),
+      deposePar: personneId,
+      horsDelai: false,
+      statut: 'complement-demande',
+    });
+    for (const champ of ['justificatif.precision', 'justificatif.message'] as const)
+      valeurs.push({
+        champ,
+        organisationId,
+        id: justificatifId,
+        cle: justificatifId,
+        clair: textes[champ],
+      });
   }
 }
 
 async function lire(v: Valeur): Promise<string | null> {
+  if (v.champ === 'justificatif.precision' || v.champ === 'justificatif.message') {
+    const [ligne] = await owner.db
+      .select({ precision: justificatif.precisionChiffre, message: justificatif.messageChiffre })
+      .from(justificatif)
+      .where(eq(justificatif.id, v.id));
+    return (v.champ === 'justificatif.precision' ? ligne?.precision : ligne?.message) ?? null;
+  }
   if (v.champ === 'flux_ical.jeton') {
     const [ligne] = await owner.db
       .select({ valeur: fluxIcal.jetonChiffre })
@@ -159,7 +205,7 @@ describe('Rotation de la clé maîtresse (ADR 0006)', () => {
     );
     expect(retraitPossible(comptages, 1, 2)).toEqual({
       possible: false,
-      restantes: 14,
+      restantes: 28,
       illisibles: 0,
     });
   });
@@ -175,10 +221,10 @@ describe('Rotation de la clé maîtresse (ADR 0006)', () => {
     });
     expect(partiel).toMatchObject({ lots: 2, rechiffrees: 4 });
     const pendant = await nosComptages();
-    expect(retraitPossible(pendant, 1, 2).restantes).toBe(10);
+    expect(retraitPossible(pendant, 1, 2).restantes).toBe(24);
 
     const reprise = await rechiffrerValeurs(app.db, crypto, { taille: 2, organisationIds: ecoles });
-    expect(reprise.rechiffrees).toBeGreaterThanOrEqual(10);
+    expect(reprise.rechiffrees).toBeGreaterThanOrEqual(24);
     const apres = await nosComptages();
     expect(apres.every((c) => c.version === 2)).toBe(true);
     expect(retraitPossible(apres, 1, 2)).toEqual({ possible: true, restantes: 0, illisibles: 0 });
@@ -223,7 +269,7 @@ describe('Rotation de la clé maîtresse (ADR 0006)', () => {
       (somme, e) => somme + ((e.apres as { nombre: number } | null)?.nombre ?? 0),
       0,
     );
-    expect(total).toBe(14);
+    expect(total).toBe(28);
     const texte = JSON.stringify(entrees);
     for (const v of valeurs) expect(texte).not.toContain(v.clair);
     expect(entrees[0]?.avant).toEqual({ versions: ['v1'] });
