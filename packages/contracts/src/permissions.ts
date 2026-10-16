@@ -54,6 +54,8 @@ export const PERMISSIONS = {
   'emargement:animer': 'Ouvrir l’appel d’une séance et suivre les présences',
   'emargement:corriger-verrouille':
     'Corriger un appel verrouillé (plus de 7 jours après la séance), avec un motif ; sur ses seules séances pour un intervenant, dans le délai fixé par l’école',
+  'emargement:feuilles':
+    'Télécharger les feuilles d’émargement signées et les récapitulatifs mensuels d’assiduité de son périmètre ; ses seules séances pour un intervenant',
   'assiduite:lire':
     'Consulter les absences et les retards des apprenants de son périmètre, avec leur décompte en heures et en demi-journées',
   'assiduite:alertes':

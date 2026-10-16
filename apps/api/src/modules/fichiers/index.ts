@@ -4,3 +4,4 @@ export {
   ROUTE_TELECHARGEMENT,
   TelechargementsService,
 } from './telechargements.service.js';
+export { dispositionPieceJointe } from './telechargements.controller.js';

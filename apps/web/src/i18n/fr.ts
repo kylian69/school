@@ -416,6 +416,9 @@ export const fr = {
       'telechargement.fichier': 'Fichier téléchargé',
       'telechargement.rapport-import': 'Rapport d’import téléchargé',
       'telechargement.photos-appel': 'Photos de la liste d’appel remises',
+      'telechargement.feuille-emargement': 'Feuille d’émargement téléchargée',
+      'telechargement.feuilles-emargement': 'Feuilles d’émargement d’une promotion téléchargées',
+      'telechargement.recapitulatif-assiduite': 'Récapitulatif d’assiduité téléchargé',
       'absence.recalculer': 'Absences et retards recalculés après l’appel',
       'organisation.modifier': 'Organisation modifiée',
       'etablissement.creer': 'Établissement créé',
@@ -2391,6 +2394,22 @@ export const fr = {
       traiter: 'Marquer comme traitée',
       traiterLibelle: (nom: string) => `Marquer comme traitée l’alerte de ${nom}`,
     },
+  },
+  feuilles: {
+    titre: 'Feuilles d’émargement',
+    aide: 'Feuilles signées des appels validés (une par séance) ou récapitulatifs mensuels par apprenant (demi-journées, heures prévues et réalisées), pour un OPCO ou un audit Qualiopi. Chaque téléchargement est tracé.',
+    promotion: 'Promotion des feuilles',
+    mois: 'Mois',
+    format: 'Format',
+    formats: { seances: 'Par séance', apprenants: 'Par apprenant' },
+    telecharger: 'Télécharger le PDF',
+    feuilleSeance: 'Télécharger la feuille PDF',
+    recapitulatif: 'Mon récapitulatif du mois',
+    recapitulatifAide:
+      'Récapitulatif PDF de vos demi-journées de cours : présences, retards, absences justifiées ou non, heures réalisées.',
+    enCours: 'Préparation du PDF…',
+    erreur:
+      'Le PDF n’a pas pu être préparé. Réessayez dans quelques instants ; si le problème persiste, contactez votre établissement.',
   },
   justificatifs: {
     titre: 'Justificatifs d’absence',

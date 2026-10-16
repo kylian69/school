@@ -368,6 +368,11 @@ test.describe('Module 06 Émargement', () => {
       await expect(page.getByRole('heading', { name: 'Versions de la feuille' })).toBeVisible();
       await expect(page.getByText(/Version 2 · .* · Arrivé sans téléphone/)).toBeVisible();
       await expectNoAccessibilityViolations(page);
+
+      // RG-06-25 : la feuille signée se télécharge en PDF, dernière version.
+      const telechargement = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Télécharger la feuille PDF' }).click();
+      expect((await telechargement).suggestedFilename()).toBe('feuille-emargement-v2.pdf');
     });
 
     test('RG-06-01, RG-06-15 sans le droit spécifique, un appel verrouillé se consulte sans se modifier', async ({

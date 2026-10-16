@@ -12,6 +12,7 @@ import {
 import { Badge, Button, Card } from '@scolaly/ui';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
+import { BoutonPdf } from '@/components/telecharger-pdf';
 import { fr } from '@/i18n/fr';
 import { formatDateHeure, formatHeure } from '@/lib/format';
 import { envoyer } from '@/lib/requete';
@@ -288,6 +289,10 @@ export function EcranAppel({ seanceId }: { seanceId: string }) {
                   </li>
                 ))}
               </ol>
+              <BoutonPdf
+                url={`/api/seances/${seanceId}/appel/feuille/pdf`}
+                libelle={fr.feuilles.feuilleSeance}
+              />
             </div>
           ) : null}
         </Card>
